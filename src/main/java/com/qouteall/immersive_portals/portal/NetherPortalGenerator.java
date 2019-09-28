@@ -1,17 +1,17 @@
 package com.qouteall.immersive_portals.portal;
 
-import com.qouteall.immersive_portals.MyNetwork;
+import com.immersive_portals.network.NetworkMain;
+import com.immersive_portals.network.StcSpawnLoadingIndicator;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import com.qouteall.immersive_portals.my_util.SignalArged;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.play.server.SCustomPayloadPlayPacket;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -33,12 +33,12 @@ public class NetherPortalGenerator {
             (double) (box.h.getY() + box.l.getY() + 1) / 2 - 1,
             (double) (box.h.getZ() + box.l.getZ() + 1) / 2
         );
-        SCustomPayloadPlayPacket packet =
-            MyNetwork.createSpawnLoadingIndicator(world.dimension.getType(), center);
+        StcSpawnLoadingIndicator packet =
+            new StcSpawnLoadingIndicator(world.dimension.getType(), center);
         Helper.getEntitiesNearby(
             world, center, ServerPlayerEntity.class, 64
         ).forEach(
-            player -> player.connection.sendPacket(packet)
+            player -> NetworkMain.sendToPlayer(player, packet)
         );
     }
     
@@ -318,16 +318,16 @@ public class NetherPortalGenerator {
         portalArray[2].obsidianFrame = toObsidianFrame;
         portalArray[3].obsidianFrame = toObsidianFrame;
     
-        portalArray[0].reversePortalId = portalArray[3].getUuid();
-        portalArray[3].reversePortalId = portalArray[0].getUuid();
+        portalArray[0].reversePortalId = portalArray[3].getUniqueID();
+        portalArray[3].reversePortalId = portalArray[0].getUniqueID();
     
-        portalArray[1].reversePortalId = portalArray[2].getUuid();
-        portalArray[2].reversePortalId = portalArray[1].getUuid();
-        
-        fromWorld.spawnEntity(portalArray[0]);
-        fromWorld.spawnEntity(portalArray[1]);
-        toWorld.spawnEntity(portalArray[2]);
-        toWorld.spawnEntity(portalArray[3]);
+        portalArray[1].reversePortalId = portalArray[2].getUniqueID();
+        portalArray[2].reversePortalId = portalArray[1].getUniqueID();
+    
+        fromWorld.addEntity(portalArray[0]);
+        fromWorld.addEntity(portalArray[1]);
+        toWorld.addEntity(portalArray[2]);
+        toWorld.addEntity(portalArray[3]);
         
     }
     

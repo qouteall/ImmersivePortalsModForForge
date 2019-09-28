@@ -147,7 +147,7 @@ public class ChunkTracker {
             //directly watching chunks
             getNearbyChunkPoses(
                 player.dimension,
-                player.getBlockPos(),
+                player.getPosition(),
                 renderDistance
             ),
     

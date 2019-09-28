@@ -1,19 +1,14 @@
 package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.my_util.Helper;
-import net.fabricmc.fabric.api.entity.FabricEntityTypeBuilder;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.EntityClassification;
-import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 
 import java.util.UUID;
 
@@ -28,18 +23,6 @@ public class NetherPortalEntity extends Portal {
     private boolean shouldBreakNetherPortal = false;
     
     public static void init() {
-        entityType = Registry.register(
-            Registry.ENTITY_TYPE,
-            new ResourceLocation("immersive_portals", "monitoring_nether_portal"),
-            FabricEntityTypeBuilder.create(
-                EntityClassification.MISC,
-                (EntityType.IFactory<NetherPortalEntity>) NetherPortalEntity::new
-            ).size(
-                new EntitySize(1, 1, true)
-            ).setImmuneToFire().build()
-        );
-    
-    
         PortalPlaceholderBlock.portalBlockUpdateSignal.connect((world, pos) -> {
             Helper.getEntitiesNearby(
                 world,
@@ -105,7 +88,7 @@ public class NetherPortalEntity extends Portal {
         
         ServerWorld world = getServer().getWorld(dimensionTo);
         return world == null ?
-            null : (NetherPortalEntity) world.getEntity(reversePortalId);
+            null : (NetherPortalEntity) world.getEntityByUuid(reversePortalId);
     }
     
     @Override
@@ -194,18 +177,18 @@ public class NetherPortalEntity extends Portal {
     
     
     @Override
-    protected void readCustomDataFromTag(CompoundNBT compoundTag) {
-        super.readCustomDataFromTag(compoundTag);
+    protected void readAdditional(CompoundNBT compoundTag) {
+        super.readAdditional(compoundTag);
     
-        reversePortalId = compoundTag.getUuid("reversePortalId");
+        reversePortalId = compoundTag.getUniqueId("reversePortalId");
         obsidianFrame = ObsidianFrame.fromTag(compoundTag.getCompound("obsidianFrame"));
     }
     
     @Override
-    protected void writeCustomDataToTag(CompoundNBT compoundTag) {
-        super.writeCustomDataToTag(compoundTag);
+    protected void writeAdditional(CompoundNBT compoundTag) {
+        super.writeAdditional(compoundTag);
     
-        compoundTag.putUuid("reversePortalId", reversePortalId);
+        compoundTag.putUniqueId("reversePortalId", reversePortalId);
         compoundTag.put("obsidianFrame", obsidianFrame.toTag());
     }
     

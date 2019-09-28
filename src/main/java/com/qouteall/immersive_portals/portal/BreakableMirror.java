@@ -2,20 +2,15 @@ package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
-import net.fabricmc.fabric.api.entity.FabricEntityTypeBuilder;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.EntityClassification;
-import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 
 public class BreakableMirror extends Mirror {
     
@@ -23,27 +18,13 @@ public class BreakableMirror extends Mirror {
     
     public IntegerAABBInclusive wallArea;
     
-    public static void init() {
-        entityType = Registry.register(
-            Registry.ENTITY_TYPE,
-            new ResourceLocation("immersive_portals", "breakable_mirror"),
-            FabricEntityTypeBuilder.create(
-                EntityClassification.MISC,
-                (EntityType<BreakableMirror> type, World world1) ->
-                    new BreakableMirror(type, world1)
-            ).size(
-                new EntitySize(1, 1, true)
-            ).setImmuneToFire().build()
-        );
-    }
-    
     public BreakableMirror(EntityType<?> entityType_1, World world_1) {
         super(entityType_1, world_1);
     }
     
     @Override
-    protected void readCustomDataFromTag(CompoundNBT tag) {
-        super.readCustomDataFromTag(tag);
+    protected void readAdditional(CompoundNBT tag) {
+        super.readAdditional(tag);
         wallArea = new IntegerAABBInclusive(
             new BlockPos(
                 tag.getInt("boxXL"),
@@ -59,8 +40,8 @@ public class BreakableMirror extends Mirror {
     }
     
     @Override
-    protected void writeCustomDataToTag(CompoundNBT tag) {
-        super.writeCustomDataToTag(tag);
+    protected void writeAdditional(CompoundNBT tag) {
+        super.writeAdditional(tag);
         tag.putInt("boxXL", wallArea.l.getX());
         tag.putInt("boxYL", wallArea.l.getY());
         tag.putInt("boxZL", wallArea.l.getZ());
@@ -73,7 +54,7 @@ public class BreakableMirror extends Mirror {
     public void tick() {
         super.tick();
         if (!world.isRemote) {
-            if (world.getTime() % 50 == getEntityId() % 50) {
+            if (world.getGameTime() % 50 == getEntityId() % 50) {
                 checkWallIntegrity();
             }
         }
@@ -125,7 +106,7 @@ public class BreakableMirror extends Mirror {
         ).add(
             0.5, 0.5, 0.5
         ).add(
-            new Vec3d(facing.getVector()).scale(0.5)
+            new Vec3d(facing.getDirectionVec()).scale(0.5)
         );
         breakableMirror.setPosition(
             pos.x, pos.y, pos.z
@@ -134,27 +115,31 @@ public class BreakableMirror extends Mirror {
         breakableMirror.dimensionTo = world.dimension.getType();
         
         Tuple<Direction.Axis, Direction.Axis> axises = Helper.getAnotherTwoAxis(facing.getAxis());
-        if (facing.getDirection() == Direction.AxisDirection.NEGATIVE) {
-            axises = new Tuple<>(axises.getRight(), axises.getLeft());
+        if (facing.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
+            axises = new Tuple<>(axises.getA(), axises.getB());
         }
-        
-        Direction.Axis wAxis = axises.getLeft();
-        Direction.Axis hAxis = axises.getRight();
+    
+        Direction.Axis wAxis = axises.getA();
+        Direction.Axis hAxis = axises.getB();
         float width = Helper.getCoordinate(wallArea.getSize(), wAxis);
         int height = Helper.getCoordinate(wallArea.getSize(), hAxis);
         
         breakableMirror.axisW = new Vec3d(
-            Direction.get(Direction.AxisDirection.POSITIVE, wAxis).getVector()
-        );
+            Direction.getFacingFromAxisDirection(
+                wAxis,
+                Direction.AxisDirection.POSITIVE
+            ).getDirectionVec()
+        ).scale(width);
         breakableMirror.axisH = new Vec3d(
-            Direction.get(Direction.AxisDirection.POSITIVE, hAxis).getVector()
-        );
-        breakableMirror.width = width;
-        breakableMirror.height = height;
+            Direction.getFacingFromAxisDirection(
+                hAxis,
+                Direction.AxisDirection.POSITIVE
+            ).getDirectionVec()
+        ).scale(height);
         
         breakableMirror.wallArea = wallArea;
-        
-        world.spawnEntity(breakableMirror);
+    
+        world.addEntity(breakableMirror);
         
         return breakableMirror;
     }

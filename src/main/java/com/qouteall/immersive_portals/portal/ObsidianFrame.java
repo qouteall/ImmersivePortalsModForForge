@@ -31,8 +31,8 @@ public class ObsidianFrame {
         );
         
         return boxInsideObsidianFrame
-            .getExpanded(anotherTwoAxis.getLeft(), 1)
-            .getExpanded(anotherTwoAxis.getRight(), 1);
+            .getExpanded(anotherTwoAxis.getA(), 1)
+            .getExpanded(anotherTwoAxis.getB(), 1);
     }
     
     public static IntegerAABBInclusive shrinkToExcludeObsidianBlocks(
@@ -44,8 +44,8 @@ public class ObsidianFrame {
         );
         
         return boxInsideObsidianFrame
-            .getExpanded(anotherTwoAxis.getLeft(), -1)
-            .getExpanded(anotherTwoAxis.getRight(), -1);
+            .getExpanded(anotherTwoAxis.getA(), -1)
+            .getExpanded(anotherTwoAxis.getB(), -1);
     }
     
     public CompoundNBT toTag() {

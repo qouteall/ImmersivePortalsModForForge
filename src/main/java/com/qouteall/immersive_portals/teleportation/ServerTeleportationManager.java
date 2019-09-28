@@ -1,18 +1,18 @@
 package com.qouteall.immersive_portals.teleportation;
 
+import com.immersive_portals.network.NetworkMain;
+import com.immersive_portals.network.StcDimensionConfirm;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.MyNetwork;
 import com.qouteall.immersive_portals.exposer.IEServerPlayNetworkHandler;
 import com.qouteall.immersive_portals.exposer.IEServerPlayerEntity;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.play.server.SCustomPayloadPlayPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -46,7 +46,7 @@ public class ServerTeleportationManager {
         int portalId
     ) {
         Entity portalEntity = Helper.getServer()
-            .getWorld(dimensionBefore).getEntityById(portalId);
+            .getWorld(dimensionBefore).getEntityByID(portalId);
         lastTeleportGameTime.put(player, Helper.getServerGameTime());
         
         if (canPlayerTeleport(player, dimensionBefore, posBefore, portalEntity)) {
@@ -64,7 +64,7 @@ public class ServerTeleportationManager {
         else {
             Helper.err(String.format(
                 "Player cannot teleport through portal %s %s %s %s",
-                player.getName().asString(),
+                player.getName().getFormattedText(),
                 player.dimension,
                 player.getPositionVec(),
                 portalId
@@ -81,7 +81,7 @@ public class ServerTeleportationManager {
         return canPlayerReachPos(player, dimensionBefore, posBefore) &&
             portalEntity instanceof Portal &&
             isClose(posBefore, portalEntity.getPositionVec()) &&
-            !player.hasVehicle();
+            !player.isPassenger();
     }
     
     private boolean canPlayerReachPos(
@@ -100,7 +100,7 @@ public class ServerTeleportationManager {
     }
     
     private static boolean isClose(Vec3d a, Vec3d b) {
-        return a.squaredDistanceTo(b) < 15 * 15;
+        return a.squareDistanceTo(b) < 15 * 15;
     }
     
     private void teleportPlayer(
@@ -120,7 +120,7 @@ public class ServerTeleportationManager {
         }
     
         ((IEServerPlayerEntity) player).setIsInTeleportationState(true);
-        player.connection.syncWithPlayerPosition();
+        player.connection.captureCurrentPosition();
     }
     
     /**
@@ -132,7 +132,7 @@ public class ServerTeleportationManager {
         ServerWorld toWorld,
         Vec3d destination
     ) {
-        BlockPos oldPos = player.getBlockPos();
+        BlockPos oldPos = player.getPosition();
         
         teleportingEntities.add(player);
     
@@ -148,11 +148,11 @@ public class ServerTeleportationManager {
         
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
-        toWorld.respawnPlayer(player);
-        
-        toWorld.checkChunk(player);
-        
-        Helper.getServer().getPlayerManager().sendWorldInfo(
+        toWorld.addRespawnedPlayer(player);
+    
+        toWorld.chunkCheck(player);
+    
+        Helper.getServer().getPlayerList().sendWorldInfo(
             player, toWorld
         );
         
@@ -160,11 +160,11 @@ public class ServerTeleportationManager {
     
         Helper.log(String.format(
             "%s teleported from %s %s to %s %s",
-            player.getName().asString(),
+            player.getName().getFormattedText(),
             fromWorld.dimension.getType(),
             oldPos,
             toWorld.dimension.getType(),
-            player.getBlockPos()
+            player.getPosition()
         ));
     
         //this is used for the advancement of "we need to go deeper"
@@ -177,12 +177,9 @@ public class ServerTeleportationManager {
     }
     
     private void sendPositionConfirmMessage(ServerPlayerEntity player) {
-        SCustomPayloadPlayPacket packet = MyNetwork.createStcDimensionConfirm(
-            player.dimension,
-            player.getPositionVec()
-        );
-        
-        player.connection.sendPacket(packet);
+        NetworkMain.sendToPlayer(player, new StcDimensionConfirm(
+            player.dimension, player.getPositionVec()
+        ));
     }
     
     private void tick() {
@@ -215,7 +212,7 @@ public class ServerTeleportationManager {
         assert entity.dimension == portal.dimension;
         assert !(entity instanceof ServerPlayerEntity);
     
-        if (entity.hasVehicle() || !entity.getPassengerList().isEmpty()) {
+        if (entity.isPassenger() || !entity.getPassengers().isEmpty()) {
             return;
         }
         
@@ -259,6 +256,8 @@ public class ServerTeleportationManager {
         
         entity.world = toWorld;
         entity.dimension = toDimension;
-        toWorld.method_18769(entity);
+    
+        //this is important
+        toWorld.func_217460_e(entity);
     }
 }

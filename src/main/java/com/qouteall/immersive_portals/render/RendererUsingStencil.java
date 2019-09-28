@@ -31,7 +31,7 @@ public class RendererUsingStencil extends PortalRenderer {
     }
     
     private void doPortalRendering() {
-        mc.getProfiler().swap("render_portal_total");
+        mc.getProfiler().endStartSection("render_portal_total");
         renderPortals();
         if (!isRendering()) {
             myFinishRendering();
@@ -80,13 +80,13 @@ public class RendererUsingStencil extends PortalRenderer {
     protected void doRenderPortal(Portal portal) {
         int outerPortalStencilValue = getPortalLayer();
     
-        RenderHelper.setupCameraTransformation();
+        MyRenderHelper.setupCameraTransformation();
     
-        mc.getProfiler().push("render_view_area");
+        mc.getProfiler().startSection("render_view_area");
         boolean anySamplePassed = QueryManager.renderAndGetDoesAnySamplePassed(() -> {
             renderPortalViewAreaToStencil(portal);
         });
-        mc.getProfiler().pop();
+        mc.getProfiler().endSection();
         
         if (!anySamplePassed) {
             return;
@@ -97,14 +97,14 @@ public class RendererUsingStencil extends PortalRenderer {
         
         int thisPortalStencilValue = outerPortalStencilValue + 1;
     
-        mc.getProfiler().push("clear_depth_of_view_area");
+        mc.getProfiler().startSection("clear_depth_of_view_area");
         clearDepthOfThePortalViewArea(portal);
-        mc.getProfiler().pop();
+        mc.getProfiler().endSection();
         
         manageCameraAndRenderPortalContent(portal);
         
         //the world rendering will modify the transformation
-        RenderHelper.setupCameraTransformation();
+        MyRenderHelper.setupCameraTransformation();
         
         restoreDepthOfPortalViewArea(portal);
         
@@ -189,7 +189,7 @@ public class RendererUsingStencil extends PortalRenderer {
         //the pixel's depth will be 1, which is the furthest
         GL11.glDepthRange(1, 1);
     
-        RenderHelper.renderScreenTriangle();
+        MyRenderHelper.renderScreenTriangle();
         //drawPortalViewTriangle(partialTicks, portal);
         
         //retrieve the state
@@ -243,8 +243,8 @@ public class RendererUsingStencil extends PortalRenderer {
         GL11.glColorMask(false, false, false, false);
         
         GlStateManager.disableDepthTest();
-        
-        RenderHelper.renderScreenTriangle();
+    
+        MyRenderHelper.renderScreenTriangle();
         
         GL11.glDepthMask(true);
         
@@ -262,7 +262,7 @@ public class RendererUsingStencil extends PortalRenderer {
         
         //TODO maybe should update fog color here?
     
-        RenderHelper.setupCameraTransformation();
+        MyRenderHelper.setupCameraTransformation();
         
         renderPortalViewAreaToStencil(portal);
     }

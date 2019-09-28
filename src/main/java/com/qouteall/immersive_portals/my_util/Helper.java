@@ -144,7 +144,7 @@ public class Helper {
     }
     
     public static <A, B> Tuple<B, A> swaped(Tuple<A, B> p) {
-        return new Tuple<>(p.getRight(), p.getLeft());
+        return new Tuple<>(p.getB(), p.getA());
     }
     
     public static <T> T uniqueOfThree(T a, T b, T c) {
@@ -202,16 +202,16 @@ public class Helper {
         );
         return new Direction[]{
             Direction.get(
-                Direction.AxisDirection.NEGATIVE, anotherTwoAxis.getLeft()
+                Direction.AxisDirection.NEGATIVE, anotherTwoAxis.getA()
             ),
             Direction.get(
-                Direction.AxisDirection.POSITIVE, anotherTwoAxis.getLeft()
+                Direction.AxisDirection.POSITIVE, anotherTwoAxis.getA()
             ),
             Direction.get(
-                Direction.AxisDirection.NEGATIVE, anotherTwoAxis.getRight()
+                Direction.AxisDirection.NEGATIVE, anotherTwoAxis.getB()
             ),
             Direction.get(
-                Direction.AxisDirection.POSITIVE, anotherTwoAxis.getRight()
+                Direction.AxisDirection.POSITIVE, anotherTwoAxis.getB()
             )
         };
     }

@@ -10,12 +10,12 @@ public class LoadingIndicatorRenderer extends EntityRenderer<LoadingIndicatorEnt
     }
     
     @Override
-    protected ResourceLocation getTexture(LoadingIndicatorEntity var1) {
+    protected ResourceLocation getEntityTexture(LoadingIndicatorEntity var1) {
         return null;
     }
     
     @Override
-    public void render(
+    public void doRender(
         LoadingIndicatorEntity entity_1,
         double double_1,
         double double_2,
@@ -23,6 +23,6 @@ public class LoadingIndicatorRenderer extends EntityRenderer<LoadingIndicatorEnt
         float float_1,
         float float_2
     ) {
-        this.renderLabel(entity_1, "Loading", double_1, double_2, double_3, 64);
+        this.renderEntityName(entity_1, double_1, double_2, double_3, "Loading", 64);
     }
 }

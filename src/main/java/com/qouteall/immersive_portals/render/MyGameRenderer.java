@@ -8,26 +8,16 @@ import com.qouteall.immersive_portals.exposer.IEGameRenderer;
 import com.qouteall.immersive_portals.exposer.IEPlayerListEntry;
 import com.qouteall.immersive_portals.exposer.IEWorldRenderer;
 import com.qouteall.immersive_portals.my_util.Helper;
-import com.qouteall.immersive_portals.optifine_compatibility.IEOFWorldRenderer;
-import com.qouteall.immersive_portals.optifine_compatibility.OFHelper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
-import net.minecraft.client.render.*;
-import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.renderer.FogRenderer;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.ViewFrustum;
-import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameType;
-import net.optifine.shaders.Shaders;
 import org.lwjgl.opengl.GL11;
 
 import java.util.List;
@@ -48,7 +38,7 @@ public class MyGameRenderer {
     ) {
         ViewFrustum chunkRenderDispatcher =
             ((IEWorldRenderer) newWorldRenderer).getChunkRenderDispatcher();
-        chunkRenderDispatcher.updateCameraPosition(
+        chunkRenderDispatcher.updateChunkPositions(
             mc.player.posX, mc.player.posZ
         );
         
@@ -63,30 +53,30 @@ public class MyGameRenderer {
         ClientWorld oldWorld = mc.world;
         LightTexture oldLightmap = ieGameRenderer.getLightmapTextureManager();
         FogRenderer oldFogRenderer = ieGameRenderer.getBackgroundRenderer();
-        GameType oldGameMode = playerListEntry.getGameMode();
+        GameType oldGameMode = playerListEntry.getGameType();
         boolean oldNoClip = mc.player.noClip;
         boolean oldDoRenderHand = ieGameRenderer.getDoRenderHand();
         List oldChunkInfos = ((IEWorldRenderer) mc.worldRenderer).getChunkInfos();
         IEChunkRenderList oldChunkRenderList =
             (IEChunkRenderList) ((IEWorldRenderer) oldWorldRenderer).getChunkRenderList();
         //List<ChunkRenderer> oldChunkRenderers = oldChunkRenderList.getChunkRenderers();
-    
-        if (CGlobal.isOptifinePresent) {
-            /**{@link WorldRenderer#chunkInfos}*/
-            //in vanilla it will create new chunkInfos object every frame
-            //but with optifine it will always use one object
-            //we need to switch chunkInfos correctly
-            //if we do not put it a new object, it will clear the original chunkInfos
-            ((IEOFWorldRenderer) newWorldRenderer).createNewRenderInfosNormal();
-        }
+
+//        if (CGlobal.isOptifinePresent) {
+//            /**{@link WorldRenderer#chunkInfos}*/
+//            //in vanilla it will create new chunkInfos object every frame
+//            //but with optifine it will always use one object
+//            //we need to switch chunkInfos correctly
+//            //if we do not put it a new object, it will clear the original chunkInfos
+//            ((IEOFWorldRenderer) newWorldRenderer).createNewRenderInfosNormal();
+//        }
         
         //switch
         mc.worldRenderer = newWorldRenderer;
         mc.world = newWorld;
         ieGameRenderer.setBackgroundRenderer(helper.fogRenderer);
         ieGameRenderer.setLightmapTextureManager(helper.lightmapTexture);
-        helper.lightmapTexture.update(0);
-        helper.lightmapTexture.enable();
+        helper.lightmapTexture.updateLightmap(0);
+        helper.lightmapTexture.enableLightmap();
         TileEntityRendererDispatcher.instance.world = newWorld;
         ((IEPlayerListEntry) playerListEntry).setGameMode(GameType.SPECTATOR);
         mc.player.noClip = true;
@@ -104,24 +94,24 @@ public class MyGameRenderer {
         //this is important
         GlStateManager.disableBlend();
         GlStateManager.shadeModel(GL11.GL_SMOOTH);
-        RenderHelper.disable();
+        RenderHelper.disableStandardItemLighting();
         ((GameRenderer) ieGameRenderer).disableLightmap();
-        
-        mc.getProfiler().push("render_portal_content");
+    
+        mc.getProfiler().startSection("render_portal_content");
     
         CGlobal.switchedFogRenderer = ieGameRenderer.getBackgroundRenderer();
         
         //invoke it!
-        if (OFHelper.getIsUsingShader()) {
-            Shaders.activeProgram = Shaders.ProgramNone;
-            Shaders.beginRender(mc, mc.gameRenderer.getCamera(), partialTicks, 0);
-        }
+//        if (OFHelper.getIsUsingShader()) {
+//            Shaders.activeProgram = Shaders.ProgramNone;
+//            Shaders.beginRender(mc, mc.gameRenderer.getActiveRenderInfo, partialTicks, 0);
+//        }
         ieGameRenderer.renderCenter_(partialTicks, getChunkUpdateFinishTime());
-        if (OFHelper.getIsUsingShader()) {
-            Shaders.activeProgram = Shaders.ProgramNone;
-        }
-        
-        mc.getProfiler().pop();
+//        if (OFHelper.getIsUsingShader()) {
+//            Shaders.activeProgram = Shaders.ProgramNone;
+//        }
+    
+        mc.getProfiler().endSection();
     
         //recover
         mc.worldRenderer = oldWorldRenderer;
@@ -150,7 +140,7 @@ public class MyGameRenderer {
     public void startCulling() {
         //shaders does not compatible with glCullPlane
         //I have to modify shader code
-        if (CGlobal.useFrontCulling && !OFHelper.getIsUsingShader()) {
+        if (CGlobal.useFrontCulling /*&& !OFHelper.getIsUsingShader()*/) {
             GL11.glEnable(GL11.GL_CLIP_PLANE0);
         }
     }
@@ -158,9 +148,9 @@ public class MyGameRenderer {
     //NOTE the actual culling plane is related to current model view matrix
     public void updateCullingPlane() {
         clipPlaneEquation = calcClipPlaneEquation();
-        if (!OFHelper.getIsUsingShader()) {
+        //if (!OFHelper.getIsUsingShader()) {
             GL11.glClipPlane(GL11.GL_CLIP_PLANE0, clipPlaneEquation);
-        }
+        //}
     }
     
     private long getChunkUpdateFinishTime() {
@@ -175,7 +165,7 @@ public class MyGameRenderer {
         Vec3d planeNormal = portal.getNormal().scale(-1);
         
         Vec3d portalPos = portal.getPositionVec().subtract(
-            mc.gameRenderer.getCamera().getPositionVec()
+            mc.gameRenderer.getActiveRenderInfo().getProjectedView()
         );
         
         //equation: planeNormal * p + c > 0
@@ -197,9 +187,9 @@ public class MyGameRenderer {
     public void renderPlayerItselfIfNecessary() {
         if (CGlobal.renderer.shouldRenderPlayerItself()) {
             renderPlayerItself(
-                com.qouteall.immersive_portals.render.RenderHelper.originalPlayerPos,
-                com.qouteall.immersive_portals.render.RenderHelper.originalPlayerLastTickPos,
-                com.qouteall.immersive_portals.render.RenderHelper.partialTicks
+                MyRenderHelper.originalPlayerPos,
+                MyRenderHelper.originalPlayerLastTickPos,
+                MyRenderHelper.partialTicks
             );
         }
     }
@@ -208,21 +198,21 @@ public class MyGameRenderer {
         EntityRendererManager entityRenderDispatcher =
             ((IEWorldRenderer) mc.worldRenderer).getEntityRenderDispatcher();
         NetworkPlayerInfo playerListEntry = CHelper.getClientPlayerListEntry();
-        GameType originalGameMode = com.qouteall.immersive_portals.render.RenderHelper.originalGameMode;
+        GameType originalGameMode = MyRenderHelper.originalGameMode;
         
         Entity player = mc.renderViewEntity;
         assert player != null;
         
         Vec3d oldPos = player.getPositionVec();
         Vec3d oldLastTickPos = Helper.lastTickPosOf(player);
-        GameType oldGameMode = playerListEntry.getGameMode();
+        GameType oldGameMode = playerListEntry.getGameType();
         
         Helper.setPosAndLastTickPos(
             player, playerPos, playerLastTickPos
         );
         ((IEPlayerListEntry) playerListEntry).setGameMode(originalGameMode);
-        
-        entityRenderDispatcher.render(player, patialTicks, false);
+    
+        entityRenderDispatcher.renderEntityStatic(player, patialTicks, false);
         
         Helper.setPosAndLastTickPos(
             player, oldPos, oldLastTickPos

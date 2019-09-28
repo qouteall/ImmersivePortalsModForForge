@@ -1,12 +1,11 @@
 package com.immersive_portals;
 
-import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.registry.Registry;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -41,6 +40,8 @@ public class ModMainForge {
         
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
+    
+        NetherPortalEntity.init();
     }
     
     private void setup(final FMLCommonSetupEvent event) {
@@ -82,8 +83,12 @@ public class ModMainForge {
     public static class RegistryEvents {
         @SubscribeEvent
         public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
-            // register a new block here
-            LOGGER.info("HELLO from Register Block");
+            PortalPlaceholderBlock.instance.setRegistryName(
+                new ResourceLocation("immersive_portals", "portal_placeholder")
+            );
+            blockRegistryEvent.getRegistry().register(
+                PortalPlaceholderBlock.instance
+            );
         }
         
         @SubscribeEvent
@@ -95,6 +100,56 @@ public class ModMainForge {
                     1, 1
                 ).immuneToFire().build(
                     "immersive_portals:portal"
+                )
+            );
+    
+            event.getRegistry().register(
+                EntityType.Builder.create(
+                    NetherPortalEntity::new, EntityClassification.MISC
+                ).size(
+                    1, 1
+                ).immuneToFire().build(
+                    "immersive_portals:breakable_nether_portal"
+                )
+            );
+    
+            event.getRegistry().register(
+                EntityType.Builder.create(
+                    EndPortalEntity::new, EntityClassification.MISC
+                ).size(
+                    1, 1
+                ).immuneToFire().build(
+                    "immersive_portals:end_portal"
+                )
+            );
+    
+            event.getRegistry().register(
+                EntityType.Builder.create(
+                    Mirror::new, EntityClassification.MISC
+                ).size(
+                    1, 1
+                ).immuneToFire().build(
+                    "immersive_portals:mirror"
+                )
+            );
+    
+            event.getRegistry().register(
+                EntityType.Builder.create(
+                    BreakableMirror::new, EntityClassification.MISC
+                ).size(
+                    1, 1
+                ).immuneToFire().build(
+                    "immersive_portals:breakable_mirror"
+                )
+            );
+    
+            event.getRegistry().register(
+                EntityType.Builder.create(
+                    LoadingIndicatorEntity::new, EntityClassification.MISC
+                ).size(
+                    1, 1
+                ).immuneToFire().build(
+                    "immersive_portals:loading_indicator"
                 )
             );
         }

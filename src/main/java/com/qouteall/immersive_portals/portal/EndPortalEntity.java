@@ -1,32 +1,18 @@
 package com.qouteall.immersive_portals.portal;
 
-import net.fabricmc.fabric.api.entity.FabricEntityTypeBuilder;
 import net.minecraft.block.pattern.BlockPattern;
-import net.minecraft.entity.*;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 
 public class EndPortalEntity extends Portal {
     public static EntityType<EndPortalEntity> entityType;
-    
-    public static void init() {
-        entityType = Registry.register(
-            Registry.ENTITY_TYPE,
-            new ResourceLocation("immersive_portals", "end_portal"),
-            FabricEntityTypeBuilder.create(
-                EntityClassification.MISC,
-                (EntityType.IFactory<EndPortalEntity>) EndPortalEntity::new
-            ).size(
-                new EntitySize(1, 1, true)
-            ).setImmuneToFire().build()
-        );
-    }
     
     public EndPortalEntity(
         EntityType<?> entityType_1,
@@ -48,16 +34,13 @@ public class EndPortalEntity extends Portal {
         portal.destination = new Vec3d(0, 120, 0);
         
         portal.dimensionTo = DimensionType.THE_END;
-        
-        portal.axisW = new Vec3d(0, 0, 1);
-        portal.axisH = new Vec3d(1, 0, 0);
-        
-        portal.width = 3;
-        portal.height = 3;
+    
+        portal.axisW = new Vec3d(0, 0, 3);
+        portal.axisH = new Vec3d(3, 0, 0);
         
         portal.loadFewerChunks = false;
-        
-        world.spawnEntity(portal);
+    
+        world.addEntity(portal);
     }
     
     @Override

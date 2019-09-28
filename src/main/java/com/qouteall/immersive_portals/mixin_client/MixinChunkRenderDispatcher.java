@@ -5,7 +5,7 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.exposer.IEChunkRenderDispatcher;
 import com.qouteall.immersive_portals.my_util.Helper;
-import com.qouteall.immersive_portals.render.RenderHelper;
+import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.WorldRenderer;
@@ -232,7 +232,7 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
             if (CGlobal.renderer.isRendering()) {
                 if (
                     Minecraft.getInstance().renderViewEntity.dimension ==
-                        RenderHelper.originalPlayerDimension
+                        MyRenderHelper.originalPlayerDimension
                 ) {
                     ci.cancel();
                 }

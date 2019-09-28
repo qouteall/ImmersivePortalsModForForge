@@ -1,7 +1,6 @@
 package com.immersive_portals.network;
 
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.MyNetwork;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.exposer.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.exposer.IEClientWorld;

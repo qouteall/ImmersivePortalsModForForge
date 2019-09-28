@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.qouteall.immersive_portals.MyNetwork;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.exposer.IEEntityTracker;
@@ -161,7 +160,7 @@ public class MixinEntityTracker implements IEEntityTracker {
                     player,
                     new DimensionalChunkPos(
                         entity.dimension,
-                        new ChunkPos(entity.getBlockPos())
+                        new ChunkPos(entity.getPosition())
                     )
                 );
             if (isWatchedNow) {

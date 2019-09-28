@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.qouteall.immersive_portals.MyNetwork;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;

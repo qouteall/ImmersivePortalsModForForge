@@ -1,9 +1,6 @@
 package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.my_util.SignalBiArged;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.block.FabricBlockSettings;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
@@ -15,23 +12,21 @@ import net.minecraft.state.EnumProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.state.properties.BlockStateProperties;
 import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 
 import java.util.Random;
 
 public class PortalPlaceholderBlock extends Block {
     public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.AXIS;
-    public static final VoxelShape X_AABB = Block.createCuboidShape(
+    public static final VoxelShape X_AABB = Block.makeCuboidShape(
         6.0D,
         0.0D,
         0.0D,
@@ -39,7 +34,7 @@ public class PortalPlaceholderBlock extends Block {
         16.0D,
         16.0D
     );
-    public static final VoxelShape Y_AABB = Block.createCuboidShape(
+    public static final VoxelShape Y_AABB = Block.makeCuboidShape(
         0.0D,
         6.0D,
         0.0D,
@@ -47,7 +42,7 @@ public class PortalPlaceholderBlock extends Block {
         10.0D,
         16.0D
     );
-    public static final VoxelShape Z_AABB = Block.createCuboidShape(
+    public static final VoxelShape Z_AABB = Block.makeCuboidShape(
         0.0D,
         0.0D,
         6.0D,
@@ -60,22 +55,12 @@ public class PortalPlaceholderBlock extends Block {
     
     public static final PortalPlaceholderBlock instance =
         new PortalPlaceholderBlock(
-            FabricBlockSettings.of(Material.PORTAL)
-                .noCollision()
-                .sounds(SoundType.GLASS)
-                .strength(99999, 0)
-                .lightLevel(15)
-                .build()
+            Block.Properties.create(Material.PORTAL)
+                .doesNotBlockMovement()
+                .sound(SoundType.GLASS)
+                .hardnessAndResistance(99999, 0)
+                .lightValue(15)
         );
-    
-    public static void init() {
-        Registry.register(
-            Registry.BLOCK,
-            //the id is not appropriate because I did not implement end portal when making this block
-            new ResourceLocation("immersive_portals", "nether_portal_block"),
-            instance
-        );
-    }
     
     public PortalPlaceholderBlock(Properties properties) {
         super(properties);

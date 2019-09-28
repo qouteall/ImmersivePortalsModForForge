@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals;
 
-import com.qouteall.immersive_portals.render.RenderHelper;
+import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
 import net.minecraft.world.World;
@@ -19,7 +19,7 @@ public class CHelper {
     //NOTE this may not be reliable
     public static DimensionType getOriginalDimension() {
         if (CGlobal.renderer.isRendering()) {
-            return RenderHelper.originalPlayerDimension;
+            return MyRenderHelper.originalPlayerDimension;
         }
         else {
             return Minecraft.getInstance().player.dimension;

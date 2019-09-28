@@ -2,7 +2,6 @@ package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.Lists;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.MyNetwork;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.exposer.IEEntityTracker;

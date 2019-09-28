@@ -2,7 +2,6 @@ package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.optifine_compatibility.OFHelper;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.renderer.BufferBuilder;
@@ -116,9 +115,9 @@ public class ViewAreaRenderer {
     
     static private void putIntoVertex(BufferBuilder bufferBuilder, Vec3d pos, Vec3d fogColor) {
         bufferBuilder
-            .vertex(pos.x, pos.y, pos.z)
+            .pos(pos.x, pos.y, pos.z)
             .color((float) fogColor.x, (float) fogColor.y, (float) fogColor.z, 1.0f)
-            .next();
+            .endVertex();
     }
     
     //a d
@@ -157,19 +156,19 @@ public class ViewAreaRenderer {
         GlStateManager.disableLighting();
         
         GL11.glDisable(GL_CLIP_PLANE0);
-        
-        if (OFHelper.getIsUsingShader()) {
-            fogColor = Vec3d.ZERO;
-        }
+
+//        if (OFHelper.getIsUsingShader()) {
+//            fogColor = Vec3d.ZERO;
+//        }
         
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferbuilder = tessellator.getBufferBuilder();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
         buildPortalViewAreaTrianglesBuffer(
             fogColor,
             portal,
             bufferbuilder,
-            PortalRenderer.mc.gameRenderer.getCamera().getPositionVec(),
-            RenderHelper.partialTicks,
+            PortalRenderer.mc.gameRenderer.getActiveRenderInfo().getProjectedView(),
+            MyRenderHelper.partialTicks,
             portal instanceof Mirror ? -0.1F : 0.4F
         );
         

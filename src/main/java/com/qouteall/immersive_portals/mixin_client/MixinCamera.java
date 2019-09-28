@@ -3,7 +3,7 @@ package com.qouteall.immersive_portals.mixin_client;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.exposer.IECamera;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
-import com.qouteall.immersive_portals.render.RenderHelper;
+import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.entity.Entity;
@@ -103,7 +103,7 @@ public abstract class MixinCamera implements IECamera {
                 this.focusedEntity
             ));
             if (hitResult2.getType() != RayTraceResult.Type.MISS) {
-                Block hittedBlock = area.getBlockState(hitResult2.getBlockPos()).getBlock();
+                Block hittedBlock = area.getBlockState(hitResult2.getPosition()).getBlock();
                 if (hittedBlock == PortalPlaceholderBlock.instance) {
                     double double_2 = hitResult2.getPositionVec().distanceTo(this.pos);
                     if (double_2 < upperBound) {
@@ -127,6 +127,6 @@ public abstract class MixinCamera implements IECamera {
         float p_216772_5_,
         CallbackInfo ci
     ) {
-        RenderHelper.setupTransformationForMirror((ActiveRenderInfo) (Object) this);
+        MyRenderHelper.setupTransformationForMirror((ActiveRenderInfo) (Object) this);
     }
 }

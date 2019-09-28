@@ -22,7 +22,7 @@ public class SecondaryFrameBuffer {
         if (width != fb.framebufferWidth ||
             height != fb.framebufferHeight
         ) {
-            fb.resize(
+            fb.func_216492_b(
                 width, height, Minecraft.IS_RUNNING_ON_MAC
             );
             Helper.log("Deferred buffer resized");

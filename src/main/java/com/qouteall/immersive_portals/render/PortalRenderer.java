@@ -3,7 +3,6 @@ package com.qouteall.immersive_portals.render;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.my_util.Helper;
-import com.qouteall.immersive_portals.optifine_compatibility.OFHelper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -13,7 +12,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
-import net.optifine.shaders.Shaders;
 
 import java.util.Comparator;
 import java.util.List;
@@ -64,16 +62,16 @@ public abstract class PortalRenderer {
     
     public boolean shouldRenderPlayerItself() {
         return isRendering() &&
-            mc.renderViewEntity.dimension == RenderHelper.originalPlayerDimension &&
-            getRenderingPortal().canRenderEntityInsideMe(RenderHelper.originalPlayerPos);
+            mc.renderViewEntity.dimension == MyRenderHelper.originalPlayerDimension &&
+            getRenderingPortal().canRenderEntityInsideMe(MyRenderHelper.originalPlayerPos);
     }
     
     public boolean shouldRenderEntityNow(Entity entity) {
-        if (OFHelper.getIsUsingShader()) {
-            if (Shaders.isShadowPass) {
-                return true;
-            }
-        }
+//        if (OFHelper.getIsUsingShader()) {
+//            if (Shaders.isShadowPass) {
+//                return true;
+//            }
+//        }
         if (isRendering()) {
             return getRenderingPortal().canRenderEntityInsideMe(entity.getPositionVec());
         }
@@ -96,7 +94,7 @@ public abstract class PortalRenderer {
         }
         
         //do not use last tick pos
-        Vec3d thisTickEyePos = mc.renderViewEntity.getCameraPosVec(1);
+        Vec3d thisTickEyePos = mc.renderViewEntity.getEyePosition(1);
         if (!portal.isInFrontOfPortal(thisTickEyePos)) {
             return;
         }
@@ -113,14 +111,14 @@ public abstract class PortalRenderer {
     }
     
     private List<Portal> getPortalsNearbySorted() {
-        List<Portal> portalsNearby = mc.world.getEntities(
+        List<Portal> portalsNearby = mc.world.getEntitiesWithinAABB(
             Portal.class,
-            new AxisAlignedBB(mc.renderViewEntity.getBlockPos()).expand(portalRenderingRange.get())
+            new AxisAlignedBB(mc.renderViewEntity.getPosition()).grow(portalRenderingRange.get())
         );
         
         portalsNearby.sort(
             Comparator.comparing(portalEntity ->
-                portalEntity.getPositionVec().squaredDistanceTo(mc.renderViewEntity.getPositionVec())
+                portalEntity.getPositionVec().squareDistanceTo(mc.renderViewEntity.getPositionVec())
             )
         );
         return portalsNearby;
@@ -136,10 +134,10 @@ public abstract class PortalRenderer {
             return;
         }
     
-        RenderHelper.onBeginPortalWorldRendering(portalLayers);
+        MyRenderHelper.onBeginPortalWorldRendering(portalLayers);
         
         Entity cameraEntity = mc.renderViewEntity;
-        ActiveRenderInfo camera = mc.gameRenderer.getCamera();
+        ActiveRenderInfo camera = mc.gameRenderer.getActiveRenderInfo();
         
         assert cameraEntity.world == mc.world;
         
@@ -147,8 +145,8 @@ public abstract class PortalRenderer {
         Vec3d oldLastTickPos = Helper.lastTickPosOf(cameraEntity);
         DimensionType oldDimension = cameraEntity.dimension;
         ClientWorld oldWorld = ((ClientWorld) cameraEntity.world);
-        
-        Vec3d oldCameraPos = camera.getPositionVec();
+    
+        Vec3d oldCameraPos = camera.getProjectedView();
         
         Vec3d newPos = portal.applyTransformationToPoint(oldPos);
         Vec3d newLastTickPos = portal.applyTransformationToPoint(oldLastTickPos);
@@ -175,7 +173,7 @@ public abstract class PortalRenderer {
         //restore the transformation
         GlStateManager.enableDepthTest();
         GlStateManager.disableBlend();
-        RenderHelper.setupCameraTransformation();
+        MyRenderHelper.setupCameraTransformation();
     }
     
     protected void renderPortalContentWithContextSwitched(
@@ -190,7 +188,7 @@ public abstract class PortalRenderer {
         Helper.checkGlError();
         
         CGlobal.myGameRenderer.renderWorld(
-            RenderHelper.partialTicks, worldRenderer, destClientWorld, oldCameraPos
+            MyRenderHelper.partialTicks, worldRenderer, destClientWorld, oldCameraPos
         );
         
         Helper.checkGlError();

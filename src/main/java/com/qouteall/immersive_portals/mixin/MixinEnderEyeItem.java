@@ -32,7 +32,7 @@ public class MixinEnderEyeItem {
     
     private ActionResultType myUseOnBlock(ItemUseContext itemUsageContext) {
         World world = itemUsageContext.getWorld();
-        BlockPos blockPos = itemUsageContext.getBlockPos();
+        BlockPos blockPos = itemUsageContext.getPosition();
         BlockState blockState = world.getBlockState(blockPos);
         if (blockState.getBlock() == Blocks.END_PORTAL_FRAME &&
             !blockState.get(EndPortalFrameBlock.EYE)) {

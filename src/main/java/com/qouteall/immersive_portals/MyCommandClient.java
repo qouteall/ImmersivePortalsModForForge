@@ -10,9 +10,7 @@ import com.qouteall.immersive_portals.exposer.*;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.DimensionRenderHelper;
-import com.qouteall.immersive_portals.render.RenderHelper;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
+import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.FogRenderer;
@@ -20,14 +18,16 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.dimension.DimensionType;
-import net.optifine.shaders.Shaders;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.lang.ref.Reference;
 import java.util.List;
@@ -91,8 +91,8 @@ public class MyCommandClient {
                         context -> {
                             int chunkX = IntegerArgumentType.getInteger(context, "chunkX");
                             int chunkZ = IntegerArgumentType.getInteger(context, "chunkZ");
-                            ServerPlayerEntity player = context.getSource().getPlayer();
-                            Chunk chunk = Helper.getServer()
+                            ServerPlayerEntity player = context.getSource().asPlayer();
+                            IChunk chunk = Helper.getServer()
                                 .getWorld(player.dimension)
                                 .getChunk(
                                     chunkX, chunkZ,
@@ -189,7 +189,7 @@ public class MyCommandClient {
         builder = builder.then(Commands
             .literal("switch_to_normal_renderer")
             .executes(context -> {
-                MinecraftClient.getInstance().execute(() -> {
+                Minecraft.getInstance().execute(() -> {
                     CGlobal.renderer = CGlobal.rendererUsingStencil;
                 });
                 return 0;
@@ -198,7 +198,7 @@ public class MyCommandClient {
         builder = builder.then(Commands
             .literal("switch_to_compatibility_renderer")
             .executes(context -> {
-                MinecraftClient.getInstance().execute(() -> {
+                Minecraft.getInstance().execute(() -> {
                     CGlobal.renderer = CGlobal.rendererUsingFrameBuffer;
                 });
                 return 0;
@@ -207,10 +207,10 @@ public class MyCommandClient {
         builder = builder.then(Commands
             .literal("report_server_entities")
             .executes(context -> {
-                ServerPlayerEntity player = context.getSource().getPlayer();
-                List<Entity> entities = player.world.getEntities(
+                ServerPlayerEntity player = context.getSource().asPlayer();
+                List<Entity> entities = player.world.getEntitiesWithinAABB(
                     Entity.class,
-                    new Box(player.getBlockPos()).expand(32)
+                    new AxisAlignedBB(player.getPosition()).grow(32)
                 );
                 Helper.serverLog(player, entities.toString());
                 return 0;
@@ -224,27 +224,18 @@ public class MyCommandClient {
             .literal("report_render_info_num")
             .executes(context -> {
                 String str = Helper.myToString(CGlobal.renderInfoNumMap.entrySet().stream());
-                context.getSource().getPlayer().sendMessage(new LiteralText(str));
+                context.getSource().asPlayer().sendMessage(new StringTextComponent(str));
                 return 0;
             })
         );
         builder = builder.then(Commands
             .literal("rebuild_all")
             .executes(context -> {
-                MinecraftClient.getInstance().execute(() -> {
+                Minecraft.getInstance().execute(() -> {
                     ((IEChunkRenderDispatcher)
-                        ((IEWorldRenderer) MinecraftClient.getInstance().worldRenderer)
+                        ((IEWorldRenderer) Minecraft.getInstance().worldRenderer)
                             .getChunkRenderDispatcher()
                     ).rebuildAll();
-                });
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
-            .literal("uninit_shader_context")
-            .executes(context -> {
-                MinecraftClient.getInstance().execute(() -> {
-                    Shaders.uninit();
                 });
                 return 0;
             })
@@ -267,15 +258,15 @@ public class MyCommandClient {
             .literal("get_player_colliding_portal_client")
             .executes(context -> {
                 Portal collidingPortal =
-                    ((IEEntity) MinecraftClient.getInstance().player).getCollidingPortal();
-                Helper.serverLog(context.getSource().getPlayer(), collidingPortal.toString());
+                    ((IEEntity) Minecraft.getInstance().player).getCollidingPortal();
+                Helper.serverLog(context.getSource().asPlayer(), collidingPortal.toString());
                 return 0;
             })
         );
         builder = builder.then(Commands
             .literal("report_rendering")
             .executes(context -> {
-                String str = RenderHelper.lastPortalRenderInfos
+                String str = MyRenderHelper.lastPortalRenderInfos
                     .stream()
                     .map(
                         list -> list.stream()
@@ -284,7 +275,7 @@ public class MyCommandClient {
                     )
                     .collect(Collectors.toList())
                     .toString();
-                Helper.serverLog(context.getSource().getPlayer(), str);
+                Helper.serverLog(context.getSource().asPlayer(), str);
                 return 0;
             })
         );
@@ -338,8 +329,8 @@ public class MyCommandClient {
         String result = str.toString();
         
         Helper.log(str);
-        
-        context.getSource().getPlayer().sendMessage(new StringTextComponent(result));
+    
+        context.getSource().asPlayer().sendMessage(new StringTextComponent(result));
         
         return 0;
     }
@@ -352,7 +343,7 @@ public class MyCommandClient {
             str.append(String.format(
                 "%s %s\n",
                 world.dimension.getType(),
-                ((MyClientChunkManager) world.getChunkManager()).getChunkNum()
+                ((MyClientChunkManager) world.getChunkProvider()).getChunkNum()
             ));
         });
         
@@ -373,8 +364,8 @@ public class MyCommandClient {
         String result = str.toString();
         
         Helper.log(str);
-        
-        context.getSource().getPlayer().sendMessage(new StringTextComponent(result));
+    
+        context.getSource().asPlayer().sendMessage(new StringTextComponent(result));
         
         return 0;
     }
@@ -386,7 +377,7 @@ public class MyCommandClient {
             chunkX, chunkZ
         );
         Helper.serverLog(
-            context.getSource().getPlayer(),
+            context.getSource().asPlayer(),
             chunk != null && !(chunk instanceof EmptyChunk) ? "yes" : "no"
         );
         return 0;
@@ -398,7 +389,7 @@ public class MyCommandClient {
     }
     
     private static int listNearbyPortals(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity playerServer = context.getSource().getPlayer();
+        ServerPlayerEntity playerServer = context.getSource().asPlayer();
         ClientPlayerEntity playerClient = Minecraft.getInstance().player;
         
         Helper.serverLog(playerServer, "Server Portals");
@@ -430,30 +421,27 @@ public class MyCommandClient {
     static {
         originalAddPortalFunctionality = (player) -> {
             Vec3d fromPos = player.getPositionVec();
-            Vec3d fromNormal = player.getRotationVector().scale(-1);
+            Vec3d fromNormal = player.getLookVec().scale(-1);
             ServerWorld fromWorld = ((ServerWorld) player.world);
             
             addPortalFunctionality = (playerEntity) -> {
                 Vec3d toPos = playerEntity.getPositionVec();
                 DimensionType toDimension = player.dimension;
-                
-                Portal portal = new Portal(fromWorld);
+    
+                Portal portal = Portal.entityType.create(fromWorld);
                 portal.posX = fromPos.x;
                 portal.posY = fromPos.y;
                 portal.posZ = fromPos.z;
-                
-                portal.axisH = new Vec3d(0, 1, 0);
-                portal.axisW = portal.axisH.crossProduct(fromNormal).normalize();
+    
+                portal.axisH = new Vec3d(0, 4, 0);
+                portal.axisW = portal.axisH.crossProduct(fromNormal).normalize().scale(4);
                 
                 portal.dimensionTo = toDimension;
                 portal.destination = toPos;
                 
-                portal.width = 4;
-                portal.height = 4;
-                
                 assert portal.isPortalValid();
-                
-                fromWorld.spawnEntity(portal);
+    
+                fromWorld.addEntity(portal);
                 
                 addPortalFunctionality = originalAddPortalFunctionality;
             };
@@ -464,7 +452,7 @@ public class MyCommandClient {
     
     private static int addPortal(CommandContext<CommandSource> context) {
         try {
-            addPortalFunctionality.accept(context.getSource().getPlayer());
+            addPortalFunctionality.accept(context.getSource().asPlayer());
         }
         catch (CommandSyntaxException e) {
             e.printStackTrace();
@@ -474,17 +462,17 @@ public class MyCommandClient {
     
     private static int reportPlayerStatus(CommandContext<CommandSource> context) throws CommandSyntaxException {
         //only invoked on single player
-        
-        ServerPlayerEntity playerMP = context.getSource().getPlayer();
+    
+        ServerPlayerEntity playerMP = context.getSource().asPlayer();
         ClientPlayerEntity playerSP = Minecraft.getInstance().player;
         
         Helper.serverLog(
             playerMP,
-            "On Server " + playerMP.dimension + " " + playerMP.getBlockPos()
+            "On Server " + playerMP.dimension + " " + playerMP.getPosition()
         );
         Helper.serverLog(
             playerMP,
-            "On Client " + playerSP.dimension + " " + playerSP.getBlockPos()
+            "On Client " + playerSP.dimension + " " + playerSP.getPosition()
         );
         return 0;
     }

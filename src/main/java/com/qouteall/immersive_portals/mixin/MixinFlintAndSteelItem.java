@@ -22,13 +22,13 @@ public class MixinFlintAndSteelItem {
     ) {
         IWorld world = context.getWorld();
         if (!world.isClient()) {
-            BlockPos blockPos_1 = context.getBlockPos();
+            BlockPos blockPos_1 = context.getPosition();
             BlockPos firePos = blockPos_1.offset(context.getSide());
             NetherPortalGenerator.NetherPortalGeneratedInformation info =
                 NetherPortalGenerator.onFireLit(((ServerWorld) world), firePos);
             if (info == null) {
                 BreakableMirror.createMirror(
-                    ((ServerWorld) world), context.getBlockPos(), context.getSide()
+                    ((ServerWorld) world), context.getPosition(), context.getSide()
                 );
             }
         }

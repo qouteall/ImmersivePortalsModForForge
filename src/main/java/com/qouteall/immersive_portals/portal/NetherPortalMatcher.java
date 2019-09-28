@@ -120,7 +120,7 @@ public class NetherPortalMatcher {
                 facing -> innerArea.getSurfaceLayer(
                     facing
                 ).getMoved(
-                    facing.getVector()
+                    facing.getDirectionVec()
                 )
             ).allMatch(
                 box -> box.stream().allMatch(
@@ -136,13 +136,13 @@ public class NetherPortalMatcher {
         Tuple<Direction.Axis, Direction.Axis> anotherTwoAxis
     ) {
         IntegerAABBInclusive stick1 = detectStick(
-            world, innerPos, anotherTwoAxis.getLeft(),
+            world, innerPos, anotherTwoAxis.getA(),
             blockPos -> isAirOrFire(world, blockPos), 1
         );
         if (stick1 == null) return null;
         
         IntegerAABBInclusive stick2 = detectStick(
-            world, innerPos, anotherTwoAxis.getRight(),
+            world, innerPos, anotherTwoAxis.getB(),
             blockPos -> isAirOrFire(world, blockPos), 1
         );
         if (stick2 == null) return null;
@@ -167,7 +167,7 @@ public class NetherPortalMatcher {
         return IntStream.range(
             0,
             limit
-        ).mapToObj(num -> startPos.add(Helper.scale(facing.getVector(), num)));
+        ).mapToObj(num -> startPos.add(Helper.scale(facing.getDirectionVec(), num)));
     }
     
     //@Nullable
@@ -180,9 +180,9 @@ public class NetherPortalMatcher {
     ) {
         BlockPos lowExtremity = detectStickForOneDirection(
             center,
-            Direction.get(
-                Direction.AxisDirection.NEGATIVE,
-                axis
+            Direction.getFacingFromAxisDirection(
+                axis,
+                Direction.AxisDirection.NEGATIVE
             ),
             predicate
         );
@@ -192,9 +192,9 @@ public class NetherPortalMatcher {
         
         BlockPos highExtremity = detectStickForOneDirection(
             center,
-            Direction.get(
-                Direction.AxisDirection.POSITIVE,
-                axis
+            Direction.getFacingFromAxisDirection(
+                axis,
+                Direction.AxisDirection.POSITIVE
             ),
             predicate
         );
@@ -232,11 +232,11 @@ public class NetherPortalMatcher {
     }
     
     private static boolean isAir(IWorld world, BlockPos pos) {
-        return world.isAir(pos);
+        return world.isAirBlock(pos);
     }
     
     private static boolean isAirOrFire(IWorld world, BlockPos pos) {
-        return world.isAir(pos) || world.getBlockState(pos).getBlock() == Blocks.FIRE;
+        return world.isAirBlock(pos) || world.getBlockState(pos).getBlock() == Blocks.FIRE;
     }
     
     //------------------------------------------------------------
@@ -379,9 +379,9 @@ public class NetherPortalMatcher {
         IWorld world,
         BlockPos blockPos
     ) {
-        if (world.isAir(blockPos)) {
+        if (world.isAirBlock(blockPos)) {
             BlockPos belowPos = blockPos.add(0, -1, 0);
-            return !world.isAir(belowPos);
+            return !world.isAirBlock(belowPos);
         }
         
         return false;
@@ -430,13 +430,13 @@ public class NetherPortalMatcher {
         int findingRadius
     ) {
         Tuple<Direction.Axis, Direction.Axis> anotherTwoAxis = Helper.getAnotherTwoAxis(normalAxis);
-        Direction roughTestObsidianFace1 = Direction.get(
-            Direction.AxisDirection.POSITIVE,
-            anotherTwoAxis.getLeft()
+        Direction roughTestObsidianFace1 = Direction.getFacingFromAxisDirection(
+            anotherTwoAxis.getA(),
+            Direction.AxisDirection.POSITIVE
         );
-        Direction roughTestObsidianFace2 = Direction.get(
-            Direction.AxisDirection.POSITIVE,
-            anotherTwoAxis.getRight()
+        Direction roughTestObsidianFace2 = Direction.getFacingFromAxisDirection(
+            anotherTwoAxis.getB(),
+            Direction.AxisDirection.POSITIVE
         );
         
         Optional<ObsidianFrame> result =
@@ -467,14 +467,14 @@ public class NetherPortalMatcher {
         Direction obsidianFace1,
         Direction obsidianFace2
     ) {
-        return world.isAir(blockPos) &&
+        return world.isAirBlock(blockPos) &&
             isObsidian(
                 world,
-                blockPos.add(obsidianFace1.getVector())
+                blockPos.add(obsidianFace1.getDirectionVec())
             ) &&
             isObsidian(
                 world,
-                blockPos.add(obsidianFace2.getVector())
+                blockPos.add(obsidianFace2.getDirectionVec())
             );
     }
     

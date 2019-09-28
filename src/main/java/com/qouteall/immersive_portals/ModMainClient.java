@@ -1,12 +1,12 @@
 package com.qouteall.immersive_portals;
 
+import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
 import com.qouteall.immersive_portals.optifine_compatibility.OFHelper;
 import com.qouteall.immersive_portals.portal.*;
 import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.PortalRenderer;
-import com.qouteall.immersive_portals.render.RendererUsingFrameBuffer;
 import com.qouteall.immersive_portals.render.RendererUsingStencil;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
 import net.fabricmc.api.ClientModInitializer;
@@ -71,8 +71,8 @@ public class ModMainClient implements ClientModInitializer {
         initPortalRenderers();
         LoadingIndicatorEntity.initClient();
     
-        MyNetworkClient.init();
-    
+        NetworkMain.init();
+        
         Minecraft.getInstance().execute(() -> {
             CGlobal.rendererUsingStencil = new RendererUsingStencil();
             CGlobal.rendererUsingFrameBuffer = new RendererUsingFrameBuffer();

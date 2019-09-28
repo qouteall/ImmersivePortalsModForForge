@@ -1,14 +1,13 @@
 package com.qouteall.immersive_portals.teleportation;
 
+import com.immersive_portals.network.CtsTeleport;
+import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.MyNetworkClient;
 import com.qouteall.immersive_portals.exposer.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.exposer.IEClientWorld;
 import com.qouteall.immersive_portals.exposer.IEMinecraftClient;
 import com.qouteall.immersive_portals.my_util.Helper;
-import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
-import com.qouteall.immersive_portals.optifine_compatibility.OFHelper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
@@ -93,7 +92,7 @@ public class ClientTeleportationManager {
             return;
         }
     
-        if (mc.player.hasPassengers() || mc.player.hasVehicle()) {
+        if (mc.player.isBeingRidden() || mc.player.isPassenger()) {
             return;
         }
         
@@ -114,7 +113,7 @@ public class ClientTeleportationManager {
         player.setPosition(newPos.x, newPos.y, newPos.z);
         Helper.setPosAndLastTickPos(player, newPos, newLastTickPos);
     
-        player.connection.sendPacket(MyNetworkClient.createCtsTeleport(
+        NetworkMain.sendToServer(new CtsTeleport(
             fromDimension,
             oldPos,
             portal.getEntityId()
@@ -156,9 +155,6 @@ public class ClientTeleportationManager {
         amendChunkEntityStatus(player);
     }
     
-    /**
-     * {@link ClientPlayNetworkHandler#onPlayerRespawn(PlayerRespawnS2CPacket)}
-     */
     private void changePlayerDimension(
         ClientPlayerEntity player, ClientWorld fromWorld, ClientWorld toWorld, Vec3d destination
     ) {
@@ -170,7 +166,7 @@ public class ClientTeleportationManager {
         ((IEClientWorld) fromWorld).setNetHandler(fakedNetHandler);
         ((IEClientWorld) toWorld).setNetHandler(workingNetHandler);
     
-        fromWorld.removeEntity(player.getEntityId());
+        fromWorld.removeEntityFromWorld(player.getEntityId());
         player.removed = false;
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
@@ -186,7 +182,7 @@ public class ClientTeleportationManager {
         toWorld.setScoreboard(fromWorld.getScoreboard());
     
         if (mc.particles != null)
-            mc.particles.setWorld(toWorld);
+            mc.particles.clearEffects(toWorld);
     
         TileEntityRendererDispatcher.instance.setWorld(toWorld);
     
@@ -204,17 +200,17 @@ public class ClientTeleportationManager {
         Helper.log("Portal Number Near Player Now" +
             Helper.getEntitiesNearby(mc.player, Portal.class, 10).count()
         );
-    
-        if (OFHelper.getIsUsingShader()) {
-            OFGlobal.shaderContextManager.onPlayerTraveled(
-                fromWorld.dimension.getType(),
-                toWorld.dimension.getType()
-            );
-        }
+
+//        if (OFHelper.getIsUsingShader()) {
+//            OFGlobal.shaderContextManager.onPlayerTraveled(
+//                fromWorld.dimension.getType(),
+//                toWorld.dimension.getType()
+//            );
+//        }
     }
     
     private void amendChunkEntityStatus(Entity entity) {
-        Chunk worldChunk1 = entity.world.getWorldChunk(entity.getBlockPos());
+        Chunk worldChunk1 = entity.world.getChunkAt(entity.getPosition());
         IChunk chunk2 = entity.world.getChunk(entity.chunkCoordX, entity.chunkCoordZ);
         removeEntityFromChunk(entity, worldChunk1);
         if (chunk2 instanceof Chunk) {
@@ -224,7 +220,7 @@ public class ClientTeleportationManager {
     }
     
     private void removeEntityFromChunk(Entity entity, Chunk worldChunk) {
-        for (ClassInheritanceMultiMap<Entity> section : worldChunk.getEntitySectionArray()) {
+        for (ClassInheritanceMultiMap<Entity> section : worldChunk.getEntityLists()) {
             section.remove(entity);
         }
     }
@@ -238,14 +234,14 @@ public class ClientTeleportationManager {
                 changePlayerDimension(mc.player, mc.world, toWorld, playerPos);
             }
             mc.player.setPosition(playerPos.x, playerPos.y, playerPos.z);
-            mc.openScreen(null);
+            mc.displayGuiScreen(null);
         }
     }
     
     //if player is falling through looping portals, make it slower
     private void slowDownIfTooFast(ClientPlayerEntity player) {
-        if (player.getVelocity().length() > 1) {
-            player.setVelocity(player.getVelocity().scale(0.5));
+        if (player.getMotion().length() > 1) {
+            player.setMotion(player.getMotion().scale(0.5));
         }
     }
 }

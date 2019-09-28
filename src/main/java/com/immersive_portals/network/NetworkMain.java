@@ -1,25 +1,56 @@
 package com.immersive_portals.network;
 
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 
 public class NetworkMain {
-    private static final String PROTOCOL_VERSION = "1";
-    public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
+    private static final String protocol_version = "1";
+    public static final SimpleChannel channel = NetworkRegistry.newSimpleChannel(
         new ResourceLocation("immersive_portals", "main"),
-        () -> PROTOCOL_VERSION,
-        PROTOCOL_VERSION::equals,
-        PROTOCOL_VERSION::equals
+        () -> protocol_version,
+        protocol_version::equals,
+        protocol_version::equals
     );
     
-    public static void init(){
-        INSTANCE.registerMessage(
+    public static void init() {
+        channel.registerMessage(
             0,
             StcRedirected.class,
             StcRedirected::encode,
             StcRedirected::new,
             StcRedirected::handle
         );
+        channel.registerMessage(
+            1,
+            StcDimensionConfirm.class,
+            StcDimensionConfirm::encode,
+            StcDimensionConfirm::new,
+            StcDimensionConfirm::handle
+        );
+        channel.registerMessage(
+            2,
+            StcSpawnLoadingIndicator.class,
+            StcSpawnLoadingIndicator::encode,
+            StcSpawnLoadingIndicator::new,
+            StcSpawnLoadingIndicator::handle
+        );
+        channel.registerMessage(
+            3,
+            CtsTeleport.class,
+            CtsTeleport::encode,
+            CtsTeleport::new,
+            CtsTeleport::handle
+        );
+    }
+    
+    public static <T> void sendToServer(T t) {
+        channel.sendToServer(t);
+    }
+    
+    public static <T> void sendToPlayer(ServerPlayerEntity player, T t) {
+        channel.send(PacketDistributor.PLAYER.with(() -> player), t);
     }
 }

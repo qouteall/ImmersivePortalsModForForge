@@ -2,7 +2,6 @@ package com.qouteall.immersive_portals.chunk_loading;
 
 import com.mojang.datafixers.util.Either;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.MyNetwork;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.exposer.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.my_util.Helper;
@@ -12,12 +11,13 @@ import net.minecraft.network.play.server.SUnloadChunkPacket;
 import net.minecraft.network.play.server.SUpdateLightPacket;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkHolder;
-import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.chunk.ServerChunkProvider;
+import net.minecraft.world.server.ChunkHolder;
+import net.minecraft.world.server.ChunkManager;
+import net.minecraft.world.server.ServerChunkProvider;
+
 import java.util.concurrent.CompletableFuture;
 
 //the chunks near player are managed by vanilla
@@ -65,7 +65,7 @@ public class ChunkDataSyncManager {
         IEThreadedAnvilChunkStorage ieStorage
     ) {
         ModMain.serverTaskList.addTask(() -> {
-            ChunkHolder chunkHolder = ieStorage.getChunkHolder_(chunkPos.getChunkPos().toLong());
+            ChunkHolder chunkHolder = ieStorage.getChunkHolder_(chunkPos.getChunkPos().asLong());
             if (chunkHolder == null) {
                 //TODO cleanup it
                 SGlobal.chunkTracker.setIsLoadedByPortal(
@@ -75,8 +75,9 @@ public class ChunkDataSyncManager {
                 );
                 return false;
             }
-            
-            CompletableFuture<Either<IChunk, ChunkHolder.IChunkLoadingError>> future = chunkHolder.createFuture(
+    
+            //create future
+            CompletableFuture<Either<IChunk, ChunkHolder.IChunkLoadingError>> future = chunkHolder.func_219276_a(
                 ChunkStatus.FULL,
                 ((ChunkManager) ieStorage)
             );
@@ -129,10 +130,9 @@ public class ChunkDataSyncManager {
                 )
             )
         );
-        
-        //this is to update the entity trackers
-        //performance may be slowed down
-        ((ChunkManager) ieStorage).updateCameraPosition(player);
+    
+        //update the entity trackers
+        ((ServerChunkProvider) ieStorage).updatePlayerPosition(player);
     }
     
     private void onEndWatch(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
@@ -173,7 +173,7 @@ public class ChunkDataSyncManager {
         
         Helper.getServer().getWorlds()
             .forEach(world -> {
-                ServerChunkProvider chunkManager = (ServerChunkProvider) world.getChunkManager();
+                ServerChunkProvider chunkManager = (ServerChunkProvider) world.getChunkProvider();
                 IEThreadedAnvilChunkStorage storage =
                     (IEThreadedAnvilChunkStorage) chunkManager.chunkManager;
                 storage.onPlayerRespawn(oldPlayer);
@@ -192,8 +192,8 @@ public class ChunkDataSyncManager {
         
         //NOTE do not use entity.chunkX
         //it's not updated
-        
-        ChunkPos playerChunkPos = new ChunkPos(player.getBlockPos());
+    
+        ChunkPos playerChunkPos = new ChunkPos(player.getPosition());
         
         int chebyshevDistance = Math.max(
             Math.abs(playerChunkPos.x - chunkPos.x),
