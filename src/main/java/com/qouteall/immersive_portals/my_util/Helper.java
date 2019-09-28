@@ -10,10 +10,10 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.*;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.ServerChunkProvider;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerChunkProvider;
+import net.minecraft.world.server.ServerWorld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.BufferUtils;
@@ -129,18 +129,18 @@ public class Helper {
     }
     
     public static Vec3i getUnitFromAxis(Direction.Axis axis) {
-        return Direction.get(
-            Direction.AxisDirection.POSITIVE,
-            axis
-        ).getVector();
+        return Direction.getFacingFromAxisDirection(
+            axis,
+            Direction.AxisDirection.POSITIVE
+        ).getDirectionVec();
     }
     
     public static int getCoordinate(Vec3i v, Direction.Axis axis) {
-        return axis.choose(v.getX(), v.getY(), v.getZ());
+        return axis.getCoordinate(v.getX(), v.getY(), v.getZ());
     }
     
     public static double getCoordinate(Vec3d v, Direction.Axis axis) {
-        return axis.choose(v.x, v.y, v.z);
+        return axis.getCoordinate(v.x, v.y, v.z);
     }
     
     public static <A, B> Tuple<B, A> swaped(Tuple<A, B> p) {
@@ -201,24 +201,24 @@ public class Helper {
             axisOfNormal
         );
         return new Direction[]{
-            Direction.get(
-                Direction.AxisDirection.NEGATIVE, anotherTwoAxis.getA()
+            Direction.getFacingFromAxisDirection(
+                anotherTwoAxis.getA(), Direction.AxisDirection.NEGATIVE
             ),
-            Direction.get(
-                Direction.AxisDirection.POSITIVE, anotherTwoAxis.getA()
+            Direction.getFacingFromAxisDirection(
+                anotherTwoAxis.getA(), Direction.AxisDirection.POSITIVE
             ),
-            Direction.get(
-                Direction.AxisDirection.NEGATIVE, anotherTwoAxis.getB()
+            Direction.getFacingFromAxisDirection(
+                anotherTwoAxis.getB(), Direction.AxisDirection.NEGATIVE
             ),
-            Direction.get(
-                Direction.AxisDirection.POSITIVE, anotherTwoAxis.getB()
+            Direction.getFacingFromAxisDirection(
+                anotherTwoAxis.getB(), Direction.AxisDirection.POSITIVE
             )
         };
     }
     
     public static IEThreadedAnvilChunkStorage getIEStorage(DimensionType dimension) {
         return (IEThreadedAnvilChunkStorage) (
-            (ServerChunkProvider) Helper.getServer().getWorld(dimension).getChunkManager()
+            (ServerChunkProvider) Helper.getServer().getWorld(dimension).getChunkProvider()
         ).chunkManager;
     }
     
@@ -238,7 +238,7 @@ public class Helper {
     }
     
     public static ArrayList<ServerPlayerEntity> getCopiedPlayerList() {
-        return new ArrayList<>(getServer().getPlayerManager().getPlayerList());
+        return new ArrayList<>(getServer().getPlayerList().getPlayers());
     }
     
     public static class SimpleBox<T> {
@@ -463,8 +463,8 @@ public class Helper {
         Class<ENTITY> entityClass,
         double range
     ) {
-        AxisAlignedBB box = new AxisAlignedBB(center, center).expand(range);
-        return (Stream) world.getEntities(entityClass, box).stream();
+        AxisAlignedBB box = new AxisAlignedBB(center, center).grow(range);
+        return (Stream) world.getEntitiesWithinAABB(entityClass, box).stream();
     }
     
     public static <ENTITY extends Entity> Stream<ENTITY> getEntitiesNearby(
@@ -482,8 +482,8 @@ public class Helper {
     
     public static AxisAlignedBB getChunkBoundingBox(ChunkPos chunkPos) {
         return new AxisAlignedBB(
-            chunkPos.getCenterBlockPos(),
-            chunkPos.getCenterBlockPos().add(16, 256, 16)
+            chunkPos.asBlockPos(),
+            chunkPos.asBlockPos().add(16, 256, 16)
         );
     }
     
@@ -506,7 +506,7 @@ public class Helper {
     }
     
     public static long getServerGameTime() {
-        return getOverWorldOnServer().getTime();
+        return getOverWorldOnServer().getGameTime();
     }
     
     public static long secondToNano(double second) {

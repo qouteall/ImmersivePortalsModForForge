@@ -1,9 +1,6 @@
 package com.qouteall.immersive_portals.my_util;
 
 import net.minecraft.util.Direction;
-
-//import com.sun.istack.internal.Nullable;
-
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
@@ -11,6 +8,8 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+//import com.sun.istack.internal.Nullable;
 
 public class IntegerAABBInclusive {
     
@@ -59,24 +58,24 @@ public class IntegerAABBInclusive {
         
         return expandOrShrink(
             Helper.scale(
-                Direction.get(
-                    Direction.AxisDirection.POSITIVE, axis
-                ).getVector(),
+                Direction.getFacingFromAxisDirection(
+                    axis, Direction.AxisDirection.POSITIVE
+                ).getDirectionVec(),
                 n
             )
         );
     }
     
     public IntegerAABBInclusive getExpanded(Direction direction, int n) {
-        if (direction.getDirection() == Direction.AxisDirection.POSITIVE) {
+        if (direction.getAxisDirection() == Direction.AxisDirection.POSITIVE) {
             return new IntegerAABBInclusive(
                 l,
-                h.add(Helper.scale(direction.getVector(), n))
+                h.add(Helper.scale(direction.getDirectionVec(), n))
             );
         }
         else {
             return new IntegerAABBInclusive(
-                l.add(Helper.scale(direction.getVector(), n)),
+                l.add(Helper.scale(direction.getDirectionVec(), n)),
                 h
             );
         }
@@ -97,7 +96,7 @@ public class IntegerAABBInclusive {
     //it will get only one mutable block pos object
     //don't store its reference. store its copy
     public Stream<BlockPos> fastStream() {
-        return BlockPos.stream(l, h);
+        return BlockPos.getAllInBox(l, h);
     }
     
     public BlockPos getSize() {
@@ -143,7 +142,7 @@ public class IntegerAABBInclusive {
     ) {
         return getSurfaceLayer(
             facing.getAxis(),
-            facing.getDirection()
+            facing.getAxisDirection()
         );
     }
     

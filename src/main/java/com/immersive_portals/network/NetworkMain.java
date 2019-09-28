@@ -1,7 +1,9 @@
 package com.immersive_portals.network;
 
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.IPacket;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
@@ -52,5 +54,13 @@ public class NetworkMain {
     
     public static <T> void sendToPlayer(ServerPlayerEntity player, T t) {
         channel.send(PacketDistributor.PLAYER.with(() -> player), t);
+    }
+    
+    public static void sendRedirected(
+        ServerPlayerEntity player,
+        DimensionType dimension,
+        IPacket t
+    ) {
+        sendToPlayer(player, new StcRedirected(dimension, t));
     }
 }

@@ -15,6 +15,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
+import net.minecraftforge.fml.network.NetworkHooks;
 
 import java.util.stream.Stream;
 
@@ -97,7 +98,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     
     @Override
     public IPacket<?> createSpawnPacket() {
-        return MyNetwork.createStcSpawnEntity(this);
+        return NetworkHooks.getEntitySpawningPacket(this);
     }
     
     @Override

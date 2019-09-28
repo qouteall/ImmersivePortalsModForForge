@@ -12,9 +12,9 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.ServerWorld;
-import net.minecraft.world.chunk.TicketType;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.server.TicketType;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,7 +48,7 @@ public class ChunkTracker {
     private static final TicketType<ChunkPos> immersiveTicketType =
         TicketType.create(
             "immersive_portal_ticket",
-            Comparator.comparingLong(ChunkPos::toLong)
+            Comparator.comparingLong(ChunkPos::asLong)
         );
     
     public static final int portalLoadingRange = 48;
@@ -76,8 +76,8 @@ public class ChunkTracker {
         boolean isLoadedNow
     ) {
         ServerWorld world = Helper.getServer().getWorld(dimension);
-        
-        world.setChunkForced(chunkPos.x, chunkPos.z, isLoadedNow);
+    
+        world.forceChunk(chunkPos.x, chunkPos.z, isLoadedNow);
         //world.method_14178().setChunkForced(chunkPos, isLoadedNow);
     }
     
@@ -231,7 +231,7 @@ public class ChunkTracker {
             Helper.compareOldAndNew(
                 oldForcedChunks,
                 newForcedChunks.stream()
-                    .map(chunkPos -> chunkPos.getChunkPos().toLong())
+                    .map(chunkPos -> chunkPos.getChunkPos().asLong())
                     .collect(Collectors.toSet()),
                 longChunkPos -> setIsLoadedByPortal(
                     world.dimension.getType(),

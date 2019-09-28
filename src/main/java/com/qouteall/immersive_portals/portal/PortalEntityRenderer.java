@@ -12,7 +12,7 @@ public class PortalEntityRenderer extends EntityRenderer<Portal> {
     }
     
     @Override
-    public boolean isVisible(
+    public boolean shouldRender(
         Portal entity_1,
         ICamera visibleRegion_1,
         double double_1,
@@ -23,7 +23,7 @@ public class PortalEntityRenderer extends EntityRenderer<Portal> {
     }
     
     @Override
-    public void render(
+    public void doRender(
         Portal portal,
         double double_1,
         double double_2,
@@ -31,12 +31,12 @@ public class PortalEntityRenderer extends EntityRenderer<Portal> {
         float float_1,
         float float_2
     ) {
-        super.render(portal, double_1, double_2, double_3, float_1, float_2);
+        super.doRender(portal, double_1, double_2, double_3, float_1, float_2);
         CGlobal.renderer.renderPortalInEntityRenderer(portal);
     }
     
     @Override
-    protected ResourceLocation getTexture(Portal var1) {
+    protected ResourceLocation getEntityTexture(Portal var1) {
         return null;
     }
 }

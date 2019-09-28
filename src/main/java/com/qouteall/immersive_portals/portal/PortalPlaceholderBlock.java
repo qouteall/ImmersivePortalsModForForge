@@ -21,6 +21,8 @@ import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.util.Random;
 
@@ -65,14 +67,14 @@ public class PortalPlaceholderBlock extends Block {
     public PortalPlaceholderBlock(Properties properties) {
         super(properties);
         this.setDefaultState(
-            (BlockState) ((BlockState) this.stateContainer.getDefaultState()).with(
+            (BlockState) ((BlockState) this.stateContainer.getBaseState()).with(
                 AXIS, Direction.Axis.X
             )
         );
     }
     
     @Override
-    public VoxelShape getOutlineShape(
+    public VoxelShape getShape(
         BlockState blockState_1,
         IBlockReader blockView_1,
         BlockPos blockPos_1,
@@ -90,12 +92,12 @@ public class PortalPlaceholderBlock extends Block {
     }
     
     @Override
-    protected void appendProperties(StateContainer.Builder<Block, BlockState> builder) {
+    protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
         builder.add(AXIS);
     }
     
     @Override
-    public BlockState getStateForNeighborUpdate(
+    public BlockState updatePostPlacement(
         BlockState blockState_1,
         Direction direction_1,
         BlockState blockState_2,
@@ -103,11 +105,11 @@ public class PortalPlaceholderBlock extends Block {
         BlockPos blockPos_1,
         BlockPos blockPos_2
     ) {
-        if (!iWorld_1.isClient()) {
+        if (!iWorld_1.isRemote()) {
             ServerWorld serverWorld = (ServerWorld) iWorld_1;
             portalBlockUpdateSignal.emit(serverWorld, blockPos_1);
         }
-        return super.getStateForNeighborUpdate(
+        return super.updatePostPlacement(
             blockState_1,
             direction_1,
             blockState_2,
@@ -119,7 +121,7 @@ public class PortalPlaceholderBlock extends Block {
     
     //copied from PortalBlock
     @Override
-    public void randomDisplayTick(
+    public void animateTick(
         BlockState blockState_1,
         World world_1,
         BlockPos blockPos_1,
@@ -171,7 +173,7 @@ public class PortalPlaceholderBlock extends Block {
     
     //---------These are copied from BlockBarrier
     @Override
-    public boolean isTranslucent(
+    public boolean propagatesSkylightDown(
         BlockState blockState_1,
         IBlockReader blockView_1,
         BlockPos blockPos_1
@@ -185,13 +187,13 @@ public class PortalPlaceholderBlock extends Block {
     }
     
     @Override
-    public boolean isOpaque(BlockState blockState_1) {
+    public boolean isSolid(BlockState blockState_1) {
         return false;
     }
     
     @OnlyIn(Dist.CLIENT)
     @Override
-    public float getAmbientOcclusionLightLevel(
+    public float func_220080_a(
         BlockState blockState_1,
         IBlockReader blockView_1,
         BlockPos blockPos_1
@@ -200,7 +202,7 @@ public class PortalPlaceholderBlock extends Block {
     }
     
     @Override
-    public boolean allowsSpawning(
+    public boolean canEntitySpawn(
         BlockState blockState_1,
         IBlockReader blockView_1,
         BlockPos blockPos_1,

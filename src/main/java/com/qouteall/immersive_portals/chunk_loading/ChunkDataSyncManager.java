@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
+import com.immersive_portals.network.NetworkMain;
 import com.mojang.datafixers.util.Either;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.SGlobal;
@@ -36,9 +37,6 @@ public class ChunkDataSyncManager {
         );
     }
     
-    /**
-     * {@link ThreadedAnvilChunkStorage#sendChunkDataPackets(ServerPlayerEntity, Packet[], WorldChunk)}
-     */
     private void onBeginWatch(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
         if (isChunkManagedByVanilla(player, chunkPos)) {
             return;
@@ -111,23 +109,18 @@ public class ChunkDataSyncManager {
             .getChunk(chunkPos.x, chunkPos.z);
         assert chunk != null;
         assert !(chunk instanceof EmptyChunk);
-        player.connection.sendPacket(
-            MyNetwork.createRedirectedMessage(
-                chunkPos.dimension,
-                new SChunkDataPacket(
-                    ((Chunk) chunk),
-                    65535
-                )
+        NetworkMain.sendRedirected(
+            player, chunkPos.dimension,
+            new SChunkDataPacket(
+                ((Chunk) chunk),
+                65535
             )
         );
-        
-        player.connection.sendPacket(
-            MyNetwork.createRedirectedMessage(
-                chunkPos.dimension,
-                new SUpdateLightPacket(
-                    chunkPos.getChunkPos(),
-                    ieStorage.getLightingProvider()
-                )
+        NetworkMain.sendRedirected(
+            player, chunkPos.dimension,
+            new SUpdateLightPacket(
+                chunkPos.getChunkPos(),
+                ieStorage.getLightingProvider()
             )
         );
     
@@ -157,13 +150,12 @@ public class ChunkDataSyncManager {
             //give up unloading
             return;
         }
-        
-        player.connection.sendPacket(
-            MyNetwork.createRedirectedMessage(
-                chunkPos.dimension,
-                new SUnloadChunkPacket(
-                    chunkPos.x, chunkPos.z
-                )
+    
+        NetworkMain.sendRedirected(
+            player,
+            chunkPos.dimension,
+            new SUnloadChunkPacket(
+                chunkPos.x, chunkPos.z
             )
         );
     }
