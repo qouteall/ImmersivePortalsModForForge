@@ -43,7 +43,7 @@ public class StcRedirected {
         int dimensionId = buf.readInt();
         int messageType = buf.readInt();
         DimensionType dimension = DimensionType.getById(dimensionId);
-        IPacket packet = MyNetwork.createEmptyPacketByType(messageType);
+        IPacket packet = NetworkMain.createEmptyPacketByType(messageType);
         try {
             packet.readPacketData(buf);
         }

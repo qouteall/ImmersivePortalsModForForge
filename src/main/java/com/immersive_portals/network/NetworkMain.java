@@ -2,6 +2,8 @@ package com.immersive_portals.network;
 
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
+import net.minecraft.network.PacketDirection;
+import net.minecraft.network.ProtocolType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkDirection;
@@ -72,5 +74,16 @@ public class NetworkMain {
         return channel.toVanillaPacket(
             new StcRedirected(dimension, t), NetworkDirection.PLAY_TO_CLIENT
         );
+    }
+    
+    public static IPacket createEmptyPacketByType(
+        int messageType
+    ) {
+        try {
+            return ProtocolType.PLAY.getPacket(PacketDirection.CLIENTBOUND, messageType);
+        }
+        catch (IllegalAccessException | InstantiationException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }

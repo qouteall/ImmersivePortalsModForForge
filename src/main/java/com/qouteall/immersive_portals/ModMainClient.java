@@ -69,8 +69,6 @@ public class ModMainClient {
     public static void onInitializeClient() {
         Helper.log("initializing client");
     
-        NetworkMain.init();
-        
         Minecraft.getInstance().execute(() -> {
             CGlobal.rendererUsingStencil = new RendererUsingStencil();
         

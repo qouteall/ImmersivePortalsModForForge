@@ -1,5 +1,6 @@
 package com.immersive_portals;
 
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.portal.*;
 import net.minecraft.block.Block;
@@ -46,6 +47,8 @@ public class ModMainForge {
         NetherPortalEntity.init();
         
         ModMainClient.onInitializeClient();
+    
+        ModMain.onInitialize();
     }
     
     private void setup(final FMLCommonSetupEvent event) {

@@ -196,15 +196,6 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("switch_to_compatibility_renderer")
-            .executes(context -> {
-                Minecraft.getInstance().execute(() -> {
-                    CGlobal.renderer = CGlobal.rendererUsingFrameBuffer;
-                });
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
             .literal("report_server_entities")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
