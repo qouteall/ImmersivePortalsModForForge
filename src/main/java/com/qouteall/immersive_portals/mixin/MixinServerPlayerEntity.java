@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.HashMultimap;
+import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.exposer.IEServerPlayerEntity;
@@ -11,8 +12,8 @@ import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.network.play.server.SDestroyEntitiesPacket;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -26,30 +27,30 @@ import java.util.Set;
 @Mixin(ServerPlayerEntity.class)
 public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
     @Shadow
-    public ServerPlayNetHandler networkHandler;
+    public ServerPlayNetHandler connection;
     @Shadow
-    private Vec3d enteredNetherPos;
+    private Vec3d enteredNetherPosition;
     
     private HashMultimap<DimensionType, Entity> myRemovedEntities;
     
     @Shadow
-    public abstract void method_18783(ServerWorld serverWorld_1);
+    public abstract void func_213846_b(ServerWorld serverWorld_1);
     
     @Shadow
-    private boolean inTeleportationState;
+    private boolean invulnerableDimensionChange;
     
     @Override
     public void setEnteredNetherPos(Vec3d pos) {
-        enteredNetherPos = pos;
+        enteredNetherPosition = pos;
     }
     
     @Override
     public void updateDimensionTravelAdvancements(ServerWorld fromWorld) {
-        method_18783(fromWorld);
+        func_213846_b(fromWorld);
     }
     
     @Inject(
-        method = "Lnet/minecraft/server/network/ServerPlayerEntity;sendUnloadChunkPacket(Lnet/minecraft/util/math/ChunkPos;)V",
+        method = "sendChunkUnload",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -68,21 +69,19 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
     }
     
     @Inject(
-        method = "Lnet/minecraft/server/network/ServerPlayerEntity;tick()V",
+        method = "tick",
         at = @At("TAIL")
     )
     private void onTicking(CallbackInfo ci) {
         if (myRemovedEntities != null) {
             myRemovedEntities.keySet().forEach(dimension -> {
                 Set<Entity> list = myRemovedEntities.get(dimension);
-                networkHandler.sendPacket(
-                    MyNetwork.createRedirectedMessage(
-                        dimension,
-                        new EntitiesDestroyS2CPacket(
-                            list.stream().mapToInt(
-                                Entity::getEntityId
-                            ).toArray()
-                        )
+                NetworkMain.sendRedirected(
+                    connection.player, dimension,
+                    new SDestroyEntitiesPacket(
+                        list.stream().mapToInt(
+                            Entity::getEntityId
+                        ).toArray()
                     )
                 );
             });
@@ -102,13 +101,11 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
      * @author qouteall
      */
     @Overwrite
-    public void onStoppedTracking(Entity entity_1) {
+    public void removeEntity(Entity entity_1) {
         if (entity_1 instanceof PlayerEntity) {
-            this.networkHandler.sendPacket(
-                MyNetwork.createRedirectedMessage(
-                    entity_1.dimension,
-                    new SDestroyEntitiesPacket(entity_1.getEntityId())
-                )
+            NetworkMain.sendRedirected(
+                connection.player, entity_1.dimension,
+                new SDestroyEntitiesPacket(entity_1.getEntityId())
             );
         }
         else {
@@ -126,7 +123,7 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
      * @author qouteall
      */
     @Overwrite
-    public void onStartedTracking(Entity entity_1) {
+    public void addEntity(Entity entity_1) {
         if (myRemovedEntities != null) {
             myRemovedEntities.remove(entity_1.dimension, entity_1);
         }
@@ -134,6 +131,6 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
     
     @Override
     public void setIsInTeleportationState(boolean arg) {
-        inTeleportationState = arg;
+        invulnerableDimensionChange = arg;
     }
 }

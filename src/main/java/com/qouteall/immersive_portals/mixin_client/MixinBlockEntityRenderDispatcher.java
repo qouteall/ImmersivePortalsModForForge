@@ -12,7 +12,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(TileEntityRendererDispatcher.class)
 public class MixinBlockEntityRenderDispatcher {
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    @Inject(
+        method = "render(Lnet/minecraft/tileentity/TileEntity;FI)V",
+        at = @At("HEAD"), cancellable = true
+    )
     private void onBeginRender(
         TileEntity blockEntity_1,
         float float_1,
@@ -21,7 +24,7 @@ public class MixinBlockEntityRenderDispatcher {
     ) {
         if (CGlobal.renderer.isRendering()) {
             Portal renderingPortal = CGlobal.renderer.getRenderingPortal();
-            if (!renderingPortal.canRenderEntityInsideMe(new Vec3d(blockEntity_1.getPositionVec()))) {
+            if (!renderingPortal.canRenderEntityInsideMe(new Vec3d(blockEntity_1.getPos()))) {
                 ci.cancel();
             }
         }

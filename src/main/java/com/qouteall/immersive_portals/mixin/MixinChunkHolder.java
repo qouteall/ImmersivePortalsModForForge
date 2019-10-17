@@ -1,13 +1,14 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.Streams;
+import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.exposer.IEChunkHolder;
 import com.qouteall.immersive_portals.exposer.IEThreadedAnvilChunkStorage;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.chunk.ChunkHolder;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ChunkHolder;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -22,26 +23,24 @@ public class MixinChunkHolder implements IEChunkHolder {
     
     @Shadow
     @Final
-    private ChunkHolder.IPlayerProvider playersWatchingChunkProvider;
+    private ChunkHolder.IPlayerProvider playerProvider;
     
     /**
      * @author qouteall
      */
     @Overwrite
-    private void sendPacketToPlayersWatching(IPacket<?> packet_1, boolean boolean_1) {
+    private void sendToTracking(IPacket<?> packet_1, boolean boolean_1) {
         DimensionType dimension =
-            ((IEThreadedAnvilChunkStorage) playersWatchingChunkProvider).getWorld().dimension.getType();
+            ((IEThreadedAnvilChunkStorage) playerProvider).getWorld().dimension.getType();
         
         Streams.concat(
-            this.playersWatchingChunkProvider.getPlayersWatchingChunk(
+            this.playerProvider.getTrackingPlayers(
                 this.pos, boolean_1
             ),
             SGlobal.chunkTracker.getPlayersViewingChunk(dimension, pos)
         ).distinct().forEach(player ->
-            player.networkHandler.sendPacket(
-                MyNetwork.createRedirectedMessage(
-                    dimension, packet_1
-                )
+            NetworkMain.sendRedirected(
+                player, dimension, packet_1
             )
         );
         

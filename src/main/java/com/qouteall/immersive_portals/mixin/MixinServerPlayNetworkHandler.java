@@ -27,24 +27,24 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     @Shadow
     public ServerPlayerEntity player;
     @Shadow
-    private Vec3d requestedTeleportPos;
+    private Vec3d targetPos;
     @Shadow
-    private int requestedTeleportId;
+    private int teleportId;
     @Shadow
-    private int teleportRequestTick;
+    private int lastPositionUpdate;
     @Shadow
-    private int ticks;
+    private int networkTickCount;
     
     @Shadow
-    protected abstract boolean method_20630(IWorldReader viewableWorld_1);
+    protected abstract boolean func_223133_a(IWorldReader viewableWorld_1);
     
     //do not process move packet when client dimension and server dimension are not synced
     @Inject(
-        method = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;onPlayerMove(Lnet/minecraft/server/network/packet/PlayerMoveC2SPacket;)V",
+        method = "processPlayer",
         at = @At(
             value = "INVOKE",
             shift = At.Shift.AFTER,
-            target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/server/world/ServerWorld;)V"
+            target = "Lnet/minecraft/network/PacketThreadUtil;checkThreadAndEnqueue(Lnet/minecraft/network/IPacket;Lnet/minecraft/network/INetHandler;Lnet/minecraft/world/server/ServerWorld;)V"
         ),
         cancellable = true
     )
@@ -64,7 +64,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
      * @author qouteall
      */
     @Overwrite
-    public void teleportRequest(
+    public void setPlayerLocation(
         double double_1,
         double double_2,
         double double_3,
@@ -83,13 +83,14 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         double double_6 = set_1.contains(SPlayerPositionLookPacket.Flags.Z) ? this.player.posZ : 0.0D;
         float float_3 = set_1.contains(SPlayerPositionLookPacket.Flags.Y_ROT) ? this.player.rotationYaw : 0.0F;
         float float_4 = set_1.contains(SPlayerPositionLookPacket.Flags.X_ROT) ? this.player.rotationPitch : 0.0F;
-        this.requestedTeleportPos = new Vec3d(double_1, double_2, double_3);
-        if (++this.requestedTeleportId == Integer.MAX_VALUE) {
-            this.requestedTeleportId = 0;
+        this.targetPos = new Vec3d(double_1, double_2, double_3);
+        if (++this.teleportId == Integer.MAX_VALUE) {
+            this.teleportId = 0;
         }
-        
-        this.teleportRequestTick = this.ticks;
-        this.player.setPositionAnglesAndUpdate(double_1, double_2, double_3, float_1, float_2);
+    
+        this.lastPositionUpdate = this.networkTickCount;
+    
+        this.player.setPositionAndRotation(double_1, double_2, double_3, float_1, float_2);
         SPlayerPositionLookPacket packet_1 = new SPlayerPositionLookPacket(
             double_1 - double_4,
             double_2 - double_5,
@@ -97,7 +98,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
             float_1 - float_3,
             float_2 - float_4,
             set_1,
-            this.requestedTeleportId
+            this.teleportId
         );
         ((IEPlayerPositionLookS2CPacket) packet_1).setPlayerDimension(player.dimension);
         this.player.connection.sendPacket(packet_1);
@@ -106,29 +107,29 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     //server will check the collision when receiving position packet from client
     //we treat collision specially when player is halfway through a portal
     @Redirect(
-        method = "onPlayerMove",
+        method = "processPlayer",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;method_20630(Lnet/minecraft/world/ViewableWorld;)Z"
+            target = "Lnet/minecraft/network/play/ServerPlayNetHandler;func_223133_a(Lnet/minecraft/world/IWorldReader;)Z"
         )
     )
     private boolean onCheckPlayerCollision(
         ServerPlayNetHandler serverPlayNetworkHandler,
         IWorldReader world
     ) {
-        boolean portalsNearby = !player.world.getEntities(
+        boolean portalsNearby = !player.world.getEntitiesWithinAABB(
             Portal.class,
-            player.getBoundingBox().expand(4),
+            player.getBoundingBox().grow(4),
             e -> true
         ).isEmpty();
         if (portalsNearby) {
             return true;
         }
-        return method_20630(world);
+        return func_223133_a(world);
     }
     
     @Override
     public void cancelTeleportRequest() {
-        requestedTeleportPos = null;
+        targetPos = null;
     }
 }

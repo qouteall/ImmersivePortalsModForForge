@@ -13,10 +13,10 @@ public class MixinWorld implements IEWorld {
     @Shadow
     @Final
     @Mutable
-    protected AbstractChunkProvider chunkManager;
+    protected AbstractChunkProvider chunkProvider;
     
     @Override
     public void setChunkManager(AbstractChunkProvider manager) {
-        chunkManager = manager;
+        chunkProvider = manager;
     }
 }

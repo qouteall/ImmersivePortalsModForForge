@@ -11,7 +11,7 @@ import java.util.List;
 
 @Mixin(DebugOverlayGui.class)
 public class MixinDebugHud {
-    @Inject(method = "getRightText", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getDebugInfoRight", at = @At("RETURN"), cancellable = true)
     private void onGetRightText(CallbackInfoReturnable<List<String>> cir) {
         cir.getReturnValue().add("Rendered Portal Num: " + MyRenderHelper.lastPortalRenderInfos.size());
     }

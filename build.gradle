@@ -3,6 +3,7 @@ buildscript {
         maven { url = 'https://files.minecraftforge.net/maven' }
         jcenter()
         mavenCentral()
+        mavenLocal()
 
         maven {
             name = 'sponge'
@@ -12,7 +13,8 @@ buildscript {
     }
     dependencies {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
-        //classpath 'org.spongepowered:mixin:0.8-preview-SNAPSHOT'
+        classpath 'org.spongepowered:mixin:0.8-preview-SNAPSHOT'
+        //classpath 'org.spongepowered:mixin:0.7.8-SNAPSHOT'
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
@@ -118,7 +120,7 @@ dependencies {
 
 
     //Mixin
-    //compile 'org.spongepowered:mixin:0.8-preview-SNAPSHOT'
+    compile 'org.spongepowered:mixin:0.8-preview-SNAPSHOT'
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..
@@ -158,4 +160,13 @@ publishing {
     }
 }
 
-//apply plugin: 'org.spongepowered.mixin'
+repositories {
+    maven { url = 'https://files.minecraftforge.net/maven' }
+    jcenter()
+    mavenCentral()
+
+    maven{url="http://repo.spongepowered.org/maven/"}
+    maven{url="https://minecraft.curseforge.com/api/maven/"}
+
+    mavenLocal()
+}

@@ -4,7 +4,6 @@ import com.mojang.authlib.GameProfile;
 import com.qouteall.immersive_portals.exposer.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.exposer.IEClientWorld;
 import com.qouteall.immersive_portals.my_util.Helper;
-import com.qouteall.immersive_portals.optifine_compatibility.OFHelper;
 import com.qouteall.immersive_portals.render.DimensionRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ChatScreen;
@@ -138,7 +137,7 @@ public class ClientWorldLoader {
         
         isLoadingFakedWorld = true;
     
-        OFHelper.onBeginCreatingFakedWorld();
+        //OFHelper.onBeginCreatingFakedWorld();
         
         //TODO get load distance
         int chunkLoadDistance = 3;
@@ -193,7 +192,7 @@ public class ClientWorldLoader {
         
         isLoadingFakedWorld = false;
     
-        OFHelper.onFinishCreatingFakedWorld();
+        //OFHelper.onFinishCreatingFakedWorld();
         
         return newWorld;
     }

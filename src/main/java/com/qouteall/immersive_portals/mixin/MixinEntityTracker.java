@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.mixin;
 
+import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.exposer.IEEntityTracker;
@@ -14,7 +15,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.SectionPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.TrackedEntity;
-import net.minecraft.world.chunk.ChunkHolder;
+import net.minecraft.world.server.ChunkHolder;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -26,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 //NOTE must redirect all packets about entities
-@Mixin(targets = "net.minecraft.server.world.ThreadedAnvilChunkStorage$EntityTracker")
+@Mixin(targets = "net.minecraft.world.server.ChunkManager$EntityTracker")
 public class MixinEntityTracker implements IEEntityTracker {
     @Shadow
     @Final
@@ -36,48 +37,42 @@ public class MixinEntityTracker implements IEEntityTracker {
     private Entity entity;
     @Shadow
     @Final
-    private int maxDistance;
+    private int range;
     @Shadow
-    private SectionPos lastCameraPosition;
+    private SectionPos pos;
     @Shadow
     @Final
-    private Set<ServerPlayerEntity> playersTracking;
+    private Set<ServerPlayerEntity> trackingPlayers;
     
     @Redirect(
-        method = "Lnet/minecraft/server/world/ThreadedAnvilChunkStorage$EntityTracker;sendToOtherNearbyPlayers(Lnet/minecraft/network/Packet;)V",
+        method = "sendToAllTracking",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;sendPacket(Lnet/minecraft/network/Packet;)V"
+            target = "Lnet/minecraft/network/play/ServerPlayNetHandler;sendPacket(Lnet/minecraft/network/IPacket;)V"
         )
     )
     private void onSendToOtherNearbyPlayers(
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        serverPlayNetworkHandler.sendPacket(
-            MyNetwork.createRedirectedMessage(
-                entity.dimension,
-                packet_1
-            )
+        NetworkMain.sendRedirected(
+            serverPlayNetworkHandler.player, entity.dimension, packet_1
         );
     }
     
     @Redirect(
-        method = "Lnet/minecraft/server/world/ThreadedAnvilChunkStorage$EntityTracker;sendToNearbyPlayers(Lnet/minecraft/network/Packet;)V",
+        method = "sendToTrackingAndSelf",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;sendPacket(Lnet/minecraft/network/Packet;)V"
+            target = "Lnet/minecraft/network/play/ServerPlayNetHandler;sendPacket(Lnet/minecraft/network/IPacket;)V"
         )
     )
     private void onSendToNearbyPlayers(
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        serverPlayNetworkHandler.sendPacket(
-            MyNetwork.createRedirectedMessage(
-                entity.dimension,
-                packet_1
-            )
+        NetworkMain.sendRedirected(
+            serverPlayNetworkHandler.player, entity.dimension, packet_1
         );
     }
     
@@ -90,9 +85,9 @@ public class MixinEntityTracker implements IEEntityTracker {
         int int_3;
         int int_4;
         if (boolean_1) {
-            SectionPos chunkSectionPos_1 = serverPlayerEntity_1.getCameraPosition();
-            int_3 = chunkSectionPos_1.getChunkX();
-            int_4 = chunkSectionPos_1.getChunkZ();
+            SectionPos chunkSectionPos_1 = serverPlayerEntity_1.getManagedSectionPos();
+            int_3 = chunkSectionPos_1.getSectionX();
+            int_4 = chunkSectionPos_1.getSectionZ();
         }
         else {
             int_3 = MathHelper.floor(serverPlayerEntity_1.posX / 16.0D);
@@ -113,7 +108,7 @@ public class MixinEntityTracker implements IEEntityTracker {
      * @author qouteall
      */
     @Overwrite
-    public void updateCameraPosition(ServerPlayerEntity player) {
+    public void updateTrackingState(ServerPlayerEntity player) {
         updateCameraPosition_(player);
     }
     
@@ -122,10 +117,10 @@ public class MixinEntityTracker implements IEEntityTracker {
      * performance may be slowed down
      */
     @Overwrite
-    public void updateCameraPosition(List<ServerPlayerEntity> list_1) {
+    public void updateTrackingState(List<ServerPlayerEntity> list_1) {
         //ignore the argument
     
-        Helper.getCopiedPlayerList().forEach(this::updateCameraPosition);
+        Helper.getCopiedPlayerList().forEach(this::updateTrackingState);
         
     }
     
@@ -143,9 +138,9 @@ public class MixinEntityTracker implements IEEntityTracker {
                 player.posX,
                 player.posY,
                 player.posZ
-            )).subtract(this.entry.method_18759());
+            )).subtract(this.entry.func_219456_b());
             int maxWatchDistance = Math.min(
-                this.maxDistance,
+                this.range,
                 (storage.getWatchDistance() - 1) * 16
             );
             boolean isWatchedNow =
@@ -154,7 +149,7 @@ public class MixinEntityTracker implements IEEntityTracker {
                     relativePos.x <= (double) maxWatchDistance &&
                     relativePos.z >= (double) (-maxWatchDistance) &&
                     relativePos.z <= (double) maxWatchDistance &&
-                    this.entity.canBeSpectated(player);
+                    this.entity.isSpectatedByPlayer(player);
             isWatchedNow = isWatchedNow ||
                 SGlobal.chunkTracker.isPlayerWatchingChunk(
                     player,
@@ -167,8 +162,8 @@ public class MixinEntityTracker implements IEEntityTracker {
                 boolean shouldTrack = this.entity.forceSpawn;
                 if (!shouldTrack) {
                     ChunkPos chunkPos_1 = new ChunkPos(this.entity.chunkCoordX, this.entity.chunkCoordZ);
-                    ChunkHolder chunkHolder_1 = storage.getChunkHolder_(chunkPos_1.toLong());
-                    if (chunkHolder_1 != null && chunkHolder_1.getWorldChunk() != null) {
+                    ChunkHolder chunkHolder_1 = storage.getChunkHolder_(chunkPos_1.asLong());
+                    if (chunkHolder_1 != null && chunkHolder_1.func_219298_c() != null) {
                         shouldTrack = true;
                     }
 //                    else {
@@ -181,12 +176,12 @@ public class MixinEntityTracker implements IEEntityTracker {
 //                    }
                 }
     
-                if (shouldTrack && this.playersTracking.add(player)) {
-                    this.entry.startTracking(player);
+                if (shouldTrack && this.trackingPlayers.add(player)) {
+                    this.entry.track(player);
                 }
             }
-            else if (this.playersTracking.remove(player)) {
-                this.entry.stopTracking(player);
+            else if (this.trackingPlayers.remove(player)) {
+                this.entry.untrack(player);
             }
             
         }
@@ -194,6 +189,6 @@ public class MixinEntityTracker implements IEEntityTracker {
     
     @Override
     public void onPlayerRespawn(ServerPlayerEntity oldPlayer) {
-        playersTracking.remove(oldPlayer);
+        trackingPlayers.remove(oldPlayer);
     }
 }

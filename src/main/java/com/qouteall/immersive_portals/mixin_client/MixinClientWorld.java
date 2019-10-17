@@ -37,7 +37,7 @@ public class MixinClientWorld implements IEClientWorld {
     }
     
     @Inject(
-        method = "Lnet/minecraft/client/world/ClientWorld;<init>(Lnet/minecraft/client/network/ClientPlayNetworkHandler;Lnet/minecraft/world/level/LevelInfo;Lnet/minecraft/world/dimension/DimensionType;ILnet/minecraft/util/profiler/Profiler;Lnet/minecraft/client/render/WorldRenderer;)V",
+        method = "<init>",
         at = @At("RETURN")
     )
     void onConstructed(
@@ -56,12 +56,12 @@ public class MixinClientWorld implements IEClientWorld {
     
     //avoid entity duplicate when an entity travels
     @Inject(
-        method = "addEntityPrivate",
+        method = "addEntityImpl",
         at = @At("TAIL")
     )
     private void onOnEntityAdded(int entityId, Entity entityIn, CallbackInfo ci) {
         CGlobal.clientWorldLoader.clientWorldMap.values().stream()
             .filter(world -> world != (Object) this)
-            .forEach(world -> world.removeEntity(entityId));
+            .forEach(world -> world.removeEntityFromWorld(entityId));
     }
 }

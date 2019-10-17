@@ -24,15 +24,15 @@ public class MixinPlayerPositionLookS2CPacket implements IEPlayerPositionLookS2C
     }
     
     @Inject(
-        method = "Lnet/minecraft/client/network/packet/PlayerPositionLookS2CPacket;read(Lnet/minecraft/util/PacketByteBuf;)V",
+        method = "readPacketData",
         at = @At("HEAD")
     )
     private void onRead(PacketBuffer packetByteBuf_1, CallbackInfo ci) {
-        playerDimension = DimensionType.byRawId(packetByteBuf_1.readInt());
+        playerDimension = DimensionType.getById(packetByteBuf_1.readInt());
     }
     
     @Inject(
-        method = "Lnet/minecraft/client/network/packet/PlayerPositionLookS2CPacket;write(Lnet/minecraft/util/PacketByteBuf;)V",
+        method = "writePacketData",
         at = @At("HEAD")
     )
     private void onWrite(PacketBuffer packetByteBuf_1, CallbackInfo ci) {

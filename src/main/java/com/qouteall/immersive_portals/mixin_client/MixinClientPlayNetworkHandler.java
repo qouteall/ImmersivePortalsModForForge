@@ -25,7 +25,7 @@ public class MixinClientPlayNetworkHandler implements IEClientPlayNetworkHandler
     private ClientWorld world;
     
     @Shadow
-    private boolean field_3698;
+    private boolean doneLoadingTerrain;
     
     @Shadow
     private Minecraft client;
@@ -33,7 +33,7 @@ public class MixinClientPlayNetworkHandler implements IEClientPlayNetworkHandler
     @Mutable
     @Shadow
     @Final
-    private Map<UUID, NetworkPlayerInfo> playerListEntries;
+    private Map<UUID, NetworkPlayerInfo> playerInfoMap;
     
     @Override
     public void setWorld(ClientWorld world) {
@@ -42,19 +42,19 @@ public class MixinClientPlayNetworkHandler implements IEClientPlayNetworkHandler
     
     @Override
     public Map getPlayerListEntries() {
-        return playerListEntries;
+        return playerInfoMap;
     }
     
     @Override
     public void setPlayerListEntries(Map value) {
-        playerListEntries = value;
+        playerInfoMap = value;
     }
     
     @Inject(
-        method = "onPlayerPositionLook",
+        method = "handlePlayerPosLook",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/util/ThreadExecutor;)V",
+            target = "Lnet/minecraft/network/PacketThreadUtil;checkThreadAndEnqueue(Lnet/minecraft/network/IPacket;Lnet/minecraft/network/INetHandler;Lnet/minecraft/util/concurrent/ThreadTaskExecutor;)V",
             shift = At.Shift.AFTER
         ),
         cancellable = true
@@ -66,18 +66,6 @@ public class MixinClientPlayNetworkHandler implements IEClientPlayNetworkHandler
         DimensionType playerDimension = ((IEPlayerPositionLookS2CPacket) packet).getPlayerDimension();
         assert playerDimension != null;
         ClientWorld world = client.world;
-
-//        if (!this.field_3698) {
-//            Helper.log("Early position packet received");
-//            if (playerDimension != world.dimension.getType()) {
-//                CGlobal.clientTeleportationManager.acceptSynchronizationDataFromServer(
-//                    playerDimension,
-//                    new Vec3d(packet.getX(), packet.getY(), packet.getZ()),
-//                    true
-//                );
-//            }
-//            return;
-//        }
         
         if (world != null) {
             if (world.dimension != null) {

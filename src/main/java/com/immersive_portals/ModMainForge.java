@@ -1,5 +1,6 @@
 package com.immersive_portals;
 
+import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.portal.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -23,10 +24,11 @@ import org.apache.logging.log4j.Logger;
 import java.util.stream.Collectors;
 
 // The value here should match an entry in the META-INF/mods.toml file
-@Mod("immersive_portals")
+@Mod("assets/immersive_portals")
 public class ModMainForge {
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
+    
     
     public ModMainForge() {
         // Register the setup method for modloading
@@ -42,6 +44,8 @@ public class ModMainForge {
         MinecraftForge.EVENT_BUS.register(this);
     
         NetherPortalEntity.init();
+        
+        ModMainClient.onInitializeClient();
     }
     
     private void setup(final FMLCommonSetupEvent event) {
@@ -84,7 +88,7 @@ public class ModMainForge {
         @SubscribeEvent
         public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
             PortalPlaceholderBlock.instance.setRegistryName(
-                new ResourceLocation("immersive_portals", "portal_placeholder")
+                new ResourceLocation("assets/immersive_portals", "portal_placeholder")
             );
             blockRegistryEvent.getRegistry().register(
                 PortalPlaceholderBlock.instance

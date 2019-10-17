@@ -12,7 +12,6 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRender;
 import net.minecraft.client.renderer.chunk.IChunkRendererFactory;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
@@ -34,18 +33,18 @@ import java.util.stream.IntStream;
 public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatcher {
     @Shadow
     @Final
-    protected WorldRenderer renderer;
+    protected WorldRenderer renderGlobal;
     @Shadow
     @Final
     protected World world;
     @Shadow
-    protected int sizeY;
+    protected int countChunksY;
     @Shadow
-    protected int sizeX;
+    protected int countChunksX;
     @Shadow
-    protected int sizeZ;
+    protected int countChunksZ;
     @Shadow
-    public ChunkRender[] renderers;
+    public ChunkRender[] renderChunks;
     
     private Map<ChunkPos, ChunkRender[]> presetCache;
     private IChunkRendererFactory factory;
@@ -54,7 +53,7 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
     private Set<ChunkRender[]> isNeighborUpdated;
     
     @Inject(
-        method = "Lnet/minecraft/client/render/ChunkRenderDispatcher;<init>(Lnet/minecraft/world/World;ILnet/minecraft/client/render/WorldRenderer;Lnet/minecraft/client/render/chunk/ChunkRendererFactory;)V",
+        method = "<init>",
         at = @At("RETURN")
     )
     private void onConstruct(
@@ -79,23 +78,23 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
         
         if (CGlobal.useHackedChunkRenderDispatcher) {
             //it will run createChunks() before this
-            for (ChunkRender renderChunk : renderers) {
+            for (ChunkRender renderChunk : renderChunks) {
                 chunkRendererMap.put(getOriginNonMutable(renderChunk), renderChunk);
             }
-            updateNeighbours();
+    
             fixAbnormality();
         }
     }
     
     private BlockPos getOriginNonMutable(ChunkRender renderChunk) {
-        return renderChunk.getOrigin().toImmutable();
+        return renderChunk.getPosition().toImmutable();
     }
     
-    @Inject(method = "delete", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "deleteGlResources", at = @At("HEAD"), cancellable = true)
     private void delete(CallbackInfo ci) {
         if (CGlobal.useHackedChunkRenderDispatcher) {
-            chunkRendererMap.values().forEach(ChunkRender::delete);
-            idleChunks.forEach(ChunkRender::delete);
+            chunkRendererMap.values().forEach(ChunkRender::deleteGlResources);
+            idleChunks.forEach(ChunkRender::deleteGlResources);
             
             chunkRendererMap.clear();
             idleChunks.clear();
@@ -112,7 +111,7 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
         if (CGlobal.useHackedChunkRenderDispatcher) {
             ClientWorld worldClient = Minecraft.getInstance().world;
             if (worldClient != null) {
-                if (worldClient.getTime() % 233 == 66) {
+                if (worldClient.getGameTime() % 233 == 66) {
                     fixAbnormality();
                     dismissInactiveChunkRenderers();
                     presetCache.clear();
@@ -129,9 +128,9 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
         ChunkRender chunkRenderer = idleChunks.pollLast();
         
         if (chunkRenderer == null) {
-            Minecraft.getInstance().getProfiler().push("create_chunk_renderer");
-            chunkRenderer = factory.create(world, renderer);
-            Minecraft.getInstance().getProfiler().pop();
+            Minecraft.getInstance().getProfiler().startSection("create_chunk_renderer");
+            chunkRenderer = factory.create(world, renderGlobal);
+            Minecraft.getInstance().getProfiler().endSection();
         }
         
         employChunkRenderer(chunkRenderer, basePos);
@@ -145,19 +144,19 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
     
     private void employChunkRenderer(ChunkRender chunkRenderer, BlockPos basePos) {
         assert CGlobal.useHackedChunkRenderDispatcher;
-        
-        Minecraft.getInstance().getProfiler().push("employ");
+    
+        Minecraft.getInstance().getProfiler().startSection("employ");
         
         assert basePos.getX() % 16 == 0;
         assert basePos.getY() % 16 == 0;
         assert basePos.getZ() % 16 == 0;
-        
-        chunkRenderer.setOrigin(basePos.getX(), basePos.getY(), basePos.getZ());
+    
+        chunkRenderer.setPosition(basePos.getX(), basePos.getY(), basePos.getZ());
         BlockPos origin = getOriginNonMutable(chunkRenderer);
         assert !chunkRendererMap.containsKey(origin);
         chunkRendererMap.put(origin, chunkRenderer);
-        
-        Minecraft.getInstance().getProfiler().pop();
+    
+        Minecraft.getInstance().getProfiler().endSection();
     }
     
     private void dismissChunkRenderer(BlockPos basePos) {
@@ -180,7 +179,7 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
         if (idleChunks.size() > CGlobal.maxIdleChunkRendererNum) {
             int toDestructChunkRenderersNum = idleChunks.size() - CGlobal.maxIdleChunkRendererNum;
             IntStream.range(0, toDestructChunkRenderersNum).forEach(n -> {
-                idleChunks.pollFirst().delete();
+                idleChunks.pollFirst().deleteGlResources();
             });
         }
     }
@@ -192,7 +191,7 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
             presetCache.values().stream().flatMap(
                 Arrays::stream
             ),
-            Arrays.stream(renderers)
+            Arrays.stream(renderChunks)
         ).collect(Collectors.toSet());
         
         chunkRendererMap.values().stream()
@@ -203,10 +202,10 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
             );
     }
     
-    @Inject(method = "updateCameraPosition", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "updateChunkPositions", at = @At("HEAD"), cancellable = true)
     private void updateCameraPosition(double viewEntityX, double viewEntityZ, CallbackInfo ci) {
         if (CGlobal.useHackedChunkRenderDispatcher) {
-            Minecraft.getInstance().getProfiler().push(
+            Minecraft.getInstance().getProfiler().startSection(
                 "update_hacked_chunk_render_dispatcher"
             );
             
@@ -214,17 +213,17 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
                 (((int) viewEntityX) / 16),
                 (((int) viewEntityZ) / 16)
             );
-            renderers = presetCache.computeIfAbsent(
+            renderChunks = presetCache.computeIfAbsent(
                 currPlayerChunkPos,
                 k -> createPreset(viewEntityX, viewEntityZ)
             );
-            
-            if (!isNeighborUpdated.contains(renderers)) {
-                updateNeighbours();
-                isNeighborUpdated.add(renderers);
+    
+            if (!isNeighborUpdated.contains(renderChunks)) {
+        
+                isNeighborUpdated.add(renderChunks);
             }
-            
-            Minecraft.getInstance().getProfiler().pop();
+    
+            Minecraft.getInstance().getProfiler().endSection();
             
             ci.cancel();
         }
@@ -246,44 +245,26 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
         if (chunkRendererMap.values().stream().distinct().count() != chunkRendererMap.size()) {
             Helper.err("Not distinct!");
         }
-
-//        chunkRendererMap.entrySet().stream().filter(
-//            entry -> {
-//                boolean isPosCorrect = entry.getKey().equals(entry.getValue().getOrigin());
-//                boolean isKeyMutable = entry.getKey() instanceof BlockPos.Mutable;
-//                if (!isPosCorrect || isKeyMutable) {
-//                    Helper.err("Chunk Renderer Abnormal " + entry.getKey() + entry.getValue().getOrigin());
-//                    return true;
-//                }
-//                return false;
-//            }
-//        ).collect(
-//            Collectors.toList()
-//        ).forEach(entry -> {
-//            entry.getValue().setOrigin(
-//                entry.getKey().getX(), entry.getKey().getY(), entry.getKey().getZ()
-//            );
-//        });
     }
     
     private ChunkRender[] createPreset(double viewEntityX, double viewEntityZ) {
-        ChunkRender[] preset = new ChunkRender[this.sizeX * this.sizeY * this.sizeZ];
+        ChunkRender[] preset = new ChunkRender[this.countChunksX * this.countChunksY * this.countChunksZ];
         
         int px = MathHelper.floor(viewEntityX) - 8;
         int pz = MathHelper.floor(viewEntityZ) - 8;
+    
+        int maxLen = this.countChunksX * 16;
+    
+        for (int cx = 0; cx < this.countChunksX; ++cx) {
+            int posX = this.getBaseCoordinate(px, maxLen, cx);
         
-        int maxLen = this.sizeX * 16;
-        
-        for (int cx = 0; cx < this.sizeX; ++cx) {
-            int posX = this.method_3328(px, maxLen, cx);
+            for (int cz = 0; cz < this.countChunksZ; ++cz) {
+                int posZ = this.getBaseCoordinate(pz, maxLen, cz);
             
-            for (int cz = 0; cz < this.sizeZ; ++cz) {
-                int posZ = this.method_3328(pz, maxLen, cz);
-                
-                for (int cy = 0; cy < this.sizeY; ++cy) {
+                for (int cy = 0; cy < this.countChunksY; ++cy) {
                     int posY = cy * 16;
-                    
-                    preset[this.getChunkIndex(cx, cy, cz)] =
+                
+                    preset[this.getIndex(cx, cy, cz)] =
                         validateChunkRenderer(
                             myGetChunkRenderer(
                                 new BlockPos(posX, posY, posZ)
@@ -294,27 +275,6 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
         }
         
         return preset;
-    }
-    
-    private void updateNeighbours() {
-        if (!CGlobal.isOptifinePresent) {
-            return;
-        }
-        
-        Minecraft.getInstance().getProfiler().push("neighbor");
-        
-        for (int j = 0; j < this.renderers.length; ++j) {
-            ChunkRender renderChunk = this.renderers[j];
-            
-            for (int l = 0; l < Direction.VALUES.length; ++l) {
-                Direction facing = Direction.VALUES[l];
-                BlockPos posOffset16 = renderChunk.getNeighborPosition(facing);
-                ChunkRender neighbour = getChunkRenderer(posOffset16);
-                renderChunk.setRenderChunkNeighbour(facing, neighbour);
-            }
-        }
-        
-        Minecraft.getInstance().getProfiler().pop();
     }
     
     //NOTE input block pos instead of chunk pos
@@ -333,30 +293,30 @@ public abstract class MixinChunkRenderDispatcher implements IEChunkRenderDispatc
     
     private static BlockPos getBasePos(BlockPos blockPos) {
         return new BlockPos(
-            MathHelper.floorDiv(blockPos.getX(), 16) * 16,
-            MathHelper.floorDiv(blockPos.getY(), 16) * 16,
-            MathHelper.floorDiv(blockPos.getZ(), 16) * 16
+            MathHelper.intFloorDiv(blockPos.getX(), 16) * 16,
+            MathHelper.intFloorDiv(blockPos.getY(), 16) * 16,
+            MathHelper.intFloorDiv(blockPos.getZ(), 16) * 16
         );
     }
     
     @Shadow
-    public abstract int method_3328(int int_1, int int_2, int int_3);
+    public abstract int getBaseCoordinate(int int_1, int int_2, int int_3);
     
     @Shadow
-    public abstract int getChunkIndex(int int_1, int int_2, int int_3);
+    public abstract int getIndex(int int_1, int int_2, int int_3);
     
     @Shadow
-    public abstract ChunkRender getChunkRenderer(BlockPos pos);
+    public abstract ChunkRender getRenderChunk(BlockPos pos);
     
     @Override
     public int getEmployedRendererNum() {
-        return CGlobal.useHackedChunkRenderDispatcher ? chunkRendererMap.size() : renderers.length;
+        return CGlobal.useHackedChunkRenderDispatcher ? chunkRendererMap.size() : renderChunks.length;
     }
     
     @Override
     public void rebuildAll() {
-        for (ChunkRender chunkRenderer : renderers) {
-            chunkRenderer.scheduleRebuild(true);
+        for (ChunkRender chunkRenderer : renderChunks) {
+            chunkRenderer.setNeedsUpdate(true);
         }
     }
     

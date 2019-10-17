@@ -33,13 +33,13 @@ public abstract class MixinEntity implements IEEntity {
     public World world;
     
     @Shadow
-    protected abstract Vec3d handleCollisions(Vec3d vec3d_1);
+    protected abstract Vec3d getAllowedMovement(Vec3d vec3d_1);
     
     @Shadow
     public abstract void setBoundingBox(AxisAlignedBB box_1);
     
     @Shadow
-    protected abstract void burn(int int_1);
+    protected abstract void dealFireDamage(int int_1);
     
     @Shadow
     public DimensionType dimension;
@@ -73,27 +73,27 @@ public abstract class MixinEntity implements IEEntity {
         method = "move",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/entity/Entity;handleCollisions(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;"
+            target = "Lnet/minecraft/entity/Entity;getAllowedMovement(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;"
         )
     )
     private Vec3d redirectHandleCollisions(Entity entity, Vec3d attemptedMove) {
         if (attemptedMove.lengthSquared() > 16) {
-            return handleCollisions(attemptedMove);
+            return getAllowedMovement(attemptedMove);
         }
         
         if (collidingPortal == null) {
-            return handleCollisions(attemptedMove);
+            return getAllowedMovement(attemptedMove);
         }
     
-        if (entity.hasPassengers() || entity.hasVehicle()) {
-            return handleCollisions(attemptedMove);
+        if (entity.isBeingRidden() || entity.isPassenger()) {
+            return getAllowedMovement(attemptedMove);
         }
         
         Vec3d result = CollisionHelper.handleCollisionHalfwayInPortal(
             (Entity) (Object) this,
             attemptedMove,
             collidingPortal,
-            attemptedMove1 -> handleCollisions(attemptedMove1)
+            attemptedMove1 -> getAllowedMovement(attemptedMove1)
         );
         return result;
     }
@@ -113,12 +113,12 @@ public abstract class MixinEntity implements IEEntity {
         method = "move",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/entity/Entity;burn(I)V"
+            target = "Lnet/minecraft/entity/Entity;dealFireDamage(I)V"
         )
     )
     private void redirectBurn(Entity entity, int int_1) {
         if (!CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
-            burn(int_1);
+            dealFireDamage(int_1);
         }
     }
     
@@ -127,12 +127,12 @@ public abstract class MixinEntity implements IEEntity {
         method = "move",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/World;doesAreaContainFireSource(Lnet/minecraft/util/math/Box;)Z"
+            target = "Lnet/minecraft/world/World;isFlammableWithin(Lnet/minecraft/util/math/AxisAlignedBB;)Z"
         )
     )
     private boolean redirectDoesContainFireSource(World world, AxisAlignedBB box_1) {
         if (!CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
-            return world.doesAreaContainFireSource(box_1);
+            return world.isFlammableWithin(box_1);
         }
         else {
             return false;
@@ -140,10 +140,10 @@ public abstract class MixinEntity implements IEEntity {
     }
     
     @Redirect(
-        method = "checkBlockCollision",
+        method = "doBlockCollisions",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/entity/Entity;getBoundingBox()Lnet/minecraft/util/math/Box;"
+            target = "Lnet/minecraft/entity/Entity;getBoundingBox()Lnet/minecraft/util/math/AxisAlignedBB;"
         )
     )
     private AxisAlignedBB redirectBoundingBoxInCheckingBlockCollision(Entity entity) {

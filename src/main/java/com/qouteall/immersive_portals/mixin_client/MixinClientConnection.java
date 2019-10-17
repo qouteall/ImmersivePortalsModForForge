@@ -15,7 +15,7 @@ public class MixinClientConnection {
     private Channel channel;
     
     //avoid crashing by npe
-    @Inject(method = "disconnect", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "closeChannel", at = @At("HEAD"), cancellable = true)
     private void onBeforeDisconnect(ITextComponent text_1, CallbackInfo ci) {
         if (channel == null) {
             ci.cancel();

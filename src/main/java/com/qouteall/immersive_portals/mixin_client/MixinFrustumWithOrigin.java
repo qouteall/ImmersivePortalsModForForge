@@ -3,7 +3,6 @@ package com.qouteall.immersive_portals.mixin_client;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.exposer.IEFrustumWithOrigin;
 import com.qouteall.immersive_portals.my_util.Helper;
-import com.qouteall.immersive_portals.optifine_compatibility.OFHelper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.renderer.culling.Frustum;
@@ -22,11 +21,11 @@ import java.util.Arrays;
 @Mixin(Frustum.class)
 public class MixinFrustumWithOrigin implements IEFrustumWithOrigin {
     @Shadow
-    private double originX;
+    private double x;
     @Shadow
-    private double originY;
+    private double y;
     @Shadow
-    private double originZ;
+    private double z;
     
     private Portal portal;
     
@@ -35,7 +34,7 @@ public class MixinFrustumWithOrigin implements IEFrustumWithOrigin {
     private Vec3d portalDestInLocalCoordinate;
     
     @Inject(
-        method = "Lnet/minecraft/client/render/FrustumWithOrigin;setOrigin(DDD)V",
+        method = "setPosition",
         at = @At("TAIL")
     )
     private void onSetOrigin(double double_1, double double_2, double double_3, CallbackInfo ci) {
@@ -76,10 +75,10 @@ public class MixinFrustumWithOrigin implements IEFrustumWithOrigin {
         if (!CGlobal.doUseAdvancedFrustumCulling) {
             return false;
         }
-    
-        if (OFHelper.isShaderShadowPass()) {
-            return false;
-        }
+
+//        if (OFHelper.isShaderShadowPass()) {
+//            return false;
+//        }
     
         if (MyRenderHelper.isRenderingMirror()) {
             return false;
@@ -132,7 +131,7 @@ public class MixinFrustumWithOrigin implements IEFrustumWithOrigin {
     }
     
     @Inject(
-        method = "Lnet/minecraft/client/render/FrustumWithOrigin;intersects(DDDDDD)Z",
+        method = "isBoxInFrustum",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -155,9 +154,9 @@ public class MixinFrustumWithOrigin implements IEFrustumWithOrigin {
                     double_5,
                     double_6
                 ).offset(
-                    -originX,
-                    -originY,
-                    -originZ
+                    -x,
+                    -y,
+                    -z
                 );
             
                 if (isOutsidePortalFrustum(boxInLocalCoordinate)) {
@@ -176,8 +175,8 @@ public class MixinFrustumWithOrigin implements IEFrustumWithOrigin {
     public void update() {
         if (CGlobal.renderer.isRendering()) {
             portal = CGlobal.renderer.getRenderingPortal();
-            
-            portalDestInLocalCoordinate = portal.destination.add(-originX, -originY, -originZ);
+    
+            portalDestInLocalCoordinate = portal.destination.add(-x, -y, -z);
             Vec3d[] fourVertices = portal.getFourVerticesRelativeToCenter(0);
             Vec3d portalCenter = portal.getPositionVec();
             Vec3d[] relativeVertices = {

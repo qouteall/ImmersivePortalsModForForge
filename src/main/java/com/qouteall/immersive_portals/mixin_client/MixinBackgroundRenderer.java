@@ -36,7 +36,7 @@ public class MixinBackgroundRenderer implements IEBackgroundRenderer {
     }
     
     @Inject(
-        method = "Lnet/minecraft/client/render/BackgroundRenderer;updateColorNotInWater(Lnet/minecraft/client/render/Camera;Lnet/minecraft/world/World;F)V",
+        method = "func_217620_a",
         at = @At("HEAD"),
         cancellable = true
     )

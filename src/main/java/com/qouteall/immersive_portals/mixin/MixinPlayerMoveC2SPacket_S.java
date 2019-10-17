@@ -14,15 +14,15 @@ public class MixinPlayerMoveC2SPacket_S implements IEPlayerMoveC2SPacket {
     private DimensionType playerDimension;
     
     @Inject(
-        method = "Lnet/minecraft/server/network/packet/PlayerMoveC2SPacket;read(Lnet/minecraft/util/PacketByteBuf;)V",
+        method = "readPacketData",
         at = @At("HEAD")
     )
     private void onRead(PacketBuffer packetByteBuf_1, CallbackInfo ci) {
-        playerDimension = DimensionType.byRawId(packetByteBuf_1.readInt());
+        playerDimension = DimensionType.getById(packetByteBuf_1.readInt());
     }
     
     @Inject(
-        method = "Lnet/minecraft/server/network/packet/PlayerMoveC2SPacket;write(Lnet/minecraft/util/PacketByteBuf;)V",
+        method = "writePacketData",
         at = @At("HEAD")
     )
     private void onWrite(PacketBuffer packetByteBuf_1, CallbackInfo ci) {

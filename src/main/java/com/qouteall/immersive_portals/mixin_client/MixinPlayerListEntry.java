@@ -9,10 +9,10 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(NetworkPlayerInfo.class)
 public class MixinPlayerListEntry implements IEPlayerListEntry {
     @Shadow
-    private GameType gameMode;
+    private GameType gameType;
     
     @Override
     public void setGameMode(GameType mode) {
-        gameMode = mode;
+        gameType = mode;
     }
 }

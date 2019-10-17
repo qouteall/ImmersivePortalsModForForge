@@ -24,19 +24,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ActiveRenderInfo.class)
 public abstract class MixinCamera implements IECamera {
-    double lastClipSpaceResult = 1;
+    double lastClipSpaceResult;
     
     @Shadow
     private net.minecraft.util.math.Vec3d pos;
     @Shadow
-    private IBlockReader area;
+    private IBlockReader world;
     @Shadow
-    private Entity focusedEntity;
+    private Entity renderViewEntity;
     @Shadow
-    private net.minecraft.util.math.Vec3d horizontalPlane;
+    private net.minecraft.util.math.Vec3d look;
+    
+    @Shadow
+    protected abstract void setPosition(double x, double y, double z);
+    
+    @Shadow
+    protected abstract void setPostion(Vec3d posIn);
     
     @Inject(
-        method = "getSubmergedFluidState",
+        method = "getFluidState",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -47,19 +53,16 @@ public abstract class MixinCamera implements IECamera {
         }
     }
     
-    @Shadow
-    protected abstract void setPos(net.minecraft.util.math.Vec3d vec3d_1);
-    
     @Override
     public void setPos_(Vec3d pos) {
-        setPos(pos);
+        setPostion(pos);
     }
     
     /**
      * @author qouteall
      */
     @Overwrite
-    private double clipToSpace(double upperBound) {
+    private double calcCameraDistance(double upperBound) {
         if (CGlobal.renderer.isRendering()) {
             return lastClipSpaceResult;
         }
@@ -77,35 +80,35 @@ public abstract class MixinCamera implements IECamera {
                 (double) dz
             );
             net.minecraft.util.math.Vec3d dest = new net.minecraft.util.math.Vec3d(
-                this.pos.x - this.horizontalPlane.x * upperBound + (double) dx + (double) dz,
-                this.pos.y - this.horizontalPlane.y * upperBound + (double) dy,
-                this.pos.z - this.horizontalPlane.z * upperBound + (double) dz
+                this.pos.x - this.look.x * upperBound + (double) dx + (double) dz,
+                this.pos.y - this.look.y * upperBound + (double) dy,
+                this.pos.z - this.look.z * upperBound + (double) dz
             );
-            BlockRayTraceResult hitResult1 = this.area.rayTrace(new RayTraceContext(
+            BlockRayTraceResult hitResult1 = this.world.rayTraceBlocks(new RayTraceContext(
                 origin,
                 dest,
                 RayTraceContext.BlockMode.COLLIDER,
                 RayTraceContext.FluidMode.NONE,
-                this.focusedEntity
+                this.renderViewEntity
             ));
             if (hitResult1.getType() != RayTraceResult.Type.MISS) {
-                double double_2 = hitResult1.getPositionVec().distanceTo(this.pos);
+                double double_2 = hitResult1.getHitVec().distanceTo(this.pos);
                 if (double_2 < upperBound) {
                     upperBound = double_2;
                 }
                 continue;
             }
-            BlockRayTraceResult hitResult2 = this.area.rayTrace(new RayTraceContext(
+            BlockRayTraceResult hitResult2 = this.world.rayTraceBlocks(new RayTraceContext(
                 origin,
                 dest,
                 RayTraceContext.BlockMode.OUTLINE,
                 RayTraceContext.FluidMode.NONE,
-                this.focusedEntity
+                this.renderViewEntity
             ));
             if (hitResult2.getType() != RayTraceResult.Type.MISS) {
-                Block hittedBlock = area.getBlockState(hitResult2.getPosition()).getBlock();
+                Block hittedBlock = world.getBlockState(hitResult2.getPos()).getBlock();
                 if (hittedBlock == PortalPlaceholderBlock.instance) {
-                    double double_2 = hitResult2.getPositionVec().distanceTo(this.pos);
+                    double double_2 = hitResult2.getHitVec().distanceTo(this.pos);
                     if (double_2 < upperBound) {
                         upperBound = double_2;
                     }

@@ -17,9 +17,9 @@ public abstract class MixinGlFrameBuffer implements IEGlFrameBuffer {
     private boolean isStencilBufferEnabled;
     
     @Shadow
-    public int texWidth;
+    public int framebufferTextureWidth;
     @Shadow
-    public int texHeight;
+    public int framebufferTextureHeight;
     
     @Shadow
     public abstract void initFbo(int int_1, int int_2, boolean boolean_1);
@@ -36,7 +36,7 @@ public abstract class MixinGlFrameBuffer implements IEGlFrameBuffer {
     }
     
     @Inject(
-        method = "Lnet/minecraft/client/gl/GlFramebuffer;initFbo(IIZ)V",
+        method = "func_216492_b",
         at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GLX;glBindRenderbuffer(II)V"),
         cancellable = true
     )
@@ -63,10 +63,10 @@ public abstract class MixinGlFrameBuffer implements IEGlFrameBuffer {
                 GLX.GL_RENDERBUFFER,
                 this_.depthBuffer
             );
-        
-            this_.checkFramebufferStatus();
-            this_.clear(isMac);
-            this_.endRead();
+    
+            this_.checkFramebufferComplete();
+            this_.framebufferClear(isMac);
+            this_.unbindFramebuffer();
         
             Helper.checkGlError();
         
@@ -75,19 +75,6 @@ public abstract class MixinGlFrameBuffer implements IEGlFrameBuffer {
             ci.cancel();
         }
     }
-//
-//    @Redirect(
-//        method = "draw(IIZ)V",
-//        at = @At(
-//            value = "INVOKE",
-//            target = "Lcom/mojang/blaze3d/platform/GlStateManager;disableAlphaTest()V"
-//        )
-//    )
-//    private void redirectDisableAlphaTest() {
-//        if (CGlobal.doDisableAlphaTestWhenRenderingFrameBuffer) {
-//            GlStateManager.disableAlphaTest();
-//        }
-//    }
     
     @Override
     public boolean getIsStencilBufferEnabled() {
@@ -98,7 +85,7 @@ public abstract class MixinGlFrameBuffer implements IEGlFrameBuffer {
     public void setIsStencilBufferEnabledAndReload(boolean cond) {
         if (isStencilBufferEnabled != cond) {
             isStencilBufferEnabled = cond;
-            initFbo(texWidth, texHeight, Minecraft.IS_RUNNING_ON_MAC);
+            initFbo(framebufferTextureWidth, framebufferTextureHeight, Minecraft.IS_RUNNING_ON_MAC);
         }
     }
 }

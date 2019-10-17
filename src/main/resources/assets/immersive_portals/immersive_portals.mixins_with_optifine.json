@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "com.qouteall.immersive_portals.optifine_compatibility.mixin_optifine",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MOChunkRenderer",
+    "MOConfig",
+    "MOGameRenderer",
+    "MOShaders",
+    "MOShadersRender",
+    "MOWorldRenderer"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

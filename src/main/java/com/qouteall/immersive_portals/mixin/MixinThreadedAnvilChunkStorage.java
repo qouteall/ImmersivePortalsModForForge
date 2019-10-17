@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.Lists;
+import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
@@ -17,11 +18,11 @@ import net.minecraft.network.play.server.SChunkDataPacket;
 import net.minecraft.network.play.server.SMountEntityPacket;
 import net.minecraft.network.play.server.SSetPassengersPacket;
 import net.minecraft.network.play.server.SUpdateLightPacket;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkHolder;
-import net.minecraft.world.chunk.ChunkManager;
-import net.minecraft.world.chunk.ServerWorldLightManager;
+import net.minecraft.world.server.ChunkHolder;
+import net.minecraft.world.server.ChunkManager;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.server.ServerWorldLightManager;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -36,32 +37,32 @@ import java.util.List;
 @Mixin(ChunkManager.class)
 public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilChunkStorage {
     @Shadow
-    private int watchDistance;
+    private int viewDistance;
     
     @Shadow
     @Final
-    private ServerWorldLightManager serverLightingProvider;
+    private ServerWorldLightManager lightManager;
     
     @Shadow
     @Final
     private ServerWorld world;
     
     @Shadow
-    protected abstract ChunkHolder getChunkHolder(long long_1);
+    protected abstract ChunkHolder func_219219_b(long long_1);
     
     @Shadow
-    abstract void handlePlayerAddedOrRemoved(
+    abstract void setPlayerTracking(
         ServerPlayerEntity serverPlayerEntity_1,
         boolean boolean_1
     );
     
     @Shadow
     @Final
-    private Int2ObjectMap entityTrackers;
+    private Int2ObjectMap entities;
     
     @Override
     public int getWatchDistance() {
-        return watchDistance;
+        return viewDistance;
     }
     
     @Override
@@ -71,19 +72,19 @@ public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilC
     
     @Override
     public ServerWorldLightManager getLightingProvider() {
-        return serverLightingProvider;
+        return lightManager;
     }
     
     @Override
     public ChunkHolder getChunkHolder_(long long_1) {
-        return getChunkHolder(long_1);
+        return func_219219_b(long_1);
     }
     
     /**
      * @author qouteall
      */
     @Overwrite
-    private void sendChunkDataPackets(
+    private void sendChunkData(
         ServerPlayerEntity player,
         IPacket<?>[] packets_1,
         Chunk worldChunk_1
@@ -94,7 +95,7 @@ public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilC
         }
         
         DimensionalChunkPos chunkPos = new DimensionalChunkPos(
-            world.dimension.getType(), worldChunk_1.getPositionVec()
+            world.dimension.getType(), worldChunk_1.getPos()
         );
         boolean isChunkDataSent = SGlobal.chunkTracker.isChunkDataSent(player, chunkPos);
         if (isChunkDataSent) {
@@ -107,40 +108,40 @@ public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilC
         });
         
         if (packets_1[0] == null) {
-            packets_1[0] = MyNetwork.createRedirectedMessage(
+            packets_1[0] = NetworkMain.getRedirectedPacket(
                 world.dimension.getType(),
                 new SChunkDataPacket(worldChunk_1, 65535)
             );
-            packets_1[1] = MyNetwork.createRedirectedMessage(
+            packets_1[1] = NetworkMain.getRedirectedPacket(
                 world.dimension.getType(),
                 new SUpdateLightPacket(
-                    worldChunk_1.getPositionVec(),
-                    this.serverLightingProvider
+                    worldChunk_1.getPos(),
+                    this.lightManager
                 )
             );
         }
     
-        player.sendInitialChunkPackets(
-            worldChunk_1.getPositionVec(),
+        player.sendChunkLoad(
+            worldChunk_1.getPos(),
             packets_1[0],
             packets_1[1]
         );
-        
-        DebugPacketSender.method_19775(this.world, worldChunk_1.getPositionVec());
+    
+        DebugPacketSender.func_218802_a(this.world, worldChunk_1.getPos());
         List<Entity> list_1 = Lists.newArrayList();
         List<Entity> list_2 = Lists.newArrayList();
-        ObjectIterator var6 = this.entityTrackers.values().iterator();
+        ObjectIterator var6 = this.entities.values().iterator();
         
         while (var6.hasNext()) {
             IEEntityTracker threadedAnvilChunkStorage$EntityTracker_1 = (IEEntityTracker) var6.next();
             Entity entity_1 = threadedAnvilChunkStorage$EntityTracker_1.getEntity_();
-            if (entity_1 != player && entity_1.chunkCoordX == worldChunk_1.getPositionVec().x && entity_1.chunkCoordZ == worldChunk_1.getPositionVec().z) {
+            if (entity_1 != player && entity_1.chunkCoordX == worldChunk_1.getPos().x && entity_1.chunkCoordZ == worldChunk_1.getPos().z) {
                 threadedAnvilChunkStorage$EntityTracker_1.updateCameraPosition_(player);
-                if (entity_1 instanceof MobEntity && ((MobEntity) entity_1).getHoldingEntity() != null) {
+                if (entity_1 instanceof MobEntity && ((MobEntity) entity_1).getLeashHolder() != null) {
                     list_1.add(entity_1);
                 }
-                
-                if (!entity_1.getPassengerList().isEmpty()) {
+        
+                if (!entity_1.getPassengers().isEmpty()) {
                     list_2.add(entity_1);
                 }
             }
@@ -153,15 +154,15 @@ public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilC
             
             while (var9.hasNext()) {
                 entity_3 = (Entity) var9.next();
-                player.connection.sendPacket(
-                    MyNetwork.createRedirectedMessage(
-                        world.getDimension().getType(),
-                        new SMountEntityPacket(
-                            entity_3,
-                            ((MobEntity) entity_3).getHoldingEntity()
-                        )
+                NetworkMain.sendRedirected(
+                    player,
+                    world.getDimension().getType(),
+                    new SMountEntityPacket(
+                        entity_3,
+                        ((MobEntity) entity_3).getLeashHolder()
                     )
                 );
+    
             }
         }
         
@@ -170,18 +171,17 @@ public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilC
             
             while (var9.hasNext()) {
                 entity_3 = (Entity) var9.next();
-                player.connection.sendPacket(
-                    MyNetwork.createRedirectedMessage(
-                        world.getDimension().getType(),
-                        new SSetPassengersPacket(entity_3)
-                    )
+                NetworkMain.sendRedirected(
+                    player,
+                    world.getDimension().getType(),
+                    new SSetPassengersPacket(entity_3)
                 );
             }
         }
     }
     
     @Inject(
-        method = "unloadEntity",
+        method = "untrack",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -190,8 +190,8 @@ public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilC
         if (entity instanceof ServerPlayerEntity) {
             ServerPlayerEntity player = (ServerPlayerEntity) entity;
             if (SGlobal.serverTeleportationManager.isTeleporting(player)) {
-                entityTrackers.remove(entity.getEntityId());
-                handlePlayerAddedOrRemoved(player, false);
+                entities.remove(entity.getEntityId());
+                setPlayerTracking(player, false);
                 ci.cancel();
             }
         }
@@ -199,7 +199,7 @@ public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilC
     
     @Override
     public void onPlayerRespawn(ServerPlayerEntity oldPlayer) {
-        entityTrackers.values().forEach(obj -> {
+        entities.values().forEach(obj -> {
             ((IEEntityTracker) obj).onPlayerRespawn(oldPlayer);
         });
     }

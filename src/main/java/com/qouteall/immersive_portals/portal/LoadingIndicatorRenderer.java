@@ -5,7 +5,7 @@ import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
 
 public class LoadingIndicatorRenderer extends EntityRenderer<LoadingIndicatorEntity> {
-    protected LoadingIndicatorRenderer(EntityRendererManager entityRenderDispatcher_1) {
+    public LoadingIndicatorRenderer(EntityRendererManager entityRenderDispatcher_1) {
         super(entityRenderDispatcher_1);
     }
     

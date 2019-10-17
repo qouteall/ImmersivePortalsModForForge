@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MixinPortalBlock {
     
     @Inject(
-        method = "Lnet/minecraft/block/PortalBlock;createPortalAt(Lnet/minecraft/world/IWorld;Lnet/minecraft/util/math/BlockPos;)Z",
+        method = "trySpawnPortal",
         at = @At("HEAD"),
         cancellable = true
     )

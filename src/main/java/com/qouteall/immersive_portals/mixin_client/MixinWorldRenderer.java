@@ -7,12 +7,7 @@ import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.exposer.IEWorldRenderer;
 import com.qouteall.immersive_portals.exposer.IEWorldRendererChunkInfo;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.render.*;
-import net.minecraft.client.renderer.AbstractChunkRenderContainer;
-import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.ViewFrustum;
-import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.chunk.ChunkRender;
 import net.minecraft.client.renderer.chunk.IChunkRendererFactory;
 import net.minecraft.client.renderer.culling.ICamera;
@@ -36,62 +31,62 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     private ClientWorld world;
     
     @Shadow
-    private IChunkRendererFactory chunkRendererFactory;
+    private IChunkRendererFactory renderChunkFactory;
     
     @Shadow
-    private ViewFrustum chunkRenderDispatcher;
+    private ViewFrustum viewFrustum;
     
     @Shadow
-    private AbstractChunkRenderContainer chunkRendererList;
+    private AbstractChunkRenderContainer renderContainer;
     
     @Shadow
-    private List chunkInfos;
-    
-    @Shadow
-    @Final
-    private EntityRendererManager entityRenderDispatcher;
-    
-    @Shadow
-    private int field_4076;
+    private List renderInfos;
     
     @Shadow
     @Final
-    public Minecraft client;
+    private EntityRendererManager renderManager;
     
     @Shadow
-    private double lastTranslucentSortX;
+    private int renderEntitiesStartupCounter;
     
     @Shadow
-    private double lastTranslucentSortY;
+    @Final
+    public Minecraft mc;
     
     @Shadow
-    private double lastTranslucentSortZ;
+    private double prevRenderSortX;
     
     @Shadow
-    protected abstract void renderLayer(BlockRenderLayer blockLayerIn);
+    private double prevRenderSortY;
+    
+    @Shadow
+    private double prevRenderSortZ;
+    
+    @Shadow
+    protected abstract void renderBlockLayer(BlockRenderLayer blockLayerIn);
     
     @Override
     public ViewFrustum getChunkRenderDispatcher() {
-        return chunkRenderDispatcher;
+        return viewFrustum;
     }
     
     @Override
     public AbstractChunkRenderContainer getChunkRenderList() {
-        return chunkRendererList;
+        return renderContainer;
     }
     
     @Override
     public List getChunkInfos() {
-        return chunkInfos;
+        return renderInfos;
     }
     
     @Override
     public void setChunkInfos(List list) {
-        chunkInfos = list;
+        renderInfos = list;
     }
     
     @Inject(
-        method = "Lnet/minecraft/client/render/WorldRenderer;renderLayer(Lnet/minecraft/block/BlockRenderLayer;)V",
+        method = "renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
         at = @At("HEAD")
     )
     private void onStartRenderLayer(BlockRenderLayer blockRenderLayer_1, CallbackInfo ci) {
@@ -101,7 +96,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     }
     
     @Inject(
-        method = "Lnet/minecraft/client/render/WorldRenderer;renderLayer(Lnet/minecraft/block/BlockRenderLayer;)V",
+        method = "renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;)V",
         at = @At("TAIL")
     )
     private void onStopRenderLayer(BlockRenderLayer blockRenderLayer_1, CallbackInfo ci) {
@@ -114,7 +109,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         method = "renderEntities",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/render/GameRenderer;enableLightmap()V",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;enableLightmap()V",
             shift = At.Shift.AFTER
         )
     )
@@ -130,7 +125,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     private static boolean isReloadingOtherWorldRenderers = false;
     
     //reload other world renderers when the main world renderer is reloaded
-    @Inject(method = "reload", at = @At("TAIL"))
+    @Inject(method = "loadRenderers", at = @At("TAIL"))
     private void onReload(CallbackInfo ci) {
         ClientWorldLoader clientWorldLoader = CGlobal.clientWorldLoader;
         WorldRenderer this_ = (WorldRenderer) (Object) this;
@@ -151,7 +146,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         
         for (WorldRenderer worldRenderer : clientWorldLoader.worldRendererMap.values()) {
             if (worldRenderer != this_) {
-                worldRenderer.reload();
+                worldRenderer.loadRenderers();
             }
         }
         isReloadingOtherWorldRenderers = false;
@@ -159,7 +154,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     //avoid resort transparency when rendering portal
     @Inject(
-        method = "renderLayer(Lnet/minecraft/block/BlockRenderLayer;Lnet/minecraft/client/render/Camera;)I",
+        method = "renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;Lnet/minecraft/client/renderer/ActiveRenderInfo;)I",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -170,37 +165,37 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     ) {
         if (blockLayerIn == BlockRenderLayer.TRANSLUCENT && CGlobal.renderer.isRendering()) {
             //run my version and avoid resort transparency
-            
-            RenderHelper.disable();
-            
-            this.client.getProfiler().push("filterempty");
+    
+            RenderHelper.disableStandardItemLighting();
+    
+            this.mc.getProfiler().startSection("filterempty");
             int l = 0;
             boolean flag = blockLayerIn == BlockRenderLayer.TRANSLUCENT;
-            int i1 = flag ? this.chunkInfos.size() - 1 : 0;
-            int i = flag ? -1 : this.chunkInfos.size();
+            int i1 = flag ? this.renderInfos.size() - 1 : 0;
+            int i = flag ? -1 : this.renderInfos.size();
             int j1 = flag ? -1 : 1;
             
             for (int j = i1; j != i; j += j1) {
-                ChunkRender chunkrender = ((IEWorldRendererChunkInfo) this.chunkInfos.get(j)).getChunkRenderer();
-                if (!chunkrender.getData().isEmpty(blockLayerIn)) {
+                ChunkRender chunkrender = ((IEWorldRendererChunkInfo) this.renderInfos.get(j)).getChunkRenderer();
+                if (!chunkrender.getCompiledChunk().isLayerEmpty(blockLayerIn)) {
                     ++l;
-                    this.chunkRendererList.add(chunkrender, blockLayerIn);
+                    this.renderContainer.addRenderChunk(chunkrender, blockLayerIn);
                 }
             }
             
             if (l == 0) {
-                this.client.getProfiler().pop();
+                this.mc.getProfiler().endSection();
             }
             else {
                 if (CHelper.shouldDisableFog()) {
                     GlStateManager.disableFog();
                 }
-                
-                this.client.getProfiler().swap(() -> {
+    
+                this.mc.getProfiler().endStartSection(() -> {
                     return "render_" + blockLayerIn;
                 });
-                this.renderLayer(blockLayerIn);
-                this.client.getProfiler().pop();
+                this.renderBlockLayer(blockLayerIn);
+                this.mc.getProfiler().endSection();
             }
             
             cir.setReturnValue(l);
@@ -210,6 +205,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     @Override
     public EntityRendererManager getEntityRenderDispatcher() {
-        return entityRenderDispatcher;
+        return renderManager;
     }
 }

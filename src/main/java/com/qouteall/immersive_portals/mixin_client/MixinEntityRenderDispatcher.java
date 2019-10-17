@@ -1,19 +1,34 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.ModMainClient;
+import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.resources.IReloadableResourceManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 
 @Mixin(EntityRendererManager.class)
 public class MixinEntityRenderDispatcher {
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onEntityRenderDispatcherInit(
+        TextureManager p_i50971_1_,
+        ItemRenderer p_i50971_2_,
+        IReloadableResourceManager p_i50971_3_,
+        CallbackInfo ci
+    ) {
+        ModMainClient.initRenderers((EntityRendererManager) (Object) this);
+    }
+    
     @Inject(
-        method = "Lnet/minecraft/client/render/entity/EntityRenderDispatcher;shouldRender(Lnet/minecraft/entity/Entity;Lnet/minecraft/client/render/VisibleRegion;DDD)Z",
+        method = "shouldRender",
         at = @At("HEAD"),
         cancellable = true
     )

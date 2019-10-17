@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CGlobal {
     public static PortalRenderer renderer;
     public static RendererUsingStencil rendererUsingStencil;
-    public static RendererUsingFrameBuffer rendererUsingFrameBuffer;
     public static RendererDummy rendererDummy = new RendererDummy();
     
     public static ClientWorldLoader clientWorldLoader;
@@ -28,7 +27,6 @@ public class CGlobal {
     public static boolean useHackedChunkRenderDispatcher = true;
     public static boolean isClientRemoteTickingEnabled = true;
     public static boolean isOptifinePresent = false;
-    public static boolean renderPortalBeforeTranslucentBlocks = true;
     public static boolean useFrontCulling = true;
     public static Map<DimensionType, Integer> renderInfoNumMap = new ConcurrentHashMap<>();
     

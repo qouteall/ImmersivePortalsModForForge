@@ -4,6 +4,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
@@ -11,7 +12,7 @@ import net.minecraftforge.fml.network.simple.SimpleChannel;
 public class NetworkMain {
     private static final String protocol_version = "1";
     public static final SimpleChannel channel = NetworkRegistry.newSimpleChannel(
-        new ResourceLocation("immersive_portals", "main"),
+        new ResourceLocation("assets/immersive_portals", "main"),
         () -> protocol_version,
         protocol_version::equals,
         protocol_version::equals
@@ -62,5 +63,14 @@ public class NetworkMain {
         IPacket t
     ) {
         sendToPlayer(player, new StcRedirected(dimension, t));
+    }
+    
+    public static IPacket getRedirectedPacket(
+        DimensionType dimension,
+        IPacket t
+    ) {
+        return channel.toVanillaPacket(
+            new StcRedirected(dimension, t), NetworkDirection.PLAY_TO_CLIENT
+        );
     }
 }

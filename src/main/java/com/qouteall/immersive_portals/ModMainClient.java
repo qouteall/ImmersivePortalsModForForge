@@ -2,40 +2,41 @@ package com.qouteall.immersive_portals;
 
 import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.my_util.Helper;
-import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
-import com.qouteall.immersive_portals.optifine_compatibility.OFHelper;
 import com.qouteall.immersive_portals.portal.*;
 import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.PortalRenderer;
 import com.qouteall.immersive_portals.render.RendererUsingStencil;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.render.EntityRendererRegistry;
-import net.fabricmc.loader.FabricLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.EntityRendererManager;
 
-public class ModMainClient implements ClientModInitializer {
+public class ModMainClient {
     
-    public static void initPortalRenderers() {
-        EntityRendererRegistry.INSTANCE.register(
+    public static void initRenderers(EntityRendererManager manager) {
+        manager.register(
             Portal.class,
-            (entityRenderDispatcher, context) -> new PortalEntityRenderer(entityRenderDispatcher)
+            new PortalEntityRenderer(manager)
         );
-        EntityRendererRegistry.INSTANCE.register(
+        manager.register(
             NetherPortalEntity.class,
-            (entityRenderDispatcher, context) -> new PortalEntityRenderer(entityRenderDispatcher)
+            new PortalEntityRenderer(manager)
         );
-        EntityRendererRegistry.INSTANCE.register(
+        manager.register(
             EndPortalEntity.class,
-            (entityRenderDispatcher, context) -> new PortalEntityRenderer(entityRenderDispatcher)
+            new PortalEntityRenderer(manager)
         );
-        EntityRendererRegistry.INSTANCE.register(
+        manager.register(
             Mirror.class,
-            (entityRenderDispatcher, context) -> new PortalEntityRenderer(entityRenderDispatcher)
+            new PortalEntityRenderer(manager)
         );
-        EntityRendererRegistry.INSTANCE.register(
+        manager.register(
             BreakableMirror.class,
-            (entityRenderDispatcher, context) -> new PortalEntityRenderer(entityRenderDispatcher)
+            new PortalEntityRenderer(manager)
+        );
+        
+        manager.register(
+            LoadingIndicatorEntity.class,
+            new LoadingIndicatorRenderer(manager)
         );
     }
     
@@ -44,17 +45,18 @@ public class ModMainClient implements ClientModInitializer {
             //do not switch when rendering
             return;
         }
-        if (OFHelper.getIsUsingShader()) {
-            if (CGlobal.isRenderDebugMode) {
-                switchRenderer(OFGlobal.rendererDebugWithShader);
-            }
-            else {
-                switchRenderer(OFGlobal.rendererMixed);
-            }
-        }
-        else {
-            switchRenderer(CGlobal.rendererUsingStencil);
-        }
+        switchRenderer(CGlobal.rendererUsingStencil);
+//        if (OFHelper.getIsUsingShader()) {
+//            if (CGlobal.isRenderDebugMode) {
+//                switchRenderer(OFGlobal.rendererDebugWithShader);
+//            }
+//            else {
+//                switchRenderer(OFGlobal.rendererMixed);
+//            }
+//        }
+//        else {
+//            switchRenderer(CGlobal.rendererUsingStencil);
+//        }
     }
     
     private static void switchRenderer(PortalRenderer renderer) {
@@ -64,36 +66,27 @@ public class ModMainClient implements ClientModInitializer {
         }
     }
     
-    @Override
-    public void onInitializeClient() {
+    public static void onInitializeClient() {
         Helper.log("initializing client");
-    
-        initPortalRenderers();
-        LoadingIndicatorEntity.initClient();
     
         NetworkMain.init();
         
         Minecraft.getInstance().execute(() -> {
             CGlobal.rendererUsingStencil = new RendererUsingStencil();
-            CGlobal.rendererUsingFrameBuffer = new RendererUsingFrameBuffer();
         
             CGlobal.renderer = CGlobal.rendererUsingStencil;
             CGlobal.clientWorldLoader = new ClientWorldLoader();
             CGlobal.myGameRenderer = new MyGameRenderer();
             CGlobal.clientTeleportationManager = new ClientTeleportationManager();
         });
-    
-        CGlobal.isOptifinePresent = FabricLoader.INSTANCE.isModLoaded("optifabric");
-    
-        Helper.log(CGlobal.isOptifinePresent ? "Optifine is present" : "Optifine is not present");
-    
-        if (CGlobal.isOptifinePresent) {
-            OFHelper.init();
-        }
-    
-        //when false it will make translucent blocks in front of portal render incorrectly
-        //when true translucent blocks may disappear
-        //I haven't made rendering objects switch fully correct
-        CGlobal.renderPortalBeforeTranslucentBlocks = false;
+//
+//        CGlobal.isOptifinePresent = FabricLoader.INSTANCE.isModLoaded("optifabric");
+//
+//        Helper.log(CGlobal.isOptifinePresent ? "Optifine is present" : "Optifine is not present");
+//
+//        if (CGlobal.isOptifinePresent) {
+//            OFHelper.init();
+//        }
+//
     }
 }

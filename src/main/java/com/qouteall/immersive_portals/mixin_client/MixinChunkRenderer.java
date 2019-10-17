@@ -13,7 +13,7 @@ public class MixinChunkRenderer {
     @Shadow
     private volatile World world;
     
-    @Inject(method = "shouldBuild", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "shouldStayLoaded", at = @At("HEAD"), cancellable = true)
     private void onShouldRebuild(CallbackInfoReturnable<Boolean> cir) {
         if (world == null) {
             cir.setReturnValue(false);

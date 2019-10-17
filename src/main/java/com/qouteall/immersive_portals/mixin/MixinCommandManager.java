@@ -18,7 +18,7 @@ public class MixinCommandManager {
     private CommandDispatcher<CommandSource> dispatcher;
     
     @Inject(
-        method = "Lnet/minecraft/server/command/CommandManager;<init>(Z)V",
+        method = "<init>",
         at = @At("RETURN")
     )
     private void initCommands(boolean isOnServer, CallbackInfo ci) {

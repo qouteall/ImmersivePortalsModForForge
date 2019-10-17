@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.mixin;
 
+import com.immersive_portals.network.NetworkMain;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
@@ -28,19 +29,16 @@ public abstract class MixinEntityTrackerEntry {
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        serverPlayNetworkHandler.sendPacket(
-            MyNetwork.createRedirectedMessage(
-                entity.dimension,
-                packet_1
-            )
+        NetworkMain.sendRedirected(
+            serverPlayNetworkHandler.player, entity.dimension, packet_1
         );
     }
     
     @Redirect(
-        method = "Lnet/minecraft/server/network/EntityTrackerEntry;method_18756()V",
+        method = "tick",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;sendPacket(Lnet/minecraft/network/Packet;)V"
+            target = "Lnet/minecraft/network/play/ServerPlayNetHandler;sendPacket(Lnet/minecraft/network/IPacket;)V"
         )
     )
     private void onSendPositionSyncPacket(
@@ -55,18 +53,18 @@ public abstract class MixinEntityTrackerEntry {
      * overwrite because method reference can not be redirected
      */
     @Overwrite
-    public void startTracking(ServerPlayerEntity serverPlayerEntity_1) {
+    public void track(ServerPlayerEntity serverPlayerEntity_1) {
         ServerPlayNetHandler networkHandler = serverPlayerEntity_1.connection;
         this.sendPackets(packet -> sendRedirectedMessage(networkHandler, packet));
-        this.entity.onStartedTrackingBy(serverPlayerEntity_1);
-        serverPlayerEntity_1.onStartedTracking(this.entity);
+        this.entity.addTrackingPlayer(serverPlayerEntity_1);
+        serverPlayerEntity_1.addEntity(this.entity);
     }
     
     @Redirect(
-        method = "Lnet/minecraft/server/network/EntityTrackerEntry;method_18758(Lnet/minecraft/network/Packet;)V",
+        method = "sendPacket",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;sendPacket(Lnet/minecraft/network/Packet;)V"
+            target = "Lnet/minecraft/network/play/ServerPlayNetHandler;sendPacket(Lnet/minecraft/network/IPacket;)V"
         )
     )
     private void onSendToWatcherAndSelf(

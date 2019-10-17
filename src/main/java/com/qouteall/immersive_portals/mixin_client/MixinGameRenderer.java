@@ -25,32 +25,35 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     @Shadow
     @Final
     @Mutable
-    private LightTexture lightmapTextureManager;
+    private LightTexture lightmapTexture;
     @Shadow
     @Final
     @Mutable
-    private FogRenderer backgroundRenderer;
+    private FogRenderer fogRenderer;
     @Shadow
     private boolean renderHand;
     @Shadow
     @Final
     @Mutable
-    private ActiveRenderInfo camera;
+    private ActiveRenderInfo activeRender;
     
     @Shadow
-    public abstract void renderCenter(float float_1, long long_1);
+    public abstract void updateCameraAndRender(float float_1, long long_1);
     
     @Override
     public void renderCenter_(float partialTicks, long finishTimeNano) {
-        renderCenter(partialTicks, finishTimeNano);
+        updateCameraAndRender(partialTicks, finishTimeNano);
     }
     
+    //render() and renderCenter() in yarn both correspond to updateCameraAndRender in mcp
+    //easy to get confused
+    
     @Inject(
-        method = "Lnet/minecraft/client/render/GameRenderer;renderCenter(FJ)V",
+        method = "updateCameraAndRender(FJ)V",
         at = @At(
             value = "INVOKE",
             shift = At.Shift.AFTER,
-            target = "Lnet/minecraft/client/render/WorldRenderer;renderEntities(Lnet/minecraft/client/render/Camera;Lnet/minecraft/client/render/VisibleRegion;F)V"
+            target = "Lnet/minecraft/client/renderer/WorldRenderer;renderEntities(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ICamera;F)V"
         )
     )
     private void afterRenderingEntities(
@@ -64,10 +67,10 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     }
     
     @Inject(
-        method = "renderCenter",
+        method = "updateCameraAndRender(FJ)V",
         at = @At(
             value = "INVOKE_STRING",
-            target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V",
+            target = "Lnet/minecraft/profiler/IProfiler;endStartSection(Ljava/lang/String;)V",
             args = {"ldc=hand"}
         )
     )
@@ -78,7 +81,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     }
     
     @Redirect(
-        method = "Lnet/minecraft/client/render/GameRenderer;renderCenter(FJ)V",
+        method = "updateCameraAndRender(FJ)V",
         at = @At(
             value = "INVOKE",
             target = "Lcom/mojang/blaze3d/platform/GlStateManager;clear(IZ)V"
@@ -95,7 +98,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         method = "renderWorld",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/render/GameRenderer;renderCenter(FJ)V"
+            target = "Lnet/minecraft/client/renderer/GameRenderer;updateCameraAndRender(FJ)V"
         )
     )
     private void onBeforeRenderingCenter(float partialTicks, long finishTimeNano, CallbackInfo ci) {
@@ -110,7 +113,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         method = "renderWorld",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/render/GameRenderer;renderCenter(FJ)V",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;updateCameraAndRender(FJ)V",
             shift = At.Shift.AFTER
         )
     )
@@ -120,37 +123,37 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         MyRenderHelper.onTotalRenderEnd();
     }
     
-    @Inject(method = "renderCenter", at = @At("TAIL"))
+    @Inject(method = "updateCameraAndRender(FJ)V", at = @At("TAIL"))
     private void onRenderCenterEnded(float partialTicks, long nanoTime, CallbackInfo ci) {
         CGlobal.renderer.onRenderCenterEnded();
     }
     
     @Shadow
-    abstract protected void applyCameraTransformations(float float_1);
+    abstract protected void setupCameraTransform(float float_1);
     
     @Override
     public void applyCameraTransformations_(float float_1) {
-        applyCameraTransformations(float_1);
+        setupCameraTransform(float_1);
     }
     
     @Override
     public LightTexture getLightmapTextureManager() {
-        return lightmapTextureManager;
+        return lightmapTexture;
     }
     
     @Override
     public void setLightmapTextureManager(LightTexture manager) {
-        lightmapTextureManager = manager;
+        lightmapTexture = manager;
     }
     
     @Override
     public FogRenderer getBackgroundRenderer() {
-        return backgroundRenderer;
+        return fogRenderer;
     }
     
     @Override
     public void setBackgroundRenderer(FogRenderer renderer) {
-        backgroundRenderer = renderer;
+        fogRenderer = renderer;
     }
     
     @Override
@@ -165,6 +168,6 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     
     @Override
     public void setCamera(ActiveRenderInfo camera_) {
-        camera = camera_;
+        activeRender = camera_;
     }
 }

@@ -1,0 +1,30 @@
+{
+  "required": true,
+  "package": "com.qouteall.immersive_portals.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MixinChunkHolder",
+    "MixinChunkTicketManager",
+    "MixinCommandManager",
+    "MixinEnderEyeItem",
+    "MixinEntity",
+    "MixinEntityTracker",
+    "MixinEntityTrackerEntry",
+    "MixinFireBlock",
+    "MixinFlintAndSteelItem",
+    "MixinMinecraftServer",
+    "MixinPlayerManager",
+    "MixinPlayerMoveC2SPacket_S",
+    "MixinPlayerPositionLookS2CPacket",
+    "MixinPortalBlock",
+    "MixinServerChunkManager",
+    "MixinServerPlayerEntity",
+    "MixinServerPlayNetworkHandler",
+    "MixinServerWorld",
+    "MixinThreadedAnvilChunkStorage",
+    "MixinWorld"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
