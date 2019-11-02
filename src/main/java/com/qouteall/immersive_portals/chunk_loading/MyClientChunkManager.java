@@ -26,6 +26,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 
@@ -83,8 +84,9 @@ public class MyClientChunkManager extends ClientChunkProvider {
         return this.world;
     }
     
-    //@Nullable
-    public Chunk loadChunkFromPacket(
+    @Nullable
+    @Override
+    public Chunk func_217250_a(
         World world_1,
         int x,
         int z,

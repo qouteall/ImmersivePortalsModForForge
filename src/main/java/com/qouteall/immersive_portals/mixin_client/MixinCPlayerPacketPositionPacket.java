@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @OnlyIn(Dist.CLIENT)
-@Mixin(CPlayerPacket.PositionPacket.class)
+@Mixin(value = CPlayerPacket.PositionPacket.class, remap = false)
 public class MixinCPlayerPacketPositionPacket {
     @OnlyIn(Dist.CLIENT)
     @Inject(

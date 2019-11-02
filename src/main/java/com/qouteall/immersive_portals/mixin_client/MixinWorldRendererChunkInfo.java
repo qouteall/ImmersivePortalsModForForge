@@ -6,15 +6,15 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(targets = "net.minecraft.client.render.WorldRenderer$ChunkInfo")
+@Mixin(targets = "net.minecraft.client.renderer.WorldRenderer$LocalRenderInformationContainer", remap = false)
 public class MixinWorldRendererChunkInfo implements IEWorldRendererChunkInfo {
     
     @Shadow
     @Final
-    private ChunkRender renderer;
+    private ChunkRender renderChunk;
     
     @Override
     public ChunkRender getChunkRenderer() {
-        return renderer;
+        return renderChunk;
     }
 }

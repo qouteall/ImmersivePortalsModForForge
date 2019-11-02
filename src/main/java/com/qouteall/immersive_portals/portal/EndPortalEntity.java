@@ -21,12 +21,8 @@ public class EndPortalEntity extends Portal {
         super(entityType_1, world_1);
     }
     
-    public EndPortalEntity(World world) {
-        this(entityType, world);
-    }
-    
     public static void onEndPortalComplete(ServerWorld world, BlockPattern.PatternHelper pattern) {
-        Portal portal = new EndPortalEntity(world);
+        Portal portal = entityType.create(world);
         
         Vec3d center = new Vec3d(pattern.getFrontTopLeft()).add(-1.5, 0.5, -1.5);
         portal.setPosition(center.x, center.y, center.z);

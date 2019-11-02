@@ -1,10 +1,7 @@
 package com.immersive_portals.network;
 
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.SGlobal;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
@@ -44,5 +41,6 @@ public class StcDimensionConfirm {
                 false
             );
         });
+        context.get().setPacketHandled(true);
     }
 }

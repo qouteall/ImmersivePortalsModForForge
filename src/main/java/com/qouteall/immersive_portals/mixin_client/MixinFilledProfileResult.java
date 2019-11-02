@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 import java.util.Map;
 
-@Mixin(FilledProfileResult.class)
+@Mixin(value = FilledProfileResult.class, remap = false)
 public class MixinFilledProfileResult {
     @Shadow
     @Final

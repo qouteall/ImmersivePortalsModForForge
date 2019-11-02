@@ -34,7 +34,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Iterator;
 import java.util.List;
 
-@Mixin(ChunkManager.class)
+@Mixin(value = ChunkManager.class, remap = false)
 public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
     @Shadow
     private int viewDistance;
@@ -89,7 +89,7 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
         IPacket<?>[] packets_1,
         Chunk worldChunk_1
     ) {
-        //vanilla will not manage interdimensional chunk loading
+        //vanilla will not manage inter dimensional chunk loading
         if (player.dimension != world.dimension.getType()) {
             return;
         }

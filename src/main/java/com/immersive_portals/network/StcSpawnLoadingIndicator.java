@@ -42,11 +42,13 @@ public class StcSpawnLoadingIndicator {
             if (world == null) {
                 return;
             }
-        
-            LoadingIndicatorEntity indicator = new LoadingIndicatorEntity(world);
+    
+            LoadingIndicatorEntity indicator = LoadingIndicatorEntity.entityType.create(world);
             indicator.setPosition(pos.x, pos.y, pos.z);
         
             world.addEntity(233333333, indicator);
         });
+    
+        context.get().setPacketHandled(true);
     }
 }

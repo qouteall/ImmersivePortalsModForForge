@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Framebuffer.class)
+@Mixin(value = Framebuffer.class, remap = false)
 public abstract class MixinFrameBuffer implements IEGlFrameBuffer {
     
     private boolean isStencilBufferEnabled;
@@ -22,7 +22,7 @@ public abstract class MixinFrameBuffer implements IEGlFrameBuffer {
     public int framebufferTextureHeight;
     
     @Shadow
-    public abstract void initFbo(int int_1, int int_2, boolean boolean_1);
+    public abstract void func_216492_b(int int_1, int int_2, boolean boolean_1);
     
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(
@@ -85,7 +85,11 @@ public abstract class MixinFrameBuffer implements IEGlFrameBuffer {
     public void setIsStencilBufferEnabledAndReload(boolean cond) {
         if (isStencilBufferEnabled != cond) {
             isStencilBufferEnabled = cond;
-            initFbo(framebufferTextureWidth, framebufferTextureHeight, Minecraft.IS_RUNNING_ON_MAC);
+            func_216492_b(
+                framebufferTextureWidth,
+                framebufferTextureHeight,
+                Minecraft.IS_RUNNING_ON_MAC
+            );
         }
     }
 }

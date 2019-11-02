@@ -294,10 +294,10 @@ public class NetherPortalGenerator {
         Vec3d centerOffset = new Vec3d(innerAreaSize).scale(0.5);
     
         NetherPortalEntity[] portalArray = new NetherPortalEntity[]{
-            new NetherPortalEntity(fromWorld),
-            new NetherPortalEntity(fromWorld),
-            new NetherPortalEntity(toWorld),
-            new NetherPortalEntity(toWorld)
+            NetherPortalEntity.entityType.create(fromWorld),
+            NetherPortalEntity.entityType.create(fromWorld),
+            NetherPortalEntity.entityType.create(toWorld),
+            NetherPortalEntity.entityType.create(toWorld)
         };
     
         Portal.initBiWayBiFacedPortal(

@@ -8,7 +8,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkEvent;
 
-import java.io.IOException;
 import java.util.function.Supplier;
 
 public class CtsTeleport {
@@ -23,13 +22,13 @@ public class CtsTeleport {
     }
     
     public CtsTeleport(PacketBuffer buf) {
-        DimensionType dimensionBefore = DimensionType.getById(buf.readInt());
-        Vec3d posBefore = new Vec3d(
+        dimensionBefore = DimensionType.getById(buf.readInt());
+        posBefore = new Vec3d(
             buf.readDouble(),
             buf.readDouble(),
             buf.readDouble()
         );
-        int portalEntityId = buf.readInt();
+        portalEntityId = buf.readInt();
     }
     
     public void encode(PacketBuffer buf) {
@@ -51,5 +50,6 @@ public class CtsTeleport {
         
             return true;
         });
+        context.get().setPacketHandled(true);
     }
 }

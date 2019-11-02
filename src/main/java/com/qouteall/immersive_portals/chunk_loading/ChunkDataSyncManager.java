@@ -125,7 +125,7 @@ public class ChunkDataSyncManager {
         );
     
         //update the entity trackers
-        ((ServerChunkProvider) ieStorage).updatePlayerPosition(player);
+        ((ChunkManager) ieStorage).updatePlayerPosition(player);
     }
     
     private void onEndWatch(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {

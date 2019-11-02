@@ -12,10 +12,6 @@ import net.minecraft.world.World;
 public class LoadingIndicatorEntity extends Entity {
     public static EntityType<LoadingIndicatorEntity> entityType;
     
-    public LoadingIndicatorEntity(World world) {
-        this(entityType, world);
-    }
-    
     public LoadingIndicatorEntity(EntityType type, World world) {
         super(type, world);
     }

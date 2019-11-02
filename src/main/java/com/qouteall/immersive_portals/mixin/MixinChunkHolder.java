@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(ChunkHolder.class)
+@Mixin(value = ChunkHolder.class, remap = false)
 public class MixinChunkHolder implements IEChunkHolder {
     
     @Shadow
@@ -27,6 +27,7 @@ public class MixinChunkHolder implements IEChunkHolder {
     
     /**
      * @author qouteall
+     * @reason whatever
      */
     @Overwrite
     private void sendToTracking(IPacket<?> packet_1, boolean boolean_1) {

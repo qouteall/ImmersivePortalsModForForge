@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Set;
 
-@Mixin(ServerPlayNetHandler.class)
+@Mixin(value = ServerPlayNetHandler.class, remap = false)
 public abstract class MixinServerPlayNetHandler implements IEServerPlayNetworkHandler {
     @Shadow
     public ServerPlayerEntity player;

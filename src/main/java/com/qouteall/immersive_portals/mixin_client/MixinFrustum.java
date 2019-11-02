@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
-@Mixin(Frustum.class)
+@Mixin(value = Frustum.class, remap = false)
 public class MixinFrustum implements IEFrustumWithOrigin {
     @Shadow
     private double x;

@@ -4,6 +4,7 @@ import com.qouteall.immersive_portals.my_util.Helper;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
@@ -36,16 +37,10 @@ public class NetherPortalEntity extends Portal {
     }
     
     public NetherPortalEntity(
-        EntityType type,
+        EntityType<?> type,
         World world
     ) {
         super(type, world);
-    }
-    
-    public NetherPortalEntity(
-        World world
-    ) {
-        super(entityType, world);
     }
     
     private void breakPortalOnThisSide() {
@@ -192,4 +187,17 @@ public class NetherPortalEntity extends Portal {
         compoundTag.put("obsidianFrame", obsidianFrame.toTag());
     }
     
+    @Override
+    public void writeSpawnData(PacketBuffer buffer) {
+        super.writeSpawnData(buffer);
+        buffer.writeUniqueId(reversePortalId);
+        buffer.writeCompoundTag(obsidianFrame.toTag());
+    }
+    
+    @Override
+    public void readSpawnData(PacketBuffer additionalData) {
+        super.readSpawnData(additionalData);
+        reversePortalId = additionalData.readUniqueId();
+        obsidianFrame = ObsidianFrame.fromTag(additionalData.readCompoundTag());
+    }
 }

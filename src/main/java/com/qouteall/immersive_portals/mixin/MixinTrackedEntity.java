@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import java.util.function.Consumer;
 
 //NOTE must redirect all packets about entities
-@Mixin(TrackedEntity.class)
+@Mixin(value = TrackedEntity.class, remap = false)
 public abstract class MixinTrackedEntity {
     @Shadow
     @Final

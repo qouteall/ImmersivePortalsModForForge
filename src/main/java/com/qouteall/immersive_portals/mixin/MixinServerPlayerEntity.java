@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Set;
 
-@Mixin(ServerPlayerEntity.class)
+@Mixin(value = ServerPlayerEntity.class, remap = false)
 public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
     @Shadow
     public ServerPlayNetHandler connection;

@@ -34,14 +34,12 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     public static final SignalArged<Portal> clientPortalTickSignal = new SignalArged<>();
     public static final SignalArged<Portal> serverPortalTickSignal = new SignalArged<>();
     
-    
     public Portal(
         EntityType<?> entityType_1,
         World world_1
     ) {
         super(entityType_1, world_1);
     }
-    
     
     public Stream<Entity> getEntitiesToTeleport() {
         return world.getEntitiesWithinAABB(

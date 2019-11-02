@@ -29,7 +29,7 @@ import java.util.stream.IntStream;
 
 //NOTE WeakReference does not override equals()
 //don't put them into set
-@Mixin(ViewFrustum.class)
+@Mixin(value = ViewFrustum.class, remap = false)
 public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
     @Shadow
     @Final

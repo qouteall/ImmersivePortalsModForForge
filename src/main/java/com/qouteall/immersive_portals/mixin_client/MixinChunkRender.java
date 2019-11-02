@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(ChunkRender.class)
+@Mixin(value = ChunkRender.class, remap = false)
 public class MixinChunkRender {
     @Shadow
     private volatile World world;

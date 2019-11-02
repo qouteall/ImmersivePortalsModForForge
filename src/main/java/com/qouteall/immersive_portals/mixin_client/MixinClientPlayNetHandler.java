@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Map;
 import java.util.UUID;
 
-@Mixin(ClientPlayNetHandler.class)
+@Mixin(value = ClientPlayNetHandler.class, remap = false)
 public class MixinClientPlayNetHandler implements IEClientPlayNetworkHandler {
     @Shadow
     private ClientWorld world;

@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-@Mixin(DebugOverlayGui.class)
+@Mixin(value = DebugOverlayGui.class, remap = false)
 public class MixinDebugOverlayGui {
     @Inject(method = "getDebugInfoRight", at = @At("RETURN"), cancellable = true)
     private void onGetRightText(CallbackInfoReturnable<List<String>> cir) {

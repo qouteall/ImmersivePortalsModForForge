@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 
-@Mixin(EntityRendererManager.class)
+@Mixin(value = EntityRendererManager.class, remap = false)
 public class MixinEntityRenderManager {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onEntityRenderDispatcherInit(

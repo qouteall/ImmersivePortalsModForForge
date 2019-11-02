@@ -41,9 +41,9 @@ public class StcRedirected {
     
     public StcRedirected(PacketBuffer buf) {
         int dimensionId = buf.readInt();
-        int messageType = buf.readInt();
-        DimensionType dimension = DimensionType.getById(dimensionId);
-        IPacket packet = NetworkMain.createEmptyPacketByType(messageType);
+        packetId = buf.readInt();
+        dimension = DimensionType.getById(dimensionId);
+        packet = NetworkMain.createEmptyPacketByType(packetId);
         try {
             packet.readPacketData(buf);
         }
@@ -117,5 +117,7 @@ public class StcRedirected {
         }
     
         processRedirectedPacket(dimension, packet);
+    
+        context.get().setPacketHandled(true);
     }
 }
