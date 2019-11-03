@@ -62,7 +62,12 @@ public class BreakableMirror extends Mirror {
     
     @Override
     public boolean isPortalValid() {
-        return super.isPortalValid() && wallArea != null;
+        if (world.isRemote) {
+            return super.isPortalValid();
+        }
+        else {
+            return super.isPortalValid() && wallArea != null;
+        }
     }
     
     private void checkWallIntegrity() {
@@ -116,26 +121,29 @@ public class BreakableMirror extends Mirror {
         
         Tuple<Direction.Axis, Direction.Axis> axises = Helper.getAnotherTwoAxis(facing.getAxis());
         if (facing.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
-            axises = new Tuple<>(axises.getA(), axises.getB());
+            axises = new Tuple<>(axises.getB(), axises.getA());
         }
     
         Direction.Axis wAxis = axises.getA();
         Direction.Axis hAxis = axises.getB();
         float width = Helper.getCoordinate(wallArea.getSize(), wAxis);
-        int height = Helper.getCoordinate(wallArea.getSize(), hAxis);
+        float height = Helper.getCoordinate(wallArea.getSize(), hAxis);
         
         breakableMirror.axisW = new Vec3d(
             Direction.getFacingFromAxisDirection(
                 wAxis,
                 Direction.AxisDirection.POSITIVE
             ).getDirectionVec()
-        ).scale(width);
+        );
         breakableMirror.axisH = new Vec3d(
             Direction.getFacingFromAxisDirection(
                 hAxis,
                 Direction.AxisDirection.POSITIVE
             ).getDirectionVec()
-        ).scale(height);
+        );
+    
+        breakableMirror.width = width;
+        breakableMirror.height = height;
         
         breakableMirror.wallArea = wallArea;
     

@@ -34,7 +34,9 @@ import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
 
 public class Helper {
     
-    private static final Logger LOGGER = LogManager.getLogger();
+    private static final Logger LOGGER = LogManager.getContext(
+        Helper.class.getClassLoader(), false
+    ).getLogger("Portal");
     
     public static void assertWithSideEffects(boolean cond) {
         //assert cond;
@@ -407,12 +409,12 @@ public class Helper {
     }
     
     public static void log(Object str) {
-        LOGGER.info("[Portal] " + str);
+        LOGGER.info(str);
         //System.out.println(str);
     }
     
     public static void err(Object str) {
-        LOGGER.error("[Portal] " + str);
+        LOGGER.error(str);
         //System.err.println(str);
     }
     
@@ -535,5 +537,27 @@ public class Helper {
             }
         }
         return currentBox;
+    }
+    
+    
+    public static Vec3d getBoxSize(AxisAlignedBB box) {
+        return new Vec3d(box.getXSize(), box.getYSize(), box.getZSize());
+    }
+    
+    public static AxisAlignedBB getBoxSurface(AxisAlignedBB box, Direction direction) {
+        double size = getCoordinate(getBoxSize(box), direction.getAxis());
+        Vec3d shrinkVec = new Vec3d(direction.getDirectionVec()).scale(size);
+        return box.contract(shrinkVec.x, shrinkVec.y, shrinkVec.z);
+    }
+    
+    public static Tuple<Direction, Direction> getPerpendicularDirections(Direction facing) {
+        Tuple<Direction.Axis, Direction.Axis> axises = getAnotherTwoAxis(facing.getAxis());
+        if (facing.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
+            axises = new Tuple<>(axises.getB(), axises.getA());
+        }
+        return new Tuple<>(
+            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axises.getA()),
+            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axises.getB())
+        );
     }
 }

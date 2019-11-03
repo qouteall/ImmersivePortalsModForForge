@@ -49,6 +49,13 @@ public class NetworkMain {
             CtsTeleport::new,
             CtsTeleport::handle
         );
+        channel.registerMessage(
+            4,
+            StcUpdateGlobalPortals.class,
+            StcUpdateGlobalPortals::encode,
+            StcUpdateGlobalPortals::new,
+            StcUpdateGlobalPortals::handle
+        );
     }
     
     public static <T> void sendToServer(T t) {

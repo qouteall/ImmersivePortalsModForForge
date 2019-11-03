@@ -31,8 +31,10 @@ public class EndPortalEntity extends Portal {
         
         portal.dimensionTo = DimensionType.THE_END;
     
-        portal.axisW = new Vec3d(0, 0, 3);
-        portal.axisH = new Vec3d(3, 0, 0);
+        portal.axisW = new Vec3d(0, 0, 1);
+        portal.axisH = new Vec3d(1, 0, 0);
+        portal.width = 3;
+        portal.height = 3;
         
         portal.loadFewerChunks = false;
     

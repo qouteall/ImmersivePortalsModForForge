@@ -4,6 +4,7 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.exposer.IEClientWorld;
 import com.qouteall.immersive_portals.exposer.IEWorld;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
@@ -19,12 +20,16 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.List;
+
 @Mixin(value = ClientWorld.class, remap = false)
 public class MixinClientWorld implements IEClientWorld {
     @Shadow
     @Final
     @Mutable
     private ClientPlayNetHandler connection;
+    
+    private List<GlobalTrackedPortal> globalTrackedPortals;
     
     @Override
     public ClientPlayNetHandler getNetHandler() {
@@ -34,6 +39,16 @@ public class MixinClientWorld implements IEClientWorld {
     @Override
     public void setNetHandler(ClientPlayNetHandler handler) {
         connection = handler;
+    }
+    
+    @Override
+    public List<GlobalTrackedPortal> getGlobalPortals() {
+        return globalTrackedPortals;
+    }
+    
+    @Override
+    public void setGlobalPortals(List<GlobalTrackedPortal> arg) {
+        globalTrackedPortals = arg;
     }
     
     @Inject(
@@ -64,4 +79,6 @@ public class MixinClientWorld implements IEClientWorld {
             .filter(world -> world != (Object) this)
             .forEach(world -> world.removeEntityFromWorld(entityId));
     }
+    
+    
 }

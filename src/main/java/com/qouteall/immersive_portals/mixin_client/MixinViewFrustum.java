@@ -25,7 +25,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 //NOTE WeakReference does not override equals()
 //don't put them into set
@@ -49,7 +48,6 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
     private Map<ChunkPos, ChunkRender[]> presetCache;
     private IChunkRendererFactory factory;
     private Map<BlockPos, ChunkRender> chunkRendererMap;
-    private Deque<ChunkRender> idleChunks;
     private Set<ChunkRender[]> isNeighborUpdated;
     
     @Inject(
@@ -66,7 +64,6 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
         this.factory = chunkRendererFactory;
         
         chunkRendererMap = new HashMap<>();
-        idleChunks = new ArrayDeque<>();
         
         presetCache = new HashMap<>();
         isNeighborUpdated = new HashSet<>();
@@ -81,8 +78,6 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
             for (ChunkRender renderChunk : renderChunks) {
                 chunkRendererMap.put(getOriginNonMutable(renderChunk), renderChunk);
             }
-    
-            fixAbnormality();
         }
     }
     
@@ -94,10 +89,8 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
     private void delete(CallbackInfo ci) {
         if (CGlobal.useHackedChunkRenderDispatcher) {
             chunkRendererMap.values().forEach(ChunkRender::deleteGlResources);
-            idleChunks.forEach(ChunkRender::deleteGlResources);
             
             chunkRendererMap.clear();
-            idleChunks.clear();
             
             presetCache.clear();
             isNeighborUpdated.clear();
@@ -111,8 +104,7 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
         if (CGlobal.useHackedChunkRenderDispatcher) {
             ClientWorld worldClient = Minecraft.getInstance().world;
             if (worldClient != null) {
-                if (worldClient.getGameTime() % 233 == 66) {
-                    fixAbnormality();
+                if (worldClient.getGameTime() % 533 == 66) {
                     dismissInactiveChunkRenderers();
                     presetCache.clear();
                     isNeighborUpdated.clear();
@@ -124,14 +116,11 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
     private ChunkRender findAndEmployChunkRenderer(BlockPos basePos) {
         assert !chunkRendererMap.containsKey(basePos);
         assert CGlobal.useHackedChunkRenderDispatcher;
+    
+        Minecraft.getInstance().getProfiler().startSection("create_chunk_renderer");
+        ChunkRender chunkRenderer = factory.create(world, renderGlobal);
+        Minecraft.getInstance().getProfiler().endSection();
         
-        ChunkRender chunkRenderer = idleChunks.pollLast();
-        
-        if (chunkRenderer == null) {
-            Minecraft.getInstance().getProfiler().startSection("create_chunk_renderer");
-            chunkRenderer = factory.create(world, renderGlobal);
-            Minecraft.getInstance().getProfiler().endSection();
-        }
         
         employChunkRenderer(chunkRenderer, basePos);
         
@@ -168,20 +157,8 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
             Helper.log("Chunk Renderer Abnormal");
             return;
         }
-        
-        idleChunks.addLast(chunkRenderer);
-        
-        destructAbundantIdleChunks();
-    }
     
-    private void destructAbundantIdleChunks() {
-        assert CGlobal.useHackedChunkRenderDispatcher;
-        if (idleChunks.size() > CGlobal.maxIdleChunkRendererNum) {
-            int toDestructChunkRenderersNum = idleChunks.size() - CGlobal.maxIdleChunkRendererNum;
-            IntStream.range(0, toDestructChunkRenderersNum).forEach(n -> {
-                idleChunks.pollFirst().deleteGlResources();
-            });
-        }
+        chunkRenderer.deleteGlResources();
     }
     
     private void dismissInactiveChunkRenderers() {
@@ -236,14 +213,6 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
                     ci.cancel();
                 }
             }
-        }
-    }
-    
-    //I can't figure out why its origin is incorrect sometimes
-    //so fix it manually
-    private void fixAbnormality() {
-        if (chunkRendererMap.values().stream().distinct().count() != chunkRendererMap.size()) {
-            Helper.err("Not distinct!");
         }
     }
     

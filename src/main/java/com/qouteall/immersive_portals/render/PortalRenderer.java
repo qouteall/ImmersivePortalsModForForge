@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
@@ -9,7 +10,6 @@ import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
 
@@ -17,6 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public abstract class PortalRenderer {
     
@@ -111,17 +112,14 @@ public abstract class PortalRenderer {
     }
     
     private List<Portal> getPortalsNearbySorted() {
-        List<Portal> portalsNearby = mc.world.getEntitiesWithinAABB(
-            Portal.class,
-            new AxisAlignedBB(mc.renderViewEntity.getPosition()).grow(portalRenderingRange.get())
-        );
-        
-        portalsNearby.sort(
-            Comparator.comparing(portalEntity ->
-                portalEntity.getPositionVec().squareDistanceTo(mc.renderViewEntity.getPositionVec())
-            )
-        );
-        return portalsNearby;
+        Vec3d cameraPos = mc.renderViewEntity.getPositionVec();
+        double range = 128.0;
+        return CHelper.getClientNearbyPortals(range)
+            .sorted(
+                Comparator.comparing(portalEntity ->
+                    portalEntity.getDistanceToNearestPointInPortal(cameraPos)
+                )
+            ).collect(Collectors.toList());
     }
     
     protected abstract void doRenderPortal(Portal portal);

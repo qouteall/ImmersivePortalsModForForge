@@ -4,32 +4,37 @@ import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.my_util.SignalArged;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 import net.minecraftforge.fml.network.NetworkHooks;
 
+import java.util.UUID;
 import java.util.stream.Stream;
 
 public class Portal extends Entity implements IEntityAdditionalSpawnData {
     public static EntityType<Portal> entityType;
     
+    public double width = 0;
+    public double height = 0;
     public Vec3d axisW;
     public Vec3d axisH;
-    private Vec3d normal;
     public DimensionType dimensionTo;
     public Vec3d destination;
-    public boolean loadFewerChunks = true;
     
-    public AxisAlignedBB boundingBoxCache;
+    public boolean loadFewerChunks = true;
+    public UUID specificPlayer;
+    
+    private AxisAlignedBB boundingBoxCache;
+    private Vec3d normal;
     
     public static final SignalArged<Portal> clientPortalTickSignal = new SignalArged<>();
     public static final SignalArged<Portal> serverPortalTickSignal = new SignalArged<>();
@@ -59,8 +64,10 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     
     @Override
     protected void readAdditional(CompoundNBT compoundTag) {
-        axisW = Helper.getVec3d(compoundTag, "axisW");
-        axisH = Helper.getVec3d(compoundTag, "axisH");
+        width = compoundTag.getDouble("width");
+        height = compoundTag.getDouble("height");
+        axisW = Helper.getVec3d(compoundTag, "axisW").normalize();
+        axisH = Helper.getVec3d(compoundTag, "axisH").normalize();
         dimensionTo = DimensionType.getById(compoundTag.getInt("dimensionTo"));
         destination = Helper.getVec3d(compoundTag, "destination");
         if (compoundTag.contains("loadFewerChunks")) {
@@ -87,6 +94,8 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     
     @Override
     protected void writeAdditional(CompoundNBT compoundTag) {
+        compoundTag.putDouble("width", width);
+        compoundTag.putDouble("height", height);
         Helper.putVec3d(compoundTag, "axisW", axisW);
         Helper.putVec3d(compoundTag, "axisH", axisH);
         compoundTag.putInt("dimensionTo", dimensionTo.getId());
@@ -122,9 +131,56 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     
     public boolean isPortalValid() {
         return dimensionTo != null &&
+            width != 0 &&
+            height != 0 &&
             axisW != null &&
             axisH != null &&
             destination != null;
+    }
+    
+    public boolean canBeSeenByPlayer(PlayerEntity player) {
+        return true;
+    }
+    
+    @Override
+    public void writeSpawnData(PacketBuffer buffer) {
+        buffer.writeDouble(width);
+        buffer.writeDouble(height);
+        buffer.writeDouble(axisW.x);
+        buffer.writeDouble(axisW.y);
+        buffer.writeDouble(axisW.z);
+        buffer.writeDouble(axisH.x);
+        buffer.writeDouble(axisH.y);
+        buffer.writeDouble(axisH.z);
+        buffer.writeInt(dimensionTo.getId());
+        buffer.writeDouble(destination.x);
+        buffer.writeDouble(destination.y);
+        buffer.writeDouble(destination.z);
+        buffer.writeBoolean(loadFewerChunks);
+    }
+    
+    @Override
+    public void readSpawnData(PacketBuffer additionalData) {
+        width = additionalData.readDouble();
+        height = additionalData.readDouble();
+        axisW = new Vec3d(
+            additionalData.readDouble(),
+            additionalData.readDouble(),
+            additionalData.readDouble()
+        );
+        axisH = new Vec3d(
+            additionalData.readDouble(),
+            additionalData.readDouble(),
+            additionalData.readDouble()
+        );
+        dimensionTo = DimensionType.getById(additionalData.readInt());
+        destination = new Vec3d(
+            additionalData.readDouble(),
+            additionalData.readDouble(),
+            additionalData.readDouble()
+        );
+        loadFewerChunks = additionalData.readBoolean();
+        
     }
     
     public double getDistanceToPlane(
@@ -165,11 +221,11 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     //1  0
     public Vec3d[] getFourVertices(double shrinkFactor) {
         Vec3d[] vertices = new Vec3d[4];
-        vertices[0] = getPointInPlane(1 - shrinkFactor, -1 + shrinkFactor);
-        vertices[1] = getPointInPlane(-1 + shrinkFactor, -1 + shrinkFactor);
-        vertices[2] = getPointInPlane(1 - shrinkFactor, 1 - shrinkFactor);
-        vertices[3] = getPointInPlane(-1 + shrinkFactor, 1 - shrinkFactor);
-        
+        vertices[0] = getPointInPlane(width / 2 - shrinkFactor, -height / 2 + shrinkFactor);
+        vertices[1] = getPointInPlane(-width / 2 + shrinkFactor, -height / 2 + shrinkFactor);
+        vertices[2] = getPointInPlane(width / 2 - shrinkFactor, height / 2 - shrinkFactor);
+        vertices[3] = getPointInPlane(-width / 2 + shrinkFactor, height / 2 - shrinkFactor);
+    
         return vertices;
     }
     
@@ -177,40 +233,35 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     //1  0
     public Vec3d[] getFourVerticesRelativeToCenter(double shrinkFactor) {
         Vec3d[] vertices = new Vec3d[4];
-        vertices[0] = getPointInPlaneRelativeToCenter(1 - shrinkFactor, -1 + shrinkFactor);
-        vertices[1] = getPointInPlaneRelativeToCenter(-1 + shrinkFactor, -1 + shrinkFactor);
-        vertices[2] = getPointInPlaneRelativeToCenter(1 - shrinkFactor, 1 - shrinkFactor);
-        vertices[3] = getPointInPlaneRelativeToCenter(-1 + shrinkFactor, 1 - shrinkFactor);
-        
-        return vertices;
-    }
-    
-    public Vec3d applyTransformationToPoint(Vec3d pos) {
-        Vec3d offset = destination.subtract(getPositionVec());
-        return pos.add(offset);
-    }
-    
-    public Vec3d getCullingPoint() {
-        return destination;
-    }
-    
-    private AxisAlignedBB getPortalCollisionBox() {
-        return new AxisAlignedBB(
-            getPointInPlane(1, 1)
-                .add(getNormal().scale(0.1)),
-            getPointInPlane(-1, -1)
-                .add(getNormal().scale(-0.1))
+        vertices[0] = getPointInPlaneRelativeToCenter(
+            width / 2 - shrinkFactor,
+            -height / 2 + shrinkFactor
         );
+        vertices[1] = getPointInPlaneRelativeToCenter(
+            -width / 2 + shrinkFactor,
+            -height / 2 + shrinkFactor
+        );
+        vertices[2] = getPointInPlaneRelativeToCenter(
+            width / 2 - shrinkFactor,
+            height / 2 - shrinkFactor
+        );
+        vertices[3] = getPointInPlaneRelativeToCenter(
+            -width / 2 + shrinkFactor,
+            height / 2 - shrinkFactor
+        );
+    
+        return vertices;
     }
     
     @Override
     public String toString() {
-        return "Portal{" +
-            "id=" + getEntityId() +
-            ", in=" + dimension + getPosition() +
-            ", to=" + dimensionTo + new BlockPos(destination) +
-            ", normal=" + new BlockPos(getNormal()) +
-            '}';
+        return String.format(
+            "%s{%s,(%s %s %s %s)->(%s %s %s %s)}",
+            getClass().getSimpleName(),
+            getEntityId(),
+            dimension, (int) posX, (int) posY, (int) posZ,
+            dimensionTo, (int) destination.x, (int) destination.y, (int) destination.z
+        );
     }
     
     //0 and 3 are connected
@@ -229,42 +280,71 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         Tuple<Direction.Axis, Direction.Axis> anotherTwoAxis = Helper.getAnotherTwoAxis(normalAxis);
         Direction.Axis wAxis = anotherTwoAxis.getA();
         Direction.Axis hAxis = anotherTwoAxis.getB();
-        
+    
         float width = (float) Helper.getCoordinate(portalSize, wAxis);
         float height = (float) Helper.getCoordinate(portalSize, hAxis);
-        
-        Vec3d wAxisVec = new Vec3d(Helper.getUnitFromAxis(wAxis)).scale(width);
-        Vec3d hAxisVec = new Vec3d(Helper.getUnitFromAxis(hAxis)).scale(height);
-        
+    
+        Vec3d wAxisVec = new Vec3d(Helper.getUnitFromAxis(wAxis));
+        Vec3d hAxisVec = new Vec3d(Helper.getUnitFromAxis(hAxis));
+    
         portals[0].setPosition(center1.x, center1.y, center1.z);
         portals[1].setPosition(center1.x, center1.y, center1.z);
         portals[2].setPosition(center2.x, center2.y, center2.z);
         portals[3].setPosition(center2.x, center2.y, center2.z);
-        
+    
         portals[0].destination = center2;
         portals[1].destination = center2;
         portals[2].destination = center1;
         portals[3].destination = center1;
-        
+    
         assert portals[0].dimension == dimension1;
         assert portals[1].dimension == dimension1;
         assert portals[2].dimension == dimension2;
         assert portals[3].dimension == dimension2;
-        
+    
         portals[0].dimensionTo = dimension2;
         portals[1].dimensionTo = dimension2;
         portals[2].dimensionTo = dimension1;
         portals[3].dimensionTo = dimension1;
-        
+    
         portals[0].axisW = wAxisVec;
         portals[1].axisW = wAxisVec.scale(-1);
         portals[2].axisW = wAxisVec;
         portals[3].axisW = wAxisVec.scale(-1);
-        
+    
         portals[0].axisH = hAxisVec;
         portals[1].axisH = hAxisVec;
         portals[2].axisH = hAxisVec;
         portals[3].axisH = hAxisVec;
+    
+        portals[0].width = width;
+        portals[1].width = width;
+        portals[2].width = width;
+        portals[3].width = width;
+    
+        portals[0].height = height;
+        portals[1].height = height;
+        portals[2].height = height;
+        portals[3].height = height;
+    }
+    
+    
+    public Vec3d applyTransformationToPoint(Vec3d pos) {
+        Vec3d offset = destination.subtract(getPositionVec());
+        return pos.add(offset);
+    }
+    
+    public Vec3d getCullingPoint() {
+        return destination;
+    }
+    
+    private AxisAlignedBB getPortalCollisionBox() {
+        return new AxisAlignedBB(
+            getPointInPlane(width / 2, height / 2)
+                .add(getNormal().scale(0.1)),
+            getPointInPlane(-width / 2, -height / 2)
+                .add(getNormal().scale(-0.1))
+        );
     }
     
     public boolean shouldEntityTeleport(Entity entity) {
@@ -282,21 +362,15 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         
         double yInPlane = offset.dotProduct(axisH);
         double xInPlane = offset.dotProduct(axisW);
-        
-        return Math.abs(xInPlane) < (1 + 0.1) &&
-            Math.abs(yInPlane) < (1 + 0.1);
-        
+    
+        return Math.abs(xInPlane) < (width / 2 + 0.1) &&
+            Math.abs(yInPlane) < (height / 2 + 0.1);
     }
     
     public boolean isMovedThroughPortal(
         Vec3d lastTickPos,
         Vec3d pos
     ) {
-        if (pos.squareDistanceTo(lastTickPos) > 5 * 5) {
-            //entity moves to fast
-            return false;
-        }
-        
         double lastDistance = getDistanceToPlane(lastTickPos);
         double nowDistance = getDistanceToPlane(pos);
         
@@ -322,40 +396,39 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         //nothing
     }
     
-    @Override
-    public void writeSpawnData(PacketBuffer buffer) {
-        buffer.writeDouble(axisW.x);
-        buffer.writeDouble(axisW.y);
-        buffer.writeDouble(axisW.z);
-        buffer.writeDouble(axisH.x);
-        buffer.writeDouble(axisH.y);
-        buffer.writeDouble(axisH.z);
-        buffer.writeInt(dimensionTo.getId());
-        buffer.writeDouble(destination.x);
-        buffer.writeDouble(destination.y);
-        buffer.writeDouble(destination.z);
-        buffer.writeBoolean(loadFewerChunks);
+    public double getDistanceToNearestPointInPortal(
+        Vec3d point
+    ) {
+        double distanceToPlane = getDistanceToPlane(point);
+        Vec3d posInPlane = point.add(getNormal().scale(-distanceToPlane));
+        Vec3d localPos = posInPlane.subtract(getPositionVec());
+        double localX = localPos.dotProduct(axisW);
+        double localY = localPos.dotProduct(axisH);
+        double distanceToRect = getDistanceToRectangle(
+            localX, localY,
+            -(width / 2), -(height / 2),
+            (width / 2), (height / 2)
+        );
+        return Math.sqrt(distanceToPlane * distanceToPlane + distanceToRect * distanceToRect);
     }
     
-    @Override
-    public void readSpawnData(PacketBuffer additionalData) {
-        axisW = new Vec3d(
-            additionalData.readDouble(),
-            additionalData.readDouble(),
-            additionalData.readDouble()
-        );
-        axisH = new Vec3d(
-            additionalData.readDouble(),
-            additionalData.readDouble(),
-            additionalData.readDouble()
-        );
-        dimensionTo = DimensionType.getById(additionalData.readInt());
-        destination = new Vec3d(
-            additionalData.readDouble(),
-            additionalData.readDouble(),
-            additionalData.readDouble()
-        );
-        loadFewerChunks = additionalData.readBoolean();
+    public static double getDistanceToRectangle(
+        double pointX, double pointY,
+        double rectAX, double rectAY,
+        double rectBX, double rectBY
+    ) {
+        assert rectAX <= rectBX;
+        assert rectAY <= rectBY;
         
+        double wx1 = rectAX - pointX;
+        double wx2 = rectBX - pointX;
+        double dx = (wx1 * wx2 < 0 ? 0 : Math.min(Math.abs(wx1), Math.abs(wx2)));
+        
+        double wy1 = rectAY - pointY;
+        double wy2 = rectBY - pointY;
+        double dy = (wy1 * wy2 < 0 ? 0 : Math.min(Math.abs(wy1), Math.abs(wy2)));
+        
+        return Math.sqrt(dx * dx + dy * dy);
     }
+    
 }

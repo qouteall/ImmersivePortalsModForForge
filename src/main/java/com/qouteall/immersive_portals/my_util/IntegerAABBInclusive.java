@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.my_util;
 
 import net.minecraft.util.Direction;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
@@ -275,5 +276,17 @@ public class IntegerAABBInclusive {
             new BlockPos(h.getX(), h.getY(), l.getZ()),
             new BlockPos(h.getX(), h.getY(), h.getZ())
         };
+    }
+    
+    public AxisAlignedBB toRealNumberBox() {
+        assert isSorted();
+        return new AxisAlignedBB(
+            l.getX(),
+            l.getY(),
+            l.getZ(),
+            h.getX() + 1,
+            h.getY() + 1,
+            h.getZ() + 1
+        );
     }
 }

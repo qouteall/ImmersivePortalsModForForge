@@ -3,6 +3,9 @@ package com.immersive_portals;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.portal.*;
+import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
+import com.qouteall.immersive_portals.portal.global_portals.EndFloorPortal;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityClassification;
@@ -166,6 +169,46 @@ public class ModMainForge {
             );
             event.getRegistry().register(
                 BreakableMirror.entityType.setRegistryName("immersive_portals:breakable_mirror")
+            );
+    
+            GlobalTrackedPortal.entityType = EntityType.Builder.create(
+                GlobalTrackedPortal::new, EntityClassification.MISC
+            ).size(
+                1, 1
+            ).immuneToFire().setCustomClientFactory((a, world) ->
+                new GlobalTrackedPortal(GlobalTrackedPortal.entityType, world)
+            ).build(
+                "immersive_portals:global_tracked_portal"
+            );
+            event.getRegistry().register(
+                GlobalTrackedPortal.entityType.setRegistryName(
+                    "immersive_portals:global_tracked_portal")
+            );
+    
+            BorderPortal.entityType = EntityType.Builder.create(
+                BorderPortal::new, EntityClassification.MISC
+            ).size(
+                1, 1
+            ).immuneToFire().setCustomClientFactory((a, world) ->
+                new BorderPortal(BorderPortal.entityType, world)
+            ).build(
+                "immersive_portals:border_portal"
+            );
+            event.getRegistry().register(
+                BorderPortal.entityType.setRegistryName("immersive_portals:border_portal")
+            );
+    
+            EndFloorPortal.entityType = EntityType.Builder.create(
+                EndFloorPortal::new, EntityClassification.MISC
+            ).size(
+                1, 1
+            ).immuneToFire().setCustomClientFactory((a, world) ->
+                new EndFloorPortal(EndFloorPortal.entityType, world)
+            ).build(
+                "immersive_portals:end_floor_portal"
+            );
+            event.getRegistry().register(
+                EndFloorPortal.entityType.setRegistryName("immersive_portals:end_floor_portal")
             );
     
             LoadingIndicatorEntity.entityType = EntityType.Builder.create(

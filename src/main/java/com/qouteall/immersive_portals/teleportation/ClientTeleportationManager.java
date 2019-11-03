@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.teleportation;
 import com.immersive_portals.network.CtsTeleport;
 import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.exposer.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.exposer.IEClientWorld;
@@ -17,10 +18,13 @@ import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ClassInheritanceMultiMap;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.dimension.DimensionType;
+
+import java.util.List;
 
 public class ClientTeleportationManager {
     Minecraft mc = Minecraft.getInstance();
@@ -36,9 +40,12 @@ public class ClientTeleportationManager {
         );
     }
     
-    private static void tick(ClientTeleportationManager this_) {
-        this_.manageTeleportation();
-        this_.tickTimeForTeleportation++;
+    private void tick() {
+        manageTeleportation();
+        tickTimeForTeleportation++;
+        if (mc.player != null) {
+            slowDownIfTooFast(mc.player);
+        }
     }
     
     public void acceptSynchronizationDataFromServer(
@@ -59,11 +66,7 @@ public class ClientTeleportationManager {
     
     private void manageTeleportation() {
         if (mc.world != null && mc.player != null) {
-            Helper.getEntitiesNearby(
-                mc.player,
-                Portal.class,
-                10
-            ).filter(
+            CHelper.getClientNearbyPortals(20).filter(
                 portal -> portal.shouldEntityTeleport(mc.player)
             ).findFirst().ifPresent(
                 portal -> onEntityGoInsidePortal(mc.player, portal)
@@ -116,12 +119,10 @@ public class ClientTeleportationManager {
         NetworkMain.sendToServer(new CtsTeleport(
             fromDimension,
             oldPos,
-            portal.getEntityId()
+            portal.getUniqueID()
         ));
         
         amendChunkEntityStatus(player);
-    
-        slowDownIfTooFast(player);
     }
     
     private boolean isTeleportingFrequently() {
@@ -240,8 +241,16 @@ public class ClientTeleportationManager {
     
     //if player is falling through looping portals, make it slower
     private void slowDownIfTooFast(ClientPlayerEntity player) {
-        if (player.getMotion().length() > 1) {
-            player.setMotion(player.getMotion().scale(0.5));
+        if (player.getMotion().length() > 0.7) {
+            AxisAlignedBB nextTickArea = player.getBoundingBox().offset(player.getMotion()).grow(1);
+            List<Portal> nextTickCollidingPortals = player.world.getEntitiesWithinAABB(
+                Portal.class,
+                nextTickArea,
+                e -> e.isTeleportable()
+            );
+            if (!nextTickCollidingPortals.isEmpty()) {
+                player.setMotion(player.getMotion().scale(0.7));
+            }
         }
     }
 }
