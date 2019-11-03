@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.exposer.IECamera;
+import com.qouteall.immersive_portals.ducks.IECamera;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.block.Block;

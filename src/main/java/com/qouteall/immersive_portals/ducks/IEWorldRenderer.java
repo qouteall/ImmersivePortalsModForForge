@@ -1,9 +1,10 @@
-package com.qouteall.immersive_portals.exposer;
+package com.qouteall.immersive_portals.ducks;
 
-import java.util.List;
 import net.minecraft.client.renderer.AbstractChunkRenderContainer;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+
+import java.util.List;
 
 public interface IEWorldRenderer {
     ViewFrustum getChunkRenderDispatcher();

@@ -4,7 +4,7 @@ import com.immersive_portals.network.NetworkMain;
 import com.mojang.datafixers.util.Either;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.exposer.IEThreadedAnvilChunkStorage;
+import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.my_util.Helper;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.server.SChunkDataPacket;

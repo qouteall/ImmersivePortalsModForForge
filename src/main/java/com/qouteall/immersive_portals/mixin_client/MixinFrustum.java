@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.exposer.IEFrustumWithOrigin;
+import com.qouteall.immersive_portals.ducks.IEFrustumWithOrigin;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.MyRenderHelper;

@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.mixin_client;
 
-import com.qouteall.immersive_portals.exposer.IEPlayerListEntry;
+import com.qouteall.immersive_portals.ducks.IEPlayerListEntry;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
 import net.minecraft.world.GameType;
 import org.spongepowered.asm.mixin.Mixin;

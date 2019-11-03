@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.mixin_client;
 
-import com.qouteall.immersive_portals.exposer.IEWorldRendererChunkInfo;
+import com.qouteall.immersive_portals.ducks.IEWorldRendererChunkInfo;
 import net.minecraft.client.renderer.chunk.ChunkRender;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
