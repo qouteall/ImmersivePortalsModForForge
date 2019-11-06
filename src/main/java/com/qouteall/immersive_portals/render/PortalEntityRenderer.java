@@ -1,6 +1,7 @@
-package com.qouteall.immersive_portals.portal;
+package com.qouteall.immersive_portals.render;
 
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;

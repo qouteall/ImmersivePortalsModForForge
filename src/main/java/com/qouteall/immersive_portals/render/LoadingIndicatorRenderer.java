@@ -1,5 +1,6 @@
-package com.qouteall.immersive_portals.portal;
+package com.qouteall.immersive_portals.render;
 
+import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;

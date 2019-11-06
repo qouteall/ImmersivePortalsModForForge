@@ -71,7 +71,7 @@ public class BreakableMirror extends Mirror {
     }
     
     private void checkWallIntegrity() {
-        boolean wallValid = wallArea.fastStream().allMatch(
+        boolean wallValid = wallArea.streamOfMutable().allMatch(
             blockPos ->
                 isGlass(world, blockPos)
         );

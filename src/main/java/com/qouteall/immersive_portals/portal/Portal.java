@@ -32,6 +32,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     
     public boolean loadFewerChunks = true;
     public UUID specificPlayer;
+    public SpecialPortalShape specialShape;
     
     private AxisAlignedBB boundingBoxCache;
     private Vec3d normal;
@@ -76,6 +77,31 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         else {
             loadFewerChunks = true;
         }
+        if (compoundTag.contains("specificPlayer")) {
+            specificPlayer = compoundTag.getUniqueId("specificPlayer");
+        }
+        if (compoundTag.contains("specialShape")) {
+            specialShape = new SpecialPortalShape(
+                compoundTag.getList("specialShape", 6)
+            );
+        }
+    }
+    
+    @Override
+    protected void writeAdditional(CompoundNBT compoundTag) {
+        compoundTag.putDouble("width", width);
+        compoundTag.putDouble("height", height);
+        Helper.putVec3d(compoundTag, "axisW", axisW);
+        Helper.putVec3d(compoundTag, "axisH", axisH);
+        compoundTag.putInt("dimensionTo", dimensionTo.getId());
+        Helper.putVec3d(compoundTag, "destination", destination);
+        compoundTag.putBoolean("loadFewerChunks", loadFewerChunks);
+        if (specificPlayer != null) {
+            compoundTag.putUniqueId("specificPlayer", specificPlayer);
+        }
+        if (specialShape != null) {
+            compoundTag.put("specialShape", specialShape.writeToTag());
+        }
     }
     
     public Vec3d getNormal() {
@@ -90,17 +116,6 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     
     public Vec3d getContentDirection() {
         return getNormal().scale(-1);
-    }
-    
-    @Override
-    protected void writeAdditional(CompoundNBT compoundTag) {
-        compoundTag.putDouble("width", width);
-        compoundTag.putDouble("height", height);
-        Helper.putVec3d(compoundTag, "axisW", axisW);
-        Helper.putVec3d(compoundTag, "axisH", axisH);
-        compoundTag.putInt("dimensionTo", dimensionTo.getId());
-        Helper.putVec3d(compoundTag, "destination", destination);
-        compoundTag.putBoolean("loadFewerChunks", loadFewerChunks);
     }
     
     @Override
@@ -157,30 +172,42 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         buffer.writeDouble(destination.y);
         buffer.writeDouble(destination.z);
         buffer.writeBoolean(loadFewerChunks);
+    
+        CompoundNBT specialShapeTag = new CompoundNBT();
+        if (specialShape != null) {
+            specialShapeTag.put("data", specialShape.writeToTag());
+        }
+        buffer.writeCompoundTag(specialShapeTag);
     }
     
     @Override
-    public void readSpawnData(PacketBuffer additionalData) {
-        width = additionalData.readDouble();
-        height = additionalData.readDouble();
+    public void readSpawnData(PacketBuffer buffer) {
+        width = buffer.readDouble();
+        height = buffer.readDouble();
         axisW = new Vec3d(
-            additionalData.readDouble(),
-            additionalData.readDouble(),
-            additionalData.readDouble()
+            buffer.readDouble(),
+            buffer.readDouble(),
+            buffer.readDouble()
         );
         axisH = new Vec3d(
-            additionalData.readDouble(),
-            additionalData.readDouble(),
-            additionalData.readDouble()
+            buffer.readDouble(),
+            buffer.readDouble(),
+            buffer.readDouble()
         );
-        dimensionTo = DimensionType.getById(additionalData.readInt());
+        dimensionTo = DimensionType.getById(buffer.readInt());
         destination = new Vec3d(
-            additionalData.readDouble(),
-            additionalData.readDouble(),
-            additionalData.readDouble()
+            buffer.readDouble(),
+            buffer.readDouble(),
+            buffer.readDouble()
         );
-        loadFewerChunks = additionalData.readBoolean();
-        
+        loadFewerChunks = buffer.readBoolean();
+    
+        CompoundNBT specialShapeTag = buffer.readCompoundTag();
+        if (specialShapeTag.contains("data")) {
+            specialShape = new SpecialPortalShape(
+                specialShapeTag.getList("data", 6)
+            );
+        }
     }
     
     public double getDistanceToPlane(
@@ -363,8 +390,17 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         double yInPlane = offset.dotProduct(axisH);
         double xInPlane = offset.dotProduct(axisW);
     
-        return Math.abs(xInPlane) < (width / 2 + 0.1) &&
+        boolean roughResult = Math.abs(xInPlane) < (width / 2 + 0.1) &&
             Math.abs(yInPlane) < (height / 2 + 0.1);
+    
+        if (roughResult && specialShape != null) {
+            return specialShape.triangles.stream()
+                .anyMatch(triangle ->
+                    triangle.isPointInTriangle(xInPlane, yInPlane)
+                );
+        }
+    
+        return roughResult;
     }
     
     public boolean isMovedThroughPortal(

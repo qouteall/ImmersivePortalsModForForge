@@ -1,11 +1,10 @@
 package com.qouteall.immersive_portals;
 
-import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.portal.*;
-import com.qouteall.immersive_portals.render.MyGameRenderer;
-import com.qouteall.immersive_portals.render.PortalRenderer;
-import com.qouteall.immersive_portals.render.RendererUsingStencil;
+import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
+import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
+import com.qouteall.immersive_portals.render.*;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
@@ -31,6 +30,10 @@ public class ModMainClient {
         );
         manager.register(
             BreakableMirror.class,
+            new PortalEntityRenderer(manager)
+        );
+        manager.register(
+            NewNetherPortalEntity.class,
             new PortalEntityRenderer(manager)
         );
         

@@ -284,6 +284,20 @@ public class MyCommandClient {
                 return 0;
             })
         );
+        builder = builder.then(Commands
+            .literal("new_nether_portal_enable")
+            .executes(context -> {
+                SGlobal.doUseNewNetherPortal = true;
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("new_nether_portal_disable")
+            .executes(context -> {
+                SGlobal.doUseNewNetherPortal = false;
+                return 0;
+            })
+        );
         
         dispatcher.register(builder);
         

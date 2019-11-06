@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.ducks.IEBackgroundRenderer;
+import net.minecraft.client.gui.overlay.BossOverlayGui;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.util.math.Vec3d;
@@ -10,6 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = FogRenderer.class, remap = false)
@@ -35,6 +37,7 @@ public class MixinFogRenderer implements IEBackgroundRenderer {
         return dimensionConstraint;
     }
     
+    //do not apply fluid fog when rendering portal
     @Inject(
         method = "func_217620_a",
         at = @At("HEAD"),
@@ -53,5 +56,15 @@ public class MixinFogRenderer implements IEBackgroundRenderer {
         }
     }
     
-    
+    //remove boss fog to make end transition seamless
+    @Redirect(
+        method = "setupFog(Lnet/minecraft/client/renderer/ActiveRenderInfo;IF)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/overlay/BossOverlayGui;shouldCreateFog()Z"
+        )
+    )
+    private boolean redirectShouldCreateBossFog(BossOverlayGui bossOverlayGui) {
+        return false;
+    }
 }

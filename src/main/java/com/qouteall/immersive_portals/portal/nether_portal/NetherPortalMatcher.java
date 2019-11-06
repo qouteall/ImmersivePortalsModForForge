@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals.portal;
+package com.qouteall.immersive_portals.portal.nether_portal;
 
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
@@ -36,6 +36,28 @@ public class NetherPortalMatcher {
                 ).getMoved(
                     searchingCenter
                 ).forSixSurfaces(
+                    stream -> stream.map(
+                        box -> IntegerAABBInclusive.getIntersect(box, heightLimit)
+                    ).filter(Objects::nonNull)
+                )
+            );
+    }
+    
+    public static Stream<BlockPos> fromNearToFarWithinHeightLimitForMutable(
+        BlockPos searchingCenter,
+        int maxRadius,
+        IntegerAABBInclusive heightLimit
+    ) {
+        return IntStream
+            .range(0, maxRadius)
+            .boxed()
+            .flatMap(
+                r -> new IntegerAABBInclusive(
+                    new BlockPos(-r, -r, -r),
+                    new BlockPos(r, r, r)
+                ).getMoved(
+                    searchingCenter
+                ).forSixSurfacesMutable(
                     stream -> stream.map(
                         box -> IntegerAABBInclusive.getIntersect(box, heightLimit)
                     ).filter(Objects::nonNull)
@@ -227,7 +249,7 @@ public class NetherPortalMatcher {
         );
     }
     
-    private static boolean isObsidian(IWorld world, BlockPos obsidianPos) {
+    public static boolean isObsidian(IWorld world, BlockPos obsidianPos) {
         return world.getBlockState(obsidianPos) == Blocks.OBSIDIAN.getDefaultState();
     }
     
@@ -235,7 +257,7 @@ public class NetherPortalMatcher {
         return world.isAirBlock(pos);
     }
     
-    private static boolean isAirOrFire(IWorld world, BlockPos pos) {
+    public static boolean isAirOrFire(IWorld world, BlockPos pos) {
         return world.isAirBlock(pos) || world.getBlockState(pos).getBlock() == Blocks.FIRE;
     }
     

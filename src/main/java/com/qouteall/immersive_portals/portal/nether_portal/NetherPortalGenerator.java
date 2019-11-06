@@ -1,10 +1,12 @@
-package com.qouteall.immersive_portals.portal;
+package com.qouteall.immersive_portals.portal.nether_portal;
 
 import com.immersive_portals.network.NetworkMain;
 import com.immersive_portals.network.StcSpawnLoadingIndicator;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import com.qouteall.immersive_portals.my_util.SignalArged;
+import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.Direction;
@@ -159,8 +161,40 @@ public class NetherPortalGenerator {
             fromObsidianFrame.boxWithoutObsidian
         ).getSize();
     
+        Direction.Axis normalAxis = fromObsidianFrame.normalAxis;
+        IntegerAABBInclusive foundAirCube = findAirCubePlacement(
+            toWorld,
+            mappedPosInOtherDimension,
+            heightLimit,
+            neededAreaSize,
+            normalAxis
+        );
+    
+        ObsidianFrame toObsidianFrame = new ObsidianFrame(
+            fromObsidianFrame.normalAxis,
+            ObsidianFrame.shrinkToExcludeObsidianBlocks(
+                fromObsidianFrame.normalAxis,
+                foundAirCube
+            )
+        );
+    
+        generateObsidianFrame(
+            toWorld,
+            toObsidianFrame
+        );
+    
+        return toObsidianFrame;
+    }
+    
+    public static IntegerAABBInclusive findAirCubePlacement(
+        ServerWorld toWorld,
+        BlockPos mappedPosInOtherDimension,
+        IntegerAABBInclusive heightLimit,
+        BlockPos neededAreaSize,
+        Direction.Axis normalAxis
+    ) {
         IntegerAABBInclusive foundAirCube =
-            fromObsidianFrame.normalAxis == Direction.Axis.Y ?
+            normalAxis == Direction.Axis.Y ?
                 NetherPortalMatcher.findHorizontalPortalPlacement(
                     neededAreaSize, toWorld, mappedPosInOtherDimension,
                     heightLimit, NetherPortalMatcher.findingRadius
@@ -188,21 +222,7 @@ public class NetherPortalGenerator {
                 mappedPosInOtherDimension
             );
         }
-        
-        ObsidianFrame toObsidianFrame = new ObsidianFrame(
-            fromObsidianFrame.normalAxis,
-            ObsidianFrame.shrinkToExcludeObsidianBlocks(
-                fromObsidianFrame.normalAxis,
-                foundAirCube
-            )
-        );
-        
-        generateObsidianFrame(
-            toWorld,
-            toObsidianFrame
-        );
-        
-        return toObsidianFrame;
+        return foundAirCube;
     }
     
     private static ObsidianFrame findExistingEmptyObsidianFrameWithSameSizeInDestDimension(
@@ -251,7 +271,7 @@ public class NetherPortalGenerator {
         }
     }
     
-    private static BlockPos getPosInOtherDimension(
+    public static BlockPos getPosInOtherDimension(
         BlockPos pos,
         DimensionType dimensionFrom,
         DimensionType dimensionTo

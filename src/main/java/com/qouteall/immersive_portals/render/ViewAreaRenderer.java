@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.SpecialPortalShape;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.RenderHelper;
@@ -38,66 +39,66 @@ public class ViewAreaRenderer {
         Consumer<Vec3d> vertexOutput = p -> putIntoVertex(
             bufferbuilder, p, fogColor
         );
-
-
-//        if (portal.specialShape == null) {
-        generateTriangleBiLayered(
-            vertexOutput,
-            portal,
-            layerWidth,
-            posInPlayerCoordinate
-        );
-//        }
-//        else {
-//            generateTriangleSpecialBiLayered(
-//                vertexOutput,
-//                portal,
-//                layerWidth,
-//                posInPlayerCoordinate
-//            );
-//        }
+    
+        if (portal.specialShape == null) {
+            generateTriangleBiLayered(
+                vertexOutput,
+                portal,
+                layerWidth,
+                posInPlayerCoordinate
+            );
+        }
+        else {
+            generateTriangleSpecialBiLayered(
+                vertexOutput,
+                portal,
+                layerWidth,
+                posInPlayerCoordinate
+            );
+        }
     }
-
-//    private static void generateTriangleSpecialBiLayered(
-//        Consumer<Vec3d> vertexOutput,
-//        Portal portal,
-//        float layerWidth,
-//        Vec3d posInPlayerCoordinate
-//    ) {
-//        generateTriangleSpecialWithOffset(
-//            vertexOutput, portal, posInPlayerCoordinate,
-//            Vec3d.ZERO
-//        );
-//
-//        generateTriangleSpecialWithOffset(
-//            vertexOutput, portal, posInPlayerCoordinate,
-//            portal.getNormal().scale(-layerWidth)
-//        );
-//    }
-
-//    private static void generateTriangleSpecialWithOffset(
-//        Consumer<Vec3d> vertexOutput,
-//        Portal portal,
-//        Vec3d posInPlayerCoordinate,
-//        Vec3d offset
-//    ) {
-//        SpecialPortalShape specialShape = portal.specialShape;
-//
-//        for (SpecialPortalShape.TriangleInPlane triangle : specialShape.triangles) {
-//            putIntoLocalVertex(
-//                vertexOutput, portal, offset, posInPlayerCoordinate,
-//                triangle.x1, triangle.y1
-//            );
-//            putIntoLocalVertex(
-//                vertexOutput, portal, offset, posInPlayerCoordinate,
-//                triangle.x2, triangle.y2
-//            );
-//            putIntoLocalVertex(
-//                vertexOutput, portal, offset, posInPlayerCoordinate,
-//                triangle.x3, triangle.y3
-//            );
-//        }
-//    }
+    
+    private static void generateTriangleSpecialBiLayered(
+        Consumer<Vec3d> vertexOutput,
+        Portal portal,
+        float layerWidth,
+        Vec3d posInPlayerCoordinate
+    ) {
+        generateTriangleSpecialWithOffset(
+            vertexOutput, portal, posInPlayerCoordinate,
+            Vec3d.ZERO
+        );
+        
+        generateTriangleSpecialWithOffset(
+            vertexOutput, portal, posInPlayerCoordinate,
+            portal.getNormal().scale(-layerWidth)
+        );
+    }
+    
+    private static void generateTriangleSpecialWithOffset(
+        Consumer<Vec3d> vertexOutput,
+        Portal portal,
+        Vec3d posInPlayerCoordinate,
+        Vec3d offset
+    ) {
+        SpecialPortalShape specialShape = portal.specialShape;
+        
+        for (SpecialPortalShape.TriangleInPlane triangle : specialShape.triangles) {
+            //the face must be flipped
+            putIntoLocalVertex(
+                vertexOutput, portal, offset, posInPlayerCoordinate,
+                triangle.x1, triangle.y1
+            );
+            putIntoLocalVertex(
+                vertexOutput, portal, offset, posInPlayerCoordinate,
+                triangle.x3, triangle.y3
+            );
+            putIntoLocalVertex(
+                vertexOutput, portal, offset, posInPlayerCoordinate,
+                triangle.x2, triangle.y2
+            );
+        }
+    }
     
     private static void putIntoLocalVertex(
         Consumer<Vec3d> vertexOutput,

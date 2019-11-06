@@ -82,6 +82,7 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
     
     /**
      * @author qouteall
+     * @reason overwriting is easier than injecting
      */
     @Overwrite
     private void sendChunkData(

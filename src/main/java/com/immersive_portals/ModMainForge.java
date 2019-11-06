@@ -6,8 +6,9 @@ import com.qouteall.immersive_portals.portal.*;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.EndFloorPortal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
+import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.ResourceLocation;
@@ -33,7 +34,6 @@ public class ModMainForge {
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
     
-    
     public ModMainForge() {
         // Register the setup method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
@@ -55,14 +55,11 @@ public class ModMainForge {
     }
     
     private void setup(final FMLCommonSetupEvent event) {
-        // some preinit code
-        LOGGER.info("HELLO FROM PREINIT");
-        LOGGER.info("DIRT BLOCK >> {}", Blocks.DIRT.getRegistryName());
+    
     }
     
     private void doClientStuff(final FMLClientSetupEvent event) {
-        // do something that can only be done on the client
-        LOGGER.info("Got game settings {}", event.getMinecraftSupplier().get().gameSettings);
+    
     }
     
     private void enqueueIMC(final InterModEnqueueEvent event) {
@@ -83,8 +80,7 @@ public class ModMainForge {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
-        // do something when the server starts
-        LOGGER.info("HELLO from server starting");
+    
     }
     
     // You can use EventBusSubscriber to automatically subscribe events on the contained class (this is subscribing to the MOD
@@ -130,6 +126,20 @@ public class ModMainForge {
             event.getRegistry().register(
                 NetherPortalEntity.entityType.setRegistryName(
                     "immersive_portals:breakable_nether_portal")
+            );
+    
+            NewNetherPortalEntity.entityType = EntityType.Builder.create(
+                NewNetherPortalEntity::new, EntityClassification.MISC
+            ).size(
+                1, 1
+            ).immuneToFire().setCustomClientFactory((a, world) ->
+                new NewNetherPortalEntity(NewNetherPortalEntity.entityType, world)
+            ).build(
+                "immersive_portals:nether_portal_new"
+            );
+            event.getRegistry().register(
+                NewNetherPortalEntity.entityType.setRegistryName(
+                    "immersive_portals:nether_portal_new")
             );
     
             EndPortalEntity.entityType = EntityType.Builder.create(

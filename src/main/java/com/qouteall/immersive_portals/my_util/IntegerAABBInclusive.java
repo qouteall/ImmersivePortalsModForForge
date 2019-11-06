@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.my_util;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 
 import java.util.Arrays;
@@ -96,7 +97,7 @@ public class IntegerAABBInclusive {
     
     //it will get only one mutable block pos object
     //don't store its reference. store its copy
-    public Stream<BlockPos> fastStream() {
+    public Stream<BlockPos> streamOfMutable() {
         return BlockPos.getAllInBox(l, h);
     }
     
@@ -182,6 +183,14 @@ public class IntegerAABBInclusive {
         return Helper.divide(l.add(h), 2);
     }
     
+    public Vec3d getCenterVec() {
+        return new Vec3d(
+            (l.getX() + h.getX() + 1) / 2.0,
+            (l.getY() + h.getY() + 1) / 2.0,
+            (l.getZ() + h.getZ() + 1) / 2.0
+        );
+    }
+    
     public IntegerAABBInclusive getAdjusted(
         int dxa, int dya, int dza,
         int dxb, int dyb, int dzb
@@ -195,9 +204,21 @@ public class IntegerAABBInclusive {
     public Stream<BlockPos> forSixSurfaces(
         Function<Stream<IntegerAABBInclusive>, Stream<IntegerAABBInclusive>> mapper
     ) {
+        IntegerAABBInclusive[] array = getSurfaceBoxes();
+    
+        Stream<IntegerAABBInclusive> surfaceBoxes = mapper.apply(
+            Arrays.stream(array).filter(IntegerAABBInclusive::isSorted)
+        );
+    
+        return surfaceBoxes.flatMap(
+            IntegerAABBInclusive::stream
+        );
+    }
+    
+    private IntegerAABBInclusive[] getSurfaceBoxes() {
         assert isSorted();
         
-        IntegerAABBInclusive[] array = {
+        return new IntegerAABBInclusive[]{
             getSurfaceLayer(Direction.DOWN),
             getSurfaceLayer(Direction.NORTH).getAdjusted(
                 0, 1, 0,
@@ -220,11 +241,19 @@ public class IntegerAABBInclusive {
                 -1, 0, -1
             )
         };
+    }
+    
+    public Stream<BlockPos> forSixSurfacesMutable(
+        Function<Stream<IntegerAABBInclusive>, Stream<IntegerAABBInclusive>> mapper
+    ) {
+        IntegerAABBInclusive[] array = getSurfaceBoxes();
         
-        return mapper.apply(
+        Stream<IntegerAABBInclusive> surfaceBoxes = mapper.apply(
             Arrays.stream(array).filter(IntegerAABBInclusive::isSorted)
-        ).flatMap(
-            IntegerAABBInclusive::stream
+        );
+        
+        return surfaceBoxes.flatMap(
+            IntegerAABBInclusive::streamOfMutable
         );
     }
     
@@ -287,6 +316,19 @@ public class IntegerAABBInclusive {
             h.getX() + 1,
             h.getY() + 1,
             h.getZ() + 1
+        );
+    }
+    
+    public IntegerAABBInclusive getExpanded(BlockPos newPoint) {
+        return new IntegerAABBInclusive(
+            Helper.min(
+                l,
+                newPoint
+            ),
+            Helper.max(
+                h,
+                newPoint
+            )
         );
     }
 }

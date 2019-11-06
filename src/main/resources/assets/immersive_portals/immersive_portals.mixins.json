@@ -11,6 +11,7 @@
     "MixinEntity",
     "MixinEntityTracker",
     "MixinFlintAndSteelItem",
+    "MixinForgeDimensionManager",
     "MixinMinecraftServer",
     "MixinNetherPortalBlock",
     "MixinPlayerList",

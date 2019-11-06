@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.my_util;
 
 import com.google.common.collect.Streams;
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -25,9 +26,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Stream;
 
 import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
@@ -204,16 +203,16 @@ public class Helper {
         );
         return new Direction[]{
             Direction.getFacingFromAxisDirection(
-                anotherTwoAxis.getA(), Direction.AxisDirection.NEGATIVE
-            ),
-            Direction.getFacingFromAxisDirection(
                 anotherTwoAxis.getA(), Direction.AxisDirection.POSITIVE
             ),
             Direction.getFacingFromAxisDirection(
-                anotherTwoAxis.getB(), Direction.AxisDirection.NEGATIVE
+                anotherTwoAxis.getB(), Direction.AxisDirection.POSITIVE
             ),
             Direction.getFacingFromAxisDirection(
-                anotherTwoAxis.getB(), Direction.AxisDirection.POSITIVE
+                anotherTwoAxis.getA(), Direction.AxisDirection.NEGATIVE
+            ),
+            Direction.getFacingFromAxisDirection(
+                anotherTwoAxis.getB(), Direction.AxisDirection.NEGATIVE
             )
         };
     }
@@ -559,5 +558,54 @@ public class Helper {
             Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axises.getA()),
             Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axises.getB())
         );
+    }
+    
+    
+    public static <A, B> B reduceWithDifferentType(
+        B start,
+        Stream<A> stream,
+        BiFunction<B, A, B> func
+    ) {
+        SimpleBox<B> bBox = new SimpleBox<>(start);
+        stream.forEach(a -> {
+            bBox.obj = func.apply(bBox.obj, a);
+        });
+        return bBox.obj;
+    }
+    
+    public static <T> void performSplitedFindingTaskOnServer(
+        Iterator<T> iterator,
+        Predicate<T> predicate,
+        int strideLength,
+        IntPredicate progressInformer,//return false to abort the task
+        Consumer<T> onFound,
+        Runnable onNotFound
+    ) {
+        int[] countStorage = new int[1];
+        countStorage[0] = 0;
+        ModMain.serverTaskList.addTask(() -> {
+            boolean shouldContinueRunning =
+                progressInformer.test(countStorage[0]);
+            if (!shouldContinueRunning) {
+                return true;
+            }
+            for (int i = 0; i < strideLength; i++) {
+                if (iterator.hasNext()) {
+                    T next = iterator.next();
+                    if (predicate.test(next)) {
+                        onFound.accept(next);
+                        return true;
+                    }
+                }
+                else {
+                    //finished searching
+                    onNotFound.run();
+                    return true;
+                }
+            }
+            countStorage[0] += 1;
+            //the task is not finished
+            return false;
+        });
     }
 }
