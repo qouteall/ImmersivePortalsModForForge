@@ -115,7 +115,7 @@ public class MixinEntityTracker implements IEEntityTracker {
     
     /**
      * @author qouteall
-     * performance may be slowed down
+     * @reason
      */
     @Overwrite
     public void updateTrackingState(List<ServerPlayerEntity> list_1) {

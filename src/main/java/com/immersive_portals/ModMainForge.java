@@ -48,6 +48,8 @@ public class ModMainForge {
         MinecraftForge.EVENT_BUS.register(this);
     
         NetherPortalEntity.init();
+    
+        NewNetherPortalEntity.init();
         
         ModMainClient.onInitializeClient();
     

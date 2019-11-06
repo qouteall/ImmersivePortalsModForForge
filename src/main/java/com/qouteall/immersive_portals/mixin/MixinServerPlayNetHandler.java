@@ -73,7 +73,7 @@ public abstract class MixinServerPlayNetHandler implements IEServerPlayNetworkHa
         Set<SPlayerPositionLookPacket.Flags> set_1
     ) {
         Helper.log(String.format("request teleport %s in %s to %s %s %s",
-            player.getName(),
+            player.getName().getString(),
             player.dimension,
             double_1, double_2, double_3
         ));

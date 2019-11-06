@@ -7,6 +7,10 @@ import org.spongepowered.asm.mixin.Overwrite;
 
 @Mixin(DimensionManager.class)
 public class MixinForgeDimensionManager {
+    /**
+     * @author qotueall
+     * @reason
+     */
     @Overwrite
     public static void unloadWorlds(MinecraftServer server, boolean checkLeaks) {
         //nothing

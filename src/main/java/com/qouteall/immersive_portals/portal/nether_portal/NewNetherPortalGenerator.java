@@ -71,7 +71,7 @@ public class NewNetherPortalGenerator {
         }
         
         //avoid lighting portal again when generating portal
-        //fillInPlaceHolderBlock(fromWorld, foundShape);
+        fillInPlaceHolderBlocks(fromWorld, foundShape);
         
         //TODO spawn loading indicator
         
@@ -116,7 +116,7 @@ public class NewNetherPortalGenerator {
             Objects::nonNull,
             50000,
             (i) -> {
-                Helper.log("Progress " + i);
+//                Helper.log("Progress " + i);
                 return true;
             },
             toShape -> {
@@ -135,6 +135,10 @@ public class NewNetherPortalGenerator {
                         fromShape.totalAreaBox.l
                     ).add(fromShape.anchor)
                 );
+    
+                toShape.frameAreaWithCorner.forEach(blockPos ->
+                    toWorld.setBlockState(blockPos, Blocks.OBSIDIAN.getDefaultState())
+                );
                 
                 finishGeneratingPortal(new Info(
                     fromDimension, toDimension, fromShape, toShape
@@ -145,11 +149,15 @@ public class NewNetherPortalGenerator {
         return true;
     }
     
-    private static void fillInPlaceHolderBlock(
+    private static void fillInPlaceHolderBlocks(
         ServerWorld fromWorld,
         NetherPortalShape netherPortalShape
     ) {
-        assert false;
+        netherPortalShape.area.forEach(
+            blockPos -> NetherPortalGenerator.putPlaceholderBlock(
+                fromWorld, blockPos, netherPortalShape.axis
+            )
+        );
     }
     
     private static boolean recheckTheFrameThatIsBeingLighted(
@@ -167,81 +175,6 @@ public class NewNetherPortalGenerator {
         );
     }
     
-    //executed on server worker thread
-    //return null for failed
-    private static NetherPortalShape getPortalPlacementAsync(
-        ServerWorld fromWorld,
-        ServerWorld toWorld,
-        NetherPortalShape fromShape
-    ) {
-        if (!recheckTheFrameThatIsBeingLighted(fromWorld, fromShape)) {
-            Helper.log(
-                "Nether Portal Generation Aborted." +
-                    "This Could Be Caused By Breaking The Portal After Generation Started"
-            );
-            return null;
-        }
-        
-        BlockPos fromPos = fromShape.innerAreaBox.getCenter();
-        
-        BlockPos toPos = NetherPortalGenerator.getPosInOtherDimension(
-            fromPos,
-            fromWorld.dimension.getType(),
-            toWorld.dimension.getType()
-        );
-        
-        //avoid blockpos object creation
-        BlockPos.MutableBlockPos temp = new BlockPos.MutableBlockPos();
-        
-        IntegerAABBInclusive toWorldHeightLimit =
-            NetherPortalMatcher.getHeightLimit(toWorld.dimension.getType());
-        
-        NetherPortalShape toFrame = NetherPortalMatcher.fromNearToFarWithinHeightLimitForMutable(
-            toPos,
-            150,
-            toWorldHeightLimit
-        ).filter(
-            toWorld::isAirBlock
-        ).map(
-            blockPos -> fromShape.matchShape(
-                toWorld::isAirBlock,
-                p -> NetherPortalMatcher.isObsidian(toWorld, p),
-                blockPos,
-                temp
-            )
-        ).filter(
-            Objects::nonNull
-        ).findFirst().orElse(null);
-        
-        if (toFrame != null) {
-            return toFrame;
-        }
-        
-        IntegerAABBInclusive airCubePlacement = NetherPortalGenerator.findAirCubePlacement(
-            toWorld,
-            toPos,
-            toWorldHeightLimit,
-            fromShape.totalAreaBox.getSize(),
-            fromShape.axis
-        );
-        
-        NetherPortalShape result = fromShape.getShapeWithMovedAnchor(
-            airCubePlacement.l.subtract(
-                fromShape.totalAreaBox.l
-            ).add(fromShape.anchor)
-        );
-        return result;
-        
-    }
-    
-    private static void generatePortalWithNewFrame(
-        ServerWorld fromWorld,
-        ServerWorld toWorld,
-        NetherPortalShape fromShape
-    ) {
-    
-    }
-    
     //create portal entity and generate obsidian blocks and placeholder blocks
     //the portal blocks will be placed on both sides because the obsidian may break while generating
     //executed on server main thread
@@ -250,6 +183,9 @@ public class NewNetherPortalGenerator {
     ) {
         ServerWorld fromWorld = Helper.getServer().getWorld(info.from);
         ServerWorld toWorld = Helper.getServer().getWorld(info.to);
+    
+        fillInPlaceHolderBlocks(fromWorld, info.fromShape);
+        fillInPlaceHolderBlocks(toWorld, info.toShape);
         
         NewNetherPortalEntity[] portalArray = new NewNetherPortalEntity[]{
             NewNetherPortalEntity.entityType.create(fromWorld),
@@ -288,6 +224,11 @@ public class NewNetherPortalGenerator {
         portalArray[1].netherPortalShape = info.fromShape;
         portalArray[2].netherPortalShape = info.toShape;
         portalArray[3].netherPortalShape = info.toShape;
+    
+        portalArray[0].reversePortalId = portalArray[2].getUniqueID();
+        portalArray[1].reversePortalId = portalArray[3].getUniqueID();
+        portalArray[2].reversePortalId = portalArray[0].getUniqueID();
+        portalArray[3].reversePortalId = portalArray[1].getUniqueID();
         
         fromWorld.addEntity(portalArray[0]);
         fromWorld.addEntity(portalArray[1]);

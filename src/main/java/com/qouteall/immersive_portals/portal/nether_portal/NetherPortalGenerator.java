@@ -15,6 +15,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 
+import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
@@ -186,6 +187,7 @@ public class NetherPortalGenerator {
         return toObsidianFrame;
     }
     
+    @Nonnull
     public static IntegerAABBInclusive findAirCubePlacement(
         ServerWorld toWorld,
         BlockPos mappedPosInOtherDimension,
@@ -402,12 +404,19 @@ public class NetherPortalGenerator {
         BlockPos pos,
         Direction.Axis normalAxis
     ) {
+        putPlaceholderBlock(world, pos, normalAxis);
+    }
+    
+    public static void putPlaceholderBlock(
+        ServerWorld world,
+        BlockPos pos,
+        Direction.Axis normalAxis
+    ) {
         world.setBlockState(
             pos,
             PortalPlaceholderBlock.instance.getDefaultState().with(
                 PortalPlaceholderBlock.AXIS, normalAxis
-            ),
-            3
+            )
         );
     }
     
