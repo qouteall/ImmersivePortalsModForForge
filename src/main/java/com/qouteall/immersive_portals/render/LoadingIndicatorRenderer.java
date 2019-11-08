@@ -24,6 +24,15 @@ public class LoadingIndicatorRenderer extends EntityRenderer<LoadingIndicatorEnt
         float float_1,
         float float_2
     ) {
-        this.renderEntityName(entity_1, double_1, double_2, double_3, "Loading", 64);
+    
+        String[] splited = entity_1.getText().split("\n");
+        for (int i = 0; i < splited.length; i++) {
+            this.renderEntityName(
+                entity_1, double_1, double_2 - i * 0.5, double_3,
+                splited[i], 64
+            );
+        }
+    
+        
     }
 }

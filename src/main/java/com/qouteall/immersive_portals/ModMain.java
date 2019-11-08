@@ -2,12 +2,10 @@ package com.qouteall.immersive_portals;
 
 import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.chunk_loading.ChunkDataSyncManager;
-import com.qouteall.immersive_portals.chunk_loading.ChunkTracker;
+import com.qouteall.immersive_portals.chunk_loading.ChunkTrackingGraph;
 import com.qouteall.immersive_portals.chunk_loading.WorldInfoSender;
-import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.my_util.MyTaskList;
 import com.qouteall.immersive_portals.my_util.Signal;
-import com.qouteall.immersive_portals.portal.*;
 import com.qouteall.immersive_portals.teleportation.ServerTeleportationManager;
 
 public class ModMain{
@@ -29,7 +27,7 @@ public class ModMain{
         preRenderSignal.connect(preRenderTaskList::processTasks);
     
         SGlobal.serverTeleportationManager = new ServerTeleportationManager();
-        SGlobal.chunkTracker = new ChunkTracker();
+        SGlobal.chunkTrackingGraph = new ChunkTrackingGraph();
         SGlobal.chunkDataSyncManager = new ChunkDataSyncManager();
     
         WorldInfoSender.init();

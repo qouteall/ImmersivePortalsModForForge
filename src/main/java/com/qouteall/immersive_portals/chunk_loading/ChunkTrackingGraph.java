@@ -2,28 +2,22 @@ package com.qouteall.immersive_portals.chunk_loading;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Streams;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.my_util.SignalBiArged;
-import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.server.TicketType;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public class ChunkTracker {
+public class ChunkTrackingGraph {
     
     //if a chunk is not watched for 15 seconds, it will be unloaded
     private static final int unloadIdleTickTime = 20 * 15;
@@ -47,11 +41,7 @@ public class ChunkTracker {
         }
     }
     
-    private static final TicketType<ChunkPos> immersiveTicketType =
-        TicketType.create(
-            "immersive_portal_ticket",
-            Comparator.comparingLong(ChunkPos::asLong)
-        );
+    //chunk loader builders
     
     public static final int portalLoadingRange = 48;
     public static final int secondaryPortalLoadingRange = 16;
@@ -63,8 +53,8 @@ public class ChunkTracker {
     private Multimap<DimensionalChunkPos, Edge> chunkPosToEdges = HashMultimap.create();
     private Multimap<ServerPlayerEntity, Edge> playerToEdges = HashMultimap.create();
     
-    public ChunkTracker() {
-        ModMain.postServerTickSignal.connectWithWeakRef(this, ChunkTracker::tick);
+    public ChunkTrackingGraph() {
+        ModMain.postServerTickSignal.connectWithWeakRef(this, ChunkTrackingGraph::tick);
     }
     
     public void cleanUp() {
@@ -130,7 +120,7 @@ public class ChunkTracker {
     }
     
     private void updatePlayer(ServerPlayerEntity playerEntity) {
-        Set<DimensionalChunkPos> newPlayerViewingChunks = getPlayerViewingChunks(
+        Set<DimensionalChunkPos> newPlayerViewingChunks = ChunkVisibilityManager.getPlayerViewingChunksNew(
             playerEntity
         );
         newPlayerViewingChunks.forEach(chunkPos -> {
@@ -139,75 +129,6 @@ public class ChunkTracker {
         });
     
         removeInactiveEdges(playerEntity);
-    }
-    
-    private Set<DimensionalChunkPos> getPlayerViewingChunks(
-        ServerPlayerEntity player
-    ) {
-        int renderDistance = getRenderDistanceOnServer();
-        return Streams.concat(
-            //directly watching chunks
-            getNearbyChunkPoses(
-                player.dimension,
-                player.getPosition(),
-                renderDistance
-            ),
-    
-            //indirectly watching chunks
-            getViewingPortals(player).flatMap(
-                portal -> getNearbyChunkPoses(
-                    portal.dimensionTo,
-                    getPortalLoadingCenter(player, portal),
-                    portal.loadFewerChunks ? (renderDistance / 3) : renderDistance
-                )
-            )
-        ).collect(Collectors.toSet());
-    }
-    
-    private BlockPos getPortalLoadingCenter(ServerPlayerEntity player, Portal portal) {
-        if (portal instanceof GlobalTrackedPortal) {
-            return new BlockPos(portal.applyTransformationToPoint(player.getPositionVec()));
-        }
-        else {
-            return new BlockPos(portal.destination);
-        }
-    }
-    
-    //not only the portals near player
-    //but also the portals that player can see from other portals
-    private Stream<Portal> getViewingPortals(ServerPlayerEntity player) {
-        return Streams.concat(
-            Helper.getEntitiesNearby(
-                player,
-                Portal.class,
-                portalLoadingRange
-            ).filter(
-                portal -> portal.canBeSeenByPlayer(player)
-            ).flatMap(
-                portal -> Streams.concat(
-                    //directly seen portal
-                    Stream.of(portal),
-                
-                    //indirectly seen portals
-                    Helper.getEntitiesNearby(
-                        Helper.getServer().getWorld(portal.dimensionTo),
-                        portal.destination,
-                        Portal.class,
-                        secondaryPortalLoadingRange
-                    ).filter(
-                        portal1 -> portal1.canBeSeenByPlayer(player)
-                    )
-                )
-            ),
-        
-            //global portals
-            GlobalPortalStorage
-                .get(((ServerWorld) player.world))
-                .data.stream()
-                .filter(
-                    p -> p.getDistanceToNearestPointInPortal(player.getPositionVec()) < 128
-                )
-        ).distinct();
     }
     
     private void tick() {
@@ -283,24 +204,6 @@ public class ChunkTracker {
             .forEach(this::removeEdge);
     }
     
-    private Stream<DimensionalChunkPos> getNearbyChunkPoses(
-        DimensionType dimension,
-        BlockPos pos, int radius
-    ) {
-        ArrayDeque<DimensionalChunkPos> chunkPoses = new ArrayDeque<>();
-        ChunkPos portalChunkPos = new ChunkPos(pos);
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
-                chunkPoses.add(new DimensionalChunkPos(
-                    dimension,
-                    portalChunkPos.x + dx,
-                    portalChunkPos.z + dz
-                ));
-            }
-        }
-        return chunkPoses.stream();
-    }
-    
     public Stream<ServerPlayerEntity> getPlayersViewingChunk(
         DimensionType dimensionType,
         ChunkPos chunkPos
@@ -341,10 +244,6 @@ public class ChunkTracker {
         chunkPosToEdges.entries().removeIf(entry ->
             entry.getValue().player == oldPlayer
         );
-    }
-    
-    public static int getRenderDistanceOnServer() {
-        return Helper.getIEStorage(DimensionType.OVERWORLD).getWatchDistance();
     }
     
 }

@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.ducks.*;
 import com.qouteall.immersive_portals.my_util.Helper;
@@ -295,6 +296,20 @@ public class MyCommandClient {
             .literal("new_nether_portal_disable")
             .executes(context -> {
                 SGlobal.doUseNewNetherPortal = false;
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("report_chunk_loaders")
+            .executes(context -> {
+                ServerPlayerEntity player = context.getSource().asPlayer();
+                ChunkVisibilityManager.getChunkLoaders(
+                    player
+                ).forEach(
+                    loader -> Helper.serverLog(
+                        player, loader.toString()
+                    )
+                );
                 return 0;
             })
         );

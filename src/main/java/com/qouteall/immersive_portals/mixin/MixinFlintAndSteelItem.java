@@ -4,6 +4,7 @@ import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGenerator;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalGenerator;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.FlintAndSteelItem;
 import net.minecraft.item.ItemUseContext;
 import net.minecraft.util.ActionResult;
@@ -26,16 +27,18 @@ public class MixinFlintAndSteelItem {
         if (!world.isRemote()) {
             BlockPos blockPos_1 = context.getPos();
             BlockPos firePos = blockPos_1.offset(context.getFace());
-            boolean isNetherPortalGenerated = SGlobal.doUseNewNetherPortal ?
-                NewNetherPortalGenerator.onFireLit(
-                    ((ServerWorld) world), firePos
-                ) :
-                NetherPortalGenerator.onFireLit(
-                    ((ServerWorld) world), firePos
-                ) != null;
-            if (!isNetherPortalGenerated) {
+            if (world.getBlockState(blockPos_1).getBlock() == Blocks.OBSIDIAN) {
+                boolean isNetherPortalGenerated = SGlobal.doUseNewNetherPortal ?
+                    NewNetherPortalGenerator.onFireLit(
+                        ((ServerWorld) world), firePos
+                    ) :
+                    NetherPortalGenerator.onFireLit(
+                        ((ServerWorld) world), firePos
+                    ) != null;
+            }
+            else {
                 BreakableMirror mirror = BreakableMirror.createMirror(
-                    ((ServerWorld) world), context.getPos(), context.getFace()
+                    ((ServerWorld) world), blockPos_1, context.getFace()
                 );
                 if (mirror != null) {
                     context.getItem().damageItem(1, context.getPlayer(),

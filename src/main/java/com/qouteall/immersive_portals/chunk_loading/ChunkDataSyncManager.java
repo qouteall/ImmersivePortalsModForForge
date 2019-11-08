@@ -29,10 +29,10 @@ public class ChunkDataSyncManager {
     private static final int unloadWaitingTickTime = 20 * 10;
     
     public ChunkDataSyncManager() {
-        SGlobal.chunkTracker.beginWatchChunkSignal.connectWithWeakRef(
+        SGlobal.chunkTrackingGraph.beginWatchChunkSignal.connectWithWeakRef(
             this, ChunkDataSyncManager::onBeginWatch
         );
-        SGlobal.chunkTracker.endWatchChunkSignal.connectWithWeakRef(
+        SGlobal.chunkTrackingGraph.endWatchChunkSignal.connectWithWeakRef(
             this, ChunkDataSyncManager::onEndWatch
         );
     }
@@ -42,11 +42,11 @@ public class ChunkDataSyncManager {
             return;
         }
     
-        if (SGlobal.chunkTracker.isChunkDataSent(player, chunkPos)) {
+        if (SGlobal.chunkTrackingGraph.isChunkDataSent(player, chunkPos)) {
             return;
         }
     
-        SGlobal.chunkTracker.onChunkDataSent(player, chunkPos);
+        SGlobal.chunkTrackingGraph.onChunkDataSent(player, chunkPos);
         IEThreadedAnvilChunkStorage ieStorage = Helper.getIEStorage(chunkPos.dimension);
     
         if (SGlobal.isChunkLoadingMultiThreaded) {
@@ -66,7 +66,7 @@ public class ChunkDataSyncManager {
             ChunkHolder chunkHolder = ieStorage.getChunkHolder_(chunkPos.getChunkPos().asLong());
             if (chunkHolder == null) {
                 //TODO cleanup it
-                SGlobal.chunkTracker.setIsLoadedByPortal(
+                SGlobal.chunkTrackingGraph.setIsLoadedByPortal(
                     chunkPos.dimension,
                     chunkPos.getChunkPos(),
                     true
@@ -146,7 +146,7 @@ public class ChunkDataSyncManager {
             return;
         }
     
-        if (SGlobal.chunkTracker.isPlayerWatchingChunk(player, chunkPos)) {
+        if (SGlobal.chunkTrackingGraph.isPlayerWatchingChunk(player, chunkPos)) {
             //give up unloading
             return;
         }
@@ -161,7 +161,7 @@ public class ChunkDataSyncManager {
     }
     
     public void onPlayerRespawn(ServerPlayerEntity oldPlayer) {
-        SGlobal.chunkTracker.onPlayerRespawn(oldPlayer);
+        SGlobal.chunkTrackingGraph.onPlayerRespawn(oldPlayer);
         
         Helper.getServer().getWorlds()
             .forEach(world -> {
@@ -179,8 +179,8 @@ public class ChunkDataSyncManager {
         if (player.dimension != chunkPos.dimension) {
             return false;
         }
-        
-        int watchDistance = ChunkTracker.getRenderDistanceOnServer();
+    
+        int watchDistance = ChunkVisibilityManager.getRenderDistanceOnServer();
         
         //NOTE do not use entity.chunkX
         //it's not updated

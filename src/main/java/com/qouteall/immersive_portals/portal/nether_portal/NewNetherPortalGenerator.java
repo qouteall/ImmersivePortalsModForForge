@@ -1,7 +1,9 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
+import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -34,9 +36,6 @@ public class NewNetherPortalGenerator {
             this.toShape = toShape;
         }
     }
-    
-    //only one nether portal should be generating
-    //public static final Object lock = new Object();
     
     //return null for not found
     //executed on main server thread
@@ -110,13 +109,25 @@ public class NewNetherPortalGenerator {
                     );
                 }
             ).iterator();
+    
+        LoadingIndicatorEntity indicatorEntity =
+            LoadingIndicatorEntity.entityType.create(fromWorld);
+        indicatorEntity.setPosition(
+            fromPos.getX() + 0.5,
+            fromPos.getY() + 0.5,
+            fromPos.getZ() + 0.5
+        );
+        fromWorld.addEntity(indicatorEntity);
         
         Helper.performSplitedFindingTaskOnServer(
             iterator,
             Objects::nonNull,
-            50000,
             (i) -> {
-//                Helper.log("Progress " + i);
+                double progress = i / 20000000.0;
+                indicatorEntity.setText(
+                    "Searching for matched obsidian frame on the other side\n" +
+                        (int) (progress * 100) + "%"
+                );
                 return true;
             },
             toShape -> {
@@ -125,24 +136,33 @@ public class NewNetherPortalGenerator {
                 ));
             },
             () -> {
-                IntegerAABBInclusive airCubePlacement = NetherPortalGenerator.findAirCubePlacement(
-                    toWorld, toPos, toWorldHeightLimit,
-                    fromShape.totalAreaBox.getSize(), fromShape.axis
-                );
-                
-                NetherPortalShape toShape = fromShape.getShapeWithMovedAnchor(
-                    airCubePlacement.l.subtract(
-                        fromShape.totalAreaBox.l
-                    ).add(fromShape.anchor)
+                indicatorEntity.setText(
+                    "Existing frame could not be found.\n" +
+                        "Generating new portal"
                 );
     
-                toShape.frameAreaWithCorner.forEach(blockPos ->
-                    toWorld.setBlockState(blockPos, Blocks.OBSIDIAN.getDefaultState())
-                );
-                
-                finishGeneratingPortal(new Info(
-                    fromDimension, toDimension, fromShape, toShape
-                ));
+                ModMain.serverTaskList.addTask(() -> {
+                    IntegerAABBInclusive airCubePlacement = NetherPortalGenerator.findAirCubePlacement(
+                        toWorld, toPos, toWorldHeightLimit,
+                        fromShape.totalAreaBox.getSize(), fromShape.axis
+                    );
+        
+                    NetherPortalShape toShape = fromShape.getShapeWithMovedAnchor(
+                        airCubePlacement.l.subtract(
+                            fromShape.totalAreaBox.l
+                        ).add(fromShape.anchor)
+                    );
+        
+                    toShape.frameAreaWithCorner.forEach(blockPos ->
+                        toWorld.setBlockState(blockPos, Blocks.OBSIDIAN.getDefaultState())
+                    );
+        
+                    finishGeneratingPortal(new Info(
+                        fromDimension, toDimension, fromShape, toShape
+                    ));
+        
+                    return true;
+                });
             }
         );
         

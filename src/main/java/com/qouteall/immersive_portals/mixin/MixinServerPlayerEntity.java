@@ -99,6 +99,7 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
     
     /**
      * @author qouteall
+     * @reason
      */
     @Overwrite
     public void removeEntity(Entity entity_1) {

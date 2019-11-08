@@ -576,11 +576,11 @@ public class Helper {
     public static <T> void performSplitedFindingTaskOnServer(
         Iterator<T> iterator,
         Predicate<T> predicate,
-        int strideLength,
         IntPredicate progressInformer,//return false to abort the task
         Consumer<T> onFound,
         Runnable onNotFound
     ) {
+        final long timeValve = (1000000000L / 40);
         int[] countStorage = new int[1];
         countStorage[0] = 0;
         ModMain.serverTaskList.addTask(() -> {
@@ -589,7 +589,8 @@ public class Helper {
             if (!shouldContinueRunning) {
                 return true;
             }
-            for (int i = 0; i < strideLength; i++) {
+            long startTime = System.nanoTime();
+            for (; ; ) {
                 if (iterator.hasNext()) {
                     T next = iterator.next();
                     if (predicate.test(next)) {
@@ -602,10 +603,15 @@ public class Helper {
                     onNotFound.run();
                     return true;
                 }
+                countStorage[0] += 1;
+        
+                long currTime = System.nanoTime();
+        
+                if (currTime - startTime > timeValve) {
+                    //suspend the task and retry it next tick
+                    return false;
+                }
             }
-            countStorage[0] += 1;
-            //the task is not finished
-            return false;
         });
     }
 }
