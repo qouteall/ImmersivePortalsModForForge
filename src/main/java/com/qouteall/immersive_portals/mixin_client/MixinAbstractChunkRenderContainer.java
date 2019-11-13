@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.List;
 
-@Mixin(value = AbstractChunkRenderContainer.class, remap = false)
+@Mixin(value = AbstractChunkRenderContainer.class)
 public class MixinAbstractChunkRenderContainer implements IEChunkRenderList {
     @Shadow
     private double viewEntityX;

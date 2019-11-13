@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = Framebuffer.class, remap = false)
+@Mixin(value = Framebuffer.class)
 public abstract class MixinFrameBuffer implements IEGlFrameBuffer {
     
     private boolean isStencilBufferEnabled;

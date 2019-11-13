@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 //NOTE must redirect all packets about entities
-@Mixin(targets = "net.minecraft.world.server.ChunkManager$EntityTracker", remap = false)
+@Mixin(targets = "net.minecraft.world.server.ChunkManager$EntityTracker")
 public class MixinEntityTracker implements IEEntityTracker {
     @Shadow
     @Final

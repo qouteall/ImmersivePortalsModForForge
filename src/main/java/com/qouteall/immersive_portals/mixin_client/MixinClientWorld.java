@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
-@Mixin(value = ClientWorld.class, remap = false)
+@Mixin(value = ClientWorld.class)
 public class MixinClientWorld implements IEClientWorld {
     @Shadow
     @Final

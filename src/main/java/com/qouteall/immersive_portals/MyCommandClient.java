@@ -250,7 +250,7 @@ public class MyCommandClient {
             .literal("get_player_colliding_portal_client")
             .executes(context -> {
                 Portal collidingPortal =
-                    ((IEEntity) Minecraft.getInstance().player).getCollidingPortal();
+                    (Portal) ((IEEntity) Minecraft.getInstance().player).getCollidingPortal();
                 Helper.serverLog(context.getSource().asPlayer(), collidingPortal.toString());
                 return 0;
             })

@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = FlintAndSteelItem.class, remap = false)
+@Mixin(value = FlintAndSteelItem.class)
 public class MixinFlintAndSteelItem {
     @Inject(method = "onItemUse", at = @At("HEAD"))
     private void onUseFlintAndSteel(

@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = TileEntityRendererDispatcher.class, remap = false)
+@Mixin(value = TileEntityRendererDispatcher.class)
 public class MixinTileEntityRendererDispatcher {
     @Inject(
         method = "render(Lnet/minecraft/tileentity/TileEntity;FI)V",

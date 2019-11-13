@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-@Mixin(value = WorldRenderer.class, remap = false)
+@Mixin(value = WorldRenderer.class)
 public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     @Shadow

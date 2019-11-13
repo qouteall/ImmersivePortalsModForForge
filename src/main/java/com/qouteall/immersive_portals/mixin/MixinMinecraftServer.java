@@ -21,7 +21,7 @@ import java.lang.ref.WeakReference;
 import java.net.Proxy;
 import java.util.function.BooleanSupplier;
 
-@Mixin(value = MinecraftServer.class, remap = false)
+@Mixin(value = MinecraftServer.class)
 public class MixinMinecraftServer {
     @Inject(
         method = "<init>",

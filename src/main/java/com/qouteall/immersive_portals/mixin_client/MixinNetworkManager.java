@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = NetworkManager.class, remap = false)
+@Mixin(value = NetworkManager.class)
 public class MixinNetworkManager {
     @Shadow
     private Channel channel;

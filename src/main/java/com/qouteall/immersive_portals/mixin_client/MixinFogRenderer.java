@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = FogRenderer.class, remap = false)
+@Mixin(value = FogRenderer.class)
 public class MixinFogRenderer implements IEBackgroundRenderer {
     @Shadow private float red;
     @Shadow private float green;

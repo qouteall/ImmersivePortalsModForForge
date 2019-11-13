@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = PlayerList.class, remap = false)
+@Mixin(value = PlayerList.class)
 public class MixinPlayerList {
     @Inject(
         method = "recreatePlayerEntity",

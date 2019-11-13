@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import java.util.function.Consumer;
 
 //NOTE must redirect all packets about entities
-@Mixin(value = TrackedEntity.class, remap = false)
+@Mixin(value = TrackedEntity.class)
 public abstract class MixinTrackedEntity {
     @Shadow
     @Final
@@ -50,7 +50,7 @@ public abstract class MixinTrackedEntity {
     
     /**
      * @author qouteall
-     * overwrite because method reference can not be redirected
+     * @reason method reference can not be redirected
      */
     @Overwrite
     public void track(ServerPlayerEntity serverPlayerEntity_1) {

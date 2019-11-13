@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Set;
 
-@Mixin(value = ServerPlayNetHandler.class, remap = false)
+@Mixin(value = ServerPlayNetHandler.class)
 public abstract class MixinServerPlayNetHandler implements IEServerPlayNetworkHandler {
     @Shadow
     public ServerPlayerEntity player;
@@ -62,6 +62,7 @@ public abstract class MixinServerPlayNetHandler implements IEServerPlayNetworkHa
      * make PlayerPositionLookS2CPacket contain dimension data
      *
      * @author qouteall
+     * @reason
      */
     @Overwrite
     public void setPlayerLocation(

@@ -34,7 +34,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Iterator;
 import java.util.List;
 
-@Mixin(value = ChunkManager.class, remap = false)
+@Mixin(value = ChunkManager.class)
 public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
     @Shadow
     private int viewDistance;

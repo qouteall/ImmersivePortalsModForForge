@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.qouteall.immersive_portals.ducks.IEEntity;
-import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -15,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = Entity.class, remap = false)
+@Mixin(value = Entity.class)
 public abstract class MixinEntity implements IEEntity {
     //world.getEntities is not reliable
     //it has a small chance to ignore collided entities
@@ -23,18 +22,18 @@ public abstract class MixinEntity implements IEEntity {
     //so when player stops colliding a portal, it will not stop colliding instantly
     //it will stop colliding when counter turn to 0
     
-    private Portal collidingPortal;
+    private Entity collidingPortal;
     private int stopCollidingPortalCounter;
-    
+
     @Shadow
     public abstract AxisAlignedBB getBoundingBox();
-    
+
     @Shadow
     public World world;
-    
+
     @Shadow
     protected abstract Vec3d getAllowedMovement(Vec3d vec3d_1);
-    
+
     @Shadow
     public abstract void setBoundingBox(AxisAlignedBB box_1);
     
@@ -48,12 +47,12 @@ public abstract class MixinEntity implements IEEntity {
     @Inject(method = "tick", at = @At("HEAD"))
     private void onTicking(CallbackInfo ci) {
         if (collidingPortal != null) {
-            if (collidingPortal.dimension != dimension) {
+            if ((collidingPortal).dimension != dimension) {
                 collidingPortal = null;
             }
         }
-        
-        Portal nowCollidingPortal =
+    
+        Entity nowCollidingPortal =
             CollisionHelper.getCollidingPortalUnreliable((Entity) (Object) this);
         if (nowCollidingPortal == null) {
             if (stopCollidingPortalCounter > 0) {
@@ -84,12 +83,12 @@ public abstract class MixinEntity implements IEEntity {
         if (collidingPortal == null) {
             return getAllowedMovement(attemptedMove);
         }
-    
+        
         if (entity.isBeingRidden() || entity.isPassenger()) {
             return getAllowedMovement(attemptedMove);
         }
         
-        Vec3d result = CollisionHelper.handleCollisionHalfwayInPortal(
+        Vec3d result = CollisionHelper.handleCollisionHalfwayInPortal1(
             (Entity) (Object) this,
             attemptedMove,
             collidingPortal,
@@ -151,7 +150,7 @@ public abstract class MixinEntity implements IEEntity {
     }
     
     @Override
-    public Portal getCollidingPortal() {
+    public Entity getCollidingPortal() {
         return collidingPortal;
     }
 }

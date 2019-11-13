@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = ActiveRenderInfo.class, remap = false)
+@Mixin(value = ActiveRenderInfo.class)
 public abstract class MixinActiveRenderInfo implements IECamera {
     double lastClipSpaceResult;
     
@@ -60,6 +60,7 @@ public abstract class MixinActiveRenderInfo implements IECamera {
     
     /**
      * @author qouteall
+     * @reason avoid camera to be behind the portal
      */
     @Overwrite
     private double calcCameraDistance(double upperBound) {

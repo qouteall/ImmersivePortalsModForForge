@@ -59,6 +59,19 @@ public class CollisionHelper {
             portal.isInFrontOfPortal(entity.getEyePosition(1));
     }
     
+    public static Vec3d handleCollisionHalfwayInPortal1(
+        Entity entity,
+        Vec3d attemptedMove,
+        Entity collidingPortal,
+        Function<Vec3d, Vec3d> handleCollisionFunc
+    ) {
+        return handleCollisionHalfwayInPortal(
+            entity, attemptedMove,
+            (Portal) collidingPortal,
+            handleCollisionFunc
+        );
+    }
+    
     public static Vec3d handleCollisionHalfwayInPortal(
         Entity entity,
         Vec3d attemptedMove,
@@ -199,7 +212,7 @@ public class CollisionHelper {
     }
     
     public static AxisAlignedBB getActiveCollisionBox(Entity entity) {
-        Portal collidingPortal = ((IEEntity) entity).getCollidingPortal();
+        Portal collidingPortal = (Portal) ((IEEntity) entity).getCollidingPortal();
         if (collidingPortal != null) {
             AxisAlignedBB thisSideBox = getCollisionBoxThisSide(
                 collidingPortal,
