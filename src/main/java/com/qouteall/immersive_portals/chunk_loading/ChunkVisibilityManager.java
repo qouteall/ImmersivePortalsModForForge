@@ -5,7 +5,6 @@ import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -13,6 +12,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -22,12 +22,10 @@ public class ChunkVisibilityManager {
     public static class ChunkLoader {
         public DimensionalChunkPos center;
         public int radius;
-        public Entity loader;
-        
-        public ChunkLoader(DimensionalChunkPos center, int radius, Entity loader) {
+    
+        public ChunkLoader(DimensionalChunkPos center, int radius) {
             this.center = center;
             this.radius = radius;
-            this.loader = loader;
         }
         
         public void foreachChunkPos(Consumer<DimensionalChunkPos> func) {
@@ -44,11 +42,24 @@ public class ChunkVisibilityManager {
         
         @Override
         public String toString() {
-            return "ChunkLoader{" +
+            return "{" +
                 "center=" + center +
                 ", radius=" + radius +
-                ", loader=" + loader +
                 '}';
+        }
+    
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ChunkLoader that = (ChunkLoader) o;
+            return radius == that.radius &&
+                center.equals(that.center);
+        }
+    
+        @Override
+        public int hashCode() {
+            return Objects.hash(center, radius);
         }
     }
     
@@ -58,8 +69,7 @@ public class ChunkVisibilityManager {
                 player.dimension,
                 player.chunkCoordX, player.chunkCoordZ
             ),
-            getRenderDistanceOnServer(),
-            player
+            getRenderDistanceOnServer()
         );
     }
     
@@ -70,8 +80,7 @@ public class ChunkVisibilityManager {
                 portal.dimensionTo,
                 new ChunkPos(new BlockPos(portal.destination))
             ),
-            portal.loadFewerChunks ? (renderDistance / 3) : renderDistance,
-            portal
+            portal.loadFewerChunks ? (renderDistance / 3) : renderDistance
         );
     }
     
@@ -82,8 +91,7 @@ public class ChunkVisibilityManager {
                 portal.dimensionTo,
                 new ChunkPos(new BlockPos(portal.destination))
             ),
-            (renderDistance / 3),
-            portal
+            (renderDistance / 3)
         );
     }
     
@@ -99,8 +107,7 @@ public class ChunkVisibilityManager {
                     portal.applyTransformationToPoint(player.getPositionVec())
                 ))
             ),
-            renderDistance,
-            portal
+            renderDistance
         );
     }
     
@@ -119,8 +126,7 @@ public class ChunkVisibilityManager {
                     )
                 ))
             ),
-            renderDistance,
-            remotePortal
+            renderDistance
         );
     }
     
@@ -187,7 +193,7 @@ public class ChunkVisibilityManager {
                         );
                     }
                 )
-        );
+        ).distinct();
     }
     
     public static Set<DimensionalChunkPos> getPlayerViewingChunksNew(

@@ -8,6 +8,7 @@ import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.MobEntity;
@@ -59,6 +60,9 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
     @Shadow
     @Final
     private Int2ObjectMap entities;
+    
+    @Shadow
+    private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> field_219252_f;
     
     @Override
     public int getWatchDistance() {
@@ -203,5 +207,10 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
         entities.values().forEach(obj -> {
             ((IEEntityTracker) obj).onPlayerRespawn(oldPlayer);
         });
+    }
+    
+    @Override
+    public int getChunkHolderNum() {
+        return field_219252_f.size();
     }
 }

@@ -385,9 +385,11 @@ public class MyCommandClient {
         Helper.getServer().getWorlds().forEach(
             world -> {
                 str.append(String.format(
-                    "%s %s\n",
+                    "%s %s %s\n",
                     world.dimension.getType(),
-                    world.getForcedChunks().size()
+                    world.getForcedChunks().size(),
+                    ((IEThreadedAnvilChunkStorage) world.getChunkProvider().chunkManager)
+                        .getChunkHolderNum()
                 ));
             }
         );

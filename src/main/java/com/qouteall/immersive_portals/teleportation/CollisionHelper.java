@@ -55,8 +55,10 @@ public class CollisionHelper {
     }
     
     private static boolean shouldCollideWithPortal(Entity entity, Portal portal) {
+        Vec3d eyePosition = entity.getEyePosition(1);
         return portal.isTeleportable() &&
-            portal.isInFrontOfPortal(entity.getEyePosition(1));
+            portal.isInFrontOfPortal(eyePosition) &&
+            portal.isPointInPortalProjection(eyePosition);
     }
     
     public static Vec3d handleCollisionHalfwayInPortal1(
@@ -164,7 +166,10 @@ public class CollisionHelper {
         );
     }
     
-    private static AxisAlignedBB getCollisionBoxOtherSide(Portal portal, AxisAlignedBB originalBox) {
+    private static AxisAlignedBB getCollisionBoxOtherSide(
+        Portal portal,
+        AxisAlignedBB originalBox
+    ) {
         Vec3d teleportation = portal.destination.subtract(portal.getPositionVec());
         return clipBox(
             originalBox.offset(teleportation),
