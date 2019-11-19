@@ -167,14 +167,6 @@ public class MixinEntityTracker implements IEEntityTracker {
                     if (chunkHolder_1 != null && chunkHolder_1.func_219298_c() != null) {
                         shouldTrack = true;
                     }
-//                    else {
-                        //retry it next tick
-//                        ModMain.serverTaskList.addTask(() -> {
-//                            Helper.log("Retry tracking player " + player.getName());
-//                            updateCameraPosition_(player);
-//                            return true;
-//                        });
-//                    }
                 }
     
                 if (shouldTrack && this.trackingPlayers.add(player)) {

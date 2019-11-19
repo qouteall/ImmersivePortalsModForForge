@@ -127,6 +127,7 @@ public class ServerTeleportationManager {
         player.connection.captureCurrentPosition();
     }
     
+    //TODO add forge events
     /**
      * {@link ServerPlayerEntity#changeDimension(DimensionType)}
      */
@@ -143,8 +144,13 @@ public class ServerTeleportationManager {
         //TODO fix travel when riding entity
         player.detach();
     
-        fromWorld.removePlayer(player);
-        player.removed = false;
+        //new dimension transition method
+        player.dimension = toWorld.dimension.getType();
+        fromWorld.removeEntity(player, true);
+        player.revive();
+
+//        fromWorld.removePlayer(player);
+//        player.removed = false;
     
         player.posX = destination.x;
         player.posY = destination.y;
