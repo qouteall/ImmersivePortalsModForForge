@@ -74,6 +74,13 @@ public class NewNetherPortalGenerator {
         ServerWorld toWorld = McHelper.getServer().getWorld(toDimension);
         
         BlockPos fromPos = fromShape.innerAreaBox.getCenter();
+    
+        boolean isOtherGenerationRunning = McHelper.getEntitiesNearby(
+            fromWorld, new Vec3d(fromPos), LoadingIndicatorEntity.class, 1
+        ).findAny().isPresent();
+        if (isOtherGenerationRunning) {
+            return false;
+        }
         
         BlockPos toPos = NetherPortalGenerator.getPosInOtherDimension(
             fromPos,
@@ -120,8 +127,9 @@ public class NewNetherPortalGenerator {
             iterator,
             Objects::nonNull,
             (i) -> {
-                boolean check = recheckTheFrameThatIsBeingLighted(fromWorld, fromShape);
-                if (!check) {
+                boolean isIntact = recheckTheFrameThatIsBeingLighted(fromWorld, fromShape);
+    
+                if ((!isIntact)) {
                     Helper.log("Nether Portal Generation Aborted");
                     indicatorEntity.remove();
                     return false;
