@@ -5,8 +5,11 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.EndFloorPortal;
+import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.world.server.ServerWorld;
 
 public class MyCommandServer {
     public static void register(
@@ -59,6 +62,28 @@ public class MyCommandServer {
             .literal("end_floor_remove")
             .executes(context -> {
                 EndFloorPortal.removeFloor();
+                return 0;
+            })
+        );
+    
+        builder.then(Commands
+            .literal("stabilize_nearby_nether_portal")
+            .executes(context -> {
+                ServerWorld world = context.getSource().getWorld();
+                McHelper.getEntitiesNearby(
+                    world,
+                    context.getSource().getPos(),
+                    NewNetherPortalEntity.class,
+                    5
+                ).forEach(
+                    portal -> {
+                        portal.unbreakable = true;
+                        context.getSource().sendFeedback(
+                            new StringTextComponent("Stabilized " + portal),
+                            true
+                        );
+                    }
+                );
                 return 0;
             })
         );

@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import net.minecraft.block.Blocks;
@@ -17,6 +18,7 @@ public class NewNetherPortalEntity extends Portal {
     
     public NetherPortalShape netherPortalShape;
     public UUID reversePortalId;
+    public boolean unbreakable = false;
     
     private boolean isNotified = true;
     private boolean shouldBreakNetherPortal = false;
@@ -30,7 +32,7 @@ public class NewNetherPortalEntity extends Portal {
     
     public static void init() {
         PortalPlaceholderBlock.portalBlockUpdateSignal.connect((world, pos) -> {
-            Helper.getEntitiesNearby(
+            McHelper.getEntitiesNearby(
                 world,
                 new Vec3d(pos),
                 NewNetherPortalEntity.class,
@@ -56,6 +58,7 @@ public class NewNetherPortalEntity extends Portal {
             netherPortalShape = new NetherPortalShape(compoundTag.getCompound("netherPortalShape"));
         }
         reversePortalId = compoundTag.getUniqueId("reversePortalId");
+        unbreakable = compoundTag.getBoolean("unbreakable");
     }
     
     @Override
@@ -65,6 +68,7 @@ public class NewNetherPortalEntity extends Portal {
             compoundTag.put("netherPortalShape", netherPortalShape.toTag());
         }
         compoundTag.putUniqueId("reversePortalId", reversePortalId);
+        compoundTag.putBoolean("unbreakable", unbreakable);
     }
     
     
@@ -96,15 +100,20 @@ public class NewNetherPortalEntity extends Portal {
     @Override
     public void tick() {
         super.tick();
-        
-        if (!world.isRemote) {
-            if (isNotified) {
-                isNotified = false;
-                checkPortalIntegrity();
-            }
-            if (shouldBreakNetherPortal) {
-                breakPortalOnThisSide();
-            }
+    
+        if (world.isRemote) {
+            return;
+        }
+        if (unbreakable) {
+            return;
+        }
+    
+        if (isNotified) {
+            isNotified = false;
+            checkPortalIntegrity();
+        }
+        if (shouldBreakNetherPortal) {
+            breakPortalOnThisSide();
         }
     }
     
@@ -126,7 +135,7 @@ public class NewNetherPortalEntity extends Portal {
     }
     
     private boolean isPortalIntactOnThisSide() {
-        assert Helper.getServer() != null;
+        assert McHelper.getServer() != null;
         
         return netherPortalShape.area.stream()
             .allMatch(blockPos ->

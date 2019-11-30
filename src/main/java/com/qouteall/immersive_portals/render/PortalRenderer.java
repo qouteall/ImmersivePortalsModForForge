@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -152,8 +153,8 @@ public abstract class PortalRenderer {
         ClientWorld newWorld =
             CGlobal.clientWorldLoader.getOrCreateFakedWorld(newDimension);
         //Vec3d newCameraPos = portal.applyTransformationToPoint(oldCameraPos);
-        
-        Helper.setPosAndLastTickPos(cameraEntity, newPos, newLastTickPos);
+    
+        McHelper.setPosAndLastTickPos(cameraEntity, newPos, newLastTickPos);
         cameraEntity.dimension = newDimension;
         cameraEntity.world = newWorld;
         mc.world = newWorld;
@@ -166,7 +167,7 @@ public abstract class PortalRenderer {
         cameraEntity.dimension = oldDimension;
         cameraEntity.world = oldWorld;
         mc.world = oldWorld;
-        Helper.setPosAndLastTickPos(cameraEntity, oldPos, oldLastTickPos);
+        McHelper.setPosAndLastTickPos(cameraEntity, oldPos, oldLastTickPos);
         
         //restore the transformation
         GlStateManager.enableDepthTest();

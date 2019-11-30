@@ -28,7 +28,7 @@ public class GlobalPortalStorage extends WorldSavedData {
     }
     
     public static void onPlayerLoggedIn(ServerPlayerEntity player) {
-        Helper.getServer().getWorlds().forEach(world -> {
+        McHelper.getServer().getWorlds().forEach(world -> {
             NetworkMain.sendToPlayer(
                 player,
                 new StcUpdateGlobalPortals(
@@ -46,8 +46,8 @@ public class GlobalPortalStorage extends WorldSavedData {
             get(world.get()).write(new CompoundNBT()),
             world.get().dimension.getType()
         );
-        
-        Helper.getCopiedPlayerList().forEach(
+    
+        McHelper.getCopiedPlayerList().forEach(
             player -> NetworkMain.sendToPlayer(player, packet)
         );
     }

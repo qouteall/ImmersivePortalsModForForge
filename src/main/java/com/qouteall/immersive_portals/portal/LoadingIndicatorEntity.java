@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.portal;
 
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
@@ -34,7 +34,7 @@ public class LoadingIndicatorEntity extends Entity {
     public void tick() {
         super.tick();
     
-        if (Helper.getEntitiesNearby(this, Portal.class, 1).findAny().isPresent()) {
+        if (McHelper.getEntitiesNearby(this, Portal.class, 1).findAny().isPresent()) {
             this.remove();
         }
     

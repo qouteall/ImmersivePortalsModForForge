@@ -1,19 +1,17 @@
 package com.qouteall.immersive_portals;
 
 import com.google.common.collect.Streams;
-import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
-import net.minecraft.util.math.*;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,11 +20,13 @@ import org.lwjgl.opengl.GL11;
 
 import java.lang.ref.WeakReference;
 import java.nio.FloatBuffer;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.function.*;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
@@ -217,12 +217,6 @@ public class Helper {
         };
     }
     
-    public static IEThreadedAnvilChunkStorage getIEStorage(DimensionType dimension) {
-        return (IEThreadedAnvilChunkStorage) (
-            (ServerChunkProvider) Helper.getServer().getWorld(dimension).getChunkProvider()
-        ).chunkManager;
-    }
-    
     public static BatchTestResult batchTest(
         Vec3d[] testObjs,
         Predicate<Vec3d> predicate
@@ -236,10 +230,6 @@ public class Helper {
             }
         }
         return firstResult ? BatchTestResult.all_true : BatchTestResult.all_false;
-    }
-    
-    public static ArrayList<ServerPlayerEntity> getCopiedPlayerList() {
-        return new ArrayList<>(getServer().getPlayerList().getPlayers());
     }
     
     public static class SimpleBox<T> {
@@ -279,31 +269,7 @@ public class Helper {
         return lastTickPos.add(currPos.subtract(lastTickPos).scale(partialTicks));
     }
     
-    public static void setPosAndLastTickPos(
-        Entity entity,
-        Vec3d pos,
-        Vec3d lastTickPos
-    ) {
-        
-        
-        //NOTE do not call entity.setPosition() because it may tick the entity
-        
-        entity.posX = pos.x;
-        entity.posY = pos.y;
-        entity.posZ = pos.z;
-        entity.lastTickPosX = lastTickPos.x;
-        entity.lastTickPosY = lastTickPos.y;
-        entity.lastTickPosZ = lastTickPos.z;
-        entity.prevPosX = lastTickPos.x;
-        entity.prevPosY = lastTickPos.y;
-        entity.prevPosZ = lastTickPos.z;
-    }
-    
     public static WeakReference<MinecraftServer> refMinecraftServer;
-    
-    public static MinecraftServer getServer() {
-        return refMinecraftServer.get();
-    }
     
     public static Runnable noException(Callable func) {
         return () -> {
@@ -316,14 +282,6 @@ public class Helper {
         };
     }
     
-    public static <MSG> void sendToServer(MSG message) {
-        assert false;
-    }
-    
-    public static <MSG> void sendToPlayer(ServerPlayerEntity player, MSG message) {
-        assert false;
-    }
-    
     public static void checkGlError() {
         int errorCode = GL11.glGetError();
         if (errorCode != GL_NO_ERROR) {
@@ -333,7 +291,7 @@ public class Helper {
     }
     
     public static ServerWorld getOverWorldOnServer() {
-        return getServer().getWorld(DimensionType.OVERWORLD);
+        return McHelper.getServer().getWorld(DimensionType.OVERWORLD);
     }
     
     public static void doNotEatExceptionMessage(
@@ -361,15 +319,6 @@ public class Helper {
             e.printStackTrace();
             throw e;
         }
-    }
-    
-    public static void serverLog(
-        ServerPlayerEntity player,
-        String text
-    ) {
-        //Helper.log(text);
-        
-        player.sendMessage(new StringTextComponent(text));
     }
     
     public static <T> String myToString(
@@ -458,36 +407,6 @@ public class Helper {
         );
     }
     
-    public static <ENTITY extends Entity> Stream<ENTITY> getEntitiesNearby(
-        World world,
-        Vec3d center,
-        Class<ENTITY> entityClass,
-        double range
-    ) {
-        AxisAlignedBB box = new AxisAlignedBB(center, center).grow(range);
-        return (Stream) world.getEntitiesWithinAABB(entityClass, box).stream();
-    }
-    
-    public static <ENTITY extends Entity> Stream<ENTITY> getEntitiesNearby(
-        Entity center,
-        Class<ENTITY> entityClass,
-        double range
-    ) {
-        return getEntitiesNearby(
-            center.world,
-            center.getPositionVec(),
-            entityClass,
-            range
-        );
-    }
-    
-    public static AxisAlignedBB getChunkBoundingBox(ChunkPos chunkPos) {
-        return new AxisAlignedBB(
-            chunkPos.asBlockPos(),
-            chunkPos.asBlockPos().add(16, 256, 16)
-        );
-    }
-    
     public static <T> void compareOldAndNew(
         Set<T> oldSet,
         Set<T> newSet,
@@ -504,10 +423,6 @@ public class Helper {
         ).forEach(
             forAdded
         );
-    }
-    
-    public static long getServerGameTime() {
-        return getOverWorldOnServer().getGameTime();
     }
     
     public static long secondToNano(double second) {
@@ -560,7 +475,6 @@ public class Helper {
         );
     }
     
-    
     public static <A, B> B reduceWithDifferentType(
         B start,
         Stream<A> stream,
@@ -571,48 +485,6 @@ public class Helper {
             bBox.obj = func.apply(bBox.obj, a);
         });
         return bBox.obj;
-    }
-    
-    public static <T> void performSplitedFindingTaskOnServer(
-        Iterator<T> iterator,
-        Predicate<T> predicate,
-        IntPredicate progressInformer,//return false to abort the task
-        Consumer<T> onFound,
-        Runnable onNotFound
-    ) {
-        final long timeValve = (1000000000L / 40);
-        int[] countStorage = new int[1];
-        countStorage[0] = 0;
-        ModMain.serverTaskList.addTask(() -> {
-            boolean shouldContinueRunning =
-                progressInformer.test(countStorage[0]);
-            if (!shouldContinueRunning) {
-                return true;
-            }
-            long startTime = System.nanoTime();
-            for (; ; ) {
-                if (iterator.hasNext()) {
-                    T next = iterator.next();
-                    if (predicate.test(next)) {
-                        onFound.accept(next);
-                        return true;
-                    }
-                }
-                else {
-                    //finished searching
-                    onNotFound.run();
-                    return true;
-                }
-                countStorage[0] += 1;
-        
-                long currTime = System.nanoTime();
-        
-                if (currTime - startTime > timeValve) {
-                    //suspend the task and retry it next tick
-                    return false;
-                }
-            }
-        });
     }
     
 }

@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.portal.global_portals;
 
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -18,7 +18,7 @@ public class EndFloorPortal extends GlobalTrackedPortal {
     }
     
     public static void enableFloor() {
-        ServerWorld endWorld = Helper.getServer().getWorld(DimensionType.THE_END);
+        ServerWorld endWorld = McHelper.getServer().getWorld(DimensionType.THE_END);
         GlobalPortalStorage storage = GlobalPortalStorage.get(endWorld);
         
         boolean isEndFloorPresent = storage.data.stream()
@@ -46,7 +46,7 @@ public class EndFloorPortal extends GlobalTrackedPortal {
     }
     
     public static void removeFloor() {
-        ServerWorld endWorld = Helper.getServer().getWorld(DimensionType.THE_END);
+        ServerWorld endWorld = McHelper.getServer().getWorld(DimensionType.THE_END);
         GlobalPortalStorage storage = GlobalPortalStorage.get(endWorld);
         
         storage.data.removeIf(

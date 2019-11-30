@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
 import com.mojang.datafixers.util.Either;
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
@@ -47,7 +47,7 @@ public class ChunkDataSyncManager {
         }
     
         SGlobal.chunkTrackingGraph.onChunkDataSent(player, chunkPos);
-        IEThreadedAnvilChunkStorage ieStorage = Helper.getIEStorage(chunkPos.dimension);
+        IEThreadedAnvilChunkStorage ieStorage = McHelper.getIEStorage(chunkPos.dimension);
     
         if (SGlobal.isChunkLoadingMultiThreaded) {
             sendPacketMultiThreaded(player, chunkPos, ieStorage);
@@ -104,7 +104,7 @@ public class ChunkDataSyncManager {
         DimensionalChunkPos chunkPos,
         IEThreadedAnvilChunkStorage ieStorage
     ) {
-        IChunk chunk = Helper.getServer()
+        IChunk chunk = McHelper.getServer()
             .getWorld(chunkPos.dimension)
             .getChunk(chunkPos.x, chunkPos.z);
         assert chunk != null;
@@ -162,8 +162,8 @@ public class ChunkDataSyncManager {
     
     public void onPlayerRespawn(ServerPlayerEntity oldPlayer) {
         SGlobal.chunkTrackingGraph.onPlayerRespawn(oldPlayer);
-        
-        Helper.getServer().getWorlds()
+    
+        McHelper.getServer().getWorlds()
             .forEach(world -> {
                 ServerChunkProvider chunkManager = (ServerChunkProvider) world.getChunkProvider();
                 IEThreadedAnvilChunkStorage storage =

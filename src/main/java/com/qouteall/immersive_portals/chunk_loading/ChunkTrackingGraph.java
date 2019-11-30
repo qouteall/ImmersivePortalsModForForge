@@ -2,8 +2,9 @@ package com.qouteall.immersive_portals.chunk_loading;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.my_util.SignalBiArged;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -67,7 +68,7 @@ public class ChunkTrackingGraph {
         ChunkPos chunkPos,
         boolean isLoadedNow
     ) {
-        ServerWorld world = Helper.getServer().getWorld(dimension);
+        ServerWorld world = McHelper.getServer().getWorld(dimension);
     
         world.forceChunk(chunkPos.x, chunkPos.z, isLoadedNow);
         //world.method_14178().setChunkForced(chunkPos, isLoadedNow);
@@ -91,7 +92,7 @@ public class ChunkTrackingGraph {
     }
     
     private Edge addEdge(DimensionalChunkPos chunkPos, ServerPlayerEntity player) {
-        Edge edge = new Edge(chunkPos, player, Helper.getServerGameTime());
+        Edge edge = new Edge(chunkPos, player, McHelper.getServerGameTime());
         chunkPosToEdges.put(chunkPos, edge);
         playerToEdges.put(player, edge);
     
@@ -125,15 +126,15 @@ public class ChunkTrackingGraph {
         );
         newPlayerViewingChunks.forEach(chunkPos -> {
             Edge edge = getOrAddEdge(chunkPos, playerEntity);
-            edge.lastActiveGameTime = Helper.getServerGameTime();
+            edge.lastActiveGameTime = McHelper.getServerGameTime();
         });
     
         removeInactiveEdges(playerEntity);
     }
     
     private void tick() {
-        long currTime = Helper.getServerGameTime();
-        for (ServerPlayerEntity player : Helper.getCopiedPlayerList()) {
+        long currTime = McHelper.getServerGameTime();
+        for (ServerPlayerEntity player : McHelper.getCopiedPlayerList()) {
             if (currTime % 50 == player.getEntityId() % 50) {
                 updatePlayer(player);
     
@@ -147,7 +148,7 @@ public class ChunkTrackingGraph {
     }
     
     private void removeInactiveEdges(ServerPlayerEntity playerEntity) {
-        long serverGameTime = Helper.getServerGameTime();
+        long serverGameTime = McHelper.getServerGameTime();
         playerToEdges.get(playerEntity).stream()
             .filter(
                 edge -> shouldUnload(serverGameTime, edge)
@@ -170,7 +171,7 @@ public class ChunkTrackingGraph {
             chunkPosToEdges.keySet().stream().collect(
                 Collectors.groupingBy(chunkPos -> chunkPos.dimension)
             );
-        Helper.getServer().getWorlds().forEach(world -> {
+        McHelper.getServer().getWorlds().forEach(world -> {
             List<DimensionalChunkPos> newForcedChunks =
                 newForcedChunkMap.computeIfAbsent(
                     world.dimension.getType(),

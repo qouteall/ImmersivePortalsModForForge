@@ -7,8 +7,6 @@ import com.qouteall.immersive_portals.my_util.MyTaskList;
 import com.qouteall.immersive_portals.my_util.Signal;
 import com.qouteall.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.teleportation.ServerTeleportationManager;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.dimension.DimensionType;
 
 public class ModMain {
     //after world ticking
@@ -33,24 +31,6 @@ public class ModMain {
         SGlobal.chunkDataSyncManager = new ChunkDataSyncManager();
     
         WorldInfoSender.init();
-    
-        //to avoid loading some classes too early
-        //so strange
-        clientTaskList.addTask(() -> {
-            if (LateLoadedHelper.dimensionTypeToString == null) {
-                LateLoadedHelper.dimensionTypeToString =
-                    (obj) -> Registry.DIMENSION_TYPE.getKey((DimensionType) obj).toString();
-            }
-            return true;
-        });
-        serverTaskList.addTask(() -> {
-            if (LateLoadedHelper.dimensionTypeToString == null) {
-                LateLoadedHelper.dimensionTypeToString =
-                    (obj) -> Registry.DIMENSION_TYPE.getKey((DimensionType) obj).toString();
-            }
-            return true;
-        });
-        
         
     }
     

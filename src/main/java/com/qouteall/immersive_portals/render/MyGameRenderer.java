@@ -3,11 +3,12 @@ package com.qouteall.immersive_portals.render;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEChunkRenderList;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEPlayerListEntry;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
@@ -206,15 +207,15 @@ public class MyGameRenderer {
         Vec3d oldPos = player.getPositionVec();
         Vec3d oldLastTickPos = Helper.lastTickPosOf(player);
         GameType oldGameMode = playerListEntry.getGameType();
-        
-        Helper.setPosAndLastTickPos(
+    
+        McHelper.setPosAndLastTickPos(
             player, playerPos, playerLastTickPos
         );
         ((IEPlayerListEntry) playerListEntry).setGameMode(originalGameMode);
     
         entityRenderDispatcher.renderEntityStatic(player, patialTicks, false);
-        
-        Helper.setPosAndLastTickPos(
+    
+        McHelper.setPosAndLastTickPos(
             player, oldPos, oldLastTickPos
         );
         ((IEPlayerListEntry) playerListEntry).setGameMode(oldGameMode);

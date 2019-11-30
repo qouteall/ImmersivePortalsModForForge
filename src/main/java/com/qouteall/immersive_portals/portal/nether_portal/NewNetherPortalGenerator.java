@@ -1,7 +1,8 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
-import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
@@ -70,7 +71,7 @@ public class NewNetherPortalGenerator {
         }
         
         NetherPortalShape fromShape = foundShape;
-        ServerWorld toWorld = Helper.getServer().getWorld(toDimension);
+        ServerWorld toWorld = McHelper.getServer().getWorld(toDimension);
         
         BlockPos fromPos = fromShape.innerAreaBox.getCenter();
         
@@ -114,8 +115,8 @@ public class NewNetherPortalGenerator {
             fromPos.getZ() + 0.5
         );
         fromWorld.addEntity(indicatorEntity);
-        
-        Helper.performSplitedFindingTaskOnServer(
+    
+        McHelper.performSplitedFindingTaskOnServer(
             iterator,
             Objects::nonNull,
             (i) -> {
@@ -205,8 +206,8 @@ public class NewNetherPortalGenerator {
     private static void finishGeneratingPortal(
         Info info
     ) {
-        ServerWorld fromWorld = Helper.getServer().getWorld(info.from);
-        ServerWorld toWorld = Helper.getServer().getWorld(info.to);
+        ServerWorld fromWorld = McHelper.getServer().getWorld(info.from);
+        ServerWorld toWorld = McHelper.getServer().getWorld(info.to);
     
         fillInPlaceHolderBlocks(fromWorld, info.fromShape);
         fillInPlaceHolderBlocks(toWorld, info.toShape);

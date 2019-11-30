@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.teleportation;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEServerPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEServerPlayerEntity;
@@ -43,7 +44,7 @@ public class ServerTeleportationManager {
         Vec3d posBefore,
         UUID portalId
     ) {
-        ServerWorld beforeWorld = Helper.getServer().getWorld(dimensionBefore);
+        ServerWorld beforeWorld = McHelper.getServer().getWorld(dimensionBefore);
         Entity portalEntity = beforeWorld.getEntityByUuid(portalId);
         if (portalEntity == null) {
             portalEntity = GlobalPortalStorage.get(beforeWorld).data.stream()
@@ -51,7 +52,7 @@ public class ServerTeleportationManager {
                     p -> p.getUniqueID().equals(portalId)
                 ).findFirst().orElse(null);
         }
-        lastTeleportGameTime.put(player, Helper.getServerGameTime());
+        lastTeleportGameTime.put(player, McHelper.getServerGameTime());
         
         if (canPlayerTeleport(player, dimensionBefore, posBefore, portalEntity)) {
             if (isTeleporting(player)) {
@@ -96,7 +97,7 @@ public class ServerTeleportationManager {
         return player.dimension == dimension ?
             isClose(pos, player.getPositionVec())
             :
-            Helper.getEntitiesNearby(player, Portal.class, 10)
+            McHelper.getEntitiesNearby(player, Portal.class, 10)
                 .anyMatch(
                     portal -> portal.dimensionTo == dimension &&
                         isClose(pos, portal.destination)
@@ -113,7 +114,7 @@ public class ServerTeleportationManager {
         Vec3d newPos
     ) {
         ServerWorld fromWorld = (ServerWorld) player.world;
-        ServerWorld toWorld = Helper.getServer().getWorld(dimensionTo);
+        ServerWorld toWorld = McHelper.getServer().getWorld(dimensionTo);
     
         if (player.dimension == dimensionTo) {
             player.setPosition(newPos.x, newPos.y, newPos.z);
@@ -162,7 +163,7 @@ public class ServerTeleportationManager {
     
         toWorld.chunkCheck(player);
     
-        Helper.getServer().getPlayerList().sendWorldInfo(
+        McHelper.getServer().getPlayerList().sendWorldInfo(
             player, toWorld
         );
         
@@ -194,10 +195,10 @@ public class ServerTeleportationManager {
     
     private void tick() {
         teleportingEntities = new HashSet<>();
-        long tickTimeNow = Helper.getServerGameTime();
+        long tickTimeNow = McHelper.getServerGameTime();
         if (tickTimeNow % 10 == 7) {
             ArrayList<ServerPlayerEntity> copiedPlayerList =
-                Helper.getCopiedPlayerList();
+                McHelper.getCopiedPlayerList();
             for (ServerPlayerEntity player : copiedPlayerList) {
                 if (!player.queuedEndExit) {
                     Long lastTeleportGameTime =
@@ -248,10 +249,10 @@ public class ServerTeleportationManager {
         Vec3d destination
     ) {
         ServerWorld fromWorld = (ServerWorld) entity.world;
-        ServerWorld toWorld = Helper.getServer().getWorld(toDimension);
+        ServerWorld toWorld = McHelper.getServer().getWorld(toDimension);
         entity.detach();
-        
-        Stream<ServerPlayerEntity> watchingPlayers = Helper.getEntitiesNearby(
+    
+        Stream<ServerPlayerEntity> watchingPlayers = McHelper.getEntitiesNearby(
             entity,
             ServerPlayerEntity.class,
             128

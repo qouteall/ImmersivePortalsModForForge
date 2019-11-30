@@ -1,9 +1,6 @@
 package com.qouteall.immersive_portals.teleportation;
 
-import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.CHelper;
-import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.*;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
@@ -114,7 +111,7 @@ public class ClientTeleportationManager {
         }
         
         player.setPosition(newPos.x, newPos.y, newPos.z);
-        Helper.setPosAndLastTickPos(player, newPos, newLastTickPos);
+        McHelper.setPosAndLastTickPos(player, newPos, newLastTickPos);
     
         NetworkMain.sendToServer(new CtsTeleport(
             fromDimension,
@@ -199,7 +196,7 @@ public class ClientTeleportationManager {
         ));
     
         Helper.log("Portal Number Near Player Now" +
-            Helper.getEntitiesNearby(mc.player, Portal.class, 10).count()
+            McHelper.getEntitiesNearby(mc.player, Portal.class, 10).count()
         );
 
 //        if (OFHelper.getIsUsingShader()) {

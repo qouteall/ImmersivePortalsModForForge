@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import com.qouteall.immersive_portals.my_util.SignalArged;
 import com.qouteall.immersive_portals.network.NetworkMain;
@@ -38,7 +39,7 @@ public class NetherPortalGenerator {
         );
         StcSpawnLoadingIndicator packet =
             new StcSpawnLoadingIndicator(world.dimension.getType(), center);
-        Helper.getEntitiesNearby(
+        McHelper.getEntitiesNearby(
             world, center, ServerPlayerEntity.class, 64
         ).forEach(
             player -> NetworkMain.sendToPlayer(player, packet)
@@ -81,7 +82,7 @@ public class NetherPortalGenerator {
         
         if (fromObsidianFrame == null) return null;
     
-        ServerWorld toWorld = Helper.getServer().getWorld(toDimension);
+        ServerWorld toWorld = McHelper.getServer().getWorld(toDimension);
     
         assert toWorld != null;
     
@@ -122,7 +123,7 @@ public class NetherPortalGenerator {
     }
     
     private static BlockPos getRandomShift(DimensionType fromDimension) {
-        Random rand = Helper.getServer().getWorld(fromDimension).rand;
+        Random rand = McHelper.getServer().getWorld(fromDimension).rand;
         return new BlockPos(
             (rand.nextDouble() * 2 - 1) * randomShiftFactor,
             (rand.nextDouble() * 2 - 1) * randomShiftFactor,

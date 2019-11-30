@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
 import com.google.common.collect.Streams;
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
@@ -134,7 +134,7 @@ public class ChunkVisibilityManager {
         DimensionType dimension
     ) {
         return GlobalPortalStorage.get(
-            Helper.getServer().getWorld(dimension)
+            McHelper.getServer().getWorld(dimension)
         ).data.stream();
     }
     
@@ -143,8 +143,8 @@ public class ChunkVisibilityManager {
     ) {
         return Streams.concat(
             Stream.of(playerDirectLoader(player)),
-            
-            Helper.getEntitiesNearby(
+    
+            McHelper.getEntitiesNearby(
                 player,
                 Portal.class,
                 ChunkTrackingGraph.portalLoadingRange
@@ -153,9 +153,9 @@ public class ChunkVisibilityManager {
             ).flatMap(
                 portal -> Streams.concat(
                     Stream.of(portalDirectLoader(portal)),
-                    
-                    Helper.getEntitiesNearby(
-                        Helper.getServer().getWorld(portal.dimensionTo),
+    
+                    McHelper.getEntitiesNearby(
+                        McHelper.getServer().getWorld(portal.dimensionTo),
                         portal.destination,
                         Portal.class,
                         ChunkTrackingGraph.secondaryPortalLoadingRange
@@ -208,6 +208,6 @@ public class ChunkVisibilityManager {
     }
     
     public static int getRenderDistanceOnServer() {
-        return Helper.getIEStorage(DimensionType.OVERWORLD).getWatchDistance();
+        return McHelper.getIEStorage(DimensionType.OVERWORLD).getWatchDistance();
     }
 }

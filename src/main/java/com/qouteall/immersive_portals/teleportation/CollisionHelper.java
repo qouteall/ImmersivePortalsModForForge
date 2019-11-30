@@ -1,8 +1,9 @@
 package com.qouteall.immersive_portals.teleportation;
 
 import com.qouteall.immersive_portals.CHelper;
-import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -122,7 +123,7 @@ public class CollisionHelper {
         Vec3d move2 = handleCollisionFunc.apply(attemptedMove);
         
         entity.world = oldWorld;
-        Helper.setPosAndLastTickPos(entity, oldPos, oldLastTickPos);
+        McHelper.setPosAndLastTickPos(entity, oldPos, oldLastTickPos);
         entity.setBoundingBox(originalBoundingBox);
         
         return move2;
@@ -183,7 +184,7 @@ public class CollisionHelper {
             return CHelper.getClientWorld(dimension);
         }
         else {
-            return Helper.getServer().getWorld(dimension);
+            return McHelper.getServer().getWorld(dimension);
         }
     }
     

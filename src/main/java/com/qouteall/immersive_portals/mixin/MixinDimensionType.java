@@ -1,26 +1,29 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.qouteall.immersive_portals.LateLoadedHelper;
 import net.minecraft.world.dimension.DimensionType;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.Constant;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 @Mixin(DimensionType.class)
 public abstract class MixinDimensionType {
     
-    @Inject(
+    //change "DimensionType{minecraft:nether}" to "minecraft:nether"
+    
+    @ModifyConstant(
         method = "toString",
-        at = @At("HEAD"),
-        cancellable = true
+        constant = @Constant(stringValue = "DimensionType{")
     )
-    private void onToString(CallbackInfoReturnable<String> cir) {
-        if (LateLoadedHelper.dimensionTypeToString != null) {
-            //avoid loading some classes too early
-            cir.setReturnValue(LateLoadedHelper.dimensionTypeToString.apply(this));
-            cir.cancel();
-        }
+    private String modify1(String whatever) {
+        return "";
+    }
+    
+    @ModifyConstant(
+        method = "toString",
+        constant = @Constant(stringValue = "}")
+    )
+    private String modify2(String whatever) {
+        return "";
     }
 
     

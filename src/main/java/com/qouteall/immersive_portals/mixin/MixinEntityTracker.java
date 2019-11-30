@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
@@ -121,7 +121,7 @@ public class MixinEntityTracker implements IEEntityTracker {
     public void updateTrackingState(List<ServerPlayerEntity> list_1) {
         //ignore the argument
     
-        Helper.getCopiedPlayerList().forEach(this::updateTrackingState);
+        McHelper.getCopiedPlayerList().forEach(this::updateTrackingState);
         
     }
     
@@ -132,7 +132,7 @@ public class MixinEntityTracker implements IEEntityTracker {
     
     @Override
     public void updateCameraPosition_(ServerPlayerEntity player) {
-        IEThreadedAnvilChunkStorage storage = Helper.getIEStorage(entity.dimension);
+        IEThreadedAnvilChunkStorage storage = McHelper.getIEStorage(entity.dimension);
         
         if (player != this.entity) {
             Vec3d relativePos = (new Vec3d(

@@ -53,7 +53,7 @@ public class CHelper {
     public static Stream<Portal> getClientNearbyPortals(double range) {
         ClientPlayerEntity player = Minecraft.getInstance().player;
         List<GlobalTrackedPortal> globalPortals = ((IEClientWorld) player.world).getGlobalPortals();
-        Stream<Portal> nearbyPortals = Helper.getEntitiesNearby(
+        Stream<Portal> nearbyPortals = McHelper.getEntitiesNearby(
             player,
             Portal.class,
             range
