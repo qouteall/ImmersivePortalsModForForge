@@ -1,4 +1,4 @@
-package com.immersive_portals;
+package com.qouteall.immersive_portals;
 
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;

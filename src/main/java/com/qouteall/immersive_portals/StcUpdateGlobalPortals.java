@@ -1,6 +1,5 @@
-package com.immersive_portals.network;
+package com.qouteall.immersive_portals;
 
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;

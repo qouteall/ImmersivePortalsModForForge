@@ -43,7 +43,7 @@ public class DimensionalChunkPos {
     @Override
     public String toString() {
         return "(" +
-            DimensionType.getKey(dimension) +
+            dimension +
             " " + x +
             " " + z +
             ')';

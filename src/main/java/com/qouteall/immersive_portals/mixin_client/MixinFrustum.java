@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ducks.IEFrustumWithOrigin;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.renderer.culling.Frustum;

@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.Lists;
-import com.immersive_portals.network.NetworkMain;
+import com.qouteall.immersive_portals.NetworkMain;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
@@ -62,7 +62,7 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
     private Int2ObjectMap entities;
     
     @Shadow
-    private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> field_219252_f;
+    private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> immutableLoadedChunks;
     
     @Override
     public int getWatchDistance() {
@@ -132,7 +132,7 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
             packets_1[1]
         );
     
-        DebugPacketSender.func_218802_a(this.world, worldChunk_1.getPos());
+        DebugPacketSender.sendChuckPos(this.world, worldChunk_1.getPos());
         List<Entity> list_1 = Lists.newArrayList();
         List<Entity> list_2 = Lists.newArrayList();
         ObjectIterator var6 = this.entities.values().iterator();
@@ -211,6 +211,6 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
     
     @Override
     public int getChunkHolderNum() {
-        return field_219252_f.size();
+        return immutableLoadedChunks.size();
     }
 }

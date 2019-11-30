@@ -1,4 +1,4 @@
-package com.immersive_portals;
+package com.qouteall.immersive_portals;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;

@@ -1,4 +1,4 @@
-package com.immersive_portals.network;
+package com.qouteall.immersive_portals;
 
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;

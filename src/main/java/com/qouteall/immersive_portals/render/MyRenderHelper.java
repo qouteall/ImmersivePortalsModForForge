@@ -6,7 +6,7 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;

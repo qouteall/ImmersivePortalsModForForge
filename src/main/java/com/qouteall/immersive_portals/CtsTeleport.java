@@ -1,7 +1,5 @@
-package com.immersive_portals.network;
+package com.qouteall.immersive_portals;
 
-import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.SGlobal;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.Vec3d;

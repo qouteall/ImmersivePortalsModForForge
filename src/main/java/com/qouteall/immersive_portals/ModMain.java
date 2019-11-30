@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals;
 
-import com.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.chunk_loading.ChunkDataSyncManager;
 import com.qouteall.immersive_portals.chunk_loading.ChunkTrackingGraph;
 import com.qouteall.immersive_portals.chunk_loading.WorldInfoSender;

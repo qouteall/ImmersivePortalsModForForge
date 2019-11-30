@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
 import com.google.common.collect.Streams;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;

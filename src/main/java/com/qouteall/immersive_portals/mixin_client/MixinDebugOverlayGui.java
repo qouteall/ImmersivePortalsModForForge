@@ -25,9 +25,8 @@ public class MixinDebugOverlayGui {
         Entity collidingPortal =
             player != null ? ((IEEntity) player).getCollidingPortal() : null;
         return String.format(
-            "Rendered Portal Num: %s\nColliding Portal: %s",
-            MyRenderHelper.lastPortalRenderInfos.size(),
-            collidingPortal != null ? collidingPortal.toString() : ""
+            "Rendered Portal Num: %s",
+            MyRenderHelper.lastPortalRenderInfos.size()
         );
     }
 }

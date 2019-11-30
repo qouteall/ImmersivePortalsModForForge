@@ -193,7 +193,7 @@ public class PortalPlaceholderBlock extends Block {
     
     @OnlyIn(Dist.CLIENT)
     @Override
-    public float func_220080_a(
+    public float getAmbientOcclusionLightValue(
         BlockState blockState_1,
         IBlockReader blockView_1,
         BlockPos blockPos_1

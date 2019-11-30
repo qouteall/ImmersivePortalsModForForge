@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
@@ -69,11 +69,6 @@ public class NewNetherPortalGenerator {
             return false;
         }
         
-        //avoid lighting portal again when generating portal
-        fillInPlaceHolderBlocks(fromWorld, foundShape);
-        
-        //TODO spawn loading indicator
-        
         NetherPortalShape fromShape = foundShape;
         ServerWorld toWorld = Helper.getServer().getWorld(toDimension);
         
@@ -112,6 +107,7 @@ public class NewNetherPortalGenerator {
     
         LoadingIndicatorEntity indicatorEntity =
             LoadingIndicatorEntity.entityType.create(fromWorld);
+        indicatorEntity.isAlive = true;
         indicatorEntity.setPosition(
             fromPos.getX() + 0.5,
             fromPos.getY() + 0.5,
@@ -123,11 +119,19 @@ public class NewNetherPortalGenerator {
             iterator,
             Objects::nonNull,
             (i) -> {
+                boolean check = recheckTheFrameThatIsBeingLighted(fromWorld, fromShape);
+                if (!check) {
+                    Helper.log("Nether Portal Generation Aborted");
+                    indicatorEntity.remove();
+                    return false;
+                }
+                
                 double progress = i / 20000000.0;
                 indicatorEntity.setText(
                     "Searching for matched obsidian frame on the other side\n" +
                         (int) (progress * 100) + "%"
                 );
+                
                 return true;
             },
             toShape -> {

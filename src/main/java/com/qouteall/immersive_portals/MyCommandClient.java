@@ -8,7 +8,6 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.ducks.*;
-import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.DimensionRenderHelper;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
@@ -251,7 +250,10 @@ public class MyCommandClient {
             .executes(context -> {
                 Portal collidingPortal =
                     (Portal) ((IEEntity) Minecraft.getInstance().player).getCollidingPortal();
-                Helper.serverLog(context.getSource().asPlayer(), collidingPortal.toString());
+                Helper.serverLog(
+                    context.getSource().asPlayer(),
+                    collidingPortal != null ? collidingPortal.toString() : "null"
+                );
                 return 0;
             })
         );
@@ -296,6 +298,20 @@ public class MyCommandClient {
             .literal("new_nether_portal_disable")
             .executes(context -> {
                 SGlobal.doUseNewNetherPortal = false;
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("optimization_enable")
+            .executes(context -> {
+                SGlobal.isOptimizationEnabled = true;
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("optimization_disable")
+            .executes(context -> {
+                SGlobal.isOptimizationEnabled = false;
                 return 0;
             })
         );
@@ -349,7 +365,7 @@ public class MyCommandClient {
         String result = str.toString();
         
         Helper.log(str);
-    
+        
         context.getSource().asPlayer().sendMessage(new StringTextComponent(result));
         
         return 0;
@@ -380,7 +396,7 @@ public class MyCommandClient {
                 ));
             }
         );
-    
+        
         str.append("Server Chunks:\n");
         Helper.getServer().getWorlds().forEach(
             world -> {
@@ -397,7 +413,7 @@ public class MyCommandClient {
         String result = str.toString();
         
         Helper.log(str);
-    
+        
         context.getSource().asPlayer().sendMessage(new StringTextComponent(result));
         
         return 0;
@@ -460,12 +476,12 @@ public class MyCommandClient {
             addPortalFunctionality = (playerEntity) -> {
                 Vec3d toPos = playerEntity.getPositionVec();
                 DimensionType toDimension = player.dimension;
-    
+                
                 Portal portal = Portal.entityType.create(fromWorld);
                 portal.posX = fromPos.x;
                 portal.posY = fromPos.y;
                 portal.posZ = fromPos.z;
-    
+                
                 portal.axisH = new Vec3d(0, 4, 0);
                 portal.axisW = portal.axisH.crossProduct(fromNormal).normalize().scale(4);
                 
@@ -473,7 +489,7 @@ public class MyCommandClient {
                 portal.destination = toPos;
                 
                 assert portal.isPortalValid();
-    
+                
                 fromWorld.addEntity(portal);
                 
                 addPortalFunctionality = originalAddPortalFunctionality;
@@ -495,7 +511,7 @@ public class MyCommandClient {
     
     private static int reportPlayerStatus(CommandContext<CommandSource> context) throws CommandSyntaxException {
         //only invoked on single player
-    
+        
         ServerPlayerEntity playerMP = context.getSource().asPlayer();
         ClientPlayerEntity playerSP = Minecraft.getInstance().player;
         

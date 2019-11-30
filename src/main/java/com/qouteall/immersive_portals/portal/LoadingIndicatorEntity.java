@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.portal;
 
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
@@ -19,6 +19,8 @@ public class LoadingIndicatorEntity extends Entity {
         LoadingIndicatorEntity.class, DataSerializers.STRING
     );
     
+    public boolean isAlive = false;
+    
     public LoadingIndicatorEntity(EntityType type, World world) {
         super(type, world);
     }
@@ -34,6 +36,12 @@ public class LoadingIndicatorEntity extends Entity {
     
         if (Helper.getEntitiesNearby(this, Portal.class, 1).findAny().isPresent()) {
             this.remove();
+        }
+    
+        if (!world.isRemote) {
+            if (!isAlive) {
+                remove();
+            }
         }
     }
     

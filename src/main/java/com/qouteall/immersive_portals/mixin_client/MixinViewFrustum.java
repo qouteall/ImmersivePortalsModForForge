@@ -4,7 +4,7 @@ import com.google.common.collect.Streams;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEChunkRenderDispatcher;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ViewFrustum;

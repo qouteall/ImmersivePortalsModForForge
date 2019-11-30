@@ -1,14 +1,14 @@
 package com.qouteall.immersive_portals.teleportation;
 
-import com.immersive_portals.network.CtsTeleport;
-import com.immersive_portals.network.NetworkMain;
+import com.qouteall.immersive_portals.CtsTeleport;
+import com.qouteall.immersive_portals.NetworkMain;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;

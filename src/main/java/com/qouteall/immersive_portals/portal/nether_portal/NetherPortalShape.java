@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.SpecialPortalShape;
@@ -157,6 +157,7 @@ public class NetherPortalShape {
         }
         
         Set<BlockPos> area = new HashSet<>();
+        area.add(startingPos);
         findAreaRecursively(
             startingPos,
             isAir,
@@ -258,6 +259,10 @@ public class NetherPortalShape {
     public boolean isFrameIntact(
         Predicate<BlockPos> isObsidian
     ) {
+        if (area.isEmpty()) {
+            return false;
+        }
+        
         return frameAreaWithoutCorner.stream().allMatch(isObsidian);
     }
     

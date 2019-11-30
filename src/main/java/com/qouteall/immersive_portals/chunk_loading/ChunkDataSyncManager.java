@@ -1,11 +1,11 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
-import com.immersive_portals.network.NetworkMain;
+import com.qouteall.immersive_portals.NetworkMain;
 import com.mojang.datafixers.util.Either;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.server.SChunkDataPacket;
 import net.minecraft.network.play.server.SUnloadChunkPacket;

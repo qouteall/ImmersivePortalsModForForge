@@ -3,7 +3,7 @@ package com.qouteall.immersive_portals.chunk_loading;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.my_util.SignalBiArged;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;

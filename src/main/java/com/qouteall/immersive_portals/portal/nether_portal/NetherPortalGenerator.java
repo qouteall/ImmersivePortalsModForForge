@@ -1,8 +1,8 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
-import com.immersive_portals.network.NetworkMain;
-import com.immersive_portals.network.StcSpawnLoadingIndicator;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.NetworkMain;
+import com.qouteall.immersive_portals.StcSpawnLoadingIndicator;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import com.qouteall.immersive_portals.my_util.SignalArged;
 import com.qouteall.immersive_portals.portal.Portal;
@@ -412,11 +412,12 @@ public class NetherPortalGenerator {
         BlockPos pos,
         Direction.Axis normalAxis
     ) {
-        world.setBlockState(
+        boolean result = world.setBlockState(
             pos,
             PortalPlaceholderBlock.instance.getDefaultState().with(
                 PortalPlaceholderBlock.AXIS, normalAxis
-            )
+            ),
+            3
         );
     }
     

@@ -20,6 +20,12 @@ import static org.lwjgl.opengl.GL11.GL_CLIP_PLANE0;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 
 public class ViewAreaRenderer {
+    public static interface VertexOutput {
+        //to avoid temporal Vec3d object creation
+        //to improve cache friendliness
+        void accept(double x, double y, double z);
+    }
+    
     private static void buildPortalViewAreaTrianglesBuffer(
         Vec3d fogColor, Portal portal, BufferBuilder bufferbuilder,
         Vec3d cameraPos, float partialTicks, float layerWidth
@@ -29,17 +35,17 @@ public class ViewAreaRenderer {
         //counter-clockwise triangles are front-faced in default
         
         bufferbuilder.begin(GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
-    
+        
         Vec3d posInPlayerCoordinate = portal.getPositionVec().subtract(cameraPos);
-    
+        
         if (portal instanceof Mirror) {
             posInPlayerCoordinate = posInPlayerCoordinate.add(portal.getNormal().scale(-0.001));
         }
-    
-        Consumer<Vec3d> vertexOutput = p -> putIntoVertex(
-            bufferbuilder, p, fogColor
+        
+        VertexOutput vertexOutput = (x, y, z) -> putIntoVertexFast(
+            bufferbuilder, x, y, z, fogColor
         );
-    
+        
         if (portal.specialShape == null) {
             generateTriangleBiLayered(
                 vertexOutput,
@@ -59,7 +65,7 @@ public class ViewAreaRenderer {
     }
     
     private static void generateTriangleSpecialBiLayered(
-        Consumer<Vec3d> vertexOutput,
+        VertexOutput vertexOutput,
         Portal portal,
         float layerWidth,
         Vec3d posInPlayerCoordinate
@@ -76,7 +82,7 @@ public class ViewAreaRenderer {
     }
     
     private static void generateTriangleSpecialWithOffset(
-        Consumer<Vec3d> vertexOutput,
+        VertexOutput vertexOutput,
         Portal portal,
         Vec3d posInPlayerCoordinate,
         Vec3d offset
@@ -101,22 +107,23 @@ public class ViewAreaRenderer {
     }
     
     private static void putIntoLocalVertex(
-        Consumer<Vec3d> vertexOutput,
+        VertexOutput vertexOutput,
         Portal portal,
         Vec3d offset,
         Vec3d posInPlayerCoordinate,
         double localX, double localY
     ) {
         vertexOutput.accept(
-            posInPlayerCoordinate
-                .add(portal.axisW.scale(localX))
-                .add(portal.axisH.scale(localY))
-                .add(offset)
+            posInPlayerCoordinate.x + portal.axisW.x * localX + portal.axisH.x * localY + offset.x,
+            posInPlayerCoordinate.y + portal.axisW.y * localX + portal.axisH.y * localY + offset.y,
+            posInPlayerCoordinate.z + portal.axisW.z * localX + portal.axisH.z * localY + offset.z
         );
     }
     
+    //this does not produce much Vec3d objects
+    //too lazy to optimize this
     private static void generateTriangleBiLayered(
-        Consumer<Vec3d> vertexOutput,
+        VertexOutput vertexOutput,
         Portal portal,
         float layerWidth,
         Vec3d posInPlayerCoordinate
@@ -148,9 +155,13 @@ public class ViewAreaRenderer {
         );
     }
     
-    static private void putIntoVertex(BufferBuilder bufferBuilder, Vec3d pos, Vec3d fogColor) {
+    static private void putIntoVertexFast(
+        BufferBuilder bufferBuilder,
+        double x, double y, double z,
+        Vec3d fogColor
+    ) {
         bufferBuilder
-            .pos(pos.x, pos.y, pos.z)
+            .pos(x, y, z)
             .color((float) fogColor.x, (float) fogColor.y, (float) fogColor.z, 1.0f)
             .endVertex();
     }
@@ -158,21 +169,21 @@ public class ViewAreaRenderer {
     //a d
     //b c
     private static void putIntoQuad(
-        Consumer<Vec3d> vertexOutput,
+        VertexOutput vertexOutput,
         Vec3d a,
         Vec3d b,
         Vec3d c,
         Vec3d d
     ) {
         //counter-clockwise triangles are front-faced in default
-    
-        vertexOutput.accept(b);
-        vertexOutput.accept(c);
-        vertexOutput.accept(d);
-    
-        vertexOutput.accept(d);
-        vertexOutput.accept(a);
-        vertexOutput.accept(b);
+        
+        vertexOutput.accept(b.x, b.y, b.z);
+        vertexOutput.accept(c.x, c.y, c.z);
+        vertexOutput.accept(d.x, d.y, d.z);
+        
+        vertexOutput.accept(d.x, d.y, d.z);
+        vertexOutput.accept(a.x, a.y, a.z);
+        vertexOutput.accept(b.x, b.y, b.z);
         
     }
     
@@ -183,10 +194,10 @@ public class ViewAreaRenderer {
             CGlobal.clientWorldLoader.getDimensionRenderHelper(portal.dimensionTo);
         
         Vec3d fogColor = helper.getFogColor();
-    
+        
         //important
         GlStateManager.enableCull();
-    
+        
         //In OpenGL, if you forget to set one rendering state and the result will be abnormal
         //this design is bug-prone (DirectX is better in this aspect)
         RenderHelper.disableStandardItemLighting();
@@ -221,7 +232,7 @@ public class ViewAreaRenderer {
         GlStateManager.enableAlphaTest();
         GlStateManager.enableTexture();
         GlStateManager.enableLighting();
-    
+        
         Minecraft.getInstance().getProfiler().endSection();
     }
     

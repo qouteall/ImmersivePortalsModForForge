@@ -1,6 +1,5 @@
-package com.immersive_portals.network;
+package com.qouteall.immersive_portals;
 
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;

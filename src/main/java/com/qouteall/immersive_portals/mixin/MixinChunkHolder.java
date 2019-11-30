@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.Streams;
-import com.immersive_portals.network.NetworkMain;
+import com.qouteall.immersive_portals.NetworkMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.ducks.IEChunkHolder;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;

@@ -6,7 +6,7 @@ import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.mojang.datafixers.DataFixer;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import net.minecraft.command.Commands;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerProfileCache;
@@ -57,5 +57,6 @@ public class MixinMinecraftServer {
     )
     private void onServerClose(CallbackInfo ci) {
         SGlobal.chunkTrackingGraph.cleanUp();
+        ModMain.serverTaskList.forceClearTasks();
     }
 }

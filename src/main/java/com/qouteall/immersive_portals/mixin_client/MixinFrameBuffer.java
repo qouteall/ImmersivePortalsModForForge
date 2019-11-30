@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.platform.GLX;
 import com.qouteall.immersive_portals.ducks.IEGlFrameBuffer;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import org.spongepowered.asm.mixin.Mixin;

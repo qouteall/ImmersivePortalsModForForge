@@ -1,4 +1,4 @@
-package com.immersive_portals;
+package com.qouteall.immersive_portals;
 
 import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.connect.IMixinConnector;

@@ -7,7 +7,7 @@ import com.qouteall.immersive_portals.ducks.IEChunkRenderList;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEPlayerListEntry;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;

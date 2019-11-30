@@ -28,4 +28,8 @@ public class MyTaskList {
         );
         
     }
+    
+    public void forceClearTasks(){
+        tasks = new ArrayDeque<>();
+    }
 }

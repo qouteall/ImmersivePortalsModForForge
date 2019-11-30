@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals;
 
-import com.qouteall.immersive_portals.my_util.Helper;
 import com.qouteall.immersive_portals.portal.*;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;

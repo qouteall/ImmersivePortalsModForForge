@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
-import com.qouteall.immersive_portals.my_util.Helper;
+import com.qouteall.immersive_portals.Helper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.world.ClientWorld;
@@ -86,7 +86,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
     
     @Nullable
     @Override
-    public Chunk func_217250_a(
+    public Chunk updateChunkFromPacket(
         World world_1,
         int x,
         int z,
