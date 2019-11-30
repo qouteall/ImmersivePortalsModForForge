@@ -168,6 +168,9 @@ public class MyGameRenderer {
         Vec3d portalPos = portal.getPositionVec().subtract(
             mc.gameRenderer.getActiveRenderInfo().getProjectedView()
         );
+    
+        //is it necessary?
+//        portalPos = portalPos.add(portal.getNormal().scale(0.1));
         
         //equation: planeNormal * p + c > 0
         //-planeNormal * portalCenter = c

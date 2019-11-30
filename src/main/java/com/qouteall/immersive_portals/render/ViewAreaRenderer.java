@@ -74,7 +74,7 @@ public class ViewAreaRenderer {
             vertexOutput, portal, posInPlayerCoordinate,
             Vec3d.ZERO
         );
-        
+
         generateTriangleSpecialWithOffset(
             vertexOutput, portal, posInPlayerCoordinate,
             portal.getNormal().scale(-layerWidth)
@@ -236,4 +236,55 @@ public class ViewAreaRenderer {
         Minecraft.getInstance().getProfiler().endSection();
     }
     
+    private static boolean shouldRenderAdditionalBox(
+        Portal portal,
+        Vec3d cameraPos
+    ) {
+        return (portal.getDistanceToPlane(cameraPos) < 0.5) &&
+            portal.isPointInPortalProjection(cameraPos);
+    }
+    
+    //this view area rendering method is incorrect
+    @Deprecated
+    private static void renderAdditionalBox(
+        Portal portal,
+        Vec3d cameraPos,
+        VertexOutput vertexOutput
+    ) {
+        Vec3d projected = portal.getPointInPortalProjection(cameraPos).subtract(cameraPos);
+        Vec3d normal = portal.getNormal();
+        
+        final double boxRadius = 1;
+        final double correctionFactor = 0;
+        Vec3d correction = normal.scale(correctionFactor);
+        
+        Vec3d dx = portal.axisW.scale(boxRadius);
+        Vec3d dy = portal.axisH.scale(boxRadius);
+        
+        Vec3d a = projected.add(dx).add(dy).add(correction);
+        Vec3d b = projected.subtract(dx).add(dy).add(correction);
+        Vec3d c = projected.subtract(dx).subtract(dy).add(correction);
+        Vec3d d = projected.add(dx).subtract(dy).add(correction);
+        
+        Vec3d mid = projected.add(normal.scale(-2));
+        
+        Consumer<Vec3d> compactVertexOutput = pos -> vertexOutput.accept(pos.x, pos.y, pos.z);
+        
+        compactVertexOutput.accept(b);
+        compactVertexOutput.accept(mid);
+        compactVertexOutput.accept(a);
+        
+        compactVertexOutput.accept(c);
+        compactVertexOutput.accept(mid);
+        compactVertexOutput.accept(b);
+        
+        compactVertexOutput.accept(d);
+        compactVertexOutput.accept(mid);
+        compactVertexOutput.accept(c);
+        
+        compactVertexOutput.accept(a);
+        compactVertexOutput.accept(mid);
+        compactVertexOutput.accept(d);
+        
+    }
 }

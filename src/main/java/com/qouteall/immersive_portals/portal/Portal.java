@@ -402,6 +402,20 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         return roughResult;
     }
     
+    public Vec3d getPointInPortalProjection(Vec3d pos) {
+        Vec3d myPos = getPositionVec();
+        Vec3d offset = pos.subtract(myPos);
+        
+        double yInPlane = offset.dotProduct(axisH);
+        double xInPlane = offset.dotProduct(axisW);
+        
+        return myPos.add(
+            axisW.scale(xInPlane)
+        ).add(
+            axisH.scale(yInPlane)
+        );
+    }
+    
     public boolean isMovedThroughPortal(
         Vec3d lastTickPos,
         Vec3d pos
