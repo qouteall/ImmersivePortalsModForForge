@@ -1,10 +1,10 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.Streams;
-import com.qouteall.immersive_portals.NetworkMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.ducks.IEChunkHolder;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
+import com.qouteall.immersive_portals.network.NetworkMain;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.dimension.DimensionType;

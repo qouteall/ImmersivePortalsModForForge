@@ -1,7 +1,5 @@
 package com.qouteall.immersive_portals;
 
-import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.portal.*;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.EndFloorPortal;
@@ -91,6 +89,8 @@ public class ModMainForge {
     public static class RegistryEvents {
         @SubscribeEvent
         public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
+    
+    
             PortalPlaceholderBlock.instance.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_placeholder")
             );

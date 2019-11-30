@@ -1,12 +1,12 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.Lists;
-import com.qouteall.immersive_portals.NetworkMain;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
+import com.qouteall.immersive_portals.network.NetworkMain;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;

@@ -1,10 +1,10 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
-import com.qouteall.immersive_portals.NetworkMain;
-import com.qouteall.immersive_portals.StcSpawnLoadingIndicator;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import com.qouteall.immersive_portals.my_util.SignalArged;
+import com.qouteall.immersive_portals.network.NetworkMain;
+import com.qouteall.immersive_portals.network.StcSpawnLoadingIndicator;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import net.minecraft.block.Blocks;

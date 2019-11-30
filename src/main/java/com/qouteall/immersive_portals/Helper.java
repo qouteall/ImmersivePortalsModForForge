@@ -10,7 +10,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.*;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
@@ -241,10 +240,6 @@ public class Helper {
     
     public static ArrayList<ServerPlayerEntity> getCopiedPlayerList() {
         return new ArrayList<>(getServer().getPlayerList().getPlayers());
-    }
-    
-    public static String dimensionTypeToString(DimensionType this_) {
-        return Registry.DIMENSION_TYPE.getKey(this_).toString();
     }
     
     public static class SimpleBox<T> {

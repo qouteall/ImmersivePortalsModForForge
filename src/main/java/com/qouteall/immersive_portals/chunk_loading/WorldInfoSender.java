@@ -1,8 +1,8 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
-import com.qouteall.immersive_portals.NetworkMain;
-import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.network.NetworkMain;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.server.SChangeGameStatePacket;
 import net.minecraft.network.play.server.SUpdateTimePacket;
