@@ -1,2 +1,2 @@
-The Forge version works fine in development environment now.
-It's not released because it can't be released now. Currently, Mixin does not work with Forge in real gaming environment.
+The Forge version works fine in development environment now. But it does not work in gaming environment.
+This mod relies on Mixin. Mixin cannot be added by a mod in Forge 1.14. So I have to wait for Forge to ship with Mixin.
