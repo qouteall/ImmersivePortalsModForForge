@@ -8,7 +8,6 @@ import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
 
 import java.util.HashSet;
@@ -102,7 +101,7 @@ public class ChunkVisibilityManager {
         int renderDistance = getRenderDistanceOnServer();
         return new ChunkLoader(
             new DimensionalChunkPos(
-                portal.dimension,
+                portal.dimensionTo,
                 new ChunkPos(new BlockPos(
                     portal.applyTransformationToPoint(player.getPositionVec())
                 ))
@@ -119,7 +118,7 @@ public class ChunkVisibilityManager {
         int renderDistance = getRenderDistanceOnServer();
         return new ChunkLoader(
             new DimensionalChunkPos(
-                remotePortal.dimension,
+                remotePortal.dimensionTo,
                 new ChunkPos(new BlockPos(
                     remotePortal.applyTransformationToPoint(
                         outerPortal.applyTransformationToPoint(player.getPositionVec())
@@ -138,12 +137,18 @@ public class ChunkVisibilityManager {
         ).data.stream();
     }
     
+    //includes:
+    //1.player direct loader
+    //2.portal direct loader
+    //3.portal secondary loader
+    //4.global portal direct loader
+    //5.global portal secondary loader
     public static Stream<ChunkLoader> getChunkLoaders(
         ServerPlayerEntity player
     ) {
         return Streams.concat(
             Stream.of(playerDirectLoader(player)),
-    
+            
             McHelper.getEntitiesNearby(
                 player,
                 Portal.class,
@@ -153,7 +158,7 @@ public class ChunkVisibilityManager {
             ).flatMap(
                 portal -> Streams.concat(
                     Stream.of(portalDirectLoader(portal)),
-    
+                    
                     McHelper.getEntitiesNearby(
                         McHelper.getServer().getWorld(portal.dimensionTo),
                         portal.destination,
@@ -172,26 +177,24 @@ public class ChunkVisibilityManager {
                     portal.getDistanceToNearestPointInPortal(player.getPositionVec()) < 128
                 )
                 .flatMap(
-                    portal -> {
-                        Vec3d secondaryPos =
-                            portal.applyTransformationToPoint(player.getPositionVec());
-                        return Streams.concat(
-                            Stream.of(globalPortalDirectLoader(
-                                player, portal
-                            )),
-                            
-                            getGlobalPortals(
-                                portal.dimensionTo
-                            ).filter(
-                                remotePortal ->
-                                    remotePortal.getDistanceToNearestPointInPortal(secondaryPos) < 64
-                            ).map(
-                                remotePortal -> globalPortalIndirectLoader(
-                                    player, portal, remotePortal
-                                )
+                    portal -> Streams.concat(
+                        Stream.of(globalPortalDirectLoader(
+                            player, portal
+                        )),
+                        
+                        getGlobalPortals(
+                            portal.dimensionTo
+                        ).filter(
+                            remotePortal ->
+                                remotePortal.getDistanceToNearestPointInPortal(
+                                    portal.applyTransformationToPoint(player.getPositionVec())
+                                ) < 64
+                        ).map(
+                            remotePortal -> globalPortalIndirectLoader(
+                                player, portal, remotePortal
                             )
-                        );
-                    }
+                        )
+                    )
                 )
         ).distinct();
     }

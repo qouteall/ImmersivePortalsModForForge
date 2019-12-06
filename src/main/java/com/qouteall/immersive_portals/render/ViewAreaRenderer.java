@@ -265,8 +265,8 @@ public class ViewAreaRenderer {
         Vec3d b = projected.subtract(dx).add(dy).add(correction);
         Vec3d c = projected.subtract(dx).subtract(dy).add(correction);
         Vec3d d = projected.add(dx).subtract(dy).add(correction);
-        
-        Vec3d mid = projected.add(normal.scale(-2));
+    
+        Vec3d mid = projected.add(normal.scale(-0.5));
         
         Consumer<Vec3d> compactVertexOutput = pos -> vertexOutput.accept(pos.x, pos.y, pos.z);
         

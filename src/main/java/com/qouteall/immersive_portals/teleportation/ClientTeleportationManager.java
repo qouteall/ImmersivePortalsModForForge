@@ -7,6 +7,7 @@ import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.network.CtsTeleport;
 import com.qouteall.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.DownloadTerrainScreen;
@@ -205,6 +206,8 @@ public class ClientTeleportationManager {
 //                toWorld.dimension.getType()
 //            );
 //        }
+    
+        MyRenderHelper.originalPlayerDimension = toWorld.dimension.getType();
     }
     
     private void amendChunkEntityStatus(Entity entity) {
