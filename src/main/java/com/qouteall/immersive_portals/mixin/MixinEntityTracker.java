@@ -45,7 +45,7 @@ public class MixinEntityTracker implements IEEntityTracker {
     private Set<ServerPlayerEntity> trackingPlayers;
     
     @Redirect(
-        method = "sendToAllTracking",
+        method = "Lnet/minecraft/world/server/ChunkManager$EntityTracker;sendToAllTracking(Lnet/minecraft/network/IPacket;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/network/play/ServerPlayNetHandler;sendPacket(Lnet/minecraft/network/IPacket;)V"
@@ -61,7 +61,7 @@ public class MixinEntityTracker implements IEEntityTracker {
     }
     
     @Redirect(
-        method = "sendToTrackingAndSelf",
+        method = "Lnet/minecraft/world/server/ChunkManager$EntityTracker;sendToTrackingAndSelf(Lnet/minecraft/network/IPacket;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/network/play/ServerPlayNetHandler;sendPacket(Lnet/minecraft/network/IPacket;)V"

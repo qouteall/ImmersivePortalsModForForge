@@ -127,7 +127,7 @@ public class PortalPlaceholderBlock extends Block {
         BlockPos blockPos_1,
         Random random_1
     ) {
-        if (random_1.nextInt(100) == 0) {
+        if (random_1.nextInt(200) == 0) {
             world_1.playSound(
                 (double) blockPos_1.getX() + 0.5D,
                 (double) blockPos_1.getY() + 0.5D,
@@ -140,7 +140,7 @@ public class PortalPlaceholderBlock extends Block {
             );
         }
     
-        for (int int_1 = 0; int_1 < 2; ++int_1) {
+        for (int int_1 = 0; int_1 < 1; ++int_1) {
             double double_1 = (double) ((float) blockPos_1.getX() + random_1.nextFloat());
             double double_2 = (double) ((float) blockPos_1.getY() + random_1.nextFloat());
             double double_3 = (double) ((float) blockPos_1.getZ() + random_1.nextFloat());
