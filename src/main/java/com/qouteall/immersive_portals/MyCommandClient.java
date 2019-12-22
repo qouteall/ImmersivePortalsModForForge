@@ -28,6 +28,7 @@ import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.optifine.shaders.Shaders;
 
 import java.lang.ref.Reference;
 import java.util.List;
@@ -329,10 +330,23 @@ public class MyCommandClient {
                 return 0;
             })
         );
+        builder = builder.then(Commands
+            .literal("test")
+            .executes(context -> {
+                test();
+                return 0;
+            })
+        );
         
         dispatcher.register(builder);
         
         Helper.log("Successfully initialized command /immersive_portals_debug");
+    }
+    
+    private static void test() {
+        boolean asBoolean = OFInterface.isShaders.getAsBoolean();
+        Helper.log(asBoolean);
+        Shaders.uninit();
     }
     
     private static int reportFogColor(CommandContext<CommandSource> context) throws CommandSyntaxException {

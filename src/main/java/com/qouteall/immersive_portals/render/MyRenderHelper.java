@@ -4,9 +4,10 @@ import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
@@ -48,7 +49,7 @@ public class MyRenderHelper {
     public static Vec3d lastCameraPos = Vec3d.ZERO;
     public static Vec3d cameraPosDelta = Vec3d.ZERO;
     
-    public static void onTotalRenderBegin(
+    public static void updatePreRenderInfo(
         float partialTicks_
     ) {
         Entity cameraEntity = Minecraft.getInstance().renderViewEntity;
@@ -350,5 +351,40 @@ public class MyRenderHelper {
             0 - 2 * z * x, 0 - 2 * z * y, 1 - 2 * z * z, 0,
             0, 0, 0, 1
         };
+    }
+    
+    public static void drawFrameBufferUp(
+        Portal portal,
+        Framebuffer textureProvider,
+        ShaderManager shaderManager
+    ) {
+        setupCameraTransformation();
+        
+        shaderManager.loadContentShaderAndShaderVars(0);
+        
+        if (OFInterface.isShaders.getAsBoolean()) {
+            GlStateManager.viewport(
+                0,
+                0,
+                PortalRenderer.mc.getFramebuffer().framebufferWidth,
+                PortalRenderer.mc.getFramebuffer().framebufferHeight
+            );
+        }
+        
+        GlStateManager.enableTexture();
+        
+        GlStateManager.activeTexture(GLX.GL_TEXTURE0);
+        
+        GlStateManager.bindTexture(textureProvider.framebufferTexture);
+        GlStateManager.texParameter(3553, 10241, 9729);
+        GlStateManager.texParameter(3553, 10240, 9729);
+        GlStateManager.texParameter(3553, 10242, 10496);
+        GlStateManager.texParameter(3553, 10243, 10496);
+        
+        ViewAreaRenderer.drawPortalViewTriangle(portal);
+        
+        shaderManager.unloadShader();
+        
+        OFInterface.resetViewport.run();
     }
 }

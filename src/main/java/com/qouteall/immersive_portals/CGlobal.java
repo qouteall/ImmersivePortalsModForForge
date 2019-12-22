@@ -26,7 +26,7 @@ public class CGlobal {
     public static Object switchedFogRenderer;
     public static boolean useHackedChunkRenderDispatcher = true;
     public static boolean isClientRemoteTickingEnabled = true;
-    public static boolean isOptifinePresent = false;
+    private static boolean isOptifinePresent = false;
     public static boolean useFrontCulling = true;
     public static Map<DimensionType, Integer> renderInfoNumMap = new ConcurrentHashMap<>();
     

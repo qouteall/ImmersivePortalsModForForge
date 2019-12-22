@@ -282,11 +282,17 @@ public class Helper {
         };
     }
     
+    private static int reportedErrorNum = 0;
+    
     public static void checkGlError() {
+        if (reportedErrorNum > 100) {
+            return;
+        }
         int errorCode = GL11.glGetError();
         if (errorCode != GL_NO_ERROR) {
             Helper.err("OpenGL Error" + errorCode);
             new Throwable().printStackTrace();
+            reportedErrorNum++;
         }
     }
     

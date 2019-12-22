@@ -1,9 +1,10 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.OFInterface;
+import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.shader.Framebuffer;
@@ -25,9 +26,6 @@ public class MixinMinecraft implements IEMinecraftClient {
     @Inject(at = @At("TAIL"), method = "init()V")
     private void onInitEnded(CallbackInfo info) {
         Helper.log("Initializing");
-//        if (FabricLoader.INSTANCE.isModLoaded("optifabric")) {
-//            ShaderCullingManager.init();
-//        }
     }
     
     @Inject(
@@ -48,7 +46,7 @@ public class MixinMinecraft implements IEMinecraftClient {
     )
     private void onSetWorld(ClientWorld clientWorld_1, CallbackInfo ci) {
         CGlobal.clientWorldLoader.cleanUp();
-        if (CGlobal.isOptifinePresent) {
+        if (OFInterface.isOptifinePresent) {
             //OFGlobal.shaderContextManager.cleanup();
         }
     }

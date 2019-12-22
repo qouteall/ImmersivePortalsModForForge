@@ -104,7 +104,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     private void onBeforeRenderingCenter(float partialTicks, long finishTimeNano, CallbackInfo ci) {
         ModMainClient.switchToCorrectRenderer();
         ModMain.preRenderSignal.emit();
-        MyRenderHelper.onTotalRenderBegin(partialTicks);
+        MyRenderHelper.updatePreRenderInfo(partialTicks);
         CGlobal.renderer.prepareRendering();
     }
     

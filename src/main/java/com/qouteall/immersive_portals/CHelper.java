@@ -35,13 +35,7 @@ public class CHelper {
     }
     
     public static boolean shouldDisableFog() {
-        return false;
-//        if (CGlobal.isOptifinePresent) {
-//            return Config.isFogOff() && Minecraft.getInstance().gameRenderer.fogStandard;
-//        }
-//        else {
-//            return false;
-//        }
+        return OFInterface.shouldDisableFog.getAsBoolean();
     }
     
     //do not inline this

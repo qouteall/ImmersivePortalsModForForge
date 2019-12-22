@@ -199,15 +199,14 @@ public class ClientTeleportationManager {
         Helper.log("Portal Number Near Player Now" +
             McHelper.getEntitiesNearby(mc.player, Portal.class, 10).count()
         );
-
-//        if (OFHelper.getIsUsingShader()) {
-//            OFGlobal.shaderContextManager.onPlayerTraveled(
-//                fromWorld.dimension.getType(),
-//                toWorld.dimension.getType()
-//            );
-//        }
     
-        MyRenderHelper.originalPlayerDimension = toWorld.dimension.getType();
+        //because the teleportation may happen before rendering
+        //but after pre render info being updated
+        MyRenderHelper.updatePreRenderInfo(MyRenderHelper.partialTicks);
+    
+        OFInterface.onPlayerTraveled.accept(
+            fromWorld.dimension.getType(), toWorld.dimension.getType()
+        );
     }
     
     private void amendChunkEntityStatus(Entity entity) {

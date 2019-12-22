@@ -16,8 +16,8 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '0.1'
-group = 'com.yourname.modid' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+version = '0.2'
+group = 'com.qouteall.immersive_portals' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'immersive-portals'
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
@@ -116,6 +116,9 @@ dependencies {
 
     //Mixin
     compile 'org.spongepowered:mixin:0.8-SNAPSHOT'
+
+    //used for building mod, not for development
+    compile files('ofstuff2.jar')
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..
@@ -163,6 +166,11 @@ repositories {
 
     maven {url='https://dist.creeper.host/Sponge/maven'}
     //maven{url="https://minecraft.curseforge.com/api/maven/"}
+
+    //maven{url='file://C:/games/mc_modding/imm_ptl_forge/OptiFine_1.14.4_HD_U_F5.jar'}
+//    flatDir {
+//        dirs 'myof'
+//    }
 
 }
 

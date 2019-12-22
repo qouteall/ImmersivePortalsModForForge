@@ -8,5 +8,10 @@ public class MyMixinConnector implements IMixinConnector {
     public void connect() {
         Mixins.addConfiguration("assets/immersive_portals/immersive_portals.mixins.json");
         Mixins.addConfiguration("assets/immersive_portals/immersive_portals.mixins_client.json");
+        if (ModMainClient.getIsOptifinePresent()) {
+            Mixins.addConfiguration(
+                "assets/immersive_portals/immersive_portals.mixins_with_optifine.json"
+            );
+        }
     }
 }

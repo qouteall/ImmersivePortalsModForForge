@@ -1,14 +1,12 @@
 package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.CHelper;
-import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.*;
 import com.qouteall.immersive_portals.ducks.IEChunkRenderList;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEPlayerListEntry;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
+import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
@@ -61,15 +59,8 @@ public class MyGameRenderer {
         IEChunkRenderList oldChunkRenderList =
             (IEChunkRenderList) ((IEWorldRenderer) oldWorldRenderer).getChunkRenderList();
         //List<ChunkRenderer> oldChunkRenderers = oldChunkRenderList.getChunkRenderers();
-
-//        if (CGlobal.isOptifinePresent) {
-//            /**{@link WorldRenderer#chunkInfos}*/
-//            //in vanilla it will create new chunkInfos object every frame
-//            //but with optifine it will always use one object
-//            //we need to switch chunkInfos correctly
-//            //if we do not put it a new object, it will clear the original chunkInfos
-//            ((IEOFWorldRenderer) newWorldRenderer).createNewRenderInfosNormal();
-//        }
+    
+        OFInterface.createNewRenderInfosNormal.accept(newWorldRenderer);
         
         //switch
         mc.worldRenderer = newWorldRenderer;
@@ -103,14 +94,9 @@ public class MyGameRenderer {
         CGlobal.switchedFogRenderer = ieGameRenderer.getBackgroundRenderer();
         
         //invoke it!
-//        if (OFHelper.getIsUsingShader()) {
-//            Shaders.activeProgram = Shaders.ProgramNone;
-//            Shaders.beginRender(mc, mc.gameRenderer.getActiveRenderInfo, partialTicks, 0);
-//        }
+        OFInterface.beforeRenderCenter.accept(partialTicks);
         ieGameRenderer.renderCenter_(partialTicks, getChunkUpdateFinishTime());
-//        if (OFHelper.getIsUsingShader()) {
-//            Shaders.activeProgram = Shaders.ProgramNone;
-//        }
+        OFInterface.afterRenderCenter.run();
     
         mc.getProfiler().endSection();
     
@@ -141,7 +127,7 @@ public class MyGameRenderer {
     public void startCulling() {
         //shaders does not compatible with glCullPlane
         //I have to modify shader code
-        if (CGlobal.useFrontCulling /*&& !OFHelper.getIsUsingShader()*/) {
+        if (CGlobal.useFrontCulling && !OFInterface.isShaders.getAsBoolean()) {
             GL11.glEnable(GL11.GL_CLIP_PLANE0);
         }
     }
@@ -149,9 +135,9 @@ public class MyGameRenderer {
     //NOTE the actual culling plane is related to current model view matrix
     public void updateCullingPlane() {
         clipPlaneEquation = calcClipPlaneEquation();
-        //if (!OFHelper.getIsUsingShader()) {
+        if (!OFInterface.isShaders.getAsBoolean()) {
             GL11.glClipPlane(GL11.GL_CLIP_PLANE0, clipPlaneEquation);
-        //}
+        }
     }
     
     private long getChunkUpdateFinishTime() {
@@ -164,14 +150,15 @@ public class MyGameRenderer {
         Portal portal = CGlobal.renderer.getRenderingPortal();
     
         Vec3d planeNormal = portal.getNormal().scale(-1);
+    
+        if (portal instanceof Mirror && OFInterface.isShaders.getAsBoolean()) {
+            planeNormal = planeNormal.scale(-1);
+        }
         
         Vec3d portalPos = portal.getPositionVec().subtract(
             mc.gameRenderer.getActiveRenderInfo().getProjectedView()
         );
     
-        //is it necessary?
-//        portalPos = portalPos.add(portal.getNormal().scale(0.1));
-        
         //equation: planeNormal * p + c > 0
         //-planeNormal * portalCenter = c
         double c = planeNormal.scale(-1).dotProduct(portalPos);

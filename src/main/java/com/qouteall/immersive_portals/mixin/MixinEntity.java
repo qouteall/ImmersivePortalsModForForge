@@ -1,12 +1,9 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
@@ -16,7 +13,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = Entity.class)
 public abstract class MixinEntity implements IEEntity {
@@ -65,7 +61,7 @@ public abstract class MixinEntity implements IEEntity {
         }
     
         Entity nowCollidingPortal =
-            CollisionHelper.getCollidingPortalUnreliable((Entity) (Object) this);
+            (Entity) (Object) CollisionHelper.getCollidingPortalUnreliable((Entity) (Object) this);
         if (nowCollidingPortal == null) {
             if (stopCollidingPortalCounter > 0) {
                 stopCollidingPortalCounter--;

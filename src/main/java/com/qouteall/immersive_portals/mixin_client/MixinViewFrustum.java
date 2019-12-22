@@ -2,9 +2,10 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.google.common.collect.Streams;
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.ducks.IEChunkRenderDispatcher;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.OFInterface;
+import com.qouteall.immersive_portals.ducks.IEChunkRenderDispatcher;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ViewFrustum;
@@ -12,6 +13,7 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRender;
 import net.minecraft.client.renderer.chunk.IChunkRendererFactory;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
@@ -23,6 +25,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,6 +53,9 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
     private IChunkRendererFactory factory;
     private Map<BlockPos, ChunkRender> chunkRendererMap;
     private Set<ChunkRender[]> isNeighborUpdated;
+    private WeakReference<ChunkRender[]> mainPreset;
+    
+    private Method method_setRenderChunkNeighbour;
     
     @Inject(
         method = "<init>",
@@ -72,13 +79,30 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
             ((IEChunkRenderDispatcher) this),
             IEChunkRenderDispatcher::tick
         );
+    
+        if (OFInterface.isOptifinePresent) {
+            try {
+                method_setRenderChunkNeighbour = ChunkRender.class
+                    .getDeclaredMethod(
+                        "setRenderChunkNeighbour",
+                        Direction.class,
+                        ChunkRender.class
+                    );
+            }
+            catch (NoSuchMethodException e) {
+                throw new IllegalStateException(e);
+            }
+        }
         
         if (CGlobal.useHackedChunkRenderDispatcher) {
             //it will run createChunks() before this
             for (ChunkRender renderChunk : renderChunks) {
                 chunkRendererMap.put(getOriginNonMutable(renderChunk), renderChunk);
             }
+            updateNeighbours();
         }
+    
+        mainPreset = new WeakReference<>(null);
     }
     
     private BlockPos getOriginNonMutable(ChunkRender renderChunk) {
@@ -195,9 +219,17 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
                 k -> createPreset(viewEntityX, viewEntityZ)
             );
     
+            if (!CGlobal.renderer.isRendering()) {
+                mainPreset = new WeakReference<>(renderChunks);
+            }
+            
             if (!isNeighborUpdated.contains(renderChunks)) {
-        
+                updateNeighbours();
                 isNeighborUpdated.add(renderChunks);
+                if (CGlobal.renderer.isRendering()) {
+                    //the neighbor stuff is strange
+                    isNeighborUpdated.remove(mainPreset.get());
+                }
             }
     
             Minecraft.getInstance().getProfiler().endSection();
@@ -299,5 +331,35 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
         else {
             return chunkRenderer;
         }
+    }
+    
+    private void updateNeighbours() {
+        if (!OFInterface.isOptifinePresent) {
+            return;
+        }
+        
+        Minecraft.getInstance().getProfiler().startSection("neighbor");
+        
+        try {
+            for (int j = 0; j < renderChunks.length; ++j) {
+                ChunkRender renderChunk = renderChunks[j];
+                
+                for (int l = 0; l < Direction.values().length; ++l) {
+                    Direction facing = Direction.values()[l];
+                    BlockPos posOffset16 = renderChunk.getBlockPosOffset16(facing);
+                    ChunkRender neighbour = getRenderChunk(posOffset16);
+                    method_setRenderChunkNeighbour.invoke(
+                        renderChunk,
+                        facing,
+                        neighbour
+                    );
+                }
+            }
+        }
+        catch (Throwable e) {
+            throw new IllegalStateException(e);
+        }
+        
+        Minecraft.getInstance().getProfiler().endSection();
     }
 }
