@@ -93,6 +93,20 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         }
     }
     
+    @Inject(
+        method = "updateCameraAndRender(FJZ)V",
+        at = @At("HEAD")
+    )
+    private void onFarBeforeRendering(
+        float partialTicks,
+        long nanoTime,
+        boolean renderWorldIn,
+        CallbackInfo ci
+    ) {
+        MyRenderHelper.updatePreRenderInfo(partialTicks);
+        ModMain.preRenderSignal.emit();
+    }
+    
     //before rendering world (not triggered when rendering portal)
     @Inject(
         method = "renderWorld",
@@ -103,8 +117,6 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     )
     private void onBeforeRenderingCenter(float partialTicks, long finishTimeNano, CallbackInfo ci) {
         ModMainClient.switchToCorrectRenderer();
-        ModMain.preRenderSignal.emit();
-        MyRenderHelper.updatePreRenderInfo(partialTicks);
         CGlobal.renderer.prepareRendering();
     }
     

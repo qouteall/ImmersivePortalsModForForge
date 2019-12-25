@@ -91,7 +91,7 @@ public abstract class PortalRenderer {
         }
         
         //do not use last tick pos
-        Vec3d thisTickEyePos = mc.renderViewEntity.getEyePosition(1);
+        Vec3d thisTickEyePos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
         if (!portal.isInFrontOfPortal(thisTickEyePos)) {
             return;
         }

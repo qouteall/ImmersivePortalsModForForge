@@ -6,6 +6,7 @@ import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.network.CtsTeleport;
 import com.qouteall.immersive_portals.network.NetworkMain;
+import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
@@ -28,6 +29,7 @@ public class ClientTeleportationManager {
     Minecraft mc = Minecraft.getInstance();
     private long tickTimeForTeleportation = 0;
     private long lastTeleportGameTime = 0;
+    private Vec3d lastPlayerHeadPos = null;
     
     public ClientTeleportationManager() {
         ModMain.preRenderSignal.connectWithWeakRef(
@@ -39,10 +41,9 @@ public class ClientTeleportationManager {
     }
     
     private void tick() {
-        manageTeleportation();
         tickTimeForTeleportation++;
         if (mc.player != null) {
-            slowDownIfTooFast(mc.player);
+            slowDownPlayerIfCollidingWithPortal();
         }
     }
     
@@ -64,11 +65,27 @@ public class ClientTeleportationManager {
     
     private void manageTeleportation() {
         if (mc.world != null && mc.player != null) {
-            CHelper.getClientNearbyPortals(20).filter(
-                portal -> portal.shouldEntityTeleport(mc.player)
-            ).findFirst().ifPresent(
-                portal -> onEntityGoInsidePortal(mc.player, portal)
-            );
+            Vec3d currentHeadPos = mc.player.getEyePosition(MyRenderHelper.partialTicks);
+            if (lastPlayerHeadPos != null) {
+                CHelper.getClientNearbyPortals(20).filter(
+                    portal -> {
+                        float eyeHeight = mc.player.getEyeHeight();
+                        return mc.player.dimension == portal.dimension &&
+                            portal.isTeleportable() &&
+                            portal.isMovedThroughPortal(
+                                lastPlayerHeadPos,
+                                currentHeadPos
+                            );
+                    }
+                ).findFirst().ifPresent(
+                    portal -> onEntityGoInsidePortal(mc.player, portal)
+                );
+            }
+    
+            lastPlayerHeadPos = currentHeadPos;
+        }
+        else {
+            lastPlayerHeadPos = null;
         }
     }
     
@@ -89,10 +106,6 @@ public class ClientTeleportationManager {
         
         DimensionType toDimension = portal.dimensionTo;
         
-        if (!portal.shouldEntityTeleport(mc.player)) {
-            return;
-        }
-    
         if (mc.player.isBeingRidden() || mc.player.isPassenger()) {
             return;
         }
@@ -235,6 +248,18 @@ public class ClientTeleportationManager {
             }
             mc.player.setPosition(playerPos.x, playerPos.y, playerPos.z);
             mc.displayGuiScreen(null);
+        }
+    }
+    
+    private void slowDownPlayerIfCollidingWithPortal() {
+        boolean collidingWithPortal = !mc.player.world.getEntitiesWithinAABB(
+            Portal.class,
+            mc.player.getBoundingBox().grow(1),
+            e -> !(e instanceof Mirror)
+        ).isEmpty();
+        
+        if (collidingWithPortal) {
+            slowDownIfTooFast(mc.player);
         }
     }
     

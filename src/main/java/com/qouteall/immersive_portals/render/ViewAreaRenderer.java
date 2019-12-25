@@ -63,6 +63,10 @@ public class ViewAreaRenderer {
                 posInPlayerCoordinate
             );
         }
+    
+        if (shouldRenderAdditionalBox(portal, cameraPos)) {
+            renderAdditionalBox(portal, cameraPos, vertexOutput);
+        }
     }
     
     private static void generateTriangleSpecialBiLayered(
@@ -76,10 +80,10 @@ public class ViewAreaRenderer {
             Vec3d.ZERO
         );
 
-        generateTriangleSpecialWithOffset(
-            vertexOutput, portal, posInPlayerCoordinate,
-            portal.getNormal().scale(-layerWidth)
-        );
+//        generateTriangleSpecialWithOffset(
+//            vertexOutput, portal, posInPlayerCoordinate,
+//            portal.getNormal().scale(-layerWidth)
+//        );
     }
     
     private static void generateTriangleSpecialWithOffset(
@@ -138,14 +142,14 @@ public class ViewAreaRenderer {
         Vec3d[] backFace = Arrays.stream(portal.getFourVerticesRelativeToCenter(0))
             .map(pos -> pos.add(posInPlayerCoordinate).add(layerOffsest))
             .toArray(Vec3d[]::new);
-        
-        putIntoQuad(
-            vertexOutput,
-            backFace[0],
-            backFace[2],
-            backFace[3],
-            backFace[1]
-        );
+
+//        putIntoQuad(
+//            vertexOutput,
+//            backFace[0],
+//            backFace[2],
+//            backFace[3],
+//            backFace[1]
+//        );
         
         putIntoQuad(
             vertexOutput,
@@ -241,12 +245,10 @@ public class ViewAreaRenderer {
         Portal portal,
         Vec3d cameraPos
     ) {
-        return (portal.getDistanceToPlane(cameraPos) < 0.5) &&
+        return (portal.getDistanceToPlane(cameraPos) < 0.1) &&
             portal.isPointInPortalProjection(cameraPos);
     }
     
-    //this view area rendering method is incorrect
-    @Deprecated
     private static void renderAdditionalBox(
         Portal portal,
         Vec3d cameraPos,
