@@ -14,6 +14,8 @@ import net.minecraft.network.PacketDirection;
 import net.minecraft.network.ProtocolType;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.io.IOException;
@@ -62,6 +64,7 @@ public class StcRedirected {
         }
     }
     
+    @OnlyIn(Dist.CLIENT)
     private static void processRedirectedPacket(DimensionType dimension, IPacket packet) {
         Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {

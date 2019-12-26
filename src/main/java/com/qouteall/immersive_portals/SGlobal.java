@@ -17,4 +17,6 @@ public class SGlobal {
     public static boolean doUseNewNetherPortal = true;
     
     public static boolean isOptimizationEnabled = false;
+    
+    public static boolean isServerMixinApplied = false;
 }

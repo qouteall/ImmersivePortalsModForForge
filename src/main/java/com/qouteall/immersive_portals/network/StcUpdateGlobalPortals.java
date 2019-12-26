@@ -9,6 +9,8 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.util.List;
@@ -37,6 +39,12 @@ public class StcUpdateGlobalPortals {
     }
     
     public void handle(Supplier<NetworkEvent.Context> context) {
+        clientOnlyHandle();
+        context.get().setPacketHandled(true);
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    private void clientOnlyHandle() {
         Minecraft.getInstance().execute(() -> {
             ClientWorld world =
                 CGlobal.clientWorldLoader.getOrCreateFakedWorld(dimensionType);
@@ -46,6 +54,5 @@ public class StcUpdateGlobalPortals {
             
             ((IEClientWorld) world).setGlobalPortals(portals);
         });
-        context.get().setPacketHandled(true);
     }
 }

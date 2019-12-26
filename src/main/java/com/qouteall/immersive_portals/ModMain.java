@@ -34,4 +34,27 @@ public class ModMain {
         
     }
     
+    private static boolean getIsMixinInClassPath() {
+        try {
+            Class.forName("org.spongepowered.asm.launch.Phases");
+            return true;
+        }
+        catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+    
+    public static void checkMixinState() {
+        if (!SGlobal.isServerMixinApplied) {
+            String message =
+                "Mixin is NOT loaded. Install Mixin according to mod description." +
+                    " https://www.curseforge.com/minecraft/mc-mods/immersive-portals-for-forge";
+            
+            if (getIsMixinInClassPath()) {
+                message = "Mixin is in classpath but mixin is not applied";
+            }
+            Helper.err(message);
+            throw new IllegalStateException(message);
+        }
+    }
 }

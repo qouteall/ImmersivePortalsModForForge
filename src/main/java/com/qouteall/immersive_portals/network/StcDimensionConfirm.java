@@ -5,6 +5,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -35,12 +37,17 @@ public class StcDimensionConfirm {
     }
     
     public void handle(Supplier<NetworkEvent.Context> context) {
+        clientHandle();
+        context.get().setPacketHandled(true);
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    private void clientHandle() {
         Minecraft.getInstance().execute(() -> {
             CGlobal.clientTeleportationManager.acceptSynchronizationDataFromServer(
                 dimensionType, pos,
                 false
             );
         });
-        context.get().setPacketHandled(true);
     }
 }
