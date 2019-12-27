@@ -6,6 +6,7 @@ import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.ducks.IEWorldRendererChunkInfo;
+import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.chunk.ChunkRender;
@@ -65,6 +66,9 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     @Shadow
     protected abstract void renderBlockLayer(BlockRenderLayer blockLayerIn);
     
+    @Shadow
+    private boolean displayListEntitiesDirty;
+    
     @Override
     public ViewFrustum getChunkRenderDispatcher() {
         return viewFrustum;
@@ -92,6 +96,9 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     private void onStartRenderLayer(BlockRenderLayer blockRenderLayer_1, CallbackInfo ci) {
         if (CGlobal.renderer.isRendering()) {
             CGlobal.myGameRenderer.startCulling();
+            if (MyRenderHelper.isRenderingMirror()) {
+                GlStateManager.cullFace(GlStateManager.CullFace.FRONT);
+            }
         }
     }
     
@@ -102,6 +109,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     private void onStopRenderLayer(BlockRenderLayer blockRenderLayer_1, CallbackInfo ci) {
         if (CGlobal.renderer.isRendering()) {
             CGlobal.myGameRenderer.endCulling();
+            GlStateManager.cullFace(GlStateManager.CullFace.BACK);
         }
     }
     
@@ -120,6 +128,24 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         CallbackInfo ci
     ) {
         CGlobal.myGameRenderer.renderPlayerItselfIfNecessary();
+    }
+    
+    //always update display list when rendering portal
+    //this may slow down performance
+    //if not sometimes no chunk will be rendered
+    @Inject(method = "setupTerrain", at = @At("HEAD"))
+    private void onSetupTerrain(
+        ActiveRenderInfo p_215320_1_,
+        ICamera p_215320_2_,
+        int p_215320_3_,
+        boolean p_215320_4_,
+        CallbackInfo ci
+    ) {
+        if (CGlobal.renderer.isRendering()) {
+            if (CGlobal.alwaysUpdateDisplayList) {
+                displayListEntitiesDirty = true;
+            }
+        }
     }
     
     private static boolean isReloadingOtherWorldRenderers = false;
@@ -201,6 +227,18 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             cir.setReturnValue(l);
             cir.cancel();
         }
+    }
+    
+    @Inject(method = "renderSky(F)V", at = @At("HEAD"))
+    private void onRenderSkyBegin(float partialTicks, CallbackInfo ci) {
+        if (MyRenderHelper.isRenderingMirror()) {
+            GlStateManager.cullFace(GlStateManager.CullFace.FRONT);
+        }
+    }
+    
+    @Inject(method = "renderSky(F)V", at = @At("RETURN"))
+    private void onRenderSkyEnd(float partialTicks, CallbackInfo ci) {
+        GlStateManager.cullFace(GlStateManager.CullFace.BACK);
     }
     
     @Override

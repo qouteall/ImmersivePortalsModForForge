@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals.mixin;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.MyCommandClient;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.MyCommandServer;
 import com.qouteall.immersive_portals.SGlobal;
 import net.minecraft.command.CommandSource;
@@ -26,7 +26,7 @@ public class MixinCommands {
     )
     private void initCommands(boolean isOnServer, CallbackInfo ci) {
         if (!isOnServer) {
-            MyCommandClient.register(dispatcher);
+            McHelper.initCommandClientOnly(dispatcher);
         }
         MyCommandServer.register(dispatcher);
     }

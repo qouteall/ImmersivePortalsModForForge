@@ -232,7 +232,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     
     public boolean canRenderEntityInsideMe(Vec3d entityPos) {
         double v = entityPos.subtract(destination).dotProduct(getContentDirection());
-        return v > 0;
+        return v > -0.01;
     }
     
     public Vec3d getPointInPlane(double xInPlane, double yInPlane) {

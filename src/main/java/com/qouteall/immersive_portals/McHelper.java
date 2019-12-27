@@ -1,6 +1,8 @@
 package com.qouteall.immersive_portals;
 
+import com.mojang.brigadier.CommandDispatcher;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
+import net.minecraft.command.CommandSource;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -163,5 +165,10 @@ public class McHelper {
                 }
             }
         });
+    }
+    
+    //avoid classloading issue in dedicated server
+    public static void initCommandClientOnly(CommandDispatcher<CommandSource> dispatcher) {
+        CHelper.initCommandClientOnly(dispatcher);
     }
 }

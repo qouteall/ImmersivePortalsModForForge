@@ -28,7 +28,6 @@ import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.optifine.shaders.Shaders;
 
 import java.lang.ref.Reference;
 import java.util.List;
@@ -43,7 +42,7 @@ public class MyCommandClient {
     ) {
         //for composite command arguments, put into then() 's bracket
         //for parallel command arguments, put behind then()
-        
+    
         LiteralArgumentBuilder<CommandSource> builder = Commands
             .literal("immersive_portals_debug")
             .requires(commandSource -> true)
@@ -330,23 +329,37 @@ public class MyCommandClient {
                 return 0;
             })
         );
-        builder = builder.then(Commands
-            .literal("test")
-            .executes(context -> {
-                test();
-                return 0;
-            })
+    
+        registerSwitchCommand(
+            builder, "alwaysUpdateDisplayList",
+            k -> CGlobal.alwaysUpdateDisplayList = k
         );
-        
+    
+    
         dispatcher.register(builder);
-        
+    
         Helper.log("Successfully initialized command /immersive_portals_debug");
     }
     
-    private static void test() {
-        boolean asBoolean = OFInterface.isShaders.getAsBoolean();
-        Helper.log(asBoolean);
-        Shaders.uninit();
+    private static void registerSwitchCommand(
+        LiteralArgumentBuilder<CommandSource> builder,
+        String name,
+        Consumer<Boolean> setFunction
+    ) {
+        builder = builder.then(Commands
+            .literal(name + "_enable")
+            .executes(context -> {
+                setFunction.accept(true);
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal(name + "_disable")
+            .executes(context -> {
+                setFunction.accept(false);
+                return 0;
+            })
+        );
     }
     
     private static int reportFogColor(CommandContext<CommandSource> context) throws CommandSyntaxException {

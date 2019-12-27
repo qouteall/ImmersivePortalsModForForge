@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.connect.IMixinConnector;
 public class MyMixinConnector implements IMixinConnector {
     @Override
     public void connect() {
+        Helper.log("Invoking Mixin Connector");
         Mixins.addConfiguration(
             "assets/immersive_portals/immersive_portals.mixins.json"
         );

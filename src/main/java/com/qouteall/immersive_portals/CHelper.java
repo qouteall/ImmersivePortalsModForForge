@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals;
 
 import com.google.common.collect.Streams;
+import com.mojang.brigadier.CommandDispatcher;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
@@ -8,6 +9,7 @@ import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
+import net.minecraft.command.CommandSource;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
@@ -63,5 +65,9 @@ public class CHelper {
                 nearbyPortals
             );
         }
+    }
+    
+    public static void initCommandClientOnly(CommandDispatcher<CommandSource> dispatcher) {
+        MyCommandClient.register(dispatcher);
     }
 }

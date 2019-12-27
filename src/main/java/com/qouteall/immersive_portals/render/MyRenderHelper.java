@@ -324,15 +324,15 @@ public class MyRenderHelper {
                 multMatrix(arr);
                 
                 GlStateManager.translated(-relativePos.x, -relativePos.y, -relativePos.z);
-                
-                GlStateManager.cullFace(GlStateManager.CullFace.FRONT);
+    
+                //GlStateManager.cullFace(GlStateManager.CullFace.FRONT);
             }
             else {
-                GlStateManager.cullFace(GlStateManager.CullFace.BACK);
+                //GlStateManager.cullFace(GlStateManager.CullFace.BACK);
             }
         }
         else {
-            GlStateManager.cullFace(GlStateManager.CullFace.BACK);
+            //GlStateManager.cullFace(GlStateManager.CullFace.BACK);
         }
     }
     
