@@ -84,6 +84,9 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
             specialShape = new SpecialPortalShape(
                 compoundTag.getList("specialShape", 6)
             );
+            if (specialShape.triangles.isEmpty()) {
+                specialShape = null;
+            }
         }
     }
     
@@ -282,9 +285,12 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     @Override
     public String toString() {
         return String.format(
-            "%s{%s,(%s %s %s %s)->(%s %s %s %s)}",
+            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)}",
             getClass().getSimpleName(),
             getEntityId(),
+            Direction.getFacingFromVector(
+                getNormal().x, getNormal().y, getNormal().z
+            ),
             dimension, (int) posX, (int) posY, (int) posZ,
             dimensionTo, (int) destination.x, (int) destination.y, (int) destination.z
         );

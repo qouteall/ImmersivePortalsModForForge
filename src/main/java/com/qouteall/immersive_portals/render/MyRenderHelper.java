@@ -226,6 +226,8 @@ public class MyRenderHelper {
         boolean doEnableAlphaTest,
         boolean doEnableModifyAlpha
     ) {
+        Helper.checkGlError();
+        
         Validate.isTrue(GLX.isUsingFBOs());
         
         if (doEnableModifyAlpha) {
@@ -249,7 +251,12 @@ public class MyRenderHelper {
         GlStateManager.matrixMode(5888);
         GlStateManager.loadIdentity();
         GlStateManager.translatef(0.0F, 0.0F, -2000.0F);
-        GlStateManager.viewport(0, 0, textureProvider.framebufferWidth, textureProvider.framebufferHeight);
+        GlStateManager.viewport(
+            0,
+            0,
+            textureProvider.framebufferWidth,
+            textureProvider.framebufferHeight
+        );
         GlStateManager.enableTexture();
         GlStateManager.disableLighting();
         if (doEnableAlphaTest) {
@@ -292,6 +299,8 @@ public class MyRenderHelper {
         textureProvider.unbindFramebuffer();
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
+    
+        Helper.checkGlError();
     }
     
     //If I don't do so JVM will crash
@@ -358,6 +367,8 @@ public class MyRenderHelper {
         Framebuffer textureProvider,
         ShaderManager shaderManager
     ) {
+        Helper.checkGlError();
+        
         setupCameraTransformation();
         
         shaderManager.loadContentShaderAndShaderVars(0);
@@ -386,5 +397,7 @@ public class MyRenderHelper {
         shaderManager.unloadShader();
         
         OFInterface.resetViewport.run();
+    
+        Helper.checkGlError();
     }
 }

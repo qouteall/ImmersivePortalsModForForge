@@ -89,7 +89,7 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
      * @reason overwriting is easier than injecting
      */
     @Overwrite
-    private void sendChunkData(
+    public void sendChunkData(
         ServerPlayerEntity player,
         IPacket<?>[] packets_1,
         Chunk worldChunk_1

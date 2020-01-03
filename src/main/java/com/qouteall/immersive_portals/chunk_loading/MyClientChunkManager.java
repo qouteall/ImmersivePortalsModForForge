@@ -39,8 +39,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
     private final WorldLightManager lightingProvider;
     private final ClientWorld world;
     
-    //its performance is a little lower than vanilla
-    //but this is indispensable
+    //TODO use Long2ObjectMaps.SynchronizedMap
     private ConcurrentHashMap<ChunkPos, Chunk> chunkMap = new ConcurrentHashMap<>();
     
     public MyClientChunkManager(ClientWorld clientWorld_1, int int_1) {
