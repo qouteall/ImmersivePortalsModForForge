@@ -187,15 +187,6 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("switch_to_normal_renderer")
-            .executes(context -> {
-                Minecraft.getInstance().execute(() -> {
-                    CGlobal.renderer = CGlobal.rendererUsingStencil;
-                });
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
             .literal("report_server_entities")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
@@ -331,8 +322,12 @@ public class MyCommandClient {
         );
     
         registerSwitchCommand(
-            builder, "alwaysUpdateDisplayList",
+            builder, "always_update_display_list",
             k -> CGlobal.alwaysUpdateDisplayList = k
+        );
+        registerSwitchCommand(
+            builder, "shader_compatibility_mode",
+            k -> CGlobal.shaderCompatibilityMode = k
         );
     
     

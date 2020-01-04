@@ -162,7 +162,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
     
     @Override
     public String makeString() {
-        return "Hacked Client Chunk Manager " + chunkMap.size();
+        return "ImmPortal Client Chunk " + chunkMap.size();
     }
     
     @Override

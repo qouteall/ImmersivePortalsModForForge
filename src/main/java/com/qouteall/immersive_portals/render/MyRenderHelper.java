@@ -106,6 +106,8 @@ public class MyRenderHelper {
         ).collect(Collectors.toList());
         portalRenderInfos.add(currRenderInfo);
         renderedDimensions.add(portalLayers.peek().dimensionTo);
+    
+        Helper.checkGlError();
     }
     
     public static void setupCameraTransformation() {
@@ -204,22 +206,9 @@ public class MyRenderHelper {
         GlStateManager.enableAlphaTest();
         GlStateManager.enableTexture();
     }
-
-//    public static void copyFromShaderFbTo(Framebuffer destFb, int copyComponent) {
-//        GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, OFGlobal.getDfb.get());
-//        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, destFb.framebufferObject);
-//
-//        GL30.glBlitFramebuffer(
-//            0, 0, Shaders.renderWidth, Shaders.renderHeight,
-//            0, 0, destFb.framebufferWidth, destFb.framebufferHeight,
-//            copyComponent, GL_NEAREST
-//        );
-//
-//        OFHelper.bindToShaderFrameBuffer();
-//    }
     
     /**
-     * {@link GlFramebuffer#draw(int, int)}
+     * {@link Framebuffer#framebufferRender(int, int)}
      */
     public static void myDrawFrameBuffer(
         Framebuffer textureProvider,

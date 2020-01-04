@@ -35,6 +35,7 @@ public class CGlobal {
     public static boolean isRenderDebugMode = false;
     public static boolean debugMirrorMode = false;
     public static boolean alwaysUpdateDisplayList = true;
+    public static boolean shaderCompatibilityMode = false;
     
     public static ShaderManager shaderManager;
     

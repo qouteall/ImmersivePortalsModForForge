@@ -55,7 +55,12 @@ public class ModMainClient {
                 switchRenderer(OFGlobal.rendererDebugWithShader);
             }
             else {
-                switchRenderer(OFGlobal.rendererMixed);
+                if (CGlobal.shaderCompatibilityMode) {
+                    switchRenderer(OFGlobal.rendererDeferred);
+                }
+                else {
+                    switchRenderer(OFGlobal.rendererMixed);
+                }
             }
         }
         else {
