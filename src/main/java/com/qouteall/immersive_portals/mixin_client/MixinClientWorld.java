@@ -5,6 +5,7 @@ import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.ducks.IEWorld;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
@@ -23,11 +24,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 
 @Mixin(value = ClientWorld.class)
-public class MixinClientWorld implements IEClientWorld {
+public abstract class MixinClientWorld implements IEClientWorld {
     @Shadow
     @Final
     @Mutable
     private ClientPlayNetHandler connection;
+    
+    @Shadow
+    @Final
+    private Int2ObjectMap<Entity> entitiesById;
+    
+    @Shadow
+    protected abstract void removeEntity(Entity p_217414_1_);
     
     private List<GlobalTrackedPortal> globalTrackedPortals;
     
@@ -49,6 +57,17 @@ public class MixinClientWorld implements IEClientWorld {
     @Override
     public void setGlobalPortals(List<GlobalTrackedPortal> arg) {
         globalTrackedPortals = arg;
+    }
+    
+    @Override
+    public void removeEntityWhilstMaintainingCapability(Entity entityToRemove) {
+        int eid = entityToRemove.getEntityId();
+        Entity entity = entitiesById.remove(eid);
+        if (entity != null) {
+            //keep the capability
+            entity.remove(true);
+            this.removeEntity(entity);
+        }
     }
     
     @Inject(

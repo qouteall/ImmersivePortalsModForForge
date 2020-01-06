@@ -72,7 +72,7 @@ public class ServerTeleportationManager {
                 player.getName().getFormattedText(),
                 player.dimension,
                 player.getPositionVec(),
-                portalId
+                portalEntity
             ));
         }
     }
@@ -186,6 +186,12 @@ public class ServerTeleportationManager {
             ((IEServerPlayerEntity) player).setEnteredNetherPos(player.getPositionVec());
         }
         ((IEServerPlayerEntity) player).updateDimensionTravelAdvancements(fromWorld);
+    
+        net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerChangedDimensionEvent(
+            player,
+            fromWorld.dimension.getType(),
+            toWorld.dimension.getType()
+        );
     }
     
     private void sendPositionConfirmMessage(ServerPlayerEntity player) {

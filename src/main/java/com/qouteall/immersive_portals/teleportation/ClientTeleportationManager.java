@@ -178,8 +178,8 @@ public class ClientTeleportationManager {
         ((IEClientWorld) fromWorld).setNetHandler(fakedNetHandler);
         ((IEClientWorld) toWorld).setNetHandler(workingNetHandler);
     
-        fromWorld.removeEntityFromWorld(player.getEntityId());
-        player.removed = false;
+        ((IEClientWorld) fromWorld).removeEntityWhilstMaintainingCapability(player);
+        player.revive();
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
         player.posX = destination.x;
