@@ -128,6 +128,31 @@ public class ServerTeleportationManager {
         player.connection.captureCurrentPosition();
     }
     
+    public void invokeTpmeCommand(
+        ServerPlayerEntity player,
+        DimensionType dimensionTo,
+        Vec3d newPos
+    ) {
+        ServerWorld fromWorld = (ServerWorld) player.world;
+        ServerWorld toWorld = McHelper.getServer().getWorld(dimensionTo);
+        
+        if (player.dimension == dimensionTo) {
+            player.setPosition(newPos.x, newPos.y, newPos.z);
+        }
+        else {
+            changePlayerDimension(player, fromWorld, toWorld, newPos);
+        }
+        
+        player.connection.setPlayerLocation(
+            newPos.x,
+            newPos.y,
+            newPos.z,
+            player.rotationYaw,
+            player.rotationPitch
+        );
+        //player.connection.captureCurrentPosition();
+    }
+    
     //TODO add forge events
     
     /**
@@ -142,10 +167,10 @@ public class ServerTeleportationManager {
         BlockPos oldPos = player.getPosition();
         
         teleportingEntities.add(player);
-    
+        
         //TODO fix travel when riding entity
         player.detach();
-    
+        
         //new dimension transition method
         player.dimension = toWorld.dimension.getType();
         fromWorld.removeEntity(player, true);
@@ -153,7 +178,7 @@ public class ServerTeleportationManager {
 
 //        fromWorld.removePlayer(player);
 //        player.removed = false;
-    
+        
         player.posX = destination.x;
         player.posY = destination.y;
         player.posZ = destination.z;
@@ -161,15 +186,15 @@ public class ServerTeleportationManager {
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
         toWorld.addRespawnedPlayer(player);
-    
+        
         toWorld.chunkCheck(player);
-    
+        
         McHelper.getServer().getPlayerList().sendWorldInfo(
             player, toWorld
         );
         
         player.interactionManager.setWorld(toWorld);
-    
+        
         Helper.log(String.format(
             "%s teleported from %s %s to %s %s",
             player.getName().getFormattedText(),
@@ -178,7 +203,7 @@ public class ServerTeleportationManager {
             toWorld.dimension.getType(),
             player.getPosition()
         ));
-    
+        
         //this is used for the advancement of "we need to go deeper"
         //and the advancement of travelling for long distance through nether
         if (toWorld.dimension.getType() == DimensionType.THE_NETHER) {
@@ -186,7 +211,7 @@ public class ServerTeleportationManager {
             ((IEServerPlayerEntity) player).setEnteredNetherPos(player.getPositionVec());
         }
         ((IEServerPlayerEntity) player).updateDimensionTravelAdvancements(fromWorld);
-    
+        
         net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerChangedDimensionEvent(
             player,
             fromWorld.dimension.getType(),

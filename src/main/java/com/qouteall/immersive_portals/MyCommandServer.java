@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.datafixers.util.Pair;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.SpecialPortalShape;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.EndFloorPortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
@@ -18,14 +19,18 @@ import net.minecraft.command.arguments.NBTCompoundTagArgument;
 import net.minecraft.command.arguments.Vec3Argument;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.world.World;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class MyCommandServer {
     public static void register(
@@ -156,21 +161,21 @@ public class MyCommandServer {
                         CompoundNBT newNbt = NBTCompoundTagArgument.func_218042_a(
                             context, "nbt"
                         );
-                    
+    
                         CompoundNBT portalNbt = portal.serializeNBT();
-                    
+    
                         newNbt.keySet().forEach(
                             key -> portalNbt.put(key, newNbt.get(key))
                         );
-                    
+    
                         //portalNbt.copyFrom(newNbt);
-                    
+    
                         UUID uuid = portal.getUniqueID();
                         portal.deserializeNBT(portalNbt);
                         portal.setUniqueId(uuid);
-                    
+    
                         reloadPortal(portal);
-                    
+    
                         sendPortalInfo(context, portal);
                     }
                 ))
@@ -198,9 +203,9 @@ public class MyCommandServer {
                                     portal.destination = Vec3Argument.getVec3(
                                         context, "dest"
                                     );
-                                
+    
                                     reloadPortal(portal);
-                                
+    
                                     sendMessage(context, portal.toString());
                                 }
                                 catch (CommandSyntaxException ignored) {
@@ -212,7 +217,78 @@ public class MyCommandServer {
                 )
             )
         );
-        
+    
+        builder.then(Commands
+            .literal("tpme")
+            .then(
+                Commands.argument(
+                    "dim",
+                    DimensionArgument.getDimension()
+                ).then(
+                    Commands.argument(
+                        "dest",
+                        Vec3Argument.vec3()
+                    ).executes(
+                        context -> {
+                            DimensionType dimension = DimensionArgument.func_212592_a(
+                                context, "dim"
+                            );
+                            Vec3d pos = Vec3Argument.getVec3(
+                                context, "dest"
+                            );
+                        
+                            ServerPlayerEntity player = context.getSource().asPlayer();
+                            SGlobal.serverTeleportationManager.invokeTpmeCommand(
+                                player, dimension, pos
+                            );
+                            return 0;
+                        }
+                    )
+                )
+            )
+        );
+    
+        builder.then(Commands
+            .literal("complete_bi_way_portal")
+            .executes(context -> processPortalTargetedCommand(
+                context,
+                portal -> {
+                    Portal result = completeBiWayPortal(
+                        portal,
+                        p -> sendMessage(context, "Removed " + p)
+                    );
+                    sendMessage(context, "Added " + result);
+                }
+            ))
+        );
+    
+        builder.then(Commands
+            .literal("complete_bi_faced_portal")
+            .executes(context -> processPortalTargetedCommand(
+                context,
+                portal -> {
+                    Portal result = completeBiFacedPortal(
+                        portal,
+                        p -> sendMessage(context, "Removed " + p)
+                    );
+                    sendMessage(context, "Added " + result);
+                }
+            ))
+        );
+    
+        builder.then(Commands
+            .literal("complete_bi_way_bi_faced_portal")
+            .executes(context -> processPortalTargetedCommand(
+                context,
+                portal ->
+                    completeBiWayBiFacedPortal(
+                        portal,
+                        p -> sendMessage(context, "Removed " + p),
+                        p -> sendMessage(context, "Added " + p)
+                    )
+            ))
+        );
+    
         dispatcher.register(builder);
     }
     
@@ -309,4 +385,114 @@ public class MyCommandServer {
             return null;
         }
     }
+    
+    private static Portal completeBiWayPortal(
+        Portal portal, Consumer<Portal> removalInformer
+    ) {
+        ServerWorld toWorld = McHelper.getServer().getWorld(portal.dimensionTo);
+        removeOverlappedPortals(
+            toWorld,
+            portal.destination,
+            portal.getNormal().scale(-1),
+            removalInformer
+        );
+        
+        Portal newPortal = Portal.entityType.create(toWorld);
+        newPortal.dimensionTo = portal.dimension;
+        newPortal.setPosition(portal.destination.x, portal.destination.y, portal.destination.z);
+        newPortal.destination = portal.getPositionVec();
+        newPortal.loadFewerChunks = portal.loadFewerChunks;
+        newPortal.specificPlayer = portal.specificPlayer;
+        
+        newPortal.width = portal.width;
+        newPortal.height = portal.height;
+        newPortal.axisW = portal.axisW;
+        newPortal.axisH = portal.axisH.scale(-1);
+        
+        if (portal.specialShape != null) {
+            newPortal.specialShape = new SpecialPortalShape();
+            initFlippedShape(newPortal, portal.specialShape);
+        }
+        
+        toWorld.addEntity(newPortal);
+        
+        return newPortal;
+    }
+    
+    private static Portal completeBiFacedPortal(
+        Portal portal, Consumer<Portal> removalInformer
+    ) {
+        ServerWorld world = ((ServerWorld) portal.world);
+        removeOverlappedPortals(
+            world,
+            portal.getPositionVec(),
+            portal.getNormal().scale(-1),
+            removalInformer
+        );
+        
+        Portal newPortal = Portal.entityType.create(world);
+        newPortal.dimensionTo = portal.dimensionTo;
+        newPortal.setPosition(portal.posX, portal.posY, portal.posZ);
+        newPortal.destination = portal.destination;
+        newPortal.loadFewerChunks = portal.loadFewerChunks;
+        newPortal.specificPlayer = portal.specificPlayer;
+        
+        newPortal.width = portal.width;
+        newPortal.height = portal.height;
+        newPortal.axisW = portal.axisW;
+        newPortal.axisH = portal.axisH.scale(-1);
+        
+        if (portal.specialShape != null) {
+            newPortal.specialShape = new SpecialPortalShape();
+            initFlippedShape(newPortal, portal.specialShape);
+        }
+        
+        world.addEntity(newPortal);
+        
+        return newPortal;
+    }
+    
+    private static void initFlippedShape(Portal newPortal, SpecialPortalShape specialShape) {
+        newPortal.specialShape.triangles = specialShape.triangles.stream()
+            .map(triangle -> new SpecialPortalShape.TriangleInPlane(
+                triangle.x1,
+                -triangle.y1,
+                triangle.x2,
+                -triangle.y2,
+                triangle.x3,
+                -triangle.y3
+            )).collect(Collectors.toList());
+    }
+    
+    private static void completeBiWayBiFacedPortal(
+        Portal portal, Consumer<Portal> removalInformer,
+        Consumer<Portal> addingInformer
+    ) {
+        Portal oppositeFacedPortal = completeBiFacedPortal(portal, removalInformer);
+        Portal r1 = completeBiWayPortal(portal, removalInformer);
+        Portal r2 = completeBiWayPortal(oppositeFacedPortal, removalInformer);
+        addingInformer.accept(oppositeFacedPortal);
+        addingInformer.accept(r1);
+        addingInformer.accept(r2);
+    }
+    
+    private static void removeOverlappedPortals(
+        World world,
+        Vec3d pos,
+        Vec3d normal,
+        Consumer<Portal> informer
+    ) {
+        world.getEntitiesWithinAABB(
+            Portal.class,
+            new AxisAlignedBB(
+                pos.add(0.5, 0.5, 0.5),
+                pos.subtract(0.5, 0.5, 0.5)
+            ),
+            p -> p.getNormal().dotProduct(normal) > 0.5
+        ).forEach(e -> {
+            e.remove();
+            informer.accept(e);
+        });
+    }
+    
 }
