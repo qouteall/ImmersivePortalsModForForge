@@ -223,20 +223,6 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("shader_debug_enable")
-            .executes(context -> {
-                CGlobal.isRenderDebugMode = true;
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
-            .literal("shader_debug_disable")
-            .executes(context -> {
-                CGlobal.isRenderDebugMode = false;
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
             .literal("get_player_colliding_portal_client")
             .executes(context -> {
                 Portal collidingPortal =
@@ -265,20 +251,6 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("debug_mirror_mode_enable")
-            .executes(context -> {
-                CGlobal.debugMirrorMode = true;
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
-            .literal("debug_mirror_mode_disable")
-            .executes(context -> {
-                CGlobal.debugMirrorMode = false;
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
             .literal("new_nether_portal_enable")
             .executes(context -> {
                 SGlobal.doUseNewNetherPortal = true;
@@ -293,16 +265,30 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("optimization_enable")
+            .literal("render_mode_normal")
             .executes(context -> {
-                SGlobal.isOptimizationEnabled = true;
+                CGlobal.renderMode = CGlobal.RenderMode.normal;
                 return 0;
             })
         );
         builder = builder.then(Commands
-            .literal("optimization_disable")
+            .literal("render_mode_compatibility")
             .executes(context -> {
-                SGlobal.isOptimizationEnabled = false;
+                CGlobal.renderMode = CGlobal.RenderMode.compatibility;
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("render_mode_debug")
+            .executes(context -> {
+                CGlobal.renderMode = CGlobal.RenderMode.debug;
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("render_mode_none")
+            .executes(context -> {
+                CGlobal.renderMode = CGlobal.RenderMode.none;
                 return 0;
             })
         );
@@ -324,10 +310,6 @@ public class MyCommandClient {
         registerSwitchCommand(
             builder, "always_update_display_list",
             k -> CGlobal.alwaysUpdateDisplayList = k
-        );
-        registerSwitchCommand(
-            builder, "shader_compatibility_mode",
-            k -> CGlobal.shaderCompatibilityMode = k
         );
     
     

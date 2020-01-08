@@ -78,10 +78,14 @@ public abstract class PortalRenderer {
     protected void renderPortals() {
         assert mc.renderViewEntity.world == mc.world;
         assert mc.renderViewEntity.dimension == mc.world.dimension.getType();
-        
+    
+        Helper.checkGlError();
+    
         for (Portal portal : getPortalsNearbySorted()) {
             renderPortalIfRoughCheckPassed(portal);
         }
+    
+        Helper.checkGlError();
     }
     
     private void renderPortalIfRoughCheckPassed(Portal portal) {

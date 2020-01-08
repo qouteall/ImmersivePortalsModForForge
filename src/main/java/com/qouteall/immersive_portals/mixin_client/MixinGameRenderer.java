@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
@@ -62,7 +63,9 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         CallbackInfo ci
     ) {
         if (Minecraft.getInstance().renderViewEntity != null) {
+            Helper.checkGlError();
             CGlobal.renderer.onBeforeTranslucentRendering();
+            Helper.checkGlError();
         }
     }
     
@@ -76,7 +79,9 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     )
     private void beforeRenderingHand(float float_1, long long_1, CallbackInfo ci) {
         if (Minecraft.getInstance().renderViewEntity != null) {
+            Helper.checkGlError();
             CGlobal.renderer.onAfterTranslucentRendering();
+            Helper.checkGlError();
         }
     }
     
@@ -103,8 +108,10 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         boolean renderWorldIn,
         CallbackInfo ci
     ) {
+        Helper.checkGlError();
         MyRenderHelper.updatePreRenderInfo(partialTicks);
         ModMain.preRenderSignal.emit();
+        Helper.checkGlError();
     }
     
     //before rendering world (not triggered when rendering portal)
@@ -117,7 +124,9 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     )
     private void onBeforeRenderingCenter(float partialTicks, long finishTimeNano, CallbackInfo ci) {
         ModMainClient.switchToCorrectRenderer();
+        Helper.checkGlError();
         CGlobal.renderer.prepareRendering();
+        Helper.checkGlError();
     }
     
     //after rendering world (not triggered when rendering portal)
@@ -130,14 +139,18 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         )
     )
     private void onAfterRenderingCenter(float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        Helper.checkGlError();
         CGlobal.renderer.finishRendering();
-    
+        Helper.checkGlError();
         MyRenderHelper.onTotalRenderEnd();
+        Helper.checkGlError();
     }
     
     @Inject(method = "updateCameraAndRender(FJ)V", at = @At("TAIL"))
     private void onRenderCenterEnded(float partialTicks, long nanoTime, CallbackInfo ci) {
+        Helper.checkGlError();
         CGlobal.renderer.onRenderCenterEnded();
+        Helper.checkGlError();
     }
     
     @Shadow

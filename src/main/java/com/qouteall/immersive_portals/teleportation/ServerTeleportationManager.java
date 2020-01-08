@@ -17,7 +17,6 @@ import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 public class ServerTeleportationManager {
     private Set<ServerPlayerEntity> teleportingEntities = new HashSet<>();
@@ -141,6 +140,7 @@ public class ServerTeleportationManager {
         }
         else {
             changePlayerDimension(player, fromWorld, toWorld, newPos);
+            sendPositionConfirmMessage(player);
         }
         
         player.connection.setPlayerLocation(
@@ -150,7 +150,6 @@ public class ServerTeleportationManager {
             player.rotationYaw,
             player.rotationPitch
         );
-        //player.connection.captureCurrentPosition();
     }
     
     //TODO add forge events
@@ -291,19 +290,13 @@ public class ServerTeleportationManager {
         ServerWorld toWorld = McHelper.getServer().getWorld(toDimension);
         entity.detach();
     
-        Stream<ServerPlayerEntity> watchingPlayers = McHelper.getEntitiesNearby(
-            entity,
-            ServerPlayerEntity.class,
-            128
-        );
-        
-        fromWorld.removeEntity(entity);
+        fromWorld.removeEntity(entity, true);
         entity.removed = false;
-        
+    
         entity.posX = destination.x;
         entity.posY = destination.y;
         entity.posZ = destination.z;
-        
+    
         entity.world = toWorld;
         entity.dimension = toDimension;
     

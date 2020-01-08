@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.render;
 
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -34,6 +35,7 @@ public class PortalEntityRenderer extends EntityRenderer<Portal> {
     ) {
         super.doRender(portal, double_1, double_2, double_3, float_1, float_2);
         CGlobal.renderer.renderPortalInEntityRenderer(portal);
+        Helper.checkGlError();
     }
     
     @Override

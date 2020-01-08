@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
 import net.minecraft.command.CommandSource;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
@@ -69,5 +70,9 @@ public class CHelper {
     
     public static void initCommandClientOnly(CommandDispatcher<CommandSource> dispatcher) {
         MyCommandClient.register(dispatcher);
+    }
+    
+    public static void printChat(String str) {
+        Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(new StringTextComponent(str));
     }
 }

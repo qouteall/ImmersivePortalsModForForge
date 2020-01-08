@@ -51,20 +51,36 @@ public class ModMainClient {
             return;
         }
         if (OFInterface.isShaders.getAsBoolean()) {
-            if (CGlobal.isRenderDebugMode) {
-                switchRenderer(OFGlobal.rendererDebugWithShader);
-            }
-            else {
-                if (CGlobal.shaderCompatibilityMode) {
-                    switchRenderer(OFGlobal.rendererDeferred);
-                }
-                else {
+            switch (CGlobal.renderMode) {
+                case normal:
                     switchRenderer(OFGlobal.rendererMixed);
-                }
+                    break;
+                case compatibility:
+                    switchRenderer(OFGlobal.rendererDeferred);
+                    break;
+                case debug:
+                    switchRenderer(OFGlobal.rendererDebugWithShader);
+                    break;
+                case none:
+                    switchRenderer(CGlobal.rendererDummy);
+                    break;
             }
         }
         else {
-            switchRenderer(CGlobal.rendererUsingStencil);
+            switch (CGlobal.renderMode) {
+                case normal:
+                    switchRenderer(CGlobal.rendererUsingStencil);
+                    break;
+                case compatibility:
+                    switchRenderer(CGlobal.rendererUsingFrameBuffer);
+                    break;
+                case debug:
+                    //TODO add debug renderer for non shader mode
+                    break;
+                case none:
+                    switchRenderer(CGlobal.rendererDummy);
+                    break;
+            }
         }
     }
     

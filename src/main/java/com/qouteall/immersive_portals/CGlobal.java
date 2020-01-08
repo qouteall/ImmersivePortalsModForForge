@@ -10,9 +10,18 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CGlobal {
+    
+    public static enum RenderMode {
+        normal,
+        compatibility,
+        debug,
+        none
+    }
+    
     public static PortalRenderer renderer;
     public static RendererUsingStencil rendererUsingStencil;
     public static RendererDummy rendererDummy = new RendererDummy();
+    public static RendererUsingFrameBuffer rendererUsingFrameBuffer = new RendererUsingFrameBuffer();
     
     public static ClientWorldLoader clientWorldLoader;
     public static MyGameRenderer myGameRenderer;
@@ -21,7 +30,7 @@ public class CGlobal {
     public static WeakReference<Frustum> currentFrustumCuller;
     
     public static boolean doUseAdvancedFrustumCulling = true;
-    public static int maxPortalLayer = 10;
+    public static int maxPortalLayer = 5;
     public static int maxIdleChunkRendererNum = 500;
     public static Object switchedFogRenderer;
     public static boolean useHackedChunkRenderDispatcher = true;
@@ -32,10 +41,9 @@ public class CGlobal {
     
     public static boolean doDisableAlphaTestWhenRenderingFrameBuffer = true;
     
-    public static boolean isRenderDebugMode = false;
-    public static boolean debugMirrorMode = false;
     public static boolean alwaysUpdateDisplayList = true;
-    public static boolean shaderCompatibilityMode = false;
+    
+    public static RenderMode renderMode = RenderMode.normal;
     
     public static ShaderManager shaderManager;
     

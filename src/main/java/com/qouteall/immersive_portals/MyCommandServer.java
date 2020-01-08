@@ -289,6 +289,35 @@ public class MyCommandServer {
             ))
         );
     
+        builder.then(Commands
+            .literal("remove_connected_portals")
+            .executes(context -> processPortalTargetedCommand(
+                context,
+                portal -> {
+                    Consumer<Portal> removalInformer = p -> sendMessage(context, "Removed " + p);
+                    removeOverlappedPortals(
+                        portal.world,
+                        portal.getPositionVec(),
+                        portal.getNormal().scale(-1),
+                        removalInformer
+                    );
+                    ServerWorld toWorld = McHelper.getServer().getWorld(portal.dimensionTo);
+                    removeOverlappedPortals(
+                        toWorld,
+                        portal.destination,
+                        portal.getNormal().scale(-1),
+                        removalInformer
+                    );
+                    removeOverlappedPortals(
+                        toWorld,
+                        portal.destination,
+                        portal.getNormal(),
+                        removalInformer
+                    );
+                }
+            ))
+        );
+    
         dispatcher.register(builder);
     }
     
