@@ -8,10 +8,7 @@ import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.renderer.FogRenderer;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.*;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -66,6 +63,9 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
             Helper.checkGlError();
             CGlobal.renderer.onBeforeTranslucentRendering();
             Helper.checkGlError();
+    
+            //is it necessary?
+            RenderHelper.enableStandardItemLighting();
         }
     }
     

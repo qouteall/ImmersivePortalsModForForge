@@ -2,8 +2,8 @@ package com.qouteall.immersive_portals;
 
 import com.qouteall.immersive_portals.portal.*;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
-import com.qouteall.immersive_portals.portal.global_portals.EndFloorPortal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import net.minecraft.block.Block;
@@ -204,17 +204,18 @@ public class ModMainForge {
                 BorderPortal.entityType.setRegistryName("immersive_portals:border_portal")
             );
     
-            EndFloorPortal.entityType = EntityType.Builder.create(
-                EndFloorPortal::new, EntityClassification.MISC
+            VerticalConnectingPortal.entityType = EntityType.Builder.create(
+                VerticalConnectingPortal::new, EntityClassification.MISC
             ).size(
                 1, 1
             ).immuneToFire().setCustomClientFactory((a, world) ->
-                new EndFloorPortal(EndFloorPortal.entityType, world)
+                new VerticalConnectingPortal(VerticalConnectingPortal.entityType, world)
             ).build(
                 "immersive_portals:end_floor_portal"
             );
             event.getRegistry().register(
-                EndFloorPortal.entityType.setRegistryName("immersive_portals:end_floor_portal")
+                VerticalConnectingPortal.entityType.setRegistryName(
+                    "immersive_portals:end_floor_portal")
             );
     
             LoadingIndicatorEntity.entityType = EntityType.Builder.create(

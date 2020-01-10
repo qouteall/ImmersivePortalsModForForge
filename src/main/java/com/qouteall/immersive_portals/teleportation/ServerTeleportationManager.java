@@ -291,7 +291,7 @@ public class ServerTeleportationManager {
         entity.detach();
     
         fromWorld.removeEntity(entity, true);
-        entity.removed = false;
+        entity.revive();
     
         entity.posX = destination.x;
         entity.posY = destination.y;

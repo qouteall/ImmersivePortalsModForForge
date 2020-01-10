@@ -9,7 +9,7 @@ import com.mojang.datafixers.util.Pair;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.SpecialPortalShape;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
-import com.qouteall.immersive_portals.portal.global_portals.EndFloorPortal;
+import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
@@ -69,20 +69,6 @@ public class MyCommandServer {
             .literal("border_remove")
             .executes(context -> {
                 BorderPortal.removeBorderPortal(context.getSource().getWorld());
-                return 0;
-            })
-        );
-        builder.then(Commands
-            .literal("end_floor_enable")
-            .executes(context -> {
-                EndFloorPortal.enableFloor();
-                return 0;
-            })
-        );
-        builder.then(Commands
-            .literal("end_floor_remove")
-            .executes(context -> {
-                EndFloorPortal.removeFloor();
                 return 0;
             })
         );
@@ -236,7 +222,7 @@ public class MyCommandServer {
                             Vec3d pos = Vec3Argument.getVec3(
                                 context, "dest"
                             );
-                        
+    
                             ServerPlayerEntity player = context.getSource().asPlayer();
                             SGlobal.serverTeleportationManager.invokeTpmeCommand(
                                 player, dimension, pos
@@ -316,6 +302,106 @@ public class MyCommandServer {
                     );
                 }
             ))
+        );
+    
+        builder.then(Commands
+            .literal("connect_floor")
+            .then(
+                Commands.argument(
+                    "from",
+                    DimensionArgument.getDimension()
+                ).then(
+                    Commands.argument(
+                        "to",
+                        DimensionArgument.getDimension()
+                    ).executes(
+                        context -> {
+                            DimensionType from = DimensionArgument.func_212592_a(
+                                context, "from"
+                            );
+                            DimensionType to = DimensionArgument.func_212592_a(
+                                context, "to"
+                            );
+                        
+                            VerticalConnectingPortal.connect(
+                                from, VerticalConnectingPortal.ConnectorType.floor, to
+                            );
+                            return 0;
+                        }
+                    )
+                )
+            )
+        );
+    
+        builder.then(Commands
+            .literal("connect_ceil")
+            .then(
+                Commands.argument(
+                    "from",
+                    DimensionArgument.getDimension()
+                ).then(
+                    Commands.argument(
+                        "to",
+                        DimensionArgument.getDimension()
+                    ).executes(
+                        context -> {
+                            DimensionType from = DimensionArgument.func_212592_a(
+                                context, "from"
+                            );
+                            DimensionType to = DimensionArgument.func_212592_a(
+                                context, "to"
+                            );
+                        
+                            VerticalConnectingPortal.connect(
+                                from, VerticalConnectingPortal.ConnectorType.ceil, to
+                            );
+                            return 0;
+                        }
+                    )
+                )
+            )
+        );
+    
+        builder.then(Commands
+            .literal("connection_floor_remove")
+            .then(
+                Commands.argument(
+                    "dim",
+                    DimensionArgument.getDimension()
+                ).executes(
+                    context -> {
+                        DimensionType dim = DimensionArgument.func_212592_a(
+                            context, "dim"
+                        );
+                    
+                        VerticalConnectingPortal.removeConnectingPortal(
+                            VerticalConnectingPortal.ConnectorType.floor, dim
+                        );
+                        return 0;
+                    }
+                )
+            )
+        );
+    
+        builder.then(Commands
+            .literal("connection_ceil_remove")
+            .then(
+                Commands.argument(
+                    "dim",
+                    DimensionArgument.getDimension()
+                ).executes(
+                    context -> {
+                        DimensionType dim = DimensionArgument.func_212592_a(
+                            context, "dim"
+                        );
+                    
+                        VerticalConnectingPortal.removeConnectingPortal(
+                            VerticalConnectingPortal.ConnectorType.ceil, dim
+                        );
+                        return 0;
+                    }
+                )
+            )
         );
     
         dispatcher.register(builder);
