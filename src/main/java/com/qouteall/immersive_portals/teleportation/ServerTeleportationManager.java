@@ -142,7 +142,7 @@ public class ServerTeleportationManager {
             changePlayerDimension(player, fromWorld, toWorld, newPos);
             sendPositionConfirmMessage(player);
         }
-        
+    
         player.connection.setPlayerLocation(
             newPos.x,
             newPos.y,
@@ -151,6 +151,8 @@ public class ServerTeleportationManager {
             player.rotationPitch
         );
         player.connection.captureCurrentPosition();
+        ((IEServerPlayNetworkHandler) player.connection).cancelTeleportRequest();
+    
     }
     
     //TODO add forge events

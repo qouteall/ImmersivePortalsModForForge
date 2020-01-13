@@ -47,5 +47,7 @@ public class CGlobal {
     
     public static ShaderManager shaderManager;
     
+    public static boolean doCheckGlError = false;
+    
     
 }

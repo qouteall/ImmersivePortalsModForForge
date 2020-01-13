@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals.optifine_compatibility;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.*;
@@ -152,7 +152,7 @@ public class RendererDeferred extends PortalRenderer {
             GL11.GL_COLOR_BUFFER_BIT, GL_NEAREST
         );
     
-        Helper.checkGlError();
+        CHelper.checkGlError();
     
         renderPortals();
 

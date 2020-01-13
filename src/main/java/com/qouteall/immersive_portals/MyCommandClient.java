@@ -312,6 +312,11 @@ public class MyCommandClient {
             k -> CGlobal.alwaysUpdateDisplayList = k
         );
     
+        registerSwitchCommand(
+            builder, "gl_check_error",
+            k -> CGlobal.doCheckGlError = k
+        );
+    
     
         dispatcher.register(builder);
     

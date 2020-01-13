@@ -79,13 +79,13 @@ public abstract class PortalRenderer {
         assert mc.renderViewEntity.world == mc.world;
         assert mc.renderViewEntity.dimension == mc.world.dimension.getType();
     
-        Helper.checkGlError();
+        CHelper.checkGlError();
     
         for (Portal portal : getPortalsNearbySorted()) {
             renderPortalIfRoughCheckPassed(portal);
         }
     
-        Helper.checkGlError();
+        CHelper.checkGlError();
     }
     
     private void renderPortalIfRoughCheckPassed(Portal portal) {
@@ -182,14 +182,14 @@ public abstract class PortalRenderer {
         
         WorldRenderer worldRenderer = CGlobal.clientWorldLoader.getWorldRenderer(portal.dimensionTo);
         ClientWorld destClientWorld = CGlobal.clientWorldLoader.getOrCreateFakedWorld(portal.dimensionTo);
-        
-        Helper.checkGlError();
+    
+        CHelper.checkGlError();
         
         CGlobal.myGameRenderer.renderWorld(
             MyRenderHelper.partialTicks, worldRenderer, destClientWorld, oldCameraPos
         );
-        
-        Helper.checkGlError();
+    
+        CHelper.checkGlError();
         
     }
 }

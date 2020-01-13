@@ -107,7 +107,7 @@ public class MyRenderHelper {
         portalRenderInfos.add(currRenderInfo);
         renderedDimensions.add(portalLayers.peek().dimensionTo);
     
-        Helper.checkGlError();
+        CHelper.checkGlError();
     }
     
     public static void setupCameraTransformation() {
@@ -215,7 +215,7 @@ public class MyRenderHelper {
         boolean doEnableAlphaTest,
         boolean doEnableModifyAlpha
     ) {
-        Helper.checkGlError();
+        CHelper.checkGlError();
         
         Validate.isTrue(GLX.isUsingFBOs());
         
@@ -289,7 +289,7 @@ public class MyRenderHelper {
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
     
-        Helper.checkGlError();
+        CHelper.checkGlError();
     }
     
     //If I don't do so JVM will crash
@@ -356,7 +356,7 @@ public class MyRenderHelper {
         Framebuffer textureProvider,
         ShaderManager shaderManager
     ) {
-        Helper.checkGlError();
+        CHelper.checkGlError();
         
         setupCameraTransformation();
         
@@ -387,6 +387,6 @@ public class MyRenderHelper {
         
         OFInterface.resetViewport.run();
     
-        Helper.checkGlError();
+        CHelper.checkGlError();
     }
 }

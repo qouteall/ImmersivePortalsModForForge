@@ -15,12 +15,17 @@ import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.lwjgl.opengl.GL11;
 
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
+
 @OnlyIn(Dist.CLIENT)
 public class CHelper {
+    private static int reportedErrorNum = 0;
+    
     public static NetworkPlayerInfo getClientPlayerListEntry() {
         return Minecraft.getInstance().getConnection().getPlayerInfo(
             Minecraft.getInstance().player.getGameProfile().getId()
@@ -74,5 +79,20 @@ public class CHelper {
     
     public static void printChat(String str) {
         Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(new StringTextComponent(str));
+    }
+    
+    public static void checkGlError() {
+        if (!CGlobal.doCheckGlError) {
+            return;
+        }
+        if (reportedErrorNum > 100) {
+            return;
+        }
+        int errorCode = GL11.glGetError();
+        if (errorCode != GL_NO_ERROR) {
+            Helper.err("OpenGL Error" + errorCode);
+            new Throwable().printStackTrace();
+            reportedErrorNum++;
+        }
     }
 }

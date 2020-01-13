@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.optifine_compatibility;
 
 import com.mojang.blaze3d.platform.GLX;
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.CHelper;
 import net.minecraft.client.util.LWJGLMemoryUntracker;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
@@ -125,7 +125,7 @@ public class UniformReport {
                 String name = GL20.glGetActiveUniform(
                     programId, i, sizeBuffer, dataTypeBuffer
                 );
-                Helper.checkGlError();
+                CHelper.checkGlError();
                 return new UniformInfo(
                     programId,
                     name,

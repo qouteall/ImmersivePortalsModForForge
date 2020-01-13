@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals.optifine_compatibility;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEGlFrameBuffer;
 import com.qouteall.immersive_portals.portal.Portal;
@@ -129,7 +129,7 @@ public class RendererMixed extends PortalRenderer {
             mainFrameBuffer.framebufferHeight
         );
     
-        Helper.checkGlError();
+        CHelper.checkGlError();
     }
     
     @Override
