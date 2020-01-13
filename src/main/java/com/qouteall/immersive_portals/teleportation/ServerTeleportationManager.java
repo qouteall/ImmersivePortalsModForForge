@@ -150,6 +150,7 @@ public class ServerTeleportationManager {
             player.rotationYaw,
             player.rotationPitch
         );
+        player.connection.captureCurrentPosition();
     }
     
     //TODO add forge events

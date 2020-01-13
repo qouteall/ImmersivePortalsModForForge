@@ -16,7 +16,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '0.8'
+version = '9'
 group = 'com.qouteall.immersive_portals' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'immersive-portals'
 
@@ -117,7 +117,7 @@ dependencies {
     //Mixin
     compile 'org.spongepowered:mixin:0.8-SNAPSHOT'
 
-    //used for building mod, not for development
+    //used for building mod
     compile files('ofstuff2.jar')
 }
 
