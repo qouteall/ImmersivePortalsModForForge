@@ -17,6 +17,7 @@ import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
+import org.apache.commons.lang3.Validate;
 
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -32,6 +33,7 @@ public class StcRedirected {
         IPacket packet
     ) {
         this.dimension = dimensionType;
+        Validate.notNull(dimensionType);
         this.packet = packet;
         try {
             packetId = ProtocolType.PLAY.getPacketId(PacketDirection.CLIENTBOUND, packet);

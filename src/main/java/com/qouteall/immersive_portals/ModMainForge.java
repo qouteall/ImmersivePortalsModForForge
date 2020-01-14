@@ -8,6 +8,7 @@ import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPo
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import net.minecraft.block.Block;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.ResourceLocation;
@@ -44,11 +45,11 @@ public class ModMainForge {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
         // Register the doClientStuff method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::doClientStuff);
-        
+    
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
-        
-        
+    
+        ConfigClient.init();
     }
     
     private void setup(final FMLCommonSetupEvent event) {
@@ -57,6 +58,14 @@ public class ModMainForge {
     
     private void doClientStuff(final FMLClientSetupEvent event) {
         ModMainClient.onInitializeClient();
+    
+        Minecraft.getInstance().execute(() -> {
+            if (ConfigClient.isInitialCompatibilityRenderMode()) {
+                CGlobal.renderMode = CGlobal.RenderMode.compatibility;
+                Helper.log("Initially Switched to Compatibility Render Mode");
+            }
+            ConfigClient.spec.save();
+        });
     }
     
     private void enqueueIMC(final InterModEnqueueEvent event) {
@@ -66,6 +75,7 @@ public class ModMainForge {
     private void processIMC(final InterModProcessEvent event) {
     
     }
+    
     
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent

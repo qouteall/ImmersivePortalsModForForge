@@ -7,9 +7,13 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 @Mixin(DimensionType.class)
 public abstract class MixinDimensionType {
+
+//    @Mutable
+//    @Shadow
+//    @Final
+//    private int id;
     
     //change "DimensionType{minecraft:nether}" to "minecraft:nether"
-    
     @ModifyConstant(
         method = "toString",
         constant = @Constant(stringValue = "DimensionType{")
@@ -26,5 +30,8 @@ public abstract class MixinDimensionType {
         return "";
     }
 
-    
+//    @Override
+//    public void setRawId(int arg) {
+//        id = arg;
+//    }
 }

@@ -18,7 +18,6 @@ import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 import java.util.UUID;
-import java.util.stream.Stream;
 
 public class Portal extends Entity implements IEntityAdditionalSpawnData {
     public static EntityType<Portal> entityType;
@@ -45,17 +44,6 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         World world_1
     ) {
         super(entityType_1, world_1);
-    }
-    
-    public Stream<Entity> getEntitiesToTeleport() {
-        return world.getEntitiesWithinAABB(
-            Entity.class,
-            getPortalCollisionBox()
-        ).stream().filter(
-            e -> !(e instanceof Portal)
-        ).filter(
-            this::shouldEntityTeleport
-        );
     }
     
     @Override

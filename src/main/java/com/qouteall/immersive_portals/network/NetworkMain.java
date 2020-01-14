@@ -56,6 +56,13 @@ public class NetworkMain {
             StcUpdateGlobalPortals::new,
             StcUpdateGlobalPortals::handle
         );
+//        channel.registerMessage(
+//            5,
+//            StcDimensionIdSync.class,
+//            StcDimensionIdSync::encode,
+//            StcDimensionIdSync::new,
+//            StcDimensionIdSync::handle
+//        );
     }
     
     public static <T> void sendToServer(T t) {

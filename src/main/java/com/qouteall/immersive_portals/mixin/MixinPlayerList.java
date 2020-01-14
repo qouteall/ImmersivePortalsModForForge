@@ -47,6 +47,7 @@ public class MixinPlayerList {
         ServerPlayerEntity playerIn,
         CallbackInfo ci
     ) {
+        //NetworkMain.sendToPlayer(playerIn, StcDimensionIdSync.createPacket());
         GlobalPortalStorage.onPlayerLoggedIn(playerIn);
     }
 }
