@@ -169,7 +169,7 @@ public abstract class MixinEntity implements IEEntity {
     )
     private void onReadFinished(CompoundNBT compound, CallbackInfo ci) {
         if (dimension == null) {
-            Helper.err("Invalid Dimension Id Read From NBT");
+            Helper.err("Invalid Dimension Id Read From NBT " + this);
             if (world != null) {
                 dimension = world.dimension.getType();
             }

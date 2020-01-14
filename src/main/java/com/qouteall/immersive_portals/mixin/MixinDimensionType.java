@@ -1,17 +1,21 @@
 package com.qouteall.immersive_portals.mixin;
 
+import com.qouteall.immersive_portals.ducks.IEDimensionType;
 import net.minecraft.world.dimension.DimensionType;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 @Mixin(DimensionType.class)
-public abstract class MixinDimensionType {
-
-//    @Mutable
-//    @Shadow
-//    @Final
-//    private int id;
+public abstract class MixinDimensionType implements IEDimensionType {
+    
+    @Mutable
+    @Shadow
+    @Final
+    private int id;
     
     //change "DimensionType{minecraft:nether}" to "minecraft:nether"
     @ModifyConstant(
@@ -29,9 +33,9 @@ public abstract class MixinDimensionType {
     private String modify2(String whatever) {
         return "";
     }
-
-//    @Override
-//    public void setRawId(int arg) {
-//        id = arg;
-//    }
+    
+    @Override
+    public void setRawId(int arg) {
+        id = arg;
+    }
 }
