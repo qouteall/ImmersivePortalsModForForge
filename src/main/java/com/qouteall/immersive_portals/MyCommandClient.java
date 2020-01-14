@@ -8,6 +8,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.ducks.*;
+import com.qouteall.immersive_portals.optifine_compatibility.UniformReport;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.DimensionRenderHelper;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
@@ -301,6 +302,34 @@ public class MyCommandClient {
                 ).forEach(
                     loader -> McHelper.serverLog(
                         player, loader.toString()
+                    )
+                );
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("uniform_report_textured")
+            .executes(context -> {
+                UniformReport.launchUniformReport(
+                    new String[]{
+                        "gbuffers_textured", "gbuffers_textured_lit"
+                    },
+                    s -> context.getSource().sendFeedback(
+                        new StringTextComponent(s), true
+                    )
+                );
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("uniform_report_terrain")
+            .executes(context -> {
+                UniformReport.launchUniformReport(
+                    new String[]{
+                        "gbuffers_terrain", "gbuffers_terrain_solid"
+                    },
+                    s -> context.getSource().sendFeedback(
+                        new StringTextComponent(s), true
                     )
                 );
                 return 0;

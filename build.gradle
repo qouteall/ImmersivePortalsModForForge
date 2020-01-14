@@ -119,6 +119,7 @@ dependencies {
 
     //used for building mod
     compile files('ofstuff2.jar')
+
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..
