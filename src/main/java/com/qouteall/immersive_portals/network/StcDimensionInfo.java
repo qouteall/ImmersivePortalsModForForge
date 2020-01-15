@@ -1,8 +1,8 @@
 package com.qouteall.immersive_portals.network;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ducks.IEDimensionType;
 import io.netty.buffer.Unpooled;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
@@ -99,11 +99,12 @@ public class StcDimensionInfo {
             if (object1.get() != object) {
                 return false;
             }
-            
+    
             return true;
         }
-        
-        public String myToString() {
+    
+        @Override
+        public String toString() {
             return String.format(
                 "(%s,%s,%s)",
                 stringId, registryId, modDimensionName
@@ -143,11 +144,13 @@ public class StcDimensionInfo {
     }
     
     public void handle(Supplier<NetworkEvent.Context> context) {
-        Minecraft.getInstance().execute(this::handleClientOnly);
+        Helper.log("Begin Handling");
+        context.get().enqueueWork(this::handleClientOnly);
     }
     
     @OnlyIn(Dist.CLIENT)
     private void handleClientOnly() {
+        Helper.log("Really Handling");
         ClearableRegistry<DimensionType> registry =
             (ClearableRegistry<DimensionType>) Registry.DIMENSION_TYPE;
         
@@ -164,16 +167,27 @@ public class StcDimensionInfo {
             Helper.log("All Dimension Registry is Consistent");
         }
         else {
-            Helper.log("Detected Inconsistency. Started Re-registering");
-            
+            Helper.log("Detected Inconsistency. Re-registering is needed");
+    
+            List<DimensionType> capturedTypeObjects = registry.stream()
+                .filter(dimensionType -> !dimensionType.isVanilla())
+                .collect(Collectors.toList());
+    
+            Helper.log(
+                "Captured DimensionType Objects:\n" +
+                    Helper.myToString(capturedTypeObjects.stream())
+            );
+    
+            Helper.log("Started Re-registering");
+    
             registry.clear();
-            
+    
             registry.register(
                 DimensionType.OVERWORLD.getId() + 1,
                 DimensionType.OVERWORLD.getRegistryName(),
                 DimensionType.OVERWORLD
             );
-            
+    
             registry.register(
                 DimensionType.THE_NETHER.getId() + 1,
                 DimensionType.THE_NETHER.getRegistryName(),
@@ -189,7 +203,24 @@ public class StcDimensionInfo {
             Helper.log("Vanilla Dimensions Registered:\n" + getRegistryInfo());
             
             data.forEach(myEntry -> {
-                DimensionType object = myEntry.makeDummyDimensionType();
+                DimensionType foundExistingObject = capturedTypeObjects.stream().filter(
+                    dimensionType -> dimensionType.getRegistryName().equals(myEntry.stringId)
+                ).findAny().orElse(null);
+    
+                DimensionType object;
+    
+                if (foundExistingObject == null) {
+                    object = myEntry.makeDummyDimensionType();
+        
+                    Helper.log("Cannot Find Existing DimensionType Object " +
+                        myEntry.stringId + ". Created New DimensionType Object."
+                    );
+                }
+                else {
+                    object = foundExistingObject;
+                    Helper.log("Use Captured Existing DimensionType Object " + foundExistingObject);
+                }
+    
                 if (object == null) {
                     Helper.err(
                         "Failed to Re-register Mod Dimension " +
@@ -202,6 +233,7 @@ public class StcDimensionInfo {
                     myEntry.stringId,
                     object
                 );
+                ((IEDimensionType) object).setRegistryIntegerId(myEntry.registryId);
             });
             
             Helper.log("Mod Dimensions Registered:\n" + getRegistryInfo());

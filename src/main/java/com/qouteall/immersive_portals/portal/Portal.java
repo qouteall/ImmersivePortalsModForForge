@@ -354,6 +354,11 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         return pos.add(offset);
     }
     
+    public Vec3d reverseTransformPoint(Vec3d pos) {
+        Vec3d offset = destination.subtract(getPositionVec());
+        return pos.subtract(offset);
+    }
+    
     public Vec3d getCullingPoint() {
         return destination;
     }

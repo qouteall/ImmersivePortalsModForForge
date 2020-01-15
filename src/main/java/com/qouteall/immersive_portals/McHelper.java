@@ -1,7 +1,11 @@
 package com.qouteall.immersive_portals;
 
+import com.google.common.collect.Streams;
 import com.mojang.brigadier.CommandDispatcher;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
+import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.command.CommandSource;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -15,10 +19,12 @@ import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerChunkProvider;
+import net.minecraft.world.server.ServerWorld;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
@@ -172,5 +178,23 @@ public class McHelper {
         CHelper.initCommandClientOnly(dispatcher);
     }
     
-    
+    public static Stream<Portal> getServerPortalsNearby(Entity center, double range) {
+        List<GlobalTrackedPortal> globalPortals = GlobalPortalStorage.get(((ServerWorld) center.world)).data;
+        Stream<Portal> nearbyPortals = McHelper.getEntitiesNearby(
+            center,
+            Portal.class,
+            range
+        );
+        if (globalPortals == null) {
+            return nearbyPortals;
+        }
+        else {
+            return Streams.concat(
+                globalPortals.stream().filter(
+                    p -> p.getDistanceToNearestPointInPortal(center.getPositionVec()) < range * 2
+                ),
+                nearbyPortals
+            );
+        }
+    }
 }

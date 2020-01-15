@@ -96,7 +96,7 @@ public class ServerTeleportationManager {
     ) {
         return canPlayerReachPos(player, dimensionBefore, posBefore) &&
             portalEntity instanceof Portal &&
-            ((Portal) portalEntity).getDistanceToNearestPointInPortal(posBefore) < 10 &&
+            ((Portal) portalEntity).getDistanceToNearestPointInPortal(posBefore) < 20 &&
             !player.isPassenger();
     }
     
@@ -108,15 +108,15 @@ public class ServerTeleportationManager {
         return player.dimension == dimension ?
             isClose(pos, player.getPositionVec())
             :
-            McHelper.getEntitiesNearby(player, Portal.class, 10)
+            McHelper.getServerPortalsNearby(player, 20)
                 .anyMatch(
                     portal -> portal.dimensionTo == dimension &&
-                        isClose(pos, portal.destination)
+                        portal.getDistanceToNearestPointInPortal(portal.reverseTransformPoint(pos)) < 20
                 );
     }
     
     private static boolean isClose(Vec3d a, Vec3d b) {
-        return a.squareDistanceTo(b) < 15 * 15;
+        return a.squareDistanceTo(b) < 20 * 20;
     }
     
     private void teleportPlayer(
