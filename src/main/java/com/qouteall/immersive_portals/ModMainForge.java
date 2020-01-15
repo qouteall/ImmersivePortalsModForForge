@@ -64,7 +64,9 @@ public class ModMainForge {
                 CGlobal.renderMode = CGlobal.RenderMode.compatibility;
                 Helper.log("Initially Switched to Compatibility Render Mode");
             }
-            ConfigClient.spec.save();
+            CGlobal.doCheckGlError = ConfigClient.getDoCheckGlError();
+            Helper.log("Do Check Gl Error: " + CGlobal.doCheckGlError);
+//            ConfigClient.spec.save();
         });
     }
     

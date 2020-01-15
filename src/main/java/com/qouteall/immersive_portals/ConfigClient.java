@@ -10,15 +10,23 @@ public class ConfigClient {
     public static final ConfigClient instance;
     public static final ForgeConfigSpec spec;
     public final ForgeConfigSpec.BooleanValue compatibilityRenderMode;
+    public final ForgeConfigSpec.BooleanValue doCheckGlError;
     
     public ConfigClient(ForgeConfigSpec.Builder builder) {
         compatibilityRenderMode = builder
             .comment("With this you can't see portal-in-portal")
             .define("compatibility_render_mode", false);
+        doCheckGlError = builder
+            .comment("With this the performance may drop")
+            .define("do_check_gl_error", false);
     }
     
     public static boolean isInitialCompatibilityRenderMode() {
         return instance.compatibilityRenderMode.get();
+    }
+    
+    public static boolean getDoCheckGlError() {
+        return instance.doCheckGlError.get();
     }
     
     static {

@@ -34,8 +34,4 @@ public abstract class MixinDimensionType implements IEDimensionType {
         return "";
     }
     
-    @Override
-    public void setRawId(int arg) {
-        id = arg;
-    }
 }

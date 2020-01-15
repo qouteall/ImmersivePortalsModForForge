@@ -56,13 +56,13 @@ public class NetworkMain {
             StcUpdateGlobalPortals::new,
             StcUpdateGlobalPortals::handle
         );
-//        channel.registerMessage(
-//            5,
-//            StcDimensionIdSync.class,
-//            StcDimensionIdSync::encode,
-//            StcDimensionIdSync::new,
-//            StcDimensionIdSync::handle
-//        );
+        channel.registerMessage(
+            5,
+            StcDimensionInfo.class,
+            StcDimensionInfo::encode,
+            StcDimensionInfo::new,
+            StcDimensionInfo::handle
+        );
     }
     
     public static <T> void sendToServer(T t) {

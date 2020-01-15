@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.qouteall.immersive_portals.SGlobal;
+import com.qouteall.immersive_portals.network.StcDimensionInfo;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.NetworkManager;
@@ -41,13 +42,28 @@ public class MixinPlayerList {
         GlobalPortalStorage.onPlayerLoggedIn(cir.getReturnValue());
     }
     
+    @Inject(
+        method = "initializeConnectionToPlayer",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraftforge/fml/network/NetworkHooks;sendDimensionDataPacket(Lnet/minecraft/network/NetworkManager;Lnet/minecraft/entity/player/ServerPlayerEntity;)V"
+        )
+    )
+    private void onJustBeforeInitializingConnection(
+        NetworkManager netManager,
+        ServerPlayerEntity playerIn,
+        CallbackInfo ci
+    ) {
+        StcDimensionInfo.sendDimensionInfo(playerIn);
+    }
+    
     @Inject(method = "initializeConnectionToPlayer", at = @At("TAIL"))
     private void onOnPlayerConnect(
         NetworkManager netManager,
         ServerPlayerEntity playerIn,
         CallbackInfo ci
     ) {
-        //NetworkMain.sendToPlayer(playerIn, StcDimensionIdSync.createPacket());
         GlobalPortalStorage.onPlayerLoggedIn(playerIn);
     }
+    
 }
