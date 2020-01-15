@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.qouteall.immersive_portals.ducks.IEDimensionType;
 import net.minecraft.world.dimension.DimensionType;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -10,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 @Mixin(DimensionType.class)
-public abstract class MixinDimensionType implements IEDimensionType {
+public abstract class MixinDimensionType {
     
     @Mutable
     @Shadow
