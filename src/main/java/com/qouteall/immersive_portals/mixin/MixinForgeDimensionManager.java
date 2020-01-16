@@ -1,18 +1,46 @@
 package com.qouteall.immersive_portals.mixin;
 
-import net.minecraft.server.MinecraftServer;
+import com.qouteall.immersive_portals.DimensionSyncManager;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.ModDimension;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = DimensionManager.class, remap = false)
 public class MixinForgeDimensionManager {
-    /**
-     * @author qotueall
-     * @reason
-     */
-    @Overwrite
-    public static void unloadWorlds(MinecraftServer server, boolean checkLeaks) {
-        //nothing
+    //Don't let Forge unload vanilla dimension
+    //If Forge unloads nether when nether portal searching is running then it will froze
+    @Inject(
+        method = "canUnloadWorld",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private static void onCanUnloadWorld(ServerWorld world, CallbackInfoReturnable<Boolean> cir) {
+        if (world.dimension.getType().isVanilla()) {
+            cir.setReturnValue(false);
+            cir.cancel();
+        }
+    }
+    
+    @Inject(
+        method = "registerDimension",
+        at = @At("RETURN"),
+        cancellable = true
+    )
+    private static void onDimensionRegistered(
+        ResourceLocation name,
+        ModDimension type,
+        PacketBuffer data,
+        boolean hasSkyLight,
+        CallbackInfoReturnable<DimensionType> cir
+    ) {
+        DimensionType newDimensionType = cir.getReturnValue();
+        DimensionSyncManager.onDimensionRegisteredAtRuntimeAtServer(newDimensionType);
     }
 }

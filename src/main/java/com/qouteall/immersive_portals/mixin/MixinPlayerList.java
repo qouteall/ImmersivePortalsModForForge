@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
+import com.qouteall.immersive_portals.DimensionSyncManager;
 import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.network.StcDimensionInfo;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.NetworkManager;
@@ -54,7 +54,7 @@ public class MixinPlayerList {
         ServerPlayerEntity playerIn,
         CallbackInfo ci
     ) {
-        StcDimensionInfo.sendDimensionInfo(playerIn);
+        DimensionSyncManager.sendDimensionInfo(playerIn);
     }
     
     @Inject(method = "initializeConnectionToPlayer", at = @At("TAIL"))

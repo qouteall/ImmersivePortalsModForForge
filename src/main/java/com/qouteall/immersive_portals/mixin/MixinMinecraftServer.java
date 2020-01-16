@@ -1,15 +1,18 @@
 package com.qouteall.immersive_portals.mixin;
 
+import com.google.gson.JsonElement;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.mojang.datafixers.DataFixer;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
 import net.minecraft.command.Commands;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerProfileCache;
+import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.listener.IChunkStatusListenerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,7 +25,9 @@ import java.net.Proxy;
 import java.util.function.BooleanSupplier;
 
 @Mixin(value = MinecraftServer.class)
-public class MixinMinecraftServer {
+public class MixinMinecraftServer implements IEMinecraftServer {
+    private boolean portal_areAllWorldsLoaded;
+    
     @Inject(
         method = "<init>",
         at = @At("RETURN")
@@ -41,6 +46,7 @@ public class MixinMinecraftServer {
         CallbackInfo ci
     ) {
         Helper.refMinecraftServer = new WeakReference<>((MinecraftServer) ((Object) this));
+        portal_areAllWorldsLoaded = false;
     }
     
     @Inject(
@@ -58,5 +64,25 @@ public class MixinMinecraftServer {
     private void onServerClose(CallbackInfo ci) {
         SGlobal.chunkTrackingGraph.cleanUp();
         ModMain.serverTaskList.forceClearTasks();
+    }
+    
+    @Inject(
+        method = "loadAllWorlds",
+        at = @At("RETURN")
+    )
+    private void onFinishedLoadingAllWorlds(
+        String saveName,
+        String worldNameIn,
+        long seed,
+        WorldType type,
+        JsonElement generatorOptions,
+        CallbackInfo ci
+    ) {
+        portal_areAllWorldsLoaded = true;
+    }
+    
+    @Override
+    public boolean portal_getAreAllWorldsLoaded() {
+        return portal_areAllWorldsLoaded;
     }
 }
