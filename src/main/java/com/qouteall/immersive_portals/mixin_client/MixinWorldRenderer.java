@@ -112,6 +112,36 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             GlStateManager.cullFace(GlStateManager.CullFace.BACK);
         }
     }
+
+//    @Inject(
+//        method = "renderEntities",
+//        at = @At("HEAD")
+//    )
+//    private void onBeginRenderEntities(
+//        ActiveRenderInfo p_215326_1_,
+//        ICamera p_215326_2_,
+//        float partialTicks,
+//        CallbackInfo ci
+//    ) {
+//        if (MyRenderHelper.isRenderingMirror()) {
+//            GlStateManager.cullFace(GlStateManager.CullFace.BACK);
+//        }
+//    }
+//
+//    @Inject(
+//        method = "renderEntities",
+//        at = @At("RETURN")
+//    )
+//    private void onFinishedRenderingEntities(
+//        ActiveRenderInfo p_215326_1_,
+//        ICamera p_215326_2_,
+//        float partialTicks,
+//        CallbackInfo ci
+//    ) {
+//        if (MyRenderHelper.isRenderingMirror()) {
+//            GlStateManager.cullFace(GlStateManager.CullFace.FRONT);
+//        }
+//    }
     
     @Inject(
         method = "renderEntities",

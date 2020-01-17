@@ -2,19 +2,30 @@ package com.qouteall.immersive_portals.mixin;
 
 import com.qouteall.immersive_portals.DimensionSyncManager;
 import com.qouteall.immersive_portals.SGlobal;
+import com.qouteall.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.IPacket;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.server.management.PlayerList;
 import net.minecraft.world.dimension.DimensionType;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.List;
+
 @Mixin(value = PlayerList.class)
 public class MixinPlayerList {
+    @Shadow
+    @Final
+    private List<ServerPlayerEntity> players;
+    
     @Inject(
         method = "recreatePlayerEntity",
         at = @At("HEAD")
@@ -64,6 +75,17 @@ public class MixinPlayerList {
         CallbackInfo ci
     ) {
         GlobalPortalStorage.onPlayerLoggedIn(playerIn);
+    }
+    
+    /**
+     * @author qouteall
+     * @reason send packet even when player is not in that dimension
+     */
+    @Overwrite
+    public void sendPacketToAllPlayersInDimension(IPacket<?> packetIn, DimensionType dimension) {
+        players.forEach(player ->
+            NetworkMain.sendRedirected(player, dimension, packetIn)
+        );
     }
     
 }

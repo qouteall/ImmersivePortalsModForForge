@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals;
 import com.qouteall.immersive_portals.alternate_dimension.AlternateDimensionEntry;
 import com.qouteall.immersive_portals.portal.*;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
@@ -11,6 +12,8 @@ import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.common.DimensionManager;
@@ -18,6 +21,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.ModDimension;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.RegisterDimensionsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -66,7 +70,6 @@ public class ModMainForge {
             }
             CGlobal.doCheckGlError = ConfigClient.getDoCheckGlError();
             Helper.log("Do Check Gl Error: " + CGlobal.doCheckGlError);
-//            ConfigClient.spec.save();
         });
     }
     
@@ -101,8 +104,18 @@ public class ModMainForge {
                 true
             );
         }
-        
+    
         ModMain.alternate = DimensionType.byName(resourceLocation);
+    }
+    
+    @SubscribeEvent
+    public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!SGlobal.serverTeleportationManager.isFiringMyChangeDimensionEvent) {
+            PlayerEntity player = event.getPlayer();
+            if (player instanceof ServerPlayerEntity) {
+                GlobalPortalStorage.onPlayerLoggedIn((ServerPlayerEntity) player);
+            }
+        }
     }
     
     // You can use EventBusSubscriber to automatically subscribe events on the contained class (this is subscribing to the MOD

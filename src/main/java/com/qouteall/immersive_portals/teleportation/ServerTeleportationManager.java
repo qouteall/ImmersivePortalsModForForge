@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 public class ServerTeleportationManager {
     private Set<ServerPlayerEntity> teleportingEntities = new HashSet<>();
     private WeakHashMap<Entity, Long> lastTeleportGameTime = new WeakHashMap<>();
+    public boolean isFiringMyChangeDimensionEvent = false;
     
     public ServerTeleportationManager() {
         ModMain.postServerTickSignal.connectWithWeakRef(this, ServerTeleportationManager::tick);
@@ -214,7 +215,7 @@ public class ServerTeleportationManager {
             toWorld.dimension.getType(),
             player.getPosition()
         ));
-        
+    
         //this is used for the advancement of "we need to go deeper"
         //and the advancement of travelling for long distance through nether
         if (toWorld.dimension.getType() == DimensionType.THE_NETHER) {
@@ -222,12 +223,14 @@ public class ServerTeleportationManager {
             ((IEServerPlayerEntity) player).setEnteredNetherPos(player.getPositionVec());
         }
         ((IEServerPlayerEntity) player).updateDimensionTravelAdvancements(fromWorld);
-        
+    
+        isFiringMyChangeDimensionEvent = true;
         net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerChangedDimensionEvent(
             player,
             fromWorld.dimension.getType(),
             toWorld.dimension.getType()
         );
+        isFiringMyChangeDimensionEvent = false;
     }
     
     private void sendPositionConfirmMessage(ServerPlayerEntity player) {

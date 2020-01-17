@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.alternate_dimension;
 
+import com.qouteall.immersive_portals.McHelper;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundNBT;
@@ -15,6 +16,7 @@ import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.gen.ChunkGeneratorType;
 import net.minecraft.world.gen.EndGenerationSettings;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -168,5 +170,12 @@ public class AlternateDimension extends Dimension {
         else {
             return -999;
         }
+    }
+    
+    @Override
+    public void updateWeather(Runnable defaultLogic) {
+        ServerWorld overWorld = McHelper.getServer().getWorld(DimensionType.OVERWORLD);
+        this.world.setRainStrength(overWorld.getRainStrength(1));
+        this.world.setThunderStrength(overWorld.getThunderStrength(1));
     }
 }

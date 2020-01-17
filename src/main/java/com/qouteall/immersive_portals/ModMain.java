@@ -55,8 +55,6 @@ public class ModMain {
             }
             catch (ClassNotFoundException e) {
                 e.printStackTrace();
-                Helper.err(e);
-                Helper.err(e.getCause());
                 Helper.err("Mixin is not in classpath");
             }
     

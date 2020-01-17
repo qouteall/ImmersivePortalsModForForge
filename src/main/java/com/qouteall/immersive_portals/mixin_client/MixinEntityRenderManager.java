@@ -1,7 +1,9 @@
 package com.qouteall.immersive_portals.mixin_client;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ModMainClient;
+import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
@@ -43,6 +45,28 @@ public class MixinEntityRenderManager {
         if (!CGlobal.renderer.shouldRenderEntityNow(entity_1)) {
             cir.setReturnValue(false);
             cir.cancel();
+        }
+    }
+    
+    @Inject(
+        method = "renderEntity",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/entity/EntityRenderer;doRender(Lnet/minecraft/entity/Entity;DDDFF)V"
+        )
+    )
+    private void onBeforeReallyRenderEntity(
+        Entity entityIn,
+        double x,
+        double y,
+        double z,
+        float yaw,
+        float partialTicks,
+        boolean p_188391_10_,
+        CallbackInfo ci
+    ) {
+        if (MyRenderHelper.isRenderingMirror()) {
+            GlStateManager.disableCull();
         }
     }
 }
