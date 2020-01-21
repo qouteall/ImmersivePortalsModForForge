@@ -215,14 +215,18 @@ public class DimensionSyncManager {
         DimensionType dimensionType
     ) {
         MinecraftServer server = McHelper.getServer();
-        
+    
+        if (server == null) {
+            return;
+        }
+    
         if (((IEMinecraftServer) server).portal_getAreAllWorldsLoaded()) {
             Helper.log("Noticed New Dimension Being Registered When Game is Running");
-            
+        
             McHelper.getCopiedPlayerList().forEach(
                 DimensionSyncManager::sendDimensionInfo
             );
-            
+        
             Helper.log("Dimension Info Updating Packet Sent");
         }
     }

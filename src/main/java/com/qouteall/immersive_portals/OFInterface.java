@@ -39,4 +39,5 @@ public class OFInterface {
     
     public static Runnable initShaderCullingManager = invokeNothing;
     
+    public static BooleanSupplier isRenderRegions = returnFalse;
 }

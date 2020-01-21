@@ -11,7 +11,16 @@ public class MixinForgeNetworkHooks {
     
     /**
      * @author qouteall
-     * @reason Forge's dimension sync system is a mess.
+     * @reason The dimension sync will be manage by this mod
+     */
+    @Overwrite
+    public static DimensionType getDummyDimType(final int dimension) {
+        return DimensionType.getById(dimension);
+    }
+    
+    /**
+     * @author qouteall
+     * @reason The dimension sync will be manage by this mod
      */
     @Overwrite
     static public void addCachedDimensionType(

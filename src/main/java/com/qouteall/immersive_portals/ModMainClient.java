@@ -7,8 +7,11 @@ import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import com.qouteall.immersive_portals.render.*;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
+import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+
+import java.lang.reflect.Field;
 
 public class ModMainClient {
     
@@ -113,14 +116,42 @@ public class ModMainClient {
             CGlobal.clientWorldLoader = new ClientWorldLoader();
             CGlobal.myGameRenderer = new MyGameRenderer();
             CGlobal.clientTeleportationManager = new ClientTeleportationManager();
-        
+    
             OFInterface.isOptifinePresent = getIsOptifinePresent();
             Helper.log(OFInterface.isOptifinePresent ? "Optifine is present" : "Optifine is not present");
-        
+    
             if (OFInterface.isOptifinePresent) {
                 OFInterfaceInitializer.init();
                 OFInterface.initShaderCullingManager.run();
             }
         });
+    }
+    
+    private static Field gameSettings_ofRenderRegions;
+    
+    public static void turnOffRenderRegionOption() {
+        if (!OFInterface.isOptifinePresent) {
+            return;
+        }
+        
+        if (gameSettings_ofRenderRegions == null) {
+            try {
+                gameSettings_ofRenderRegions =
+                    GameSettings.class.getDeclaredField("ofRenderRegions");
+            }
+            catch (NoSuchFieldException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        
+        try {
+            gameSettings_ofRenderRegions.set(
+                Minecraft.getInstance().gameSettings,
+                false
+            );
+        }
+        catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

@@ -13,7 +13,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = DimensionManager.class, remap = false)
-public class MixinForgeDimensionManager {
+public class
+MixinForgeDimensionManager {
     //Don't let Forge unload vanilla dimension
     //If Forge unloads nether when nether portal searching is running then it will froze
     @Inject(

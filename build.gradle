@@ -16,7 +16,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '0.10'
+version = '0.12'
 group = 'com.qouteall.immersive_portals' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'immersive-portals'
 
@@ -120,6 +120,9 @@ dependencies {
     //used for building mod
     compile files('ofstuff2.jar')
 
+    //compile fg.deobf("ignored:BetterFoliage-2.5.0-Forge-1.14.4")
+    //compile fg.deobf("ignored:MyMod-1.14.4:1.0")
+    //compile fg.deobf("ignored:good-nights-sleep-1.14.4-1.0.1")
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..
@@ -168,11 +171,11 @@ repositories {
     maven {url='https://dist.creeper.host/Sponge/maven'}
     //maven{url="https://minecraft.curseforge.com/api/maven/"}
 
-    //maven{url='file://C:/games/mc_modding/imm_ptl_forge/OptiFine_1.14.4_HD_U_F5.jar'}
-//    flatDir {
-//        dirs 'myof'
-//    }
 
+
+    flatDir {
+        dirs 'deps'
+    }
 }
 
 apply plugin: 'org.spongepowered.mixin'

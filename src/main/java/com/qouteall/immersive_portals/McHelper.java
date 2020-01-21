@@ -77,6 +77,9 @@ public class McHelper {
     }
     
     public static MinecraftServer getServer() {
+        if (Helper.refMinecraftServer == null) {
+            return null;
+        }
         return Helper.refMinecraftServer.get();
     }
     
