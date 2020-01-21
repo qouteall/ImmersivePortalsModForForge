@@ -69,6 +69,7 @@ public class ClientTeleportationManager {
             if (lastPlayerHeadPos != null) {
                 if (lastPlayerHeadPos.squareDistanceTo(currentHeadPos) > 100) {
                     Helper.err("The Player is Moving Too Fast!");
+    
                 }
                 CHelper.getClientNearbyPortals(20).filter(
                     portal -> {
@@ -119,8 +120,8 @@ public class ClientTeleportationManager {
     
             changePlayerDimension(player, fromWorld, toWorld, newPos);
         }
-        
-        player.setPosition(newPos.x, newPos.y, newPos.z);
+    
+    
         McHelper.setPosAndLastTickPos(player, newPos, newLastTickPos);
     
         NetworkMain.sendToServer(new CtsTeleport(
@@ -181,6 +182,7 @@ public class ClientTeleportationManager {
         player.posX = destination.x;
         player.posY = destination.y;
         player.posZ = destination.z;
+        player.setPosition(destination.x, destination.y, destination.z);//update bounding box
     
         toWorld.addPlayer(player.getEntityId(), player);
     

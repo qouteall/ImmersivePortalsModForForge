@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.qouteall.immersive_portals.DimensionSyncManager;
+import com.qouteall.immersive_portals.alternate_dimension.AlternateDimensionEntry;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.dimension.DimensionType;
@@ -15,15 +16,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = DimensionManager.class, remap = false)
 public class
 MixinForgeDimensionManager {
-    //Don't let Forge unload vanilla dimension
-    //If Forge unloads nether when nether portal searching is running then it will froze
+    //Forge is trying to unload my alternate dimension again and again
+    //avoid log spam
     @Inject(
         method = "canUnloadWorld",
         at = @At("HEAD"),
         cancellable = true
     )
     private static void onCanUnloadWorld(ServerWorld world, CallbackInfoReturnable<Boolean> cir) {
-        if (world.dimension.getType().isVanilla()) {
+        
+        DimensionType type = world.dimension.getType();
+        if (type.isVanilla() || type.getModType() instanceof AlternateDimensionEntry) {
             cir.setReturnValue(false);
             cir.cancel();
         }

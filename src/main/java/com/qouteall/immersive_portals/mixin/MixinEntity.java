@@ -90,14 +90,16 @@ public abstract class MixinEntity implements IEEntity {
         )
     )
     private Vec3d redirectHandleCollisions(Entity entity, Vec3d attemptedMove) {
-        if (attemptedMove.lengthSquared() > 16) {
-            return getAllowedMovement(attemptedMove);
+        if (attemptedMove.lengthSquared() > 256) {
+            Helper.err(entity + " moved too fast " + attemptedMove);
+            return attemptedMove;
+            //return getAllowedMovement(attemptedMove);
         }
-        
+    
         if (collidingPortal == null) {
             return getAllowedMovement(attemptedMove);
         }
-        
+    
         if (entity.isBeingRidden() || entity.isPassenger()) {
             return getAllowedMovement(attemptedMove);
         }

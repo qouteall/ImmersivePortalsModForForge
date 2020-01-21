@@ -16,7 +16,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '0.12'
+version = '0.13'
 group = 'com.qouteall.immersive_portals' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'immersive-portals'
 
@@ -122,7 +122,8 @@ dependencies {
 
     //compile fg.deobf("ignored:BetterFoliage-2.5.0-Forge-1.14.4")
     //compile fg.deobf("ignored:MyMod-1.14.4:1.0")
-    //compile fg.deobf("ignored:good-nights-sleep-1.14.4-1.0.1")
+    compile fg.deobf("ignored:good-nights-sleep-1.14.4:1.0.1")
+
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..

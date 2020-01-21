@@ -131,6 +131,30 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
         }
     }
     
+    @Inject(
+        method = "teleport",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/server/ServerWorld;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;Z)V"
+        )
+    )
+    private void onForgeTeleport(
+        ServerWorld p_200619_1_,
+        double x,
+        double y,
+        double z,
+        float yaw,
+        float pitch,
+        CallbackInfo ci
+    ) {
+        ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
+        
+        //fix issue with good nights sleep
+        player.clearBedPosition();
+        
+        SGlobal.chunkTrackingGraph.onPlayerRespawn(player);
+    }
+    
     @Override
     public void setIsInTeleportationState(boolean arg) {
         invulnerableDimensionChange = arg;
