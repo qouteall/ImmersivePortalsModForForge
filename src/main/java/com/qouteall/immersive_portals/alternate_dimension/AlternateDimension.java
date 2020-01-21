@@ -172,7 +172,6 @@ public class AlternateDimension extends Dimension {
         }
     }
     
-    @OnlyIn(Dist.CLIENT)
     @Override
     public void updateWeather(Runnable defaultLogic) {
         ServerWorld overWorld = McHelper.getServer().getWorld(DimensionType.OVERWORLD);

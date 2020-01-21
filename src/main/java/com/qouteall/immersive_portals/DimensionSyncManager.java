@@ -17,7 +17,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 //Client and server may have different integer ids for the same dimension
 //So we need to sync them
@@ -176,12 +179,12 @@ public class DimensionSyncManager {
             }
             else {
                 object = foundExistingObject;
-                Helper.log("Use Captured Existing DimensionType Object " + foundExistingObject);
+                Helper.log("Use Captured Existing DimensionType Object");
             }
             
             if (object == null) {
                 Helper.err(
-                    "Failed to Re-register Mod Dimension " +
+                    "Failed to Re-register Mod Dimension Type " +
                         myEntry.modDimensionName + " . Skipped."
                 );
                 return;
@@ -228,6 +231,56 @@ public class DimensionSyncManager {
             );
         
             Helper.log("Dimension Info Updating Packet Sent");
+        }
+    }
+    
+    private static Set<DimensionType> serverSideDimensionTypesBefore;
+    
+    public static void beforeServerReadDimensionRegistry() {
+        serverSideDimensionTypesBefore =
+            Registry.DIMENSION_TYPE.stream().collect(Collectors.toSet());
+        Helper.log("Collected Registered Dimension Types Before Server Reading Dimension Registry\n" +
+            Helper.myToString(serverSideDimensionTypesBefore.stream()));
+    }
+    
+    public static void afterServerReadDimensionRegistry() {
+        serverSideDimensionTypesBefore.forEach(dimensionType -> {
+            if (dimensionType.isVanilla()) {
+                return;
+            }
+            
+            ClearableRegistry<DimensionType> registry =
+                (ClearableRegistry<DimensionType>) Registry.DIMENSION_TYPE;
+            
+            ResourceLocation preCaptureName = dimensionType.getRegistryName();
+            
+            if (preCaptureName == null) {
+                Helper.log("Found Dimension Type with No Pre-Capture Name " + dimensionType.getId());
+                return;
+            }
+            
+            if (!registry.containsKey(preCaptureName)) {
+                Helper.log("Lost Dimension Type " + preCaptureName);
+                int intId = getAvailableIntegerId(registry);
+                Helper.log("Got available id " + intId);
+                ((IEDimensionType) dimensionType).setRegistryIntegerId(intId);
+                registry.register(intId, preCaptureName, dimensionType);
+                Helper.log("Registered Lost Dimension Type\n" + getRegistryInfo());
+            }
+        });
+        
+        serverSideDimensionTypesBefore = null;
+    }
+    
+    private static int getAvailableIntegerId(ClearableRegistry<DimensionType> registry) {
+        OptionalInt first = IntStream.iterate(1, i -> i + 1)
+            .filter(i -> registry.getByValue(i) == null)
+            .findFirst();
+        if (first.isPresent()) {
+            return first.getAsInt();
+        }
+        else {
+            throw new IllegalStateException(">_>");
         }
     }
 }

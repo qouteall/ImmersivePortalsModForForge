@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.mixin;
 
 import com.qouteall.immersive_portals.DimensionSyncManager;
 import com.qouteall.immersive_portals.alternate_dimension.AlternateDimensionEntry;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.dimension.DimensionType;
@@ -11,6 +12,7 @@ import net.minecraftforge.common.ModDimension;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = DimensionManager.class, remap = false)
@@ -46,5 +48,21 @@ MixinForgeDimensionManager {
     ) {
         DimensionType newDimensionType = cir.getReturnValue();
         DimensionSyncManager.onDimensionRegisteredAtRuntimeAtServer(newDimensionType);
+    }
+    
+    @Inject(
+        method = "readRegistry",
+        at = @At("HEAD")
+    )
+    private static void onStartReadingRegistry(CompoundNBT data, CallbackInfo ci) {
+        DimensionSyncManager.beforeServerReadDimensionRegistry();
+    }
+    
+    @Inject(
+        method = "readRegistry",
+        at = @At("RETURN")
+    )
+    private static void onAfterReadingRegistry(CompoundNBT data, CallbackInfo ci) {
+        DimensionSyncManager.afterServerReadDimensionRegistry();
     }
 }
