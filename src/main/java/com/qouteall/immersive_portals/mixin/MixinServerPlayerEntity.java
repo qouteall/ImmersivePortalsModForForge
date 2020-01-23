@@ -5,6 +5,7 @@ import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEServerPlayerEntity;
 import com.qouteall.immersive_portals.network.NetworkMain;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -143,6 +144,8 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
         player.clearBedPosition();
     
         NewChunkTrackingGraph.forceRemovePlayer(player);
+    
+        GlobalPortalStorage.onPlayerLoggedIn(player);
     }
     
     @Override

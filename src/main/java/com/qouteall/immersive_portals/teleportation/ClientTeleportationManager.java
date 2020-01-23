@@ -111,17 +111,17 @@ public class ClientTeleportationManager {
         
         Vec3d newPos = portal.applyTransformationToPoint(oldPos);
         Vec3d newLastTickPos = portal.applyTransformationToPoint(Helper.lastTickPosOf(player));
-        
+    
         ClientWorld fromWorld = mc.world;
         DimensionType fromDimension = fromWorld.dimension.getType();
-        
+    
         if (fromDimension != toDimension) {
             ClientWorld toWorld = CGlobal.clientWorldLoader.getOrCreateFakedWorld(toDimension);
-    
+        
             changePlayerDimension(player, fromWorld, toWorld, newPos);
         }
     
-    
+        player.setPosition(newPos.x, newPos.y, newPos.z);
         McHelper.setPosAndLastTickPos(player, newPos, newLastTickPos);
     
         NetworkMain.sendToServer(new CtsTeleport(
@@ -129,7 +129,7 @@ public class ClientTeleportationManager {
             oldPos,
             portal.getUniqueID()
         ));
-        
+    
         amendChunkEntityStatus(player);
     }
     
