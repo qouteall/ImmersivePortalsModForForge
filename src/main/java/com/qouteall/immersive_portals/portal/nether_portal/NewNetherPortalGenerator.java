@@ -147,6 +147,7 @@ public class NewNetherPortalGenerator {
                 finishGeneratingPortal(new Info(
                     fromDimension, toDimension, fromShape, toShape
                 ));
+                indicatorEntity.remove();
             },
             () -> {
                 indicatorEntity.setText(
@@ -169,10 +170,11 @@ public class NewNetherPortalGenerator {
                     toShape.frameAreaWithCorner.forEach(blockPos ->
                         toWorld.setBlockState(blockPos, Blocks.OBSIDIAN.getDefaultState())
                     );
-        
+    
                     finishGeneratingPortal(new Info(
                         fromDimension, toDimension, fromShape, toShape
                     ));
+                    indicatorEntity.remove();
         
                     return true;
                 });

@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals.portal;
 
-import com.qouteall.immersive_portals.McHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
@@ -12,7 +11,6 @@ import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkHooks;
 
-//it's client only
 public class LoadingIndicatorEntity extends Entity {
     public static EntityType<LoadingIndicatorEntity> entityType;
     private static final DataParameter<String> text = EntityDataManager.createKey(
@@ -33,10 +31,6 @@ public class LoadingIndicatorEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-    
-        if (McHelper.getEntitiesNearby(this, Portal.class, 1).findAny().isPresent()) {
-            this.remove();
-        }
     
         if (!world.isRemote) {
             if (!isAlive) {
