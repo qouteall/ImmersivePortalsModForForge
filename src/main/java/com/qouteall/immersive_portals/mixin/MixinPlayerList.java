@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.qouteall.immersive_portals.DimensionSyncManager;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
@@ -28,7 +29,10 @@ public class MixinPlayerList {
     
     @Inject(
         method = "recreatePlayerEntity",
-        at = @At("HEAD")
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/server/management/PlayerList;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;)Z"
+        )
     )
     private void onPlayerRespawn(
         ServerPlayerEntity oldPlayer,
@@ -36,6 +40,10 @@ public class MixinPlayerList {
         boolean boolean_1,
         CallbackInfoReturnable<ServerPlayerEntity> cir
     ) {
+        if (oldPlayer.dimension == dimensionType_1) {
+            Helper.log("Avoided refreshing chunk visibility for player");
+            return;
+        }
         SGlobal.chunkDataSyncManager.onPlayerRespawn(oldPlayer);
     }
     

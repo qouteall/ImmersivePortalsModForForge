@@ -15,6 +15,7 @@
     "MixinFlintAndSteelItem",
     "MixinForgeDimensionManager",
     "MixinForgeNetworkHooks",
+    "MixinFrameTimer",
     "MixinMinecraftServer",
     "MixinNetherPortalBlock",
     "MixinPlayerList",

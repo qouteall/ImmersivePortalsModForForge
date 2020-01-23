@@ -123,7 +123,7 @@ dependencies {
     //compile fg.deobf("ignored:BetterFoliage-2.5.0-Forge-1.14.4")
     //compile fg.deobf("ignored:MyMod-1.14.4:1.0")
     //compile fg.deobf("ignored:good-nights-sleep-1.14.4:1.0.1")
-    compile fg.deobf("ignored:TofuCraftReload-1.14.4:0.0.9.5")
+    //compile fg.deobf("ignored:TofuCraftReload-1.14.4:0.0.9.5")
 
 }
 

@@ -7,14 +7,17 @@ import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.mojang.datafixers.DataFixer;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.SGlobal;
+import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
 import net.minecraft.command.Commands;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerProfileCache;
+import net.minecraft.util.FrameTimer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.listener.IChunkStatusListenerFactory;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -26,6 +29,9 @@ import java.util.function.BooleanSupplier;
 
 @Mixin(value = MinecraftServer.class)
 public class MixinMinecraftServer implements IEMinecraftServer {
+    @Shadow
+    @Final
+    private FrameTimer frameTimer;
     private boolean portal_areAllWorldsLoaded;
     
     @Inject(
@@ -62,7 +68,7 @@ public class MixinMinecraftServer implements IEMinecraftServer {
         at = @At("RETURN")
     )
     private void onServerClose(CallbackInfo ci) {
-        SGlobal.chunkTrackingGraph.cleanUp();
+        NewChunkTrackingGraph.cleanup();
         ModMain.serverTaskList.forceClearTasks();
     }
     
@@ -84,5 +90,10 @@ public class MixinMinecraftServer implements IEMinecraftServer {
     @Override
     public boolean portal_getAreAllWorldsLoaded() {
         return portal_areAllWorldsLoaded;
+    }
+    
+    @Override
+    public FrameTimer getMetricsDataNonClientOnly() {
+        return frameTimer;
     }
 }

@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.google.common.collect.Streams;
-import com.qouteall.immersive_portals.SGlobal;
+import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEChunkHolder;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.network.NetworkMain;
@@ -33,18 +32,17 @@ public class MixinChunkHolder implements IEChunkHolder {
     private void sendToTracking(IPacket<?> packet_1, boolean boolean_1) {
         DimensionType dimension =
             ((IEThreadedAnvilChunkStorage) playerProvider).getWorld().dimension.getType();
-        
-        Streams.concat(
-            this.playerProvider.getTrackingPlayers(
-                this.pos, boolean_1
-            ),
-            SGlobal.chunkTrackingGraph.getPlayersViewingChunk(dimension, pos)
-        ).distinct().forEach(player ->
+    
+        NewChunkTrackingGraph.getPlayersViewingChunk(
+            dimension, pos.x, pos.z
+        ).forEach(player ->
             NetworkMain.sendRedirected(
-                player, dimension, packet_1
+                player,
+                dimension,
+                packet_1
             )
         );
-        
+    
     }
     
 }

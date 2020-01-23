@@ -200,4 +200,12 @@ public class McHelper {
             );
         }
     }
+    
+    public static ServerWorld getOverWorldOnServer() {
+        return getServer().getWorld(DimensionType.OVERWORLD);
+    }
+    
+    public static int getRenderDistanceOnServer() {
+        return getIEStorage(DimensionType.OVERWORLD).getWatchDistance();
+    }
 }

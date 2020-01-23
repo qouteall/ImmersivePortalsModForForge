@@ -10,31 +10,36 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.dimension.DimensionType;
 
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class ChunkVisibilityManager {
+    public static final int portalLoadingRange = 48;
+    public static final int secondaryPortalLoadingRange = 16;
+    
+    public static interface ChunkPosConsumer {
+        void consume(DimensionType dimensionType, int x, int z, int distanceToSource);
+    }
+    
     //the players and portals are chunk loaders
     public static class ChunkLoader {
         public DimensionalChunkPos center;
         public int radius;
-    
+        
         public ChunkLoader(DimensionalChunkPos center, int radius) {
             this.center = center;
             this.radius = radius;
         }
         
-        public void foreachChunkPos(Consumer<DimensionalChunkPos> func) {
+        public void foreachChunkPos(ChunkPosConsumer func) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
-                    func.accept(new DimensionalChunkPos(
+                    func.consume(
                         center.dimension,
                         center.x + dx,
-                        center.z + dz
-                    ));
+                        center.z + dz,
+                        Math.max(Math.abs(dx), Math.abs(dz))
+                    );
                 }
             }
         }
@@ -152,7 +157,7 @@ public class ChunkVisibilityManager {
             McHelper.getEntitiesNearby(
                 player,
                 Portal.class,
-                ChunkTrackingGraph.portalLoadingRange
+                portalLoadingRange
             ).filter(
                 portal -> portal.canBeSeenByPlayer(player)
             ).flatMap(
@@ -163,7 +168,7 @@ public class ChunkVisibilityManager {
                         McHelper.getServer().getWorld(portal.dimensionTo),
                         portal.destination,
                         Portal.class,
-                        ChunkTrackingGraph.secondaryPortalLoadingRange
+                        secondaryPortalLoadingRange
                     ).filter(
                         remotePortal -> remotePortal.canBeSeenByPlayer(player)
                     ).map(
@@ -197,17 +202,6 @@ public class ChunkVisibilityManager {
                     )
                 )
         ).distinct();
-    }
-    
-    public static Set<DimensionalChunkPos> getPlayerViewingChunksNew(
-        ServerPlayerEntity player
-    ) {
-        HashSet<DimensionalChunkPos> chunks = new HashSet<>();
-        getChunkLoaders(player)
-            .forEach(
-                loader -> loader.foreachChunkPos(chunks::add)
-            );
-        return chunks;
     }
     
     public static int getRenderDistanceOnServer() {

@@ -1,25 +1,17 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.google.common.collect.Lists;
-import com.qouteall.immersive_portals.ModMain;
+import com.mojang.datafixers.util.Either;
 import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
-import com.qouteall.immersive_portals.network.NetworkMain;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.DebugPacketSender;
 import net.minecraft.network.IPacket;
-import net.minecraft.network.play.server.SChunkDataPacket;
-import net.minecraft.network.play.server.SMountEntityPacket;
-import net.minecraft.network.play.server.SSetPassengersPacket;
-import net.minecraft.network.play.server.SUpdateLightPacket;
+import net.minecraft.util.concurrent.ITaskExecutor;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkTaskPriorityQueueSorter;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ChunkManager;
 import net.minecraft.world.server.ServerWorld;
@@ -30,10 +22,14 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 @Mixin(value = ChunkManager.class)
 public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
@@ -64,6 +60,14 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
     @Shadow
     private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> immutableLoadedChunks;
     
+    @Shadow
+    @Final
+    private AtomicInteger field_219268_v;
+    
+    @Shadow
+    @Final
+    private ITaskExecutor<ChunkTaskPriorityQueueSorter.FunctionEntry<Runnable>> field_219265_s;
+    
     @Override
     public int getWatchDistance() {
         return viewDistance;
@@ -86,7 +90,7 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
     
     /**
      * @author qouteall
-     * @reason overwriting is easier than injecting
+     * @reason
      */
     @Overwrite
     public void sendChunkData(
@@ -94,95 +98,7 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
         IPacket<?>[] packets_1,
         Chunk worldChunk_1
     ) {
-        //vanilla will not manage inter dimensional chunk loading
-        if (player.dimension != world.dimension.getType()) {
-            return;
-        }
-        
-        DimensionalChunkPos chunkPos = new DimensionalChunkPos(
-            world.dimension.getType(), worldChunk_1.getPos()
-        );
-        boolean isChunkDataSent = SGlobal.chunkTrackingGraph.isChunkDataSent(player, chunkPos);
-        if (isChunkDataSent) {
-            return;
-        }
-    
-        ModMain.serverTaskList.addTask(() -> {
-            SGlobal.chunkTrackingGraph.onChunkDataSent(player, chunkPos);
-            return true;
-        });
-        
-        if (packets_1[0] == null) {
-            packets_1[0] = NetworkMain.getRedirectedPacket(
-                world.dimension.getType(),
-                new SChunkDataPacket(worldChunk_1, 65535)
-            );
-            packets_1[1] = NetworkMain.getRedirectedPacket(
-                world.dimension.getType(),
-                new SUpdateLightPacket(
-                    worldChunk_1.getPos(),
-                    this.lightManager
-                )
-            );
-        }
-    
-        player.sendChunkLoad(
-            worldChunk_1.getPos(),
-            packets_1[0],
-            packets_1[1]
-        );
-    
-        DebugPacketSender.sendChuckPos(this.world, worldChunk_1.getPos());
-        List<Entity> list_1 = Lists.newArrayList();
-        List<Entity> list_2 = Lists.newArrayList();
-        ObjectIterator var6 = this.entities.values().iterator();
-        
-        while (var6.hasNext()) {
-            IEEntityTracker threadedAnvilChunkStorage$EntityTracker_1 = (IEEntityTracker) var6.next();
-            Entity entity_1 = threadedAnvilChunkStorage$EntityTracker_1.getEntity_();
-            if (entity_1 != player && entity_1.chunkCoordX == worldChunk_1.getPos().x && entity_1.chunkCoordZ == worldChunk_1.getPos().z) {
-                threadedAnvilChunkStorage$EntityTracker_1.updateCameraPosition_(player);
-                if (entity_1 instanceof MobEntity && ((MobEntity) entity_1).getLeashHolder() != null) {
-                    list_1.add(entity_1);
-                }
-        
-                if (!entity_1.getPassengers().isEmpty()) {
-                    list_2.add(entity_1);
-                }
-            }
-        }
-        
-        Iterator var9;
-        Entity entity_3;
-        if (!list_1.isEmpty()) {
-            var9 = list_1.iterator();
-            
-            while (var9.hasNext()) {
-                entity_3 = (Entity) var9.next();
-                NetworkMain.sendRedirected(
-                    player,
-                    world.getDimension().getType(),
-                    new SMountEntityPacket(
-                        entity_3,
-                        ((MobEntity) entity_3).getLeashHolder()
-                    )
-                );
-    
-            }
-        }
-        
-        if (!list_2.isEmpty()) {
-            var9 = list_2.iterator();
-            
-            while (var9.hasNext()) {
-                entity_3 = (Entity) var9.next();
-                NetworkMain.sendRedirected(
-                    player,
-                    world.getDimension().getType(),
-                    new SSetPassengersPacket(entity_3)
-                );
-            }
-        }
+        //chunk data packet will be sent on ChunkDataSyncManager
     }
     
     @Inject(
@@ -200,6 +116,51 @@ public abstract class MixinChunkManager implements IEThreadedAnvilChunkStorage {
                 ci.cancel();
             }
         }
+    }
+    
+    
+    //cancel vanilla packet sending
+    @Redirect(
+        method = "func_219179_a",
+        at = @At(
+            value = "INVOKE",
+            target = "Ljava/util/concurrent/CompletableFuture;thenAcceptAsync(Ljava/util/function/Consumer;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"
+        )
+    )
+    private CompletableFuture<Void> redirectThenAcceptAsync(
+        CompletableFuture completableFuture,
+        Consumer<?> action,
+        Executor executor
+    ) {
+        return null;
+    }
+    
+    //do my packet sending
+    @Inject(
+        method = "func_219179_a",
+        at = @At("RETURN"),
+        cancellable = true
+    )
+    private void onCreateTickingFuture(
+        ChunkHolder chunkHolder,
+        CallbackInfoReturnable<CompletableFuture<Either<Chunk, ChunkHolder.IChunkLoadingError>>> cir
+    ) {
+        CompletableFuture<Either<Chunk, ChunkHolder.IChunkLoadingError>> future = cir.getReturnValue();
+        
+        future.thenAcceptAsync((either) -> {
+            either.mapLeft((worldChunk) -> {
+                this.field_219268_v.getAndIncrement();
+                
+                SGlobal.chunkDataSyncManager.onChunkProvidedDeferred(worldChunk);
+                
+                return Either.left(worldChunk);
+            });
+        }, (runnable) -> {
+            this.field_219265_s.enqueue(ChunkTaskPriorityQueueSorter.func_219081_a(
+                chunkHolder,
+                runnable
+            ));
+        });
     }
     
     @Override

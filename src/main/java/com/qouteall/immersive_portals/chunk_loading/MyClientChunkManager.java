@@ -117,8 +117,6 @@ public class MyClientChunkManager extends ClientChunkProvider {
             );
             chunk.read(packetByteBuf_1, compoundTag_1, mask, isFullChunk);
             chunkMap.put(chunkPos, chunk);
-    
-            world.onChunkUnloaded(chunk);//TODO wrong?
         }
         else {
             if (isFullChunk) {
