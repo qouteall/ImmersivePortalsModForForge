@@ -116,11 +116,6 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     
     @Override
     public void tick() {
-        if (boundingBoxCache == null) {
-            boundingBoxCache = getPortalCollisionBox();
-        }
-        setBoundingBox(boundingBoxCache);
-        
         if (world.isRemote) {
             clientPortalTickSignal.emit(this);
         }
@@ -200,6 +195,14 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         }
     }
     
+    @Override
+    public AxisAlignedBB getBoundingBox() {
+        if (boundingBoxCache == null) {
+            boundingBoxCache = getPortalCollisionBox();
+        }
+        return boundingBoxCache;
+    }
+    
     public double getDistanceToPlane(
         Vec3d pos
     ) {
@@ -216,14 +219,12 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         if (anotherPortal.dimension != dimensionTo) {
             return false;
         }
-        double v = anotherPortal.getPositionVec().subtract(destination).dotProduct(
-            getContentDirection());
-        return v > 0.5;
+        return canRenderEntityInsideMe(anotherPortal.getPositionVec(), 0.5);
     }
     
-    public boolean canRenderEntityInsideMe(Vec3d entityPos) {
+    public boolean canRenderEntityInsideMe(Vec3d entityPos, double valve) {
         double v = entityPos.subtract(destination).dotProduct(getContentDirection());
-        return v > -0.01;
+        return v > valve;
     }
     
     public Vec3d getPointInPlane(double xInPlane, double yInPlane) {

@@ -60,9 +60,16 @@ public abstract class PortalRenderer {
     }
     
     public boolean shouldRenderPlayerItself() {
-        return isRendering() &&
-            mc.renderViewEntity.dimension == MyRenderHelper.originalPlayerDimension &&
-            getRenderingPortal().canRenderEntityInsideMe(MyRenderHelper.originalPlayerPos);
+        if (!isRendering()) {
+            return false;
+        }
+        if (mc.renderViewEntity.dimension != MyRenderHelper.originalPlayerDimension) {
+            return false;
+        }
+        return getRenderingPortal().canRenderEntityInsideMe(
+            MyRenderHelper.originalPlayerPos.add(0, mc.renderViewEntity.getEyeHeight(), 0),
+            0.5
+        );
     }
     
     public boolean shouldRenderEntityNow(Entity entity) {
@@ -70,7 +77,7 @@ public abstract class PortalRenderer {
             return true;
         }
         if (isRendering()) {
-            return getRenderingPortal().canRenderEntityInsideMe(entity.getPositionVec());
+            return getRenderingPortal().canRenderEntityInsideMe(entity.getPositionVec(), -0.01);
         }
         return true;
     }

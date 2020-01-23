@@ -96,4 +96,9 @@ public class CHelper {
             reportedErrorNum++;
         }
     }
+    
+    public static List<GlobalTrackedPortal> getClientGlobalPortal(World world) {
+        List<GlobalTrackedPortal> globalPortals = ((IEClientWorld) world).getGlobalPortals();
+        return globalPortals;
+    }
 }

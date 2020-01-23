@@ -208,4 +208,13 @@ public class McHelper {
     public static int getRenderDistanceOnServer() {
         return getIEStorage(DimensionType.OVERWORLD).getWatchDistance();
     }
+    
+    public static List<GlobalTrackedPortal> getGlobalPortals(World world) {
+        if (world.isRemote) {
+            return CHelper.getClientGlobalPortal(world);
+        }
+        else {
+            return GlobalPortalStorage.get(((ServerWorld) world)).data;
+        }
+    }
 }
