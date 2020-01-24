@@ -29,8 +29,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
-
 public class Helper {
     
     private static final Logger LOGGER = LogManager.getContext(
@@ -280,20 +278,6 @@ public class Helper {
                 e.printStackTrace();
             }
         };
-    }
-    
-    private static int reportedErrorNum = 0;
-    
-    public static void checkGlError() {
-        if (reportedErrorNum > 100) {
-            return;
-        }
-        int errorCode = GL11.glGetError();
-        if (errorCode != GL_NO_ERROR) {
-            Helper.err("OpenGL Error" + errorCode);
-            new Throwable().printStackTrace();
-            reportedErrorNum++;
-        }
     }
     
     public static ServerWorld getOverWorldOnServer() {

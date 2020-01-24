@@ -39,8 +39,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
     private final WorldLightManager lightingProvider;
     private final ClientWorld world;
     
-    //its performance is a little lower than vanilla
-    //but this is indispensable
+    //TODO use Long2ObjectMaps.SynchronizedMap
     private ConcurrentHashMap<ChunkPos, Chunk> chunkMap = new ConcurrentHashMap<>();
     
     public MyClientChunkManager(ClientWorld clientWorld_1, int int_1) {
@@ -74,6 +73,10 @@ public class MyClientChunkManager extends ClientChunkProvider {
         ChunkPos chunkPos = new ChunkPos(int_1, int_2);
         Chunk chunk = chunkMap.get(chunkPos);
         if (isChunkValid(chunk, int_1, int_2)) {
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+                new net.minecraftforge.event.world.ChunkEvent.Unload(chunk)
+            );
+    
             chunkMap.remove(chunkPos);
             world.onChunkUnloaded(chunk);
         }
@@ -114,8 +117,6 @@ public class MyClientChunkManager extends ClientChunkProvider {
             );
             chunk.read(packetByteBuf_1, compoundTag_1, mask, isFullChunk);
             chunkMap.put(chunkPos, chunk);
-    
-            world.onChunkUnloaded(chunk);//TODO wrong?
         }
         else {
             if (isFullChunk) {
@@ -131,7 +132,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
         ChunkSection[] chunkSections_1 = chunk.getSections();
         WorldLightManager lightingProvider_1 = this.getLightManager();
         lightingProvider_1.func_215571_a(new ChunkPos(x, z), true);
-        
+    
         for (int int_5 = 0; int_5 < chunkSections_1.length; ++int_5) {
             ChunkSection chunkSection_1 = chunkSections_1[int_5];
             lightingProvider_1.updateSectionStatus(
@@ -139,7 +140,11 @@ public class MyClientChunkManager extends ClientChunkProvider {
                 ChunkSection.isEmpty(chunkSection_1)
             );
         }
-        
+    
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+            new net.minecraftforge.event.world.ChunkEvent.Load(chunk)
+        );
+    
         return chunk;
     }
     
@@ -163,7 +168,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
     
     @Override
     public String makeString() {
-        return "Hacked Client Chunk Manager " + chunkMap.size();
+        return "ImmPortal Client Chunk " + chunkMap.size();
     }
     
     @Override

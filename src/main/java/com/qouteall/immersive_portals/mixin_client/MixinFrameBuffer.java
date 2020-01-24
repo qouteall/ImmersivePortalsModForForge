@@ -1,8 +1,9 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.platform.GLX;
-import com.qouteall.immersive_portals.ducks.IEGlFrameBuffer;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ducks.IEGlFrameBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -67,11 +68,11 @@ public abstract class MixinFrameBuffer implements IEGlFrameBuffer {
             this_.checkFramebufferComplete();
             this_.framebufferClear(isMac);
             this_.unbindFramebuffer();
-        
-            Helper.checkGlError();
-        
+    
+            CHelper.checkGlError();
+    
             Helper.log("Frame Buffer Reloaded with Stencil Buffer");
-        
+    
             ci.cancel();
         }
     }

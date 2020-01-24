@@ -18,7 +18,6 @@ import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 import java.util.UUID;
-import java.util.stream.Stream;
 
 public class Portal extends Entity implements IEntityAdditionalSpawnData {
     public static EntityType<Portal> entityType;
@@ -47,17 +46,6 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         super(entityType_1, world_1);
     }
     
-    public Stream<Entity> getEntitiesToTeleport() {
-        return world.getEntitiesWithinAABB(
-            Entity.class,
-            getPortalCollisionBox()
-        ).stream().filter(
-            e -> !(e instanceof Portal)
-        ).filter(
-            this::shouldEntityTeleport
-        );
-    }
-    
     @Override
     protected void registerData() {
         //do nothing
@@ -84,6 +72,9 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
             specialShape = new SpecialPortalShape(
                 compoundTag.getList("specialShape", 6)
             );
+            if (specialShape.triangles.isEmpty()) {
+                specialShape = null;
+            }
         }
     }
     
@@ -125,11 +116,6 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     
     @Override
     public void tick() {
-        if (boundingBoxCache == null) {
-            boundingBoxCache = getPortalCollisionBox();
-        }
-        setBoundingBox(boundingBoxCache);
-        
         if (world.isRemote) {
             clientPortalTickSignal.emit(this);
         }
@@ -209,6 +195,14 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         }
     }
     
+    @Override
+    public AxisAlignedBB getBoundingBox() {
+        if (boundingBoxCache == null) {
+            boundingBoxCache = getPortalCollisionBox();
+        }
+        return boundingBoxCache;
+    }
+    
     public double getDistanceToPlane(
         Vec3d pos
     ) {
@@ -225,14 +219,12 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         if (anotherPortal.dimension != dimensionTo) {
             return false;
         }
-        double v = anotherPortal.getPositionVec().subtract(destination).dotProduct(
-            getContentDirection());
-        return v > 0.5;
+        return canRenderEntityInsideMe(anotherPortal.getPositionVec(), 0.5);
     }
     
-    public boolean canRenderEntityInsideMe(Vec3d entityPos) {
+    public boolean canRenderEntityInsideMe(Vec3d entityPos, double valve) {
         double v = entityPos.subtract(destination).dotProduct(getContentDirection());
-        return v > -0.01;
+        return v > valve;
     }
     
     public Vec3d getPointInPlane(double xInPlane, double yInPlane) {
@@ -282,9 +274,12 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     @Override
     public String toString() {
         return String.format(
-            "%s{%s,(%s %s %s %s)->(%s %s %s %s)}",
+            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)}",
             getClass().getSimpleName(),
             getEntityId(),
+            Direction.getFacingFromVector(
+                getNormal().x, getNormal().y, getNormal().z
+            ),
             dimension, (int) posX, (int) posY, (int) posZ,
             dimensionTo, (int) destination.x, (int) destination.y, (int) destination.z
         );
@@ -358,6 +353,11 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     public Vec3d applyTransformationToPoint(Vec3d pos) {
         Vec3d offset = destination.subtract(getPositionVec());
         return pos.add(offset);
+    }
+    
+    public Vec3d reverseTransformPoint(Vec3d pos) {
+        Vec3d offset = destination.subtract(getPositionVec());
+        return pos.subtract(offset);
     }
     
     public Vec3d getCullingPoint() {

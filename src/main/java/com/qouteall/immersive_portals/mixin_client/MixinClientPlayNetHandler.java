@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.mixin_client;
 
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEPlayerPositionLookS2CPacket;
 import net.minecraft.client.Minecraft;
@@ -71,6 +72,7 @@ public class MixinClientPlayNetHandler implements IEClientPlayNetworkHandler {
             if (world.dimension != null) {
                 if (world.dimension.getType() != playerDimension) {
                     if (!Minecraft.getInstance().player.removed) {
+                        Helper.log("Position packet rejected");
                         ci.cancel();
                     }
                 }

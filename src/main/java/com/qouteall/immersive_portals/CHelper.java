@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals;
 
 import com.google.common.collect.Streams;
 import com.mojang.brigadier.CommandDispatcher;
+import com.qouteall.immersive_portals.commands.MyCommandClient;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
@@ -10,16 +11,22 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
 import net.minecraft.command.CommandSource;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.lwjgl.opengl.GL11;
 
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
+
 @OnlyIn(Dist.CLIENT)
 public class CHelper {
+    private static int reportedErrorNum = 0;
+    
     public static NetworkPlayerInfo getClientPlayerListEntry() {
         return Minecraft.getInstance().getConnection().getPlayerInfo(
             Minecraft.getInstance().player.getGameProfile().getId()
@@ -60,7 +67,7 @@ public class CHelper {
         else {
             return Streams.concat(
                 globalPortals.stream().filter(
-                    p -> p.getDistanceToNearestPointInPortal(player.getPositionVec()) < range
+                    p -> p.getDistanceToNearestPointInPortal(player.getPositionVec()) < range * 2
                 ),
                 nearbyPortals
             );
@@ -69,5 +76,29 @@ public class CHelper {
     
     public static void initCommandClientOnly(CommandDispatcher<CommandSource> dispatcher) {
         MyCommandClient.register(dispatcher);
+    }
+    
+    public static void printChat(String str) {
+        Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(new StringTextComponent(str));
+    }
+    
+    public static void checkGlError() {
+        if (!CGlobal.doCheckGlError) {
+            return;
+        }
+        if (reportedErrorNum > 100) {
+            return;
+        }
+        int errorCode = GL11.glGetError();
+        if (errorCode != GL_NO_ERROR) {
+            Helper.err("OpenGL Error" + errorCode);
+            new Throwable().printStackTrace();
+            reportedErrorNum++;
+        }
+    }
+    
+    public static List<GlobalTrackedPortal> getClientGlobalPortal(World world) {
+        List<GlobalTrackedPortal> globalPortals = ((IEClientWorld) world).getGlobalPortals();
+        return globalPortals;
     }
 }

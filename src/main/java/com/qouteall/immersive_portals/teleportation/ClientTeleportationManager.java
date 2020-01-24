@@ -67,9 +67,12 @@ public class ClientTeleportationManager {
         if (mc.world != null && mc.player != null) {
             Vec3d currentHeadPos = mc.player.getEyePosition(MyRenderHelper.partialTicks);
             if (lastPlayerHeadPos != null) {
+                if (lastPlayerHeadPos.squareDistanceTo(currentHeadPos) > 100) {
+                    Helper.err("The Player is Moving Too Fast!");
+        
+                }
                 CHelper.getClientNearbyPortals(20).filter(
                     portal -> {
-                        float eyeHeight = mc.player.getEyeHeight();
                         return mc.player.dimension == portal.dimension &&
                             portal.isTeleportable() &&
                             portal.isMovedThroughPortal(
@@ -78,27 +81,21 @@ public class ClientTeleportationManager {
                             );
                     }
                 ).findFirst().ifPresent(
-                    portal -> onEntityGoInsidePortal(mc.player, portal)
+                    portal -> teleportPlayer(portal)
                 );
             }
     
-            lastPlayerHeadPos = currentHeadPos;
+            //do not use currentHeadPos
+            lastPlayerHeadPos = mc.player.getEyePosition(MyRenderHelper.partialTicks);
         }
         else {
             lastPlayerHeadPos = null;
         }
     }
     
-    private void onEntityGoInsidePortal(Entity entity, Portal portal) {
-        if (entity instanceof ClientPlayerEntity) {
-            assert entity.dimension == portal.dimension;
-            teleportPlayer(portal);
-        }
-    }
-    
     private void teleportPlayer(Portal portal) {
         if (isTeleportingFrequently()) {
-            return;
+            Helper.log("Client Player is teleporting frequently!");
         }
         lastTeleportGameTime = tickTimeForTeleportation;
         
@@ -114,16 +111,16 @@ public class ClientTeleportationManager {
         
         Vec3d newPos = portal.applyTransformationToPoint(oldPos);
         Vec3d newLastTickPos = portal.applyTransformationToPoint(Helper.lastTickPosOf(player));
-        
+    
         ClientWorld fromWorld = mc.world;
         DimensionType fromDimension = fromWorld.dimension.getType();
-        
+    
         if (fromDimension != toDimension) {
             ClientWorld toWorld = CGlobal.clientWorldLoader.getOrCreateFakedWorld(toDimension);
-    
+        
             changePlayerDimension(player, fromWorld, toWorld, newPos);
         }
-        
+    
         player.setPosition(newPos.x, newPos.y, newPos.z);
         McHelper.setPosAndLastTickPos(player, newPos, newLastTickPos);
     
@@ -132,12 +129,12 @@ public class ClientTeleportationManager {
             oldPos,
             portal.getUniqueID()
         ));
-        
+    
         amendChunkEntityStatus(player);
     }
     
     private boolean isTeleportingFrequently() {
-        if (tickTimeForTeleportation - lastTeleportGameTime <= 2) {
+        if (tickTimeForTeleportation - lastTeleportGameTime <= 10) {
             return true;
         }
         else {
@@ -178,13 +175,14 @@ public class ClientTeleportationManager {
         ((IEClientWorld) fromWorld).setNetHandler(fakedNetHandler);
         ((IEClientWorld) toWorld).setNetHandler(workingNetHandler);
     
-        fromWorld.removeEntityFromWorld(player.getEntityId());
-        player.removed = false;
+        ((IEClientWorld) fromWorld).removeEntityWhilstMaintainingCapability(player);
+        player.revive();
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
         player.posX = destination.x;
         player.posY = destination.y;
         player.posZ = destination.z;
+        player.setPosition(destination.x, destination.y, destination.z);//update bounding box
     
         toWorld.addPlayer(player.getEntityId(), player);
     
@@ -208,10 +206,6 @@ public class ClientTeleportationManager {
             toWorld.dimension.getType(),
             tickTimeForTeleportation
         ));
-    
-        Helper.log("Portal Number Near Player Now" +
-            McHelper.getEntitiesNearby(mc.player, Portal.class, 10).count()
-        );
     
         //because the teleportation may happen before rendering
         //but after pre render info being updated

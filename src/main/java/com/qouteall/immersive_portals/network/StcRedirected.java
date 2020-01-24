@@ -14,9 +14,8 @@ import net.minecraft.network.PacketDirection;
 import net.minecraft.network.ProtocolType;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.dimension.DimensionType;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
+import org.apache.commons.lang3.Validate;
 
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -32,6 +31,7 @@ public class StcRedirected {
         IPacket packet
     ) {
         this.dimension = dimensionType;
+        Validate.notNull(dimensionType);
         this.packet = packet;
         try {
             packetId = ProtocolType.PLAY.getPacketId(PacketDirection.CLIENTBOUND, packet);
@@ -64,40 +64,41 @@ public class StcRedirected {
         }
     }
     
-    @OnlyIn(Dist.CLIENT)
-    private static void processRedirectedPacket(DimensionType dimension, IPacket packet) {
+    private static void doProcessRedirectedPacket(
+        DimensionType dimension,
+        IPacket packet
+    ) {
         Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> {
-            ClientWorld packetWorld = CGlobal.clientWorldLoader.getOrCreateFakedWorld(dimension);
-            
-            assert packetWorld != null;
-            
-            assert packetWorld.getChunkProvider() instanceof MyClientChunkManager;
-            
-            ClientPlayNetHandler netHandler = ((IEClientWorld) packetWorld).getNetHandler();
-            
-            if ((netHandler).getWorld() != packetWorld) {
-                ((IEClientPlayNetworkHandler) netHandler).setWorld(packetWorld);
-                Helper.err("The world field of client net handler is wrong");
-            }
-            
-            ClientWorld originalWorld = mc.world;
-            //some packet handling may use mc.world so switch it
-            mc.world = packetWorld;
-            
-            try {
-                packet.processPacket(netHandler);
-            }
-            catch (Throwable e) {
-                throw new IllegalStateException(
-                    "handling packet in " + dimension,
-                    e
-                );
-            }
-            finally {
-                mc.world = originalWorld;
-            }
-        });
+        
+        ClientWorld packetWorld = CGlobal.clientWorldLoader.getOrCreateFakedWorld(dimension);
+        
+        assert packetWorld != null;
+        
+        assert packetWorld.getChunkProvider() instanceof MyClientChunkManager;
+        
+        ClientPlayNetHandler netHandler = ((IEClientWorld) packetWorld).getNetHandler();
+        
+        if ((netHandler).getWorld() != packetWorld) {
+            ((IEClientPlayNetworkHandler) netHandler).setWorld(packetWorld);
+            Helper.err("The world field of client net handler is wrong");
+        }
+        
+        ClientWorld originalWorld = mc.world;
+        //some packet handling may use mc.world so switch it
+        mc.world = packetWorld;
+        
+        try {
+            packet.processPacket(netHandler);
+        }
+        catch (Throwable e) {
+            throw new IllegalStateException(
+                "handling packet in " + dimension,
+                e
+            );
+        }
+        finally {
+            mc.world = originalWorld;
+        }
     }
     
     public void encode(PacketBuffer buf) {
@@ -119,7 +120,7 @@ public class StcRedirected {
             );
         }
     
-        processRedirectedPacket(dimension, packet);
+        context.get().enqueueWork(() -> doProcessRedirectedPacket(dimension, packet));
     
         context.get().setPacketHandled(true);
     }

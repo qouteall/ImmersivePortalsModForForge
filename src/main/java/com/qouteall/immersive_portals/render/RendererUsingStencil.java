@@ -1,8 +1,8 @@
 package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ducks.IEGlFrameBuffer;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
@@ -147,19 +147,19 @@ public class RendererUsingStencil extends PortalRenderer {
         //NOTE about GL_INCR:
         //if multiple triangles occupy the same pixel and passed stencil and depth tests,
         //its stencil value will still increase by one
-        
+    
         GL11.glStencilMask(0xFF);
         GlStateManager.depthMask(true);
-        
+    
         GlStateManager.disableBlend();
     
         GL20.glUseProgram(0);
     
         ViewAreaRenderer.drawPortalViewTriangle(portal);
-        
+    
         GlStateManager.enableBlend();
-        
-        Helper.checkGlError();
+    
+        CHelper.checkGlError();
     }
     
     private void clearDepthOfThePortalViewArea(

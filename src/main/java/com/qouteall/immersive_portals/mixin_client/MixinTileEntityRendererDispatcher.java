@@ -24,7 +24,10 @@ public class MixinTileEntityRendererDispatcher {
     ) {
         if (CGlobal.renderer.isRendering()) {
             Portal renderingPortal = CGlobal.renderer.getRenderingPortal();
-            if (!renderingPortal.canRenderEntityInsideMe(new Vec3d(blockEntity_1.getPos()))) {
+            if (!renderingPortal.canRenderEntityInsideMe(
+                new Vec3d(blockEntity_1.getPos()),
+                -0.01
+            )) {
                 ci.cancel();
             }
         }

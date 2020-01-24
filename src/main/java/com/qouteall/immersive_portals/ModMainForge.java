@@ -1,18 +1,28 @@
 package com.qouteall.immersive_portals;
 
+import com.qouteall.immersive_portals.alternate_dimension.AlternateDimensionEntry;
 import com.qouteall.immersive_portals.portal.*;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
-import com.qouteall.immersive_portals.portal.global_portals.EndFloorPortal;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import net.minecraft.block.Block;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.dimension.DimensionType;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.ModDimension;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.world.RegisterDimensionsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -39,23 +49,28 @@ public class ModMainForge {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
         // Register the doClientStuff method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::doClientStuff);
-        
+    
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
-        
-        
+    
+        ConfigClient.init();
     }
     
     private void setup(final FMLCommonSetupEvent event) {
-        NetherPortalEntity.init();
-        
-        NewNetherPortalEntity.init();
-        
         ModMain.onInitialize();
     }
     
     private void doClientStuff(final FMLClientSetupEvent event) {
         ModMainClient.onInitializeClient();
+    
+        Minecraft.getInstance().execute(() -> {
+            if (ConfigClient.isInitialCompatibilityRenderMode()) {
+                CGlobal.renderMode = CGlobal.RenderMode.compatibility;
+                Helper.log("Initially Switched to Compatibility Render Mode");
+            }
+            CGlobal.doCheckGlError = ConfigClient.getDoCheckGlError();
+            Helper.log("Do Check Gl Error: " + CGlobal.doCheckGlError);
+        });
     }
     
     private void enqueueIMC(final InterModEnqueueEvent event) {
@@ -65,6 +80,7 @@ public class ModMainForge {
     private void processIMC(final InterModProcessEvent event) {
     
     }
+    
     
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
@@ -77,14 +93,39 @@ public class ModMainForge {
         ModMain.checkMixinState();
     }
     
+    @SubscribeEvent
+    public void onRegisterDimensionsEvent(RegisterDimensionsEvent event) {
+        ResourceLocation resourceLocation = new ResourceLocation("immersive_portals:alternate1");
+        if (DimensionType.byName(resourceLocation) == null) {
+            DimensionManager.registerDimension(
+                resourceLocation,
+                AlternateDimensionEntry.instance,
+                null,
+                true
+            );
+        }
+        
+        ModMain.alternate = DimensionType.byName(resourceLocation);
+    }
+    
+    @SubscribeEvent
+    public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!SGlobal.serverTeleportationManager.isFiringMyChangeDimensionEvent) {
+            PlayerEntity player = event.getPlayer();
+            if (player instanceof ServerPlayerEntity) {
+                GlobalPortalStorage.onPlayerLoggedIn((ServerPlayerEntity) player);
+            }
+        }
+    }
+    
     // You can use EventBusSubscriber to automatically subscribe events on the contained class (this is subscribing to the MOD
     // Event bus for receiving Registry Events)
     @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
     public static class RegistryEvents {
         @SubscribeEvent
         public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
-    
-    
+            
+            
             PortalPlaceholderBlock.instance.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_placeholder")
             );
@@ -99,8 +140,10 @@ public class ModMainForge {
                 Portal::new, EntityClassification.MISC
             ).size(
                 1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) -> new Portal(Portal.entityType,
-                world)
+            ).immuneToFire().setCustomClientFactory((a, world) -> new Portal(
+                    Portal.entityType,
+                    world
+                )
             ).build(
                 "immersive_portals:portal"
             );
@@ -204,17 +247,18 @@ public class ModMainForge {
                 BorderPortal.entityType.setRegistryName("immersive_portals:border_portal")
             );
     
-            EndFloorPortal.entityType = EntityType.Builder.create(
-                EndFloorPortal::new, EntityClassification.MISC
+            VerticalConnectingPortal.entityType = EntityType.Builder.create(
+                VerticalConnectingPortal::new, EntityClassification.MISC
             ).size(
                 1, 1
             ).immuneToFire().setCustomClientFactory((a, world) ->
-                new EndFloorPortal(EndFloorPortal.entityType, world)
+                new VerticalConnectingPortal(VerticalConnectingPortal.entityType, world)
             ).build(
                 "immersive_portals:end_floor_portal"
             );
             event.getRegistry().register(
-                EndFloorPortal.entityType.setRegistryName("immersive_portals:end_floor_portal")
+                VerticalConnectingPortal.entityType.setRegistryName(
+                    "immersive_portals:end_floor_portal")
             );
     
             LoadingIndicatorEntity.entityType = EntityType.Builder.create(
@@ -230,6 +274,13 @@ public class ModMainForge {
                 LoadingIndicatorEntity.entityType.setRegistryName(
                     "immersive_portals:loading_indicator")
             );
+        }
+        
+        @SubscribeEvent
+        public static void onDimensionRegistry(RegistryEvent.Register<ModDimension> event) {
+            AlternateDimensionEntry.instance = new AlternateDimensionEntry();
+            AlternateDimensionEntry.instance.setRegistryName("immersive_portals:alternate1");
+            event.getRegistry().register(AlternateDimensionEntry.instance);
         }
     }
 }

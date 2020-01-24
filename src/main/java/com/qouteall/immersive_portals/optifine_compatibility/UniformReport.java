@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.optifine_compatibility;
 
 import com.mojang.blaze3d.platform.GLX;
-import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.CHelper;
 import net.minecraft.client.util.LWJGLMemoryUntracker;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
@@ -12,6 +12,7 @@ import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -125,7 +126,7 @@ public class UniformReport {
                 String name = GL20.glGetActiveUniform(
                     programId, i, sizeBuffer, dataTypeBuffer
                 );
-                Helper.checkGlError();
+                CHelper.checkGlError();
                 return new UniformInfo(
                     programId,
                     name,
@@ -133,9 +134,25 @@ public class UniformReport {
                     dataTypeBuffer.get(0)
                 );
             }).collect(Collectors.toList());
-        
+    
         uniformInfos.stream().forEach(uniformInfo -> {
             uniformInfo.report(output);
         });
+    }
+    
+    public static void launchUniformReport(String[] programNames, Consumer<String> output) {
+        Predicate<String> namePredicate = name -> Arrays.asList(programNames).contains(name);
+        OFGlobal.debugFunc = program -> {
+            String name = program.getName();
+            if (namePredicate.test(name)) {
+                reportUniforms(
+                    program.getId(),
+                    output
+                );
+                OFGlobal.debugFunc = p -> {
+                };
+                
+            }
+        };
     }
 }

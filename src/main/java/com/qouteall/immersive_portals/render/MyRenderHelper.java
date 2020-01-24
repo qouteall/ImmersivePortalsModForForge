@@ -106,6 +106,8 @@ public class MyRenderHelper {
         ).collect(Collectors.toList());
         portalRenderInfos.add(currRenderInfo);
         renderedDimensions.add(portalLayers.peek().dimensionTo);
+    
+        CHelper.checkGlError();
     }
     
     public static void setupCameraTransformation() {
@@ -204,30 +206,19 @@ public class MyRenderHelper {
         GlStateManager.enableAlphaTest();
         GlStateManager.enableTexture();
     }
-
-//    public static void copyFromShaderFbTo(Framebuffer destFb, int copyComponent) {
-//        GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, OFGlobal.getDfb.get());
-//        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, destFb.framebufferObject);
-//
-//        GL30.glBlitFramebuffer(
-//            0, 0, Shaders.renderWidth, Shaders.renderHeight,
-//            0, 0, destFb.framebufferWidth, destFb.framebufferHeight,
-//            copyComponent, GL_NEAREST
-//        );
-//
-//        OFHelper.bindToShaderFrameBuffer();
-//    }
     
     /**
-     * {@link GlFramebuffer#draw(int, int)}
+     * {@link Framebuffer#framebufferRender(int, int)}
      */
     public static void myDrawFrameBuffer(
         Framebuffer textureProvider,
         boolean doEnableAlphaTest,
         boolean doEnableModifyAlpha
     ) {
+        CHelper.checkGlError();
+    
         Validate.isTrue(GLX.isUsingFBOs());
-        
+    
         if (doEnableModifyAlpha) {
             GlStateManager.colorMask(true, true, true, true);
         }
@@ -249,7 +240,12 @@ public class MyRenderHelper {
         GlStateManager.matrixMode(5888);
         GlStateManager.loadIdentity();
         GlStateManager.translatef(0.0F, 0.0F, -2000.0F);
-        GlStateManager.viewport(0, 0, textureProvider.framebufferWidth, textureProvider.framebufferHeight);
+        GlStateManager.viewport(
+            0,
+            0,
+            textureProvider.framebufferWidth,
+            textureProvider.framebufferHeight
+        );
         GlStateManager.enableTexture();
         GlStateManager.disableLighting();
         if (doEnableAlphaTest) {
@@ -258,7 +254,7 @@ public class MyRenderHelper {
         else {
             GlStateManager.disableAlphaTest();
         }
-        
+    
         GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
         textureProvider.bindFramebufferTexture();
         float float_1 = (float) textureProvider.framebufferWidth;
@@ -292,6 +288,8 @@ public class MyRenderHelper {
         textureProvider.unbindFramebuffer();
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
+    
+        CHelper.checkGlError();
     }
     
     //If I don't do so JVM will crash
@@ -358,10 +356,12 @@ public class MyRenderHelper {
         Framebuffer textureProvider,
         ShaderManager shaderManager
     ) {
+        CHelper.checkGlError();
+    
         setupCameraTransformation();
-        
+    
         shaderManager.loadContentShaderAndShaderVars(0);
-        
+    
         if (OFInterface.isShaders.getAsBoolean()) {
             GlStateManager.viewport(
                 0,
@@ -380,11 +380,13 @@ public class MyRenderHelper {
         GlStateManager.texParameter(3553, 10240, 9729);
         GlStateManager.texParameter(3553, 10242, 10496);
         GlStateManager.texParameter(3553, 10243, 10496);
-        
+    
         ViewAreaRenderer.drawPortalViewTriangle(portal);
-        
+    
         shaderManager.unloadShader();
-        
+    
         OFInterface.resetViewport.run();
+    
+        CHelper.checkGlError();
     }
 }

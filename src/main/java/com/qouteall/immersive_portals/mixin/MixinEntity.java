@@ -1,8 +1,10 @@
 package com.qouteall.immersive_portals.mixin;
 
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
 import net.minecraft.entity.Entity;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -24,16 +26,16 @@ public abstract class MixinEntity implements IEEntity {
     
     private Entity collidingPortal;
     private int stopCollidingPortalCounter;
-
+    
     @Shadow
     public abstract AxisAlignedBB getBoundingBox();
-
+    
     @Shadow
     public World world;
-
+    
     @Shadow
     protected abstract Vec3d getAllowedMovement(Vec3d vec3d_1);
-
+    
     @Shadow
     public abstract void setBoundingBox(AxisAlignedBB box_1);
     
@@ -43,13 +45,17 @@ public abstract class MixinEntity implements IEEntity {
     @Shadow
     public DimensionType dimension;
     
-    @Shadow public double posX;
+    @Shadow
+    public double posX;
     
-    @Shadow public double posZ;
+    @Shadow
+    public double posZ;
     
-    @Shadow public double posY;
+    @Shadow
+    public double posY;
     
-    @Shadow public abstract float getEyeHeight();
+    @Shadow
+    public abstract float getEyeHeight();
     
     //maintain collidingPortal field
     @Inject(method = "tick", at = @At("HEAD"))
@@ -59,7 +65,7 @@ public abstract class MixinEntity implements IEEntity {
                 collidingPortal = null;
             }
         }
-    
+        
         Entity nowCollidingPortal =
             (Entity) (Object) CollisionHelper.getCollidingPortalUnreliable((Entity) (Object) this);
         if (nowCollidingPortal == null) {
@@ -84,14 +90,16 @@ public abstract class MixinEntity implements IEEntity {
         )
     )
     private Vec3d redirectHandleCollisions(Entity entity, Vec3d attemptedMove) {
-        if (attemptedMove.lengthSquared() > 16) {
-            return getAllowedMovement(attemptedMove);
+        if (attemptedMove.lengthSquared() > 256) {
+            Helper.err(entity + " moved too fast " + attemptedMove);
+            return attemptedMove;
+            //return getAllowedMovement(attemptedMove);
         }
-        
+    
         if (collidingPortal == null) {
             return getAllowedMovement(attemptedMove);
         }
-        
+    
         if (entity.isBeingRidden() || entity.isPassenger()) {
             return getAllowedMovement(attemptedMove);
         }
@@ -138,7 +146,7 @@ public abstract class MixinEntity implements IEEntity {
         )
     )
     private boolean redirectDoesContainFireSource(World world, AxisAlignedBB box_1) {
-        if (!CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
+        if (collidingPortal != null) {
             return world.isFlammableWithin(box_1);
         }
         else {
@@ -155,6 +163,23 @@ public abstract class MixinEntity implements IEEntity {
     )
     private AxisAlignedBB redirectBoundingBoxInCheckingBlockCollision(Entity entity) {
         return CollisionHelper.getActiveCollisionBox(entity);
+    }
+    
+    @Inject(
+        method = "read",
+        at = @At("RETURN")
+    )
+    private void onReadFinished(CompoundNBT compound, CallbackInfo ci) {
+        if (dimension == null) {
+            Helper.err("Invalid Dimension Id Read From NBT " + this);
+            if (world != null) {
+                dimension = world.dimension.getType();
+            }
+            else {
+                Helper.err("World Field is Null");
+                dimension = DimensionType.OVERWORLD;
+            }
+        }
     }
     
     @Override

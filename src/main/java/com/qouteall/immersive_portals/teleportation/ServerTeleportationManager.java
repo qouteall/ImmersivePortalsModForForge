@@ -21,13 +21,14 @@ import java.util.stream.Stream;
 
 public class ServerTeleportationManager {
     private Set<ServerPlayerEntity> teleportingEntities = new HashSet<>();
-    private WeakHashMap<ServerPlayerEntity, Long> lastTeleportGameTime = new WeakHashMap<>();
+    private WeakHashMap<Entity, Long> lastTeleportGameTime = new WeakHashMap<>();
+    public boolean isFiringMyChangeDimensionEvent = false;
     
     public ServerTeleportationManager() {
         ModMain.postServerTickSignal.connectWithWeakRef(this, ServerTeleportationManager::tick);
         Portal.serverPortalTickSignal.connectWithWeakRef(
             this, (this_, portal) ->
-                portal.getEntitiesToTeleport().forEach(entity -> {
+                getEntitiesToTeleport(portal).forEach(entity -> {
                     if (!(entity instanceof ServerPlayerEntity)) {
                         ModMain.serverTaskList.addTask(() -> {
                             teleportRegularEntity(entity, portal);
@@ -35,6 +36,17 @@ public class ServerTeleportationManager {
                         });
                     }
                 })
+        );
+    }
+    
+    public static Stream<Entity> getEntitiesToTeleport(Portal portal) {
+        return portal.world.getEntitiesWithinAABB(
+            Entity.class,
+            portal.getBoundingBox().grow(2)
+        ).stream().filter(
+            e -> !(e instanceof Portal)
+        ).filter(
+            portal::shouldEntityTeleport
         );
     }
     
@@ -72,7 +84,7 @@ public class ServerTeleportationManager {
                 player.getName().getFormattedText(),
                 player.dimension,
                 player.getPositionVec(),
-                portalId
+                portalEntity
             ));
         }
     }
@@ -85,7 +97,7 @@ public class ServerTeleportationManager {
     ) {
         return canPlayerReachPos(player, dimensionBefore, posBefore) &&
             portalEntity instanceof Portal &&
-            ((Portal) portalEntity).getDistanceToNearestPointInPortal(posBefore) < 10 &&
+            ((Portal) portalEntity).getDistanceToNearestPointInPortal(posBefore) < 20 &&
             !player.isPassenger();
     }
     
@@ -97,15 +109,15 @@ public class ServerTeleportationManager {
         return player.dimension == dimension ?
             isClose(pos, player.getPositionVec())
             :
-            McHelper.getEntitiesNearby(player, Portal.class, 10)
+            McHelper.getServerPortalsNearby(player, 20)
                 .anyMatch(
                     portal -> portal.dimensionTo == dimension &&
-                        isClose(pos, portal.destination)
+                        portal.getDistanceToNearestPointInPortal(portal.reverseTransformPoint(pos)) < 20
                 );
     }
     
     private static boolean isClose(Vec3d a, Vec3d b) {
-        return a.squareDistanceTo(b) < 15 * 15;
+        return a.squareDistanceTo(b) < 20 * 20;
     }
     
     private void teleportPlayer(
@@ -128,6 +140,34 @@ public class ServerTeleportationManager {
         player.connection.captureCurrentPosition();
     }
     
+    public void invokeTpmeCommand(
+        ServerPlayerEntity player,
+        DimensionType dimensionTo,
+        Vec3d newPos
+    ) {
+        ServerWorld fromWorld = (ServerWorld) player.world;
+        ServerWorld toWorld = McHelper.getServer().getWorld(dimensionTo);
+        
+        if (player.dimension == dimensionTo) {
+            player.setPosition(newPos.x, newPos.y, newPos.z);
+        }
+        else {
+            changePlayerDimension(player, fromWorld, toWorld, newPos);
+            sendPositionConfirmMessage(player);
+        }
+        
+        player.connection.setPlayerLocation(
+            newPos.x,
+            newPos.y,
+            newPos.z,
+            player.rotationYaw,
+            player.rotationPitch
+        );
+        player.connection.captureCurrentPosition();
+        ((IEServerPlayNetworkHandler) player.connection).cancelTeleportRequest();
+        
+    }
+    
     //TODO add forge events
     
     /**
@@ -142,18 +182,15 @@ public class ServerTeleportationManager {
         BlockPos oldPos = player.getPosition();
         
         teleportingEntities.add(player);
-    
+        
         //TODO fix travel when riding entity
         player.detach();
-    
+        
         //new dimension transition method
         player.dimension = toWorld.dimension.getType();
         fromWorld.removeEntity(player, true);
         player.revive();
-
-//        fromWorld.removePlayer(player);
-//        player.removed = false;
-    
+        
         player.posX = destination.x;
         player.posY = destination.y;
         player.posZ = destination.z;
@@ -161,15 +198,15 @@ public class ServerTeleportationManager {
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
         toWorld.addRespawnedPlayer(player);
-    
+        
         toWorld.chunkCheck(player);
-    
+        
         McHelper.getServer().getPlayerList().sendWorldInfo(
             player, toWorld
         );
         
         player.interactionManager.setWorld(toWorld);
-    
+        
         Helper.log(String.format(
             "%s teleported from %s %s to %s %s",
             player.getName().getFormattedText(),
@@ -178,7 +215,7 @@ public class ServerTeleportationManager {
             toWorld.dimension.getType(),
             player.getPosition()
         ));
-    
+        
         //this is used for the advancement of "we need to go deeper"
         //and the advancement of travelling for long distance through nether
         if (toWorld.dimension.getType() == DimensionType.THE_NETHER) {
@@ -186,6 +223,14 @@ public class ServerTeleportationManager {
             ((IEServerPlayerEntity) player).setEnteredNetherPos(player.getPositionVec());
         }
         ((IEServerPlayerEntity) player).updateDimensionTravelAdvancements(fromWorld);
+        
+        isFiringMyChangeDimensionEvent = true;
+        net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerChangedDimensionEvent(
+            player,
+            fromWorld.dimension.getType(),
+            toWorld.dimension.getType()
+        );
+        isFiringMyChangeDimensionEvent = false;
     }
     
     private void sendPositionConfirmMessage(ServerPlayerEntity player) {
@@ -224,12 +269,19 @@ public class ServerTeleportationManager {
         assert entity.dimension == portal.dimension;
         assert !(entity instanceof ServerPlayerEntity);
     
+        long currGameTime = McHelper.getServerGameTime();
+        Long lastTeleportGameTime = this.lastTeleportGameTime.getOrDefault(entity, 0L);
+        if (currGameTime - lastTeleportGameTime < 5) {
+            return;
+        }
+        this.lastTeleportGameTime.put(entity, currGameTime);
+    
         if (entity.isPassenger() || !entity.getPassengers().isEmpty()) {
             return;
         }
-        
+    
         Vec3d newPos = portal.applyTransformationToPoint(entity.getPositionVec());
-        
+    
         if (portal.dimensionTo != entity.dimension) {
             changeEntityDimension(entity, portal.dimensionTo, newPos);
         }
@@ -253,19 +305,13 @@ public class ServerTeleportationManager {
         ServerWorld toWorld = McHelper.getServer().getWorld(toDimension);
         entity.detach();
     
-        Stream<ServerPlayerEntity> watchingPlayers = McHelper.getEntitiesNearby(
-            entity,
-            ServerPlayerEntity.class,
-            128
-        );
-        
-        fromWorld.removeEntity(entity);
-        entity.removed = false;
-        
+        fromWorld.removeEntity(entity, true);
+        entity.revive();
+    
         entity.posX = destination.x;
         entity.posY = destination.y;
         entity.posZ = destination.z;
-        
+    
         entity.world = toWorld;
         entity.dimension = toDimension;
     

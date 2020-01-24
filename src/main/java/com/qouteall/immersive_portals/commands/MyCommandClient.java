@@ -1,13 +1,18 @@
-package com.qouteall.immersive_portals;
+package com.qouteall.immersive_portals.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.ducks.*;
+import com.qouteall.immersive_portals.optifine_compatibility.UniformReport;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.DimensionRenderHelper;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
@@ -42,7 +47,7 @@ public class MyCommandClient {
     ) {
         //for composite command arguments, put into then() 's bracket
         //for parallel command arguments, put behind then()
-    
+        
         LiteralArgumentBuilder<CommandSource> builder = Commands
             .literal("immersive_portals_debug")
             .requires(commandSource -> true)
@@ -187,15 +192,6 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("switch_to_normal_renderer")
-            .executes(context -> {
-                Minecraft.getInstance().execute(() -> {
-                    CGlobal.renderer = CGlobal.rendererUsingStencil;
-                });
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
             .literal("report_server_entities")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
@@ -232,20 +228,6 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("shader_debug_enable")
-            .executes(context -> {
-                CGlobal.isRenderDebugMode = true;
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
-            .literal("shader_debug_disable")
-            .executes(context -> {
-                CGlobal.isRenderDebugMode = false;
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
             .literal("get_player_colliding_portal_client")
             .executes(context -> {
                 Portal collidingPortal =
@@ -274,20 +256,6 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("debug_mirror_mode_enable")
-            .executes(context -> {
-                CGlobal.debugMirrorMode = true;
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
-            .literal("debug_mirror_mode_disable")
-            .executes(context -> {
-                CGlobal.debugMirrorMode = false;
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
             .literal("new_nether_portal_enable")
             .executes(context -> {
                 SGlobal.doUseNewNetherPortal = true;
@@ -302,16 +270,30 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("optimization_enable")
+            .literal("render_mode_normal")
             .executes(context -> {
-                SGlobal.isOptimizationEnabled = true;
+                CGlobal.renderMode = CGlobal.RenderMode.normal;
                 return 0;
             })
         );
         builder = builder.then(Commands
-            .literal("optimization_disable")
+            .literal("render_mode_compatibility")
             .executes(context -> {
-                SGlobal.isOptimizationEnabled = false;
+                CGlobal.renderMode = CGlobal.RenderMode.compatibility;
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("render_mode_debug")
+            .executes(context -> {
+                CGlobal.renderMode = CGlobal.RenderMode.debug;
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("render_mode_none")
+            .executes(context -> {
+                CGlobal.renderMode = CGlobal.RenderMode.none;
                 return 0;
             })
         );
@@ -329,15 +311,48 @@ public class MyCommandClient {
                 return 0;
             })
         );
-    
+        builder = builder.then(Commands
+            .literal("uniform_report_textured")
+            .executes(context -> {
+                UniformReport.launchUniformReport(
+                    new String[]{
+                        "gbuffers_textured", "gbuffers_textured_lit"
+                    },
+                    s -> context.getSource().sendFeedback(
+                        new StringTextComponent(s), true
+                    )
+                );
+                return 0;
+            })
+        );
+        builder = builder.then(Commands
+            .literal("uniform_report_terrain")
+            .executes(context -> {
+                UniformReport.launchUniformReport(
+                    new String[]{
+                        "gbuffers_terrain", "gbuffers_terrain_solid"
+                    },
+                    s -> context.getSource().sendFeedback(
+                        new StringTextComponent(s), true
+                    )
+                );
+                return 0;
+            })
+        );
+        
         registerSwitchCommand(
-            builder, "alwaysUpdateDisplayList",
+            builder, "always_update_display_list",
             k -> CGlobal.alwaysUpdateDisplayList = k
         );
-    
-    
+        
+        registerSwitchCommand(
+            builder, "gl_check_error",
+            k -> CGlobal.doCheckGlError = k
+        );
+        
+        
         dispatcher.register(builder);
-    
+        
         Helper.log("Successfully initialized command /immersive_portals_debug");
     }
     
@@ -467,7 +482,7 @@ public class MyCommandClient {
     private static int listNearbyPortals(CommandContext<CommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity playerServer = context.getSource().asPlayer();
         ClientPlayerEntity playerClient = Minecraft.getInstance().player;
-    
+        
         McHelper.serverLog(playerServer, "Server Portals");
         McHelper.serverLog(
             playerServer,
@@ -477,7 +492,7 @@ public class MyCommandClient {
                 )
             )
         );
-    
+        
         McHelper.serverLog(playerServer, "Client Portals");
         McHelper.serverLog(
             playerServer,
@@ -541,7 +556,7 @@ public class MyCommandClient {
         
         ServerPlayerEntity playerMP = context.getSource().asPlayer();
         ClientPlayerEntity playerSP = Minecraft.getInstance().player;
-    
+        
         McHelper.serverLog(
             playerMP,
             "On Server " + playerMP.dimension + " " + playerMP.getPosition()

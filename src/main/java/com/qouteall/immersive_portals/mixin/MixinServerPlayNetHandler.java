@@ -1,12 +1,13 @@
 package com.qouteall.immersive_portals.mixin;
 
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEPlayerMoveC2SPacket;
 import com.qouteall.immersive_portals.ducks.IEPlayerPositionLookS2CPacket;
 import com.qouteall.immersive_portals.ducks.IEServerPlayNetworkHandler;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.ServerPlayNetHandler;
+import net.minecraft.network.play.client.CConfirmTeleportPacket;
 import net.minecraft.network.play.client.CPlayerPacket;
 import net.minecraft.network.play.server.SPlayerPositionLookPacket;
 import net.minecraft.util.math.Vec3d;
@@ -127,6 +128,20 @@ public abstract class MixinServerPlayNetHandler implements IEServerPlayNetworkHa
             return true;
         }
         return func_223133_a(world);
+    }
+    
+    @Inject(
+        method = "processConfirmTeleport",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void onProcessConfirmTeleport(
+        CConfirmTeleportPacket packetIn,
+        CallbackInfo ci
+    ) {
+        if (targetPos == null) {
+            ci.cancel();
+        }
     }
     
     @Override

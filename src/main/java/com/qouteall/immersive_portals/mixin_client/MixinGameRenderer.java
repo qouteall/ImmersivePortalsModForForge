@@ -2,15 +2,13 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.renderer.FogRenderer;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.*;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -62,7 +60,12 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         CallbackInfo ci
     ) {
         if (Minecraft.getInstance().renderViewEntity != null) {
+            CHelper.checkGlError();
             CGlobal.renderer.onBeforeTranslucentRendering();
+            CHelper.checkGlError();
+    
+            //is it necessary?
+            RenderHelper.enableStandardItemLighting();
         }
     }
     
@@ -76,7 +79,9 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     )
     private void beforeRenderingHand(float float_1, long long_1, CallbackInfo ci) {
         if (Minecraft.getInstance().renderViewEntity != null) {
+            CHelper.checkGlError();
             CGlobal.renderer.onAfterTranslucentRendering();
+            CHelper.checkGlError();
         }
     }
     
@@ -103,8 +108,10 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         boolean renderWorldIn,
         CallbackInfo ci
     ) {
+        CHelper.checkGlError();
         MyRenderHelper.updatePreRenderInfo(partialTicks);
         ModMain.preRenderSignal.emit();
+        CHelper.checkGlError();
     }
     
     //before rendering world (not triggered when rendering portal)
@@ -117,7 +124,9 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     )
     private void onBeforeRenderingCenter(float partialTicks, long finishTimeNano, CallbackInfo ci) {
         ModMainClient.switchToCorrectRenderer();
+        CHelper.checkGlError();
         CGlobal.renderer.prepareRendering();
+        CHelper.checkGlError();
     }
     
     //after rendering world (not triggered when rendering portal)
@@ -130,14 +139,18 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         )
     )
     private void onAfterRenderingCenter(float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        CHelper.checkGlError();
         CGlobal.renderer.finishRendering();
-    
+        CHelper.checkGlError();
         MyRenderHelper.onTotalRenderEnd();
+        CHelper.checkGlError();
     }
     
     @Inject(method = "updateCameraAndRender(FJ)V", at = @At("TAIL"))
     private void onRenderCenterEnded(float partialTicks, long nanoTime, CallbackInfo ci) {
+        CHelper.checkGlError();
         CGlobal.renderer.onRenderCenterEnded();
+        CHelper.checkGlError();
     }
     
     @Shadow

@@ -2,9 +2,10 @@ package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.HashMultimap;
 import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
+import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEServerPlayerEntity;
 import com.qouteall.immersive_portals.network.NetworkMain;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -55,16 +56,6 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
         cancellable = true
     )
     private void onSendUnloadChunkPacket(ChunkPos chunkPos_1, CallbackInfo ci) {
-        ServerPlayerEntity this_ = (ServerPlayerEntity) (Object) this;
-        DimensionalChunkPos dimensionalChunkPos = new DimensionalChunkPos(
-            this_.dimension,
-            chunkPos_1
-        );
-    
-        SGlobal.chunkDataSyncManager.sendUnloadPacket(
-            this_, dimensionalChunkPos
-        );
-        
         ci.cancel();
     }
     
@@ -129,6 +120,32 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
         if (myRemovedEntities != null) {
             myRemovedEntities.remove(entity_1.dimension, entity_1);
         }
+    }
+    
+    @Inject(
+        method = "teleport",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/server/ServerWorld;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;Z)V"
+        )
+    )
+    private void onForgeTeleport(
+        ServerWorld p_200619_1_,
+        double x,
+        double y,
+        double z,
+        float yaw,
+        float pitch,
+        CallbackInfo ci
+    ) {
+        ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
+        
+        //fix issue with good nights sleep
+        player.clearBedPosition();
+        
+        NewChunkTrackingGraph.forceRemovePlayer(player);
+        
+        GlobalPortalStorage.onPlayerLoggedIn(player);
     }
     
     @Override

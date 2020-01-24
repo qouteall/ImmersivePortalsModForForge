@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.portal;
 
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.MoverType;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -19,5 +20,10 @@ public class Mirror extends Portal {
     @Override
     public boolean isTeleportable() {
         return false;
+    }
+    
+    @Override
+    public void move(MoverType typeIn, Vec3d pos) {
+        //mirror cannot be moved
     }
 }

@@ -1,25 +1,19 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
-import com.mojang.datafixers.util.Either;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.network.NetworkMain;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.server.SChunkDataPacket;
 import net.minecraft.network.play.server.SUnloadChunkPacket;
 import net.minecraft.network.play.server.SUpdateLightPacket;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
-import net.minecraft.world.chunk.IChunk;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ChunkManager;
 import net.minecraft.world.server.ServerChunkProvider;
-
-import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.Validate;
 
 //the chunks near player are managed by vanilla
 //we only manage the chunks that's seen by portal and not near player
@@ -29,127 +23,128 @@ public class ChunkDataSyncManager {
     private static final int unloadWaitingTickTime = 20 * 10;
     
     public ChunkDataSyncManager() {
-        SGlobal.chunkTrackingGraph.beginWatchChunkSignal.connectWithWeakRef(
+        NewChunkTrackingGraph.beginWatchChunkSignal.connectWithWeakRef(
             this, ChunkDataSyncManager::onBeginWatch
         );
-        SGlobal.chunkTrackingGraph.endWatchChunkSignal.connectWithWeakRef(
+        NewChunkTrackingGraph.endWatchChunkSignal.connectWithWeakRef(
             this, ChunkDataSyncManager::onEndWatch
         );
     }
     
     private void onBeginWatch(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
-        if (isChunkManagedByVanilla(player, chunkPos)) {
-            return;
-        }
+        McHelper.getServer().getProfiler().startSection("begin_watch");
     
-        if (SGlobal.chunkTrackingGraph.isChunkDataSent(player, chunkPos)) {
-            return;
-        }
-    
-        SGlobal.chunkTrackingGraph.onChunkDataSent(player, chunkPos);
         IEThreadedAnvilChunkStorage ieStorage = McHelper.getIEStorage(chunkPos.dimension);
     
-        if (SGlobal.isChunkLoadingMultiThreaded) {
-            sendPacketMultiThreaded(player, chunkPos, ieStorage);
-        }
-        else {
-            sendPacketNormally(player, chunkPos, ieStorage);
-        }
+        sendChunkDataPacketNow(player, chunkPos, ieStorage);
+    
+        McHelper.getServer().getProfiler().endSection();
     }
     
-    private void sendPacketMultiThreaded(
+    private void sendChunkDataPacketNow(
         ServerPlayerEntity player,
         DimensionalChunkPos chunkPos,
         IEThreadedAnvilChunkStorage ieStorage
     ) {
-        ModMain.serverTaskList.addTask(() -> {
-            ChunkHolder chunkHolder = ieStorage.getChunkHolder_(chunkPos.getChunkPos().asLong());
-            if (chunkHolder == null) {
-                //TODO cleanup it
-                SGlobal.chunkTrackingGraph.setIsLoadedByPortal(
-                    chunkPos.dimension,
-                    chunkPos.getChunkPos(),
-                    true
+        ChunkHolder chunkHolder = ieStorage.getChunkHolder_(chunkPos.getChunkPos().asLong());
+        if (chunkHolder != null) {
+            Chunk chunk = chunkHolder.func_219298_c();
+            if (chunk != null) {
+                doSendWatchPackets(
+                    player,
+                    chunkPos,
+                    ieStorage,
+                    chunk
                 );
-                return false;
             }
+        }
+        //if the chunk is not present then the packet will be sent when chunk is ready
+        
+    }
     
-            //create future
-            CompletableFuture<Either<IChunk, ChunkHolder.IChunkLoadingError>> future = chunkHolder.func_219276_a(
-                ChunkStatus.FULL,
-                ((ChunkManager) ieStorage)
+    public void onChunkProvidedDeferred(Chunk chunk) {
+        DimensionType dimension = chunk.getWorld().dimension.getType();
+        NewChunkTrackingGraph.getPlayersViewingChunk(
+            dimension,
+            chunk.getPos().x,
+            chunk.getPos().z
+        ).forEach(player -> {
+            doSendWatchPackets(
+                player,
+                new DimensionalChunkPos(
+                    dimension,
+                    chunk.getPos()
+                ),
+                McHelper.getIEStorage(dimension),
+                chunk
             );
-            
-            future.thenAcceptAsync(either -> {
-                ModMain.serverTaskList.addTask(() -> {
-                    sendWatchPackets(player, chunkPos, ieStorage);
-                    return true;
-                });
-            });
-            
-            return true;
         });
+        //TODO avoid recreating packet when sending to multiple players
     }
     
-    private void sendPacketNormally(
+    private void doSendWatchPackets(
         ServerPlayerEntity player,
         DimensionalChunkPos chunkPos,
-        IEThreadedAnvilChunkStorage ieStorage
+        IEThreadedAnvilChunkStorage ieStorage,
+        Chunk chunk
     ) {
-        sendWatchPackets(player, chunkPos, ieStorage);
-    }
-    
-    private void sendWatchPackets(
-        ServerPlayerEntity player,
-        DimensionalChunkPos chunkPos,
-        IEThreadedAnvilChunkStorage ieStorage
-    ) {
-        IChunk chunk = McHelper.getServer()
-            .getWorld(chunkPos.dimension)
-            .getChunk(chunkPos.x, chunkPos.z);
+        Validate.notNull(chunk);
+        
+        McHelper.getServer().getProfiler().startSection("send_chunk_data");
+        
+        //debug
+        //Helper.log("Send " + chunkPos);
+        
         assert chunk != null;
         assert !(chunk instanceof EmptyChunk);
         NetworkMain.sendRedirected(
-            player, chunkPos.dimension,
+            player,
+            chunkPos.dimension,
             new SChunkDataPacket(
                 ((Chunk) chunk),
                 65535
             )
         );
+        
         NetworkMain.sendRedirected(
-            player, chunkPos.dimension,
+            player,
+            chunkPos.dimension,
             new SUpdateLightPacket(
                 chunkPos.getChunkPos(),
                 ieStorage.getLightingProvider()
             )
         );
-    
+        
         //update the entity trackers
         ((ChunkManager) ieStorage).updatePlayerPosition(player);
+        
+        McHelper.getServer().getProfiler().endSection();
     }
     
     private void onEndWatch(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
-        if (isChunkManagedByVanilla(player, chunkPos)) {
-            return;
-        }
-        
-        //do not send unload packet instantly
-        //watch for a period of time.
-        //if player still needs the chunk, stop unloading.
     
         sendUnloadPacket(player, chunkPos);
+
+//        ModMain.serverTaskList.addTask(()->{
+//            if (NewChunkTrackingGraph.isPlayerWatchingChunk(
+//                player,
+//                chunkPos.dimension,
+//                chunkPos.x,
+//                chunkPos.z
+//            )) {
+//                return true;
+//            }
+//
+//            sendUnloadPacket(player, chunkPos);
+//            return true;
+//        });
+    
+    
     }
     
     public void sendUnloadPacket(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
-        if (isChunkManagedByVanilla(player, chunkPos)) {
-            //give up unloading
-            return;
-        }
-    
-        if (SGlobal.chunkTrackingGraph.isPlayerWatchingChunk(player, chunkPos)) {
-            //give up unloading
-            return;
-        }
+        //debug
+        //Helper.log("Unload " + chunkPos);
     
         NetworkMain.sendRedirected(
             player,
@@ -161,7 +156,7 @@ public class ChunkDataSyncManager {
     }
     
     public void onPlayerRespawn(ServerPlayerEntity oldPlayer) {
-        SGlobal.chunkTrackingGraph.onPlayerRespawn(oldPlayer);
+        NewChunkTrackingGraph.forceRemovePlayer(oldPlayer);
     
         McHelper.getServer().getWorlds()
             .forEach(world -> {
@@ -172,26 +167,4 @@ public class ChunkDataSyncManager {
             });
     }
     
-    public static boolean isChunkManagedByVanilla(
-        ServerPlayerEntity player,
-        DimensionalChunkPos chunkPos
-    ) {
-        if (player.dimension != chunkPos.dimension) {
-            return false;
-        }
-    
-        int watchDistance = ChunkVisibilityManager.getRenderDistanceOnServer();
-        
-        //NOTE do not use entity.chunkX
-        //it's not updated
-    
-        ChunkPos playerChunkPos = new ChunkPos(player.getPosition());
-        
-        int chebyshevDistance = Math.max(
-            Math.abs(playerChunkPos.x - chunkPos.x),
-            Math.abs(playerChunkPos.z - chunkPos.z)
-        );
-        
-        return chebyshevDistance <= watchDistance;
-    }
 }

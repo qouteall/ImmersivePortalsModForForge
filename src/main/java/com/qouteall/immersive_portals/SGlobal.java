@@ -1,12 +1,9 @@
 package com.qouteall.immersive_portals;
 
 import com.qouteall.immersive_portals.chunk_loading.ChunkDataSyncManager;
-import com.qouteall.immersive_portals.chunk_loading.ChunkTrackingGraph;
 import com.qouteall.immersive_portals.teleportation.ServerTeleportationManager;
 
 public class SGlobal {
-    
-    public static ChunkTrackingGraph chunkTrackingGraph;
     
     public static ChunkDataSyncManager chunkDataSyncManager;
     
@@ -15,8 +12,6 @@ public class SGlobal {
     public static boolean isChunkLoadingMultiThreaded = true;
     
     public static boolean doUseNewNetherPortal = true;
-    
-    public static boolean isOptimizationEnabled = false;
     
     public static boolean isServerMixinApplied = false;
 }

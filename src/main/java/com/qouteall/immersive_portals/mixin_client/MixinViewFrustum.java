@@ -128,7 +128,7 @@ public abstract class MixinViewFrustum implements IEChunkRenderDispatcher {
         if (CGlobal.useHackedChunkRenderDispatcher) {
             ClientWorld worldClient = Minecraft.getInstance().world;
             if (worldClient != null) {
-                if (worldClient.getGameTime() % 533 == 66) {
+                if (worldClient.getGameTime() % 233 == 66) {
                     dismissInactiveChunkRenderers();
                     presetCache.clear();
                     isNeighborUpdated.clear();

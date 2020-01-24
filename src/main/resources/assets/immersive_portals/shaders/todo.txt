@@ -1,0 +1,14 @@
+fix weather rendering culling
+fix memory consumption too much when render distance is big
+fix daytime and weather sync between alternate dimension and overworld
+
+optimize server lag when crossing portal
+optimize use long2object hash map for MyClientChunkManager
+optimize MyTaskList
+optimize use chunk array to make nether portal searching faster
+optimize add option to render fewer chunks in portal
+
+command complete bi way portal
+command tpme
+
+implement upside down portal

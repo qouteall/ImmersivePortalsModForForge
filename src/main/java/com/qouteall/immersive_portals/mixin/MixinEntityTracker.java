@@ -1,8 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
+import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.network.NetworkMain;
@@ -145,20 +144,14 @@ public class MixinEntityTracker implements IEEntityTracker {
                 (storage.getWatchDistance() - 1) * 16
             );
             boolean isWatchedNow =
-                player.dimension == entity.dimension &&
-                    relativePos.x >= (double) (-maxWatchDistance) &&
-                    relativePos.x <= (double) maxWatchDistance &&
-                    relativePos.z >= (double) (-maxWatchDistance) &&
-                    relativePos.z <= (double) maxWatchDistance &&
-                    this.entity.isSpectatedByPlayer(player);
-            isWatchedNow = isWatchedNow ||
-                SGlobal.chunkTrackingGraph.isPlayerWatchingChunk(
+                NewChunkTrackingGraph.isPlayerWatchingChunkWithinRaidus(
                     player,
-                    new DimensionalChunkPos(
-                        entity.dimension,
-                        new ChunkPos(entity.getPosition())
-                    )
-                );
+                    entity.dimension,
+                    entity.chunkCoordX,
+                    entity.chunkCoordZ,
+                    maxWatchDistance
+                ) &&
+                    this.entity.isSpectatedByPlayer(player);
             if (isWatchedNow) {
                 boolean shouldTrack = this.entity.forceSpawn;
                 if (!shouldTrack) {

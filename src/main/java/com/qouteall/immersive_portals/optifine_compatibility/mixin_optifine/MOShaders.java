@@ -40,7 +40,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-@Mixin(targets = "net.optifine.shaders.Shaders", remap = false)
+@Mixin(value = Shaders.class, remap = false)
 public abstract class MOShaders {
     @Shadow
     static Minecraft mc;

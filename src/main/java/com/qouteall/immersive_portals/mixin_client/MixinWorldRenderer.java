@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ClientWorldLoader;
+import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.ducks.IEWorldRendererChunkInfo;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
@@ -153,6 +154,8 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     //reload other world renderers when the main world renderer is reloaded
     @Inject(method = "loadRenderers", at = @At("TAIL"))
     private void onReload(CallbackInfo ci) {
+        ModMainClient.turnOffRenderRegionOption();
+    
         ClientWorldLoader clientWorldLoader = CGlobal.clientWorldLoader;
         WorldRenderer this_ = (WorldRenderer) (Object) this;
         if (isReloadingOtherWorldRenderers) {
