@@ -9,6 +9,7 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.biome.FuzzedBiomeMagnifier;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.common.ModDimension;
 import net.minecraftforge.registries.ClearableRegistry;
@@ -45,6 +46,7 @@ public class DimensionSyncManager {
             "dummy",
             modDim.getFactory(),
             skylight,
+            FuzzedBiomeMagnifier.INSTANCE,
             modDim,
             extraData
         );

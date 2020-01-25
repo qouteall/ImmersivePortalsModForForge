@@ -10,7 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.Vector4f;
-import net.minecraft.client.renderer.texture.ITextureObject;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.optifine.expr.IExpressionBool;
@@ -640,8 +639,6 @@ public abstract class MOShaders {
     public static Properties loadedShaders;
     @Shadow
     public static Properties shadersConfig;
-    @Shadow
-    public static ITextureObject defaultTexture;
     @Shadow
     public static boolean[] shadowHardwareFilteringEnabled;
     @Shadow
@@ -1439,7 +1436,8 @@ public abstract class MOShaders {
             activeCompositeMipmapSetting = context.activeCompositeMipmapSetting;
             loadedShaders = context.loadedShaders;
             shadersConfig = context.shadersConfig;
-            defaultTexture = context.defaultTexture;
+            assert false;
+            //defaultTexture = context.defaultTexture;
             shadowHardwareFilteringEnabled = context.shadowHardwareFilteringEnabled;
             shadowMipmapEnabled = context.shadowMipmapEnabled;
             shadowFilterNearest = context.shadowFilterNearest;
@@ -1833,7 +1831,8 @@ public abstract class MOShaders {
             context.activeCompositeMipmapSetting = activeCompositeMipmapSetting;
             context.loadedShaders = loadedShaders;
             context.shadersConfig = shadersConfig;
-            context.defaultTexture = defaultTexture;
+            assert false;
+//            context.defaultTexture = defaultTexture;
             context.shadowHardwareFilteringEnabled = shadowHardwareFilteringEnabled;
             context.shadowMipmapEnabled = shadowMipmapEnabled;
             context.shadowFilterNearest = shadowFilterNearest;

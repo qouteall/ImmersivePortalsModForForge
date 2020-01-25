@@ -4,6 +4,7 @@ import com.qouteall.immersive_portals.*;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
+import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
 import com.qouteall.immersive_portals.network.CtsTeleport;
 import com.qouteall.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.portal.Mirror;
@@ -179,15 +180,14 @@ public class ClientTeleportationManager {
         player.revive();
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
-        player.posX = destination.x;
-        player.posY = destination.y;
-        player.posZ = destination.z;
         player.setPosition(destination.x, destination.y, destination.z);//update bounding box
     
         toWorld.addPlayer(player.getEntityId(), player);
     
         mc.world = toWorld;
-        mc.worldRenderer = CGlobal.clientWorldLoader.getWorldRenderer(toWorld.dimension.getType());
+        ((IEMinecraftClient) mc).setWorldRenderer(
+            CGlobal.clientWorldLoader.getWorldRenderer(toWorld.dimension.getType())
+        );
     
         toWorld.setScoreboard(fromWorld.getScoreboard());
     

@@ -133,15 +133,15 @@ public class ClientWorldLoader {
     private ClientWorld createFakedClientWorld(DimensionType dimension) {
         assert mc.world.dimension.getType() == mc.player.dimension;
         assert (mc.player.dimension != dimension);
-        
+    
         isLoadingFakedWorld = true;
     
         //OFHelper.onBeginCreatingFakedWorld();
-        
+    
         //TODO get load distance
         int chunkLoadDistance = 3;
-        
-        WorldRenderer worldRenderer = new WorldRenderer(mc);
+    
+        WorldRenderer worldRenderer = new WorldRenderer(mc, mc.getRenderTypeBuffers());
     
         ClientWorld newWorld;
         try {

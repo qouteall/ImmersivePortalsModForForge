@@ -89,7 +89,7 @@ public class NewNetherPortalGenerator {
         );
         
         //avoid blockpos object creation
-        BlockPos.MutableBlockPos temp = new BlockPos.MutableBlockPos();
+        BlockPos.Mutable temp = new BlockPos.Mutable();
         
         IntegerAABBInclusive toWorldHeightLimit =
             NetherPortalMatcher.getHeightLimit(toWorld.dimension.getType());

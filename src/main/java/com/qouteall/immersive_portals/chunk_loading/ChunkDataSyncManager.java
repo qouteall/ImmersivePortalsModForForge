@@ -48,7 +48,7 @@ public class ChunkDataSyncManager {
     ) {
         ChunkHolder chunkHolder = ieStorage.getChunkHolder_(chunkPos.getChunkPos().asLong());
         if (chunkHolder != null) {
-            Chunk chunk = chunkHolder.func_219298_c();
+            Chunk chunk = chunkHolder.getChunkIfComplete();
             if (chunk != null) {
                 doSendWatchPackets(
                     player,

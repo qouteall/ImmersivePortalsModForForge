@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.my_util;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Queue;
 
 //NOTE if the task returns true, it will be deleted
@@ -10,26 +11,23 @@ public class MyTaskList {
         public boolean runAndGetIsSucceeded();
     }
     
-    private Queue<MyTask> tasks = new ArrayDeque<>();
+    private final ArrayList<MyTask> tasks = new ArrayList<>();
+    private final ArrayList<MyTask> tasksToAdd = new ArrayList<>();
     
     //NOTE this method could be invoked while a task is running
     public synchronized void addTask(MyTask task) {
-        tasks.add(task);
+        tasksToAdd.add(task);
     }
     
     public synchronized void processTasks() {
-        Queue<MyTask> oldTasks = this.tasks;
-        this.tasks = new ArrayDeque<>();
-    
-        oldTasks.stream().filter(
-            task -> !task.runAndGetIsSucceeded()
-        ).forEach(
-            task -> this.tasks.add(task)
-        );
+        tasks.addAll(tasksToAdd);
+        tasksToAdd.clear();
         
+        tasks.removeIf(task -> task.runAndGetIsSucceeded());
     }
     
-    public void forceClearTasks(){
-        tasks = new ArrayDeque<>();
+    public synchronized void forceClearTasks() {
+        tasks.clear();
+        tasksToAdd.clear();
     }
 }

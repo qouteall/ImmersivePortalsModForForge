@@ -64,10 +64,7 @@ public class McHelper {
         
         
         //NOTE do not call entity.setPosition() because it may tick the entity
-        
-        entity.posX = pos.x;
-        entity.posY = pos.y;
-        entity.posZ = pos.z;
+        entity.setRawPosition(pos.x, pos.y, pos.z);
         entity.lastTickPosX = lastTickPos.x;
         entity.lastTickPosY = lastTickPos.y;
         entity.lastTickPosZ = lastTickPos.z;

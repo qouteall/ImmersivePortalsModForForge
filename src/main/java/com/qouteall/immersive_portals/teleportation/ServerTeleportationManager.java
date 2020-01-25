@@ -185,28 +185,27 @@ public class ServerTeleportationManager {
         
         //TODO fix travel when riding entity
         player.detach();
-        
+    
         //new dimension transition method
         player.dimension = toWorld.dimension.getType();
         fromWorld.removeEntity(player, true);
         player.revive();
-        
-        player.posX = destination.x;
-        player.posY = destination.y;
-        player.posZ = destination.z;
-        
+    
+        player.setRawPosition(destination.x, destination.y, destination.z);
+    
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
         toWorld.addRespawnedPlayer(player);
-        
+    
+        player.setPosition(destination.x, destination.y, destination.z);
         toWorld.chunkCheck(player);
-        
+    
         McHelper.getServer().getPlayerList().sendWorldInfo(
             player, toWorld
         );
-        
+    
         player.interactionManager.setWorld(toWorld);
-        
+    
         Helper.log(String.format(
             "%s teleported from %s %s to %s %s",
             player.getName().getFormattedText(),
@@ -308,9 +307,7 @@ public class ServerTeleportationManager {
         fromWorld.removeEntity(entity, true);
         entity.revive();
     
-        entity.posX = destination.x;
-        entity.posY = destination.y;
-        entity.posZ = destination.z;
+        entity.setPosition(destination.x, destination.y, destination.z);
     
         entity.world = toWorld;
         entity.dimension = toDimension;

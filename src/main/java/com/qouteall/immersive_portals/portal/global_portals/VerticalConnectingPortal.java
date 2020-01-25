@@ -19,10 +19,10 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     private static Predicate<GlobalTrackedPortal> getPredicate(ConnectorType connectorType) {
         switch (connectorType) {
             case floor:
-                return portal -> portal.posY < 128;
+                return portal -> portal.getPosY() < 128;
             default:
             case ceil:
-                return portal -> portal.posY > 128;
+                return portal -> portal.getPosY() > 128;
         }
     }
     

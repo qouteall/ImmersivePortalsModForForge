@@ -93,11 +93,6 @@ public class NetworkMain {
     public static IPacket createEmptyPacketByType(
         int messageType
     ) {
-        try {
-            return ProtocolType.PLAY.getPacket(PacketDirection.CLIENTBOUND, messageType);
-        }
-        catch (IllegalAccessException | InstantiationException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return ProtocolType.PLAY.getPacket(PacketDirection.CLIENTBOUND, messageType);
     }
 }

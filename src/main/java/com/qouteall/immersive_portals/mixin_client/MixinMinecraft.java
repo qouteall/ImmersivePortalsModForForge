@@ -7,9 +7,12 @@ import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.world.ClientWorld;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,6 +25,11 @@ public class MixinMinecraft implements IEMinecraftClient {
     
     @Shadow
     public Screen currentScreen;
+    
+    @Mutable
+    @Shadow
+    @Final
+    public WorldRenderer worldRenderer;
     
     @Inject(at = @At("TAIL"), method = "init()V")
     private void onInitEnded(CallbackInfo info) {
@@ -59,5 +67,10 @@ public class MixinMinecraft implements IEMinecraftClient {
     @Override
     public Screen getCurrentScreen() {
         return currentScreen;
+    }
+    
+    @Override
+    public void setWorldRenderer(WorldRenderer arg) {
+        worldRenderer = arg;
     }
 }

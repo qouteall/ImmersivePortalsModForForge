@@ -105,12 +105,12 @@ public class SpecialPortalShape {
         ListNBT tag = new ListNBT();
         
         for (TriangleInPlane triangle : triangles) {
-            tag.add(new DoubleNBT(triangle.x1));
-            tag.add(new DoubleNBT(triangle.y1));
-            tag.add(new DoubleNBT(triangle.x2));
-            tag.add(new DoubleNBT(triangle.y2));
-            tag.add(new DoubleNBT(triangle.x3));
-            tag.add(new DoubleNBT(triangle.y3));
+            tag.add(DoubleNBT.valueOf(triangle.x1));
+            tag.add(DoubleNBT.valueOf(triangle.y1));
+            tag.add(DoubleNBT.valueOf(triangle.x2));
+            tag.add(DoubleNBT.valueOf(triangle.y2));
+            tag.add(DoubleNBT.valueOf(triangle.x3));
+            tag.add(DoubleNBT.valueOf(triangle.y3));
         }
         
         return tag;

@@ -208,7 +208,7 @@ public class CollisionHelper {
                 entity, portal
             )
         ).min(
-            Comparator.comparingDouble(p -> p.posY)
+            Comparator.comparingDouble(p -> p.getPosY())
         ).orElse(null);
     }
     

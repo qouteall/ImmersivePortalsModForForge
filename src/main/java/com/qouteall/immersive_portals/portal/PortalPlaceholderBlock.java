@@ -186,11 +186,6 @@ public class PortalPlaceholderBlock extends Block {
         return BlockRenderType.INVISIBLE;
     }
     
-    @Override
-    public boolean isSolid(BlockState blockState_1) {
-        return false;
-    }
-    
     @OnlyIn(Dist.CLIENT)
     @Override
     public float getAmbientOcclusionLightValue(

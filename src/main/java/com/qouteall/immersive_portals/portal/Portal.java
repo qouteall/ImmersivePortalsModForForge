@@ -30,6 +30,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     public Vec3d destination;
     
     public boolean loadFewerChunks = true;
+    public boolean teleportable = true;
     public UUID specificPlayer;
     public SpecialPortalShape specialShape;
     
@@ -76,6 +77,12 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
                 specialShape = null;
             }
         }
+        if (compoundTag.contains("teleportable")) {
+            teleportable = compoundTag.getBoolean("teleportable");
+        }
+        else {
+            teleportable = true;
+        }
     }
     
     @Override
@@ -93,6 +100,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         if (specialShape != null) {
             compoundTag.put("specialShape", specialShape.writeToTag());
         }
+        compoundTag.putBoolean("teleportable", teleportable);
     }
     
     public Vec3d getNormal() {
@@ -102,7 +110,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     }
     
     public boolean isTeleportable() {
-        return true;
+        return teleportable;
     }
     
     public Vec3d getContentDirection() {
@@ -157,6 +165,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         buffer.writeDouble(destination.y);
         buffer.writeDouble(destination.z);
         buffer.writeBoolean(loadFewerChunks);
+        buffer.writeBoolean(teleportable);
     
         CompoundNBT specialShapeTag = new CompoundNBT();
         if (specialShape != null) {
@@ -186,6 +195,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
             buffer.readDouble()
         );
         loadFewerChunks = buffer.readBoolean();
+        teleportable = buffer.readBoolean();
     
         CompoundNBT specialShapeTag = buffer.readCompoundTag();
         if (specialShapeTag.contains("data")) {
@@ -280,7 +290,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
             Direction.getFacingFromVector(
                 getNormal().x, getNormal().y, getNormal().z
             ),
-            dimension, (int) posX, (int) posY, (int) posZ,
+            dimension, (int) getPosX(), (int) getPosY(), (int) getPosZ(),
             dimensionTo, (int) destination.x, (int) destination.y, (int) destination.z
         );
     }

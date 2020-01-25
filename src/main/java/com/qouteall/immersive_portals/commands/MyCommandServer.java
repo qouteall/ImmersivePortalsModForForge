@@ -144,11 +144,11 @@ public class MyCommandServer {
         builder.then(Commands
             .literal("set_portal_nbt")
             .then(Commands
-                .argument("nbt", NBTCompoundTagArgument.func_218043_a())
+                .argument("nbt", NBTCompoundTagArgument.nbt())
                 .executes(context -> processPortalTargetedCommand(
                     context,
                     portal -> {
-                        CompoundNBT newNbt = NBTCompoundTagArgument.func_218042_a(
+                        CompoundNBT newNbt = NBTCompoundTagArgument.getNbt(
                             context, "nbt"
                         );
                         
@@ -187,7 +187,7 @@ public class MyCommandServer {
                             context,
                             portal -> {
                                 try {
-                                    portal.dimensionTo = DimensionArgument.func_212592_a(
+                                    portal.dimensionTo = DimensionArgument.getDimensionArgument(
                                         context, "dim"
                                     );
                                     portal.destination = Vec3Argument.getVec3(
@@ -220,7 +220,7 @@ public class MyCommandServer {
                         Vec3Argument.vec3()
                     ).executes(
                         context -> {
-                            DimensionType dimension = DimensionArgument.func_212592_a(
+                            DimensionType dimension = DimensionArgument.getDimensionArgument(
                                 context, "dim"
                             );
                             Vec3d pos = Vec3Argument.getVec3(
@@ -320,10 +320,10 @@ public class MyCommandServer {
                         DimensionArgument.getDimension()
                     ).executes(
                         context -> {
-                            DimensionType from = DimensionArgument.func_212592_a(
+                            DimensionType from = DimensionArgument.getDimensionArgument(
                                 context, "from"
                             );
-                            DimensionType to = DimensionArgument.func_212592_a(
+                            DimensionType to = DimensionArgument.getDimensionArgument(
                                 context, "to"
                             );
                             
@@ -349,10 +349,10 @@ public class MyCommandServer {
                         DimensionArgument.getDimension()
                     ).executes(
                         context -> {
-                            DimensionType from = DimensionArgument.func_212592_a(
+                            DimensionType from = DimensionArgument.getDimensionArgument(
                                 context, "from"
                             );
-                            DimensionType to = DimensionArgument.func_212592_a(
+                            DimensionType to = DimensionArgument.getDimensionArgument(
                                 context, "to"
                             );
                             
@@ -374,7 +374,7 @@ public class MyCommandServer {
                     DimensionArgument.getDimension()
                 ).executes(
                     context -> {
-                        DimensionType dim = DimensionArgument.func_212592_a(
+                        DimensionType dim = DimensionArgument.getDimensionArgument(
                             context, "dim"
                         );
                         
@@ -395,7 +395,7 @@ public class MyCommandServer {
                     DimensionArgument.getDimension()
                 ).executes(
                     context -> {
-                        DimensionType dim = DimensionArgument.func_212592_a(
+                        DimensionType dim = DimensionArgument.getDimensionArgument(
                             context, "dim"
                         );
                         
@@ -551,7 +551,7 @@ public class MyCommandServer {
         
         Portal newPortal = Portal.entityType.create(world);
         newPortal.dimensionTo = portal.dimensionTo;
-        newPortal.setPosition(portal.posX, portal.posY, portal.posZ);
+        newPortal.setPosition(portal.getPosX(), portal.getPosY(), portal.getPosZ());
         newPortal.destination = portal.destination;
         newPortal.loadFewerChunks = portal.loadFewerChunks;
         newPortal.specificPlayer = portal.specificPlayer;

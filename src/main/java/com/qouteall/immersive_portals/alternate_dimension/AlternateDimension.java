@@ -34,7 +34,7 @@ public class AlternateDimension extends Dimension {
         World worldIn,
         DimensionType typeIn
     ) {
-        super(worldIn, typeIn);
+        super(worldIn, typeIn, 0.0F);
     }
     
     public ChunkGenerator<?> createChunkGenerator() {
@@ -45,7 +45,7 @@ public class AlternateDimension extends Dimension {
         return ChunkGeneratorType.FLOATING_ISLANDS.create(
             this.world,
             BiomeProviderType.FIXED.create(
-                BiomeProviderType.FIXED.createSettings().setBiome(
+                BiomeProviderType.FIXED.func_226840_a_(world.getWorldInfo()).setBiome(
                     Registry.BIOME.getRandom(random)
                 )
             ),
@@ -156,10 +156,10 @@ public class AlternateDimension extends Dimension {
     }
     
     //avoid dark sky when camera is low
-    @Override
-    public double getHorizon() {
-        return -999;
-    }
+//    @Override
+//    public double getHorizon() {
+//        return -999;
+//    }
     
     //avoid dark fog when camera is low
     @OnlyIn(Dist.CLIENT)

@@ -73,9 +73,9 @@ public class NetherPortalShape {
         ListNBT list = new ListNBT();
         
         area.forEach(blockPos -> {
-            list.add(list.size(), new IntNBT(blockPos.getX()));
-            list.add(list.size(), new IntNBT(blockPos.getY()));
-            list.add(list.size(), new IntNBT(blockPos.getZ()));
+            list.add(list.size(), IntNBT.valueOf(blockPos.getX()));
+            list.add(list.size(), IntNBT.valueOf(blockPos.getY()));
+            list.add(list.size(), IntNBT.valueOf(blockPos.getZ()));
         });
         
         data.put("poses", list);
@@ -205,7 +205,7 @@ public class NetherPortalShape {
         Predicate<BlockPos> isAir,
         Predicate<BlockPos> isObsidian,
         BlockPos newAnchor,
-        BlockPos.MutableBlockPos temp
+        BlockPos.Mutable temp
     ) {
         if (!isAir.test(newAnchor)) {
             return null;

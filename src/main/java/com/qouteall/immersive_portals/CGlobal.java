@@ -2,7 +2,6 @@ package com.qouteall.immersive_portals;
 
 import com.qouteall.immersive_portals.render.*;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.world.dimension.DimensionType;
 
 import java.lang.ref.WeakReference;
@@ -26,8 +25,6 @@ public class CGlobal {
     public static ClientWorldLoader clientWorldLoader;
     public static MyGameRenderer myGameRenderer;
     public static ClientTeleportationManager clientTeleportationManager;
-    
-    public static WeakReference<Frustum> currentFrustumCuller;
     
     public static boolean doUseAdvancedFrustumCulling = true;
     public static int maxPortalLayer = 5;
