@@ -1,25 +1,27 @@
 package com.qouteall.immersive_portals.render;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.*;
-import com.qouteall.immersive_portals.ducks.IEChunkRenderList;
-import com.qouteall.immersive_portals.ducks.IEGameRenderer;
-import com.qouteall.immersive_portals.ducks.IEPlayerListEntry;
-import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
-import com.qouteall.immersive_portals.portal.Mirror;
+import com.qouteall.immersive_portals.ducks.*;
 import com.qouteall.immersive_portals.portal.Portal;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
-import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.ActiveRenderInfo;
+import net.minecraft.client.renderer.FogRenderer;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameType;
 import org.lwjgl.opengl.GL11;
-
-import java.util.List;
 
 public class MyGameRenderer {
     private Minecraft mc = Minecraft.getInstance();
@@ -33,14 +35,15 @@ public class MyGameRenderer {
         float partialTicks,
         WorldRenderer newWorldRenderer,
         ClientWorld newWorld,
-        Vec3d oldCameraPos
+        Vec3d oldCameraPos,
+        ClientWorld oldWorld
     ) {
-        ViewFrustum chunkRenderDispatcher =
-            ((IEWorldRenderer) newWorldRenderer).getChunkRenderDispatcher();
-        chunkRenderDispatcher.updateChunkPositions(
-            mc.player.posX, mc.player.posZ
-        );
-        
+//        BuiltChunkStorage chunkRenderDispatcher =
+//            ((IEWorldRenderer) newWorldRenderer).getBuiltChunkStorage();
+//        chunkRenderDispatcher.updateCameraPosition(
+//            mc.player.getX(), mc.player.getZ()
+//        );
+    
         IEGameRenderer ieGameRenderer = (IEGameRenderer) mc.gameRenderer;
         DimensionRenderHelper helper =
             CGlobal.clientWorldLoader.getDimensionRenderHelper(newWorld.dimension.getType());
@@ -49,23 +52,18 @@ public class MyGameRenderer {
     
         //store old state
         WorldRenderer oldWorldRenderer = mc.worldRenderer;
-        ClientWorld oldWorld = mc.world;
         LightTexture oldLightmap = ieGameRenderer.getLightmapTextureManager();
-        FogRenderer oldFogRenderer = ieGameRenderer.getBackgroundRenderer();
         GameType oldGameMode = playerListEntry.getGameType();
         boolean oldNoClip = mc.player.noClip;
         boolean oldDoRenderHand = ieGameRenderer.getDoRenderHand();
-        List oldChunkInfos = ((IEWorldRenderer) mc.worldRenderer).getChunkInfos();
-        IEChunkRenderList oldChunkRenderList =
-            (IEChunkRenderList) ((IEWorldRenderer) oldWorldRenderer).getChunkRenderList();
-        //List<ChunkRenderer> oldChunkRenderers = oldChunkRenderList.getChunkRenderers();
-    
         OFInterface.createNewRenderInfosNormal.accept(newWorldRenderer);
-        
+        ObjectList oldVisibleChunks = ((IEWorldRenderer) oldWorldRenderer).getVisibleChunks();
+    
+        ((IEWorldRenderer) oldWorldRenderer).setVisibleChunks(new ObjectArrayList());
+    
         //switch
-        mc.worldRenderer = newWorldRenderer;
+        ((IEMinecraftClient) mc).setWorldRenderer(newWorldRenderer);
         mc.world = newWorld;
-        ieGameRenderer.setBackgroundRenderer(helper.fogRenderer);
         ieGameRenderer.setLightmapTextureManager(helper.lightmapTexture);
         helper.lightmapTexture.updateLightmap(0);
         helper.lightmapTexture.enableLightmap();
@@ -75,35 +73,24 @@ public class MyGameRenderer {
         ieGameRenderer.setDoRenderHand(false);
         GlStateManager.matrixMode(GL11.GL_MODELVIEW);
         GlStateManager.pushMatrix();
-    
-        CGlobal.renderInfoNumMap.put(
-            newWorld.dimension.getType(),
-            ((IEWorldRenderer) mc.worldRenderer).getChunkInfos().size()
-        );
-    
-        updateCullingPlane();
-        
-        //this is important
-        GlStateManager.disableBlend();
-        GlStateManager.shadeModel(GL11.GL_SMOOTH);
-        RenderHelper.disableStandardItemLighting();
-        ((GameRenderer) ieGameRenderer).disableLightmap();
+        FogRendererContext.swappingManager.pushSwapping(newWorld.dimension.getType());
+        ((IEParticleManager) mc.particles).mySetWorld(newWorld);
     
         mc.getProfiler().startSection("render_portal_content");
     
-        CGlobal.switchedFogRenderer = ieGameRenderer.getBackgroundRenderer();
-        
         //invoke it!
         OFInterface.beforeRenderCenter.accept(partialTicks);
-        ieGameRenderer.renderCenter_(partialTicks, getChunkUpdateFinishTime());
+        mc.gameRenderer.renderWorld(
+            partialTicks, getChunkUpdateFinishTime(),
+            new MatrixStack()
+        );
         OFInterface.afterRenderCenter.run();
     
         mc.getProfiler().endSection();
     
         //recover
-        mc.worldRenderer = oldWorldRenderer;
+        ((IEMinecraftClient) mc).setWorldRenderer(oldWorldRenderer);
         mc.world = oldWorld;
-        ieGameRenderer.setBackgroundRenderer(oldFogRenderer);
         ieGameRenderer.setLightmapTextureManager(oldLightmap);
         TileEntityRendererDispatcher.instance.world = oldWorld;
         ((IEPlayerListEntry) playerListEntry).setGameMode(oldGameMode);
@@ -111,13 +98,12 @@ public class MyGameRenderer {
         ieGameRenderer.setDoRenderHand(oldDoRenderHand);
         GlStateManager.matrixMode(GL11.GL_MODELVIEW);
         GlStateManager.popMatrix();
-        GlStateManager.enableBlend();
-        ((IEWorldRenderer) mc.worldRenderer).setChunkInfos(oldChunkInfos);
+        ((IEParticleManager) mc.particles).mySetWorld(oldWorld);
     
+        FogRendererContext.swappingManager.popSwapping();
     
-        oldChunkRenderList.setCameraPos(oldCameraPos.x, oldCameraPos.y, oldCameraPos.z);
-        // oldChunkRenderList.setChunkRenderers(oldChunkRenderers);
-        
+        ((IEWorldRenderer) oldWorldRenderer).setVisibleChunks(oldVisibleChunks);
+        ((IECamera) mc.gameRenderer.getActiveRenderInfo()).resetState(oldCameraPos, oldWorld);
     }
     
     public void endCulling() {
@@ -125,7 +111,7 @@ public class MyGameRenderer {
     }
     
     public void startCulling() {
-        //shaders does not compatible with glCullPlane
+        //shaders do not compatible with glCullPlane
         //I have to modify shader code
         if (CGlobal.useFrontCulling && !OFInterface.isShaders.getAsBoolean()) {
             GL11.glEnable(GL11.GL_CLIP_PLANE0);
@@ -133,11 +119,16 @@ public class MyGameRenderer {
     }
     
     //NOTE the actual culling plane is related to current model view matrix
-    public void updateCullingPlane() {
-        clipPlaneEquation = calcClipPlaneEquation();
-        if (!OFInterface.isShaders.getAsBoolean()) {
-            GL11.glClipPlane(GL11.GL_CLIP_PLANE0, clipPlaneEquation);
-        }
+    public void updateCullingPlane(MatrixStack matrixStack) {
+        McHelper.runWithTransformation(
+            matrixStack,
+            () -> {
+                clipPlaneEquation = calcClipPlaneEquation();
+                if (!OFInterface.isShaders.getAsBoolean()) {
+                    GL11.glClipPlane(GL11.GL_CLIP_PLANE0, clipPlaneEquation);
+                }
+            }
+        );
     }
     
     private long getChunkUpdateFinishTime() {
@@ -149,20 +140,15 @@ public class MyGameRenderer {
     private double[] calcClipPlaneEquation() {
         Portal portal = CGlobal.renderer.getRenderingPortal();
     
-        Vec3d planeNormal = portal.getNormal().scale(-1);
+        Vec3d planeNormal = portal.getContentDirection();
     
-        if (portal instanceof Mirror && OFInterface.isShaders.getAsBoolean()) {
-            planeNormal = planeNormal.scale(-1);
-        }
-    
-        Vec3d cameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
-        Vec3d cullingPos = portal.getPointInPortalProjection(cameraPos)
-            .subtract(cameraPos)
-            .subtract(portal.getNormal().scale(-0.01));//avoid z fighting
+        Vec3d portalPos = portal.destination
+            .subtract(portal.getNormal().scale(-0.01))//avoid z fighting
+            .subtract(mc.gameRenderer.getActiveRenderInfo().getProjectedView());
     
         //equation: planeNormal * p + c > 0
         //-planeNormal * portalCenter = c
-        double c = planeNormal.scale(-1).dotProduct(cullingPos);
+        double c = planeNormal.scale(-1).dotProduct(portalPos);
     
         return new double[]{
             planeNormal.x,
@@ -176,17 +162,8 @@ public class MyGameRenderer {
         return clipPlaneEquation;
     }
     
-    public void renderPlayerItselfIfNecessary() {
-        if (CGlobal.renderer.shouldRenderPlayerItself()) {
-            renderPlayerItself(
-                MyRenderHelper.originalPlayerPos,
-                MyRenderHelper.originalPlayerLastTickPos,
-                MyRenderHelper.partialTicks
-            );
-        }
-    }
     
-    private void renderPlayerItself(Vec3d playerPos, Vec3d playerLastTickPos, float patialTicks) {
+    public void renderPlayerItself(Runnable doRenderEntity) {
         EntityRendererManager entityRenderDispatcher =
             ((IEWorldRenderer) mc.worldRenderer).getEntityRenderDispatcher();
         NetworkPlayerInfo playerListEntry = CHelper.getClientPlayerListEntry();
@@ -196,19 +173,60 @@ public class MyGameRenderer {
         assert player != null;
         
         Vec3d oldPos = player.getPositionVec();
-        Vec3d oldLastTickPos = Helper.lastTickPosOf(player);
+        Vec3d oldLastTickPos = McHelper.lastTickPosOf(player);
         GameType oldGameMode = playerListEntry.getGameType();
-    
+        
         McHelper.setPosAndLastTickPos(
-            player, playerPos, playerLastTickPos
+            player, MyRenderHelper.originalPlayerPos, MyRenderHelper.originalPlayerLastTickPos
         );
         ((IEPlayerListEntry) playerListEntry).setGameMode(originalGameMode);
-    
-        entityRenderDispatcher.renderEntityStatic(player, patialTicks, false);
-    
+        
+        doRenderEntity.run();
+        
         McHelper.setPosAndLastTickPos(
             player, oldPos, oldLastTickPos
         );
         ((IEPlayerListEntry) playerListEntry).setGameMode(oldGameMode);
     }
+    
+    public void resetFog() {
+        ActiveRenderInfo camera = mc.gameRenderer.getActiveRenderInfo();
+        float g = mc.gameRenderer.getFarPlaneDistance();
+        
+        Vec3d cameraPos = camera.getProjectedView();
+        double d = cameraPos.getX();
+        double e = cameraPos.getY();
+        double f = cameraPos.getZ();
+        
+        boolean bl2 = mc.world.dimension.doesXZShowFog(
+            MathHelper.floor(d),
+            MathHelper.floor(e)
+        ) || mc.ingameGUI.getBossOverlay().shouldCreateFog();
+        
+        FogRenderer.setupFog(
+            camera,
+            FogRenderer.FogType.FOG_TERRAIN,
+            Math.max(g - 16.0F, 32.0F),
+            bl2
+        );
+        
+    }
+    
+    //render fewer chunks when rendering portal
+    //only active when graphic option is not fancy
+    //NOTE we should not prune these chunks in setupTerrain()
+    //because if it's pruned there these chunks will be rebuilt
+    //then it will generate lag when player cross the portal by building chunks
+    //we want the far chunks to be built but not rendered
+    public void pruneVisibleChunks(ObjectList<?> visibleChunks, int renderDistance) {
+        Vec3d cameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
+        double range = ((renderDistance * 16) / 3) * ((renderDistance * 16) / 3);
+        
+        visibleChunks.removeIf(obj -> {
+            ChunkRenderDispatcher.ChunkRender builtChunk = ((IEWorldRendererChunkInfo) obj).getBuiltChunk();
+            Vec3d center = builtChunk.boundingBox.getCenter();
+            return center.squareDistanceTo(cameraPos) > range;
+        });
+    }
+    
 }

@@ -1,6 +1,8 @@
 package com.qouteall.immersive_portals;
 
 import com.google.common.collect.Streams;
+import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.CommandDispatcher;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.portal.Portal;
@@ -20,6 +22,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
+import org.lwjgl.opengl.GL11;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -213,5 +216,27 @@ public class McHelper {
         else {
             return GlobalPortalStorage.get(((ServerWorld) world)).data;
         }
+    }
+    
+    
+    public static void runWithTransformation(
+        MatrixStack matrixStack,
+        Runnable renderingFunc
+    ) {
+        transformationPush(matrixStack);
+        renderingFunc.run();
+        transformationPop();
+    }
+    
+    public static void transformationPop() {
+        RenderSystem.matrixMode(GL11.GL_MODELVIEW);
+        RenderSystem.popMatrix();
+    }
+    
+    public static void transformationPush(MatrixStack matrixStack) {
+        RenderSystem.matrixMode(GL11.GL_MODELVIEW);
+        RenderSystem.pushMatrix();
+        RenderSystem.loadIdentity();
+        RenderSystem.multMatrix(matrixStack.getLast().getPositionMatrix());
     }
 }

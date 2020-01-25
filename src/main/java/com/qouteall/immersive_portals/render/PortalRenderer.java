@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.render;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.*;
 import com.qouteall.immersive_portals.portal.Portal;
@@ -21,17 +22,16 @@ public abstract class PortalRenderer {
     
     public static final Minecraft mc = Minecraft.getInstance();
     protected Supplier<Integer> maxPortalLayer = () -> CGlobal.maxPortalLayer;
-    private Supplier<Double> portalRenderingRange = () -> 64.0;
     protected Stack<Portal> portalLayers = new Stack<>();
     
     //this WILL be called when rendering portal
-    public abstract void onBeforeTranslucentRendering();
+    public abstract void onBeforeTranslucentRendering(MatrixStack matrixStack);
     
     //this WILL be called when rendering portal
-    public abstract void onAfterTranslucentRendering();
+    public abstract void onAfterTranslucentRendering(MatrixStack matrixStack);
     
     //this WILL be called when rendering portal
-    public abstract void onRenderCenterEnded();
+    public abstract void onRenderCenterEnded(MatrixStack matrixStack);
     
     //this will NOT be called when rendering portal
     public abstract void prepareRendering();
@@ -60,16 +60,9 @@ public abstract class PortalRenderer {
     }
     
     public boolean shouldRenderPlayerItself() {
-        if (!isRendering()) {
-            return false;
-        }
-        if (mc.renderViewEntity.dimension != MyRenderHelper.originalPlayerDimension) {
-            return false;
-        }
-        return getRenderingPortal().canRenderEntityInsideMe(
-            MyRenderHelper.originalPlayerPos.add(0, mc.renderViewEntity.getEyeHeight(), 0),
-            0.5
-        );
+        return isRendering() &&
+            mc.renderViewEntity.dimension == MyRenderHelper.originalPlayerDimension &&
+            getRenderingPortal().canRenderEntityInsideMe(MyRenderHelper.originalPlayerPos, -0.01);
     }
     
     public boolean shouldRenderEntityNow(Entity entity) {
@@ -82,27 +75,31 @@ public abstract class PortalRenderer {
         return true;
     }
     
-    protected void renderPortals() {
+    protected void renderPortals(MatrixStack matrixStack) {
         assert mc.renderViewEntity.world == mc.world;
         assert mc.renderViewEntity.dimension == mc.world.dimension.getType();
-    
-        CHelper.checkGlError();
-    
-        for (Portal portal : getPortalsNearbySorted()) {
-            renderPortalIfRoughCheckPassed(portal);
+        
+        //currently does not support nested portal rendering in mirror
+        if (MyRenderHelper.isRenderingMirror()) {
+            return;
         }
-    
-        CHelper.checkGlError();
+        
+        for (Portal portal : getPortalsNearbySorted()) {
+            renderPortalIfRoughCheckPassed(portal, matrixStack);
+        }
     }
     
-    private void renderPortalIfRoughCheckPassed(Portal portal) {
+    private void renderPortalIfRoughCheckPassed(
+        Portal portal,
+        MatrixStack matrixStack
+    ) {
         if (!portal.isPortalValid()) {
             Helper.err("rendering invalid portal " + portal);
             return;
         }
         
-        //do not use last tick pos
-        Vec3d thisTickEyePos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vec3d thisTickEyePos = getRoughTestCameraPos();
+        
         if (!portal.isInFrontOfPortal(thisTickEyePos)) {
             return;
         }
@@ -115,7 +112,14 @@ public abstract class PortalRenderer {
             }
         }
         
-        doRenderPortal(portal);
+        doRenderPortal(portal, matrixStack);
+    }
+    
+    private Vec3d getRoughTestCameraPos() {
+        if (mc.gameRenderer.getActiveRenderInfo().isThirdPerson()) {
+            return mc.gameRenderer.getActiveRenderInfo().getProjectedView();
+        }
+        return mc.renderViewEntity.getEyePosition(MyRenderHelper.partialTicks);
     }
     
     private List<Portal> getPortalsNearbySorted() {
@@ -129,28 +133,38 @@ public abstract class PortalRenderer {
             ).collect(Collectors.toList());
     }
     
-    protected abstract void doRenderPortal(Portal portal);
+    protected abstract void doRenderPortal(
+        Portal portal,
+        MatrixStack matrixStack
+    );
     
-    //it will overwrite the matrix
     protected final void manageCameraAndRenderPortalContent(
         Portal portal
     ) {
         if (getPortalLayer() > maxPortalLayer.get()) {
             return;
         }
-    
-        MyRenderHelper.onBeginPortalWorldRendering(portalLayers);
         
         Entity cameraEntity = mc.renderViewEntity;
         ActiveRenderInfo camera = mc.gameRenderer.getActiveRenderInfo();
         
+        if (getPortalLayer() >= 2 &&
+            portal.getDistanceToNearestPointInPortal(cameraEntity.getPositionVec()) >
+                (16 * maxPortalLayer.get())
+        ) {
+            return;
+        }
+        
+        MyRenderHelper.onBeginPortalWorldRendering(portalLayers);
+        
+        
         assert cameraEntity.world == mc.world;
         
         Vec3d oldPos = cameraEntity.getPositionVec();
-        Vec3d oldLastTickPos = Helper.lastTickPosOf(cameraEntity);
+        Vec3d oldLastTickPos = McHelper.lastTickPosOf(cameraEntity);
         DimensionType oldDimension = cameraEntity.dimension;
         ClientWorld oldWorld = ((ClientWorld) cameraEntity.world);
-    
+        
         Vec3d oldCameraPos = camera.getProjectedView();
         
         Vec3d newPos = portal.applyTransformationToPoint(oldPos);
@@ -159,14 +173,14 @@ public abstract class PortalRenderer {
         ClientWorld newWorld =
             CGlobal.clientWorldLoader.getOrCreateFakedWorld(newDimension);
         //Vec3d newCameraPos = portal.applyTransformationToPoint(oldCameraPos);
-    
+        
         McHelper.setPosAndLastTickPos(cameraEntity, newPos, newLastTickPos);
         cameraEntity.dimension = newDimension;
         cameraEntity.world = newWorld;
         mc.world = newWorld;
     
         renderPortalContentWithContextSwitched(
-            portal, oldCameraPos
+            portal, oldCameraPos, oldWorld
         );
         
         //restore the position
@@ -175,14 +189,15 @@ public abstract class PortalRenderer {
         mc.world = oldWorld;
         McHelper.setPosAndLastTickPos(cameraEntity, oldPos, oldLastTickPos);
         
-        //restore the transformation
         GlStateManager.enableDepthTest();
         GlStateManager.disableBlend();
-        MyRenderHelper.setupCameraTransformation();
+        MyRenderHelper.restoreViewPort();
+        
+        CGlobal.myGameRenderer.resetFog();
     }
     
     protected void renderPortalContentWithContextSwitched(
-        Portal portal, Vec3d oldCameraPos
+        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
     ) {
         GlStateManager.enableAlphaTest();
         GlStateManager.enableCull();
@@ -193,7 +208,7 @@ public abstract class PortalRenderer {
         CHelper.checkGlError();
     
         CGlobal.myGameRenderer.renderWorld(
-            MyRenderHelper.partialTicks, worldRenderer, destClientWorld, oldCameraPos
+            MyRenderHelper.partialTicks, worldRenderer, destClientWorld, oldCameraPos, oldWorld
         );
     
         CHelper.checkGlError();

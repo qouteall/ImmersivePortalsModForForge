@@ -1,6 +1,8 @@
 package com.qouteall.immersive_portals.render;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
@@ -11,28 +13,31 @@ public class LoadingIndicatorRenderer extends EntityRenderer<LoadingIndicatorEnt
     }
     
     @Override
-    protected ResourceLocation getEntityTexture(LoadingIndicatorEntity var1) {
+    public ResourceLocation getEntityTexture(LoadingIndicatorEntity var1) {
         return null;
     }
     
     @Override
-    public void doRender(
+    public void render(
         LoadingIndicatorEntity entity_1,
-        double double_1,
-        double double_2,
-        double double_3,
         float float_1,
-        float float_2
+        float float_2,
+        MatrixStack matrixStack_1,
+        IRenderTypeBuffer vertexConsumerProvider_1,
+        int int_1
     ) {
-    
         String[] splited = entity_1.getText().split("\n");
         for (int i = 0; i < splited.length; i++) {
-            this.renderEntityName(
-                entity_1, double_1, double_2 - i * 0.5, double_3,
-                splited[i], 64
+            matrixStack_1.push();
+            matrixStack_1.translate(0, -i * 0.5, 0);
+            this.renderName(
+                entity_1,
+                splited[i],
+                matrixStack_1,
+                vertexConsumerProvider_1,
+                int_1
             );
+            matrixStack_1.pop();
         }
-    
-        
     }
 }

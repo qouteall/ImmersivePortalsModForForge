@@ -1,9 +1,12 @@
 package com.qouteall.immersive_portals.render;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ducks.IEGlFrameBuffer;
 import com.qouteall.immersive_portals.portal.Portal;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.BufferUtils;
@@ -24,29 +27,29 @@ public class RendererUsingStencil extends PortalRenderer {
     }
     
     @Override
-    public void onBeforeTranslucentRendering() {
+    public void onBeforeTranslucentRendering(MatrixStack matrixStack) {
         if (!isRendering()) {
-            doPortalRendering();
+            doPortalRendering(matrixStack);
         }
     }
     
-    private void doPortalRendering() {
+    private void doPortalRendering(MatrixStack matrixStack) {
         mc.getProfiler().endStartSection("render_portal_total");
-        renderPortals();
+        renderPortals(matrixStack);
         if (!isRendering()) {
             myFinishRendering();
         }
     }
     
     @Override
-    public void onAfterTranslucentRendering() {
+    public void onAfterTranslucentRendering(MatrixStack matrixStack) {
         if (isRendering()) {
-            doPortalRendering();
+            doPortalRendering(matrixStack);
         }
     }
     
     @Override
-    public void onRenderCenterEnded() {
+    public void onRenderCenterEnded(MatrixStack matrixStack) {
         //nothing
     }
     
@@ -77,36 +80,34 @@ public class RendererUsingStencil extends PortalRenderer {
     }
     
     @Override
-    protected void doRenderPortal(Portal portal) {
+    protected void doRenderPortal(
+        Portal portal,
+        MatrixStack matrixStack
+    ) {
         int outerPortalStencilValue = getPortalLayer();
-    
-        MyRenderHelper.setupCameraTransformation();
-    
+        
         mc.getProfiler().startSection("render_view_area");
         boolean anySamplePassed = QueryManager.renderAndGetDoesAnySamplePassed(() -> {
-            renderPortalViewAreaToStencil(portal);
+            renderPortalViewAreaToStencil(portal, matrixStack);
         });
         mc.getProfiler().endSection();
         
         if (!anySamplePassed) {
             return;
         }
-    
+        
         //PUSH
         portalLayers.push(portal);
         
         int thisPortalStencilValue = outerPortalStencilValue + 1;
-    
+        
         mc.getProfiler().startSection("clear_depth_of_view_area");
         clearDepthOfThePortalViewArea(portal);
         mc.getProfiler().endSection();
         
         manageCameraAndRenderPortalContent(portal);
         
-        //the world rendering will modify the transformation
-        MyRenderHelper.setupCameraTransformation();
-        
-        restoreDepthOfPortalViewArea(portal);
+        restoreDepthOfPortalViewArea(portal, matrixStack);
         
         clampStencilValue(outerPortalStencilValue);
         
@@ -121,21 +122,21 @@ public class RendererUsingStencil extends PortalRenderer {
     
     @Override
     protected void renderPortalContentWithContextSwitched(
-        Portal portal, Vec3d oldCameraPos
+        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
     ) {
         int thisPortalStencilValue = getPortalLayer();
-        
+    
         //draw content in the mask
         GL11.glStencilFunc(GL_EQUAL, thisPortalStencilValue, 0xFF);
-        
+    
         //do not manipulate stencil packetBuffer now
         GL11.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        
-        super.renderPortalContentWithContextSwitched(portal, oldCameraPos);
+    
+        super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
     }
     
     private void renderPortalViewAreaToStencil(
-        Portal portal
+        Portal portal, MatrixStack matrixStack
     ) {
         int outerPortalStencilValue = getPortalLayer();
         
@@ -149,13 +150,15 @@ public class RendererUsingStencil extends PortalRenderer {
         //its stencil value will still increase by one
     
         GL11.glStencilMask(0xFF);
-        GlStateManager.depthMask(true);
     
         GlStateManager.disableBlend();
     
         GL20.glUseProgram(0);
     
-        ViewAreaRenderer.drawPortalViewTriangle(portal);
+        RenderSystem.enableDepthTest();
+        GlStateManager.depthMask(true);
+    
+        ViewAreaRenderer.drawPortalViewTriangle(portal, matrixStack);
     
         GlStateManager.enableBlend();
     
@@ -190,7 +193,6 @@ public class RendererUsingStencil extends PortalRenderer {
         GL11.glDepthRange(1, 1);
     
         MyRenderHelper.renderScreenTriangle();
-        //drawPortalViewTriangle(partialTicks, portal);
         
         //retrieve the state
         GL11.glColorMask(true, true, true, true);
@@ -199,26 +201,28 @@ public class RendererUsingStencil extends PortalRenderer {
     }
     
     private void restoreDepthOfPortalViewArea(
-        Portal portal
+        Portal portal, MatrixStack matrixStack
     ) {
         int thisPortalStencilValue = getPortalLayer();
-        
+    
         //do not manipulate stencil packetBuffer
         GL11.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        
-        //only draw in its PortalEntity view area and nested portal's view area
-        GL11.glStencilFunc(GL_EQUAL, thisPortalStencilValue, 0xFF);
-        
+    
+        //only draw in portalView area
+        GL11.glStencilFunc(GL_LEQUAL, thisPortalStencilValue, 0xFF);
+    
         //do not manipulate color packetBuffer
         GL11.glColorMask(false, false, false, false);
-        
+    
         //do manipulate the depth packetBuffer
         GL11.glDepthMask(true);
     
         GL20.glUseProgram(0);
     
-        ViewAreaRenderer.drawPortalViewTriangle(portal);
-        
+        GlStateManager.enableDepthTest();
+    
+        ViewAreaRenderer.drawPortalViewTriangle(portal, matrixStack);
+    
         GL11.glColorMask(true, true, true, true);
     }
     
@@ -253,18 +257,14 @@ public class RendererUsingStencil extends PortalRenderer {
         GlStateManager.enableDepthTest();
     }
     
-    public void renderViewArea(Portal portal) {
+    public void renderViewArea(Portal portal, MatrixStack matrixStack) {
         Entity renderViewEntity = mc.renderViewEntity;
         
         if (!portal.isInFrontOfPortal(renderViewEntity.getPositionVec())) {
             return;
         }
         
-        //TODO maybe should update fog color here?
-    
-        MyRenderHelper.setupCameraTransformation();
-        
-        renderPortalViewAreaToStencil(portal);
+        renderPortalViewAreaToStencil(portal, matrixStack);
     }
     
 }

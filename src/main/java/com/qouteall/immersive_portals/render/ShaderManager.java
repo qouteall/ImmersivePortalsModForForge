@@ -10,6 +10,7 @@ import java.nio.charset.Charset;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 
+//this is not correlated with optifine shaders
 public class ShaderManager {
     private int idContentShaderProgram = -1;
     
@@ -92,8 +93,11 @@ public class ShaderManager {
         
         GL20.glUniform1i(uniSampler, textureSlot);
         
-        GL20.glUniform1f(uniWidth, Minecraft.getInstance().mainWindow.getFramebufferWidth());
-        GL20.glUniform1f(uniHeight, Minecraft.getInstance().mainWindow.getFramebufferHeight());
+        GL20.glUniform1f(uniWidth, Minecraft.getInstance().getMainWindow().getFramebufferWidth());
+        GL20.glUniform1f(
+            uniHeight,
+            Minecraft.getInstance().getMainWindow().getFramebufferHeight()
+        );
     }
     
     public void unloadShader() {

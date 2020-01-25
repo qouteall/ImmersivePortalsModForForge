@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.render;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.portal.Portal;
 
 public class RendererDummy extends PortalRenderer {
@@ -14,17 +15,17 @@ public class RendererDummy extends PortalRenderer {
     }
     
     @Override
-    public void onBeforeTranslucentRendering() {
+    public void onBeforeTranslucentRendering(MatrixStack matrixStack) {
     
     }
     
     @Override
-    public void onAfterTranslucentRendering() {
+    public void onAfterTranslucentRendering(MatrixStack matrixStack) {
     
     }
     
     @Override
-    public void onRenderCenterEnded() {
+    public void onRenderCenterEnded(MatrixStack matrixStack) {
     
     }
     
@@ -34,7 +35,10 @@ public class RendererDummy extends PortalRenderer {
     }
     
     @Override
-    protected void doRenderPortal(Portal portal) {
+    protected void doRenderPortal(
+        Portal portal,
+        MatrixStack matrixStack
+    ) {
     
     }
     

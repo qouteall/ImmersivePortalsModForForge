@@ -1,14 +1,16 @@
 package com.qouteall.immersive_portals.render;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.SpecialPortalShape;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.math.Vec3d;
@@ -21,32 +23,22 @@ import static org.lwjgl.opengl.GL11.GL_CLIP_PLANE0;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 
 public class ViewAreaRenderer {
-    public static interface VertexOutput {
-        //to avoid temporal Vec3d object creation
-        //to improve cache friendliness
-        void accept(double x, double y, double z);
-    }
-    
     private static void buildPortalViewAreaTrianglesBuffer(
         Vec3d fogColor, Portal portal, BufferBuilder bufferbuilder,
         Vec3d cameraPos, float partialTicks, float layerWidth
     ) {
-        //if layerWidth is small, the teleportation will not be seamless
-        
-        //counter-clockwise triangles are front-faced in default
-        
         bufferbuilder.begin(GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
-        
+    
         Vec3d posInPlayerCoordinate = portal.getPositionVec().subtract(cameraPos);
-        
+    
         if (portal instanceof Mirror) {
             posInPlayerCoordinate = posInPlayerCoordinate.add(portal.getNormal().scale(-0.001));
         }
-        
-        VertexOutput vertexOutput = (x, y, z) -> putIntoVertexFast(
-            bufferbuilder, x, y, z, fogColor
+    
+        Consumer<Vec3d> vertexOutput = p -> putIntoVertex(
+            bufferbuilder, p, fogColor
         );
-        
+    
         if (portal.specialShape == null) {
             generateTriangleBiLayered(
                 vertexOutput,
@@ -70,7 +62,7 @@ public class ViewAreaRenderer {
     }
     
     private static void generateTriangleSpecialBiLayered(
-        VertexOutput vertexOutput,
+        Consumer<Vec3d> vertexOutput,
         Portal portal,
         float layerWidth,
         Vec3d posInPlayerCoordinate
@@ -82,12 +74,12 @@ public class ViewAreaRenderer {
 
 //        generateTriangleSpecialWithOffset(
 //            vertexOutput, portal, posInPlayerCoordinate,
-//            portal.getNormal().scale(-layerWidth)
+//            portal.getNormal().multiply(-layerWidth)
 //        );
     }
     
     private static void generateTriangleSpecialWithOffset(
-        VertexOutput vertexOutput,
+        Consumer<Vec3d> vertexOutput,
         Portal portal,
         Vec3d posInPlayerCoordinate,
         Vec3d offset
@@ -95,7 +87,6 @@ public class ViewAreaRenderer {
         SpecialPortalShape specialShape = portal.specialShape;
         
         for (SpecialPortalShape.TriangleInPlane triangle : specialShape.triangles) {
-            //the face must be flipped
             putIntoLocalVertex(
                 vertexOutput, portal, offset, posInPlayerCoordinate,
                 triangle.x1, triangle.y1
@@ -111,24 +102,25 @@ public class ViewAreaRenderer {
         }
     }
     
+    //according to https://stackoverflow.com/questions/43002528/when-can-hotspot-allocate-objects-on-the-stack
+    //this will not generate gc pressure
     private static void putIntoLocalVertex(
-        VertexOutput vertexOutput,
+        Consumer<Vec3d> vertexOutput,
         Portal portal,
         Vec3d offset,
         Vec3d posInPlayerCoordinate,
         double localX, double localY
     ) {
         vertexOutput.accept(
-            posInPlayerCoordinate.x + portal.axisW.x * localX + portal.axisH.x * localY + offset.x,
-            posInPlayerCoordinate.y + portal.axisW.y * localX + portal.axisH.y * localY + offset.y,
-            posInPlayerCoordinate.z + portal.axisW.z * localX + portal.axisH.z * localY + offset.z
+            posInPlayerCoordinate
+                .add(portal.axisW.scale(localX))
+                .add(portal.axisH.scale(localY))
+                .add(offset)
         );
     }
     
-    //this does not produce much Vec3d objects
-    //too lazy to optimize this
     private static void generateTriangleBiLayered(
-        VertexOutput vertexOutput,
+        Consumer<Vec3d> vertexOutput,
         Portal portal,
         float layerWidth,
         Vec3d posInPlayerCoordinate
@@ -160,13 +152,9 @@ public class ViewAreaRenderer {
         );
     }
     
-    static private void putIntoVertexFast(
-        BufferBuilder bufferBuilder,
-        double x, double y, double z,
-        Vec3d fogColor
-    ) {
+    static private void putIntoVertex(BufferBuilder bufferBuilder, Vec3d pos, Vec3d fogColor) {
         bufferBuilder
-            .pos(x, y, z)
+            .vertex(pos.x, pos.y, pos.z)
             .color((float) fogColor.x, (float) fogColor.y, (float) fogColor.z, 1.0f)
             .endVertex();
     }
@@ -174,48 +162,48 @@ public class ViewAreaRenderer {
     //a d
     //b c
     private static void putIntoQuad(
-        VertexOutput vertexOutput,
+        Consumer<Vec3d> vertexOutput,
         Vec3d a,
         Vec3d b,
         Vec3d c,
         Vec3d d
     ) {
         //counter-clockwise triangles are front-faced in default
-        
-        vertexOutput.accept(b.x, b.y, b.z);
-        vertexOutput.accept(c.x, c.y, c.z);
-        vertexOutput.accept(d.x, d.y, d.z);
-        
-        vertexOutput.accept(d.x, d.y, d.z);
-        vertexOutput.accept(a.x, a.y, a.z);
-        vertexOutput.accept(b.x, b.y, b.z);
-        
+    
+        vertexOutput.accept(b);
+        vertexOutput.accept(c);
+        vertexOutput.accept(d);
+    
+        vertexOutput.accept(d);
+        vertexOutput.accept(a);
+        vertexOutput.accept(b);
+    
     }
     
-    public static void drawPortalViewTriangle(Portal portal) {
+    public static void drawPortalViewTriangle(
+        Portal portal,
+        MatrixStack matrixStack
+    ) {
         Minecraft.getInstance().getProfiler().startSection("render_view_triangle");
         
         DimensionRenderHelper helper =
             CGlobal.clientWorldLoader.getDimensionRenderHelper(portal.dimensionTo);
         
-        Vec3d fogColor = helper.getFogColor();
+        Helper.SimpleBox<Vec3d> boxOfFogColor = new Helper.SimpleBox<>(null);
         
-        //important
+        FogRendererContext.swappingManager.swapAndInvoke(
+            portal.dimensionTo,
+            () -> {
+                boxOfFogColor.obj = FogRendererContext.getCurrentFogColor.get();
+            }
+        );
+        
+        Vec3d fogColor = boxOfFogColor.obj;
+        
         GlStateManager.enableCull();
-        
-        //In OpenGL, if you forget to set one rendering state and the result will be abnormal
-        //this design is bug-prone (DirectX is better in this aspect)
-        RenderHelper.disableStandardItemLighting();
-        GlStateManager.color4f(1, 1, 1, 1);
-        GlStateManager.disableFog();
-        GlStateManager.disableAlphaTest();
         GlStateManager.disableTexture();
-        GlStateManager.shadeModel(GL11.GL_SMOOTH);
-        GlStateManager.disableBlend();
-        GlStateManager.disableLighting();
-        
         GL11.glDisable(GL_CLIP_PLANE0);
-    
+        
         if (OFInterface.isShaders.getAsBoolean()) {
             fogColor = Vec3d.ZERO;
         }
@@ -231,15 +219,17 @@ public class ViewAreaRenderer {
             portal instanceof Mirror ? 0 : 0.45F
         );
         
-        tessellator.draw();
+        McHelper.runWithTransformation(
+            matrixStack,
+            () -> tessellator.draw()
+        );
         
         GlStateManager.enableCull();
-        GlStateManager.enableAlphaTest();
         GlStateManager.enableTexture();
-        GlStateManager.enableLighting();
         
         Minecraft.getInstance().getProfiler().endSection();
     }
+    
     
     private static boolean shouldRenderAdditionalBox(
         Portal portal,
@@ -252,7 +242,7 @@ public class ViewAreaRenderer {
     private static void renderAdditionalBox(
         Portal portal,
         Vec3d cameraPos,
-        VertexOutput vertexOutput
+        Consumer<Vec3d> vertexOutput
     ) {
         Vec3d projected = portal.getPointInPortalProjection(cameraPos).subtract(cameraPos);
         Vec3d normal = portal.getNormal();
@@ -270,8 +260,8 @@ public class ViewAreaRenderer {
         Vec3d d = projected.add(dx).subtract(dy).add(correction);
     
         Vec3d mid = projected.add(normal.scale(-0.5));
-        
-        Consumer<Vec3d> compactVertexOutput = pos -> vertexOutput.accept(pos.x, pos.y, pos.z);
+    
+        Consumer<Vec3d> compactVertexOutput = vertexOutput;
         
         compactVertexOutput.accept(b);
         compactVertexOutput.accept(mid);
