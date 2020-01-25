@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.OFInterface;
-import com.qouteall.immersive_portals.ducks.IEGlFrameBuffer;
+import com.qouteall.immersive_portals.ducks.IEFrameBuffer;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.*;
 import net.minecraft.client.renderer.RenderHelper;
@@ -95,7 +95,7 @@ public class RendererMixed extends PortalRenderer {
         
         for (SecondaryFrameBuffer deferredFb : deferredFbs) {
             deferredFb.prepare();
-            ((IEGlFrameBuffer) deferredFb.fb).setIsStencilBufferEnabledAndReload(true);
+            ((IEFrameBuffer) deferredFb.fb).setIsStencilBufferEnabledAndReload(true);
             
             deferredFb.fb.bindFramebuffer(true);
             GlStateManager.clearColor(1, 0, 1, 0);

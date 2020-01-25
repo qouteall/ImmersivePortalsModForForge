@@ -4,7 +4,7 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CHelper;
-import com.qouteall.immersive_portals.ducks.IEGlFrameBuffer;
+import com.qouteall.immersive_portals.ducks.IEFrameBuffer;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -62,7 +62,7 @@ public class RendererUsingStencil extends PortalRenderer {
         GlStateManager.enableDepthTest();
         GL11.glEnable(GL_STENCIL_TEST);
     
-        ((IEGlFrameBuffer) mc.getFramebuffer())
+        ((IEFrameBuffer) mc.getFramebuffer())
             .setIsStencilBufferEnabledAndReload(true);
     }
     

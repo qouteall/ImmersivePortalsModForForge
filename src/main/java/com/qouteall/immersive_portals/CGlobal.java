@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals;
 
 import com.qouteall.immersive_portals.render.*;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
+import net.minecraft.client.renderer.culling.ClippingHelperImpl;
 import net.minecraft.world.dimension.DimensionType;
 
 import java.lang.ref.WeakReference;
@@ -45,6 +46,10 @@ public class CGlobal {
     public static ShaderManager shaderManager;
     
     public static boolean doCheckGlError = false;
+    
+    public static WeakReference<ClippingHelperImpl> currentFrustumCuller;
+    
+    public static boolean renderFewerInFastGraphic = true;
     
     
 }

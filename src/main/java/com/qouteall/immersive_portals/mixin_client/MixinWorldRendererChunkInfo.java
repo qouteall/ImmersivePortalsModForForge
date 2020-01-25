@@ -1,20 +1,19 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.ducks.IEWorldRendererChunkInfo;
-import net.minecraft.client.renderer.chunk.ChunkRender;
+import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(targets = "net.minecraft.client.renderer.WorldRenderer$LocalRenderInformationContainer")
 public class MixinWorldRendererChunkInfo implements IEWorldRendererChunkInfo {
-    
     @Shadow
     @Final
-    private ChunkRender renderChunk;
+    private ChunkRenderDispatcher.ChunkRender renderChunk;
     
     @Override
-    public ChunkRender getChunkRenderer() {
+    public ChunkRenderDispatcher.ChunkRender getBuiltChunk() {
         return renderChunk;
     }
 }

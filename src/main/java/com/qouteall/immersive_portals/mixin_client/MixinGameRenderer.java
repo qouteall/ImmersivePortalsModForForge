@@ -1,8 +1,7 @@
 package com.qouteall.immersive_portals.mixin_client;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
@@ -25,10 +24,6 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     @Mutable
     private LightTexture lightmapTexture;
     @Shadow
-    @Final
-    @Mutable
-    private FogRenderer fogRenderer;
-    @Shadow
     private boolean renderHand;
     @Shadow
     @Final
@@ -36,129 +31,96 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     private ActiveRenderInfo activeRender;
     
     @Shadow
-    public abstract void updateCameraAndRender(float float_1, long long_1);
+    @Final
+    private Minecraft mc;
     
-    @Override
-    public void renderCenter_(float partialTicks, long finishTimeNano) {
-        updateCameraAndRender(partialTicks, finishTimeNano);
-    }
-    
-    //render() and renderCenter() in yarn both correspond to updateCameraAndRender in mcp
-    //easy to get confused
-    
-    @Inject(
-        method = "updateCameraAndRender(FJ)V",
-        at = @At(
-            value = "INVOKE",
-            shift = At.Shift.AFTER,
-            target = "Lnet/minecraft/client/renderer/WorldRenderer;renderEntities(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ICamera;F)V"
-        )
-    )
-    private void afterRenderingEntities(
-        float partialTicks,
-        long finishTimeNano,
-        CallbackInfo ci
-    ) {
-        if (Minecraft.getInstance().renderViewEntity != null) {
-            CHelper.checkGlError();
-            CGlobal.renderer.onBeforeTranslucentRendering();
-            CHelper.checkGlError();
-    
-            //is it necessary?
-            RenderHelper.enableStandardItemLighting();
-        }
-    }
-    
-    @Inject(
-        method = "updateCameraAndRender(FJ)V",
-        at = @At(
-            value = "INVOKE_STRING",
-            target = "Lnet/minecraft/profiler/IProfiler;endStartSection(Ljava/lang/String;)V",
-            args = {"ldc=hand"}
-        )
-    )
-    private void beforeRenderingHand(float float_1, long long_1, CallbackInfo ci) {
-        if (Minecraft.getInstance().renderViewEntity != null) {
-            CHelper.checkGlError();
-            CGlobal.renderer.onAfterTranslucentRendering();
-            CHelper.checkGlError();
-        }
-    }
-    
-    @Redirect(
-        method = "updateCameraAndRender(FJ)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lcom/mojang/blaze3d/platform/GlStateManager;clear(IZ)V"
-        )
-    )
-    private void redirectClearing(int int_1, boolean boolean_1) {
-        if (!CGlobal.renderer.shouldSkipClearing()) {
-            GlStateManager.clear(int_1, boolean_1);
-        }
-    }
-    
-    @Inject(
-        method = "updateCameraAndRender(FJZ)V",
-        at = @At("HEAD")
-    )
+    //may do teleportation here
+    @Inject(method = "updateCameraAndRender", at = @At("HEAD"))
     private void onFarBeforeRendering(
         float partialTicks,
         long nanoTime,
         boolean renderWorldIn,
         CallbackInfo ci
     ) {
-        CHelper.checkGlError();
         MyRenderHelper.updatePreRenderInfo(partialTicks);
         ModMain.preRenderSignal.emit();
-        CHelper.checkGlError();
     }
     
     //before rendering world (not triggered when rendering portal)
     @Inject(
-        method = "renderWorld",
+        method = "updateCameraAndRender",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/GameRenderer;updateCameraAndRender(FJ)V"
+            target = "Lnet/minecraft/client/renderer/GameRenderer;renderWorld(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V"
         )
     )
-    private void onBeforeRenderingCenter(float partialTicks, long finishTimeNano, CallbackInfo ci) {
+    private void onBeforeRenderingCenter(
+        float float_1,
+        long long_1,
+        boolean boolean_1,
+        CallbackInfo ci
+    ) {
         ModMainClient.switchToCorrectRenderer();
-        CHelper.checkGlError();
+        
         CGlobal.renderer.prepareRendering();
-        CHelper.checkGlError();
     }
     
     //after rendering world (not triggered when rendering portal)
     @Inject(
-        method = "renderWorld",
+        method = "updateCameraAndRender",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/GameRenderer;updateCameraAndRender(FJ)V",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;renderWorld(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V",
             shift = At.Shift.AFTER
         )
     )
-    private void onAfterRenderingCenter(float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        CHelper.checkGlError();
+    private void onAfterRenderingCenter(
+        float float_1,
+        long long_1,
+        boolean boolean_1,
+        CallbackInfo ci
+    ) {
         CGlobal.renderer.finishRendering();
-        CHelper.checkGlError();
+        
         MyRenderHelper.onTotalRenderEnd();
-        CHelper.checkGlError();
     }
     
-    @Inject(method = "updateCameraAndRender(FJ)V", at = @At("TAIL"))
-    private void onRenderCenterEnded(float partialTicks, long nanoTime, CallbackInfo ci) {
-        CHelper.checkGlError();
-        CGlobal.renderer.onRenderCenterEnded();
-        CHelper.checkGlError();
+    @Inject(method = "renderWorld", at = @At("TAIL"))
+    private void onRenderCenterEnded(
+        float float_1,
+        long long_1,
+        MatrixStack matrixStack_1,
+        CallbackInfo ci
+    ) {
+        CGlobal.renderer.onRenderCenterEnded(matrixStack_1);
     }
     
-    @Shadow
-    abstract protected void setupCameraTransform(float float_1);
+    //resize all world renderers when resizing window
+    @Inject(method = "updateShaderGroupSize", at = @At("RETURN"))
+    private void onOnResized(int int_1, int int_2, CallbackInfo ci) {
+        if (CGlobal.clientWorldLoader != null) {
+            CGlobal.clientWorldLoader.worldRendererMap.values().stream()
+                .filter(
+                    worldRenderer -> worldRenderer != mc.worldRenderer
+                )
+                .forEach(
+                    worldRenderer -> worldRenderer.createBindEntityOutlineFbs(int_1, int_2)
+                );
+        }
+    }
     
-    @Override
-    public void applyCameraTransformations_(float float_1) {
-        setupCameraTransform(float_1);
+    //do not update target when rendering portal
+    @Redirect(
+        method = "renderWorld",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;getMouseOver(F)V"
+        )
+    )
+    private void redirectUpdateTargetedEntity(GameRenderer gameRenderer, float tickDelta) {
+        if (!CGlobal.renderer.isRendering()) {
+            gameRenderer.getMouseOver(tickDelta);
+        }
     }
     
     @Override
@@ -169,16 +131,6 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     @Override
     public void setLightmapTextureManager(LightTexture manager) {
         lightmapTexture = manager;
-    }
-    
-    @Override
-    public FogRenderer getBackgroundRenderer() {
-        return fogRenderer;
-    }
-    
-    @Override
-    public void setBackgroundRenderer(FogRenderer renderer) {
-        fogRenderer = renderer;
     }
     
     @Override

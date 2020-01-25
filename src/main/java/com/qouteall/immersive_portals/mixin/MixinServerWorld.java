@@ -86,7 +86,7 @@ public abstract class MixinServerWorld implements IEServerWorld {
         IEThreadedAnvilChunkStorage ieStorage = (IEThreadedAnvilChunkStorage) storage;
         ChunkHolder chunkHolder = ieStorage.getChunkHolder_(ChunkPos.asLong(x, z));
         if (chunkHolder != null) {
-            Chunk chunk = chunkHolder.func_219298_c();
+            Chunk chunk = chunkHolder.getChunkIfComplete();
             if (chunk != null) {
                 return chunk;
             }

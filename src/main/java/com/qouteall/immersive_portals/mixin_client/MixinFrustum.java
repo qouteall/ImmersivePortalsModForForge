@@ -3,10 +3,10 @@ package com.qouteall.immersive_portals.mixin_client;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.OFInterface;
-import com.qouteall.immersive_portals.ducks.IEFrustumWithOrigin;
+import com.qouteall.immersive_portals.ducks.IEFrustum;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
-import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.culling.ClippingHelperImpl;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,14 +19,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
-@Mixin(value = Frustum.class)
-public class MixinFrustum implements IEFrustumWithOrigin {
+@Mixin(value = ClippingHelperImpl.class)
+public class MixinFrustum implements IEFrustum {
     @Shadow
-    private double x;
+    private double cameraX;
     @Shadow
-    private double y;
+    private double cameraY;
     @Shadow
-    private double z;
+    private double cameraZ;
     
     private Portal portal;
     
@@ -35,11 +35,11 @@ public class MixinFrustum implements IEFrustumWithOrigin {
     private Vec3d portalDestInLocalCoordinate;
     
     @Inject(
-        method = "setPosition",
+        method = "setCameraPosition",
         at = @At("TAIL")
     )
     private void onSetOrigin(double double_1, double double_2, double double_3, CallbackInfo ci) {
-        CGlobal.currentFrustumCuller = new WeakReference<>((Frustum) (Object) this);
+        CGlobal.currentFrustumCuller = new WeakReference<>((ClippingHelperImpl) (Object) this);
         update();
     }
     
@@ -117,16 +117,6 @@ public class MixinFrustum implements IEFrustumWithOrigin {
             return true;
         }
     
-        //this is problematic
-//        BatchTestResult portalPlane = Helper.batchTest(
-//            eightVertices,
-//            point -> point
-//                .subtract(portalDestInLocalCoordinate)
-//                .dotProduct(portal.getNormal()) < 0 //true for inside portal area
-//        );
-//        if (portalPlane == BatchTestResult.all_false) {
-//            return true;
-//        }
     
         return false;
     }
@@ -155,9 +145,9 @@ public class MixinFrustum implements IEFrustumWithOrigin {
                     double_5,
                     double_6
                 ).offset(
-                    -x,
-                    -y,
-                    -z
+                    -cameraX,
+                    -cameraY,
+                    -cameraZ
                 );
             
                 if (isOutsidePortalFrustum(boxInLocalCoordinate)) {
@@ -177,7 +167,7 @@ public class MixinFrustum implements IEFrustumWithOrigin {
         if (CGlobal.renderer.isRendering()) {
             portal = CGlobal.renderer.getRenderingPortal();
     
-            portalDestInLocalCoordinate = portal.destination.add(-x, -y, -z);
+            portalDestInLocalCoordinate = portal.destination.add(-cameraX, -cameraY, -cameraZ);
             Vec3d[] fourVertices = portal.getFourVerticesRelativeToCenter(0);
             Vec3d portalCenter = portal.getPositionVec();
             Vec3d[] relativeVertices = {

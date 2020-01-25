@@ -3,47 +3,48 @@ package com.qouteall.immersive_portals;
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
 import com.qouteall.immersive_portals.optifine_compatibility.OFInterfaceInitializer;
 import com.qouteall.immersive_portals.portal.*;
+import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import com.qouteall.immersive_portals.render.*;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
 import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.entity.EntityType;
+import org.apache.commons.lang3.Validate;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 
 public class ModMainClient {
     
     
     public static void initRenderers(EntityRendererManager manager) {
-        manager.register(
-            Portal.class,
-            new PortalEntityRenderer(manager)
+        Arrays.stream(new EntityType<?>[]{
+            Portal.entityType,
+            NetherPortalEntity.entityType,
+            NewNetherPortalEntity.entityType,
+            EndPortalEntity.entityType,
+            Mirror.entityType,
+            BreakableMirror.entityType,
+            GlobalTrackedPortal.entityType,
+            BorderPortal.entityType,
+            VerticalConnectingPortal.entityType
+        }).peek(
+            Validate::notNull
+        ).forEach(
+            entityType -> manager.register(
+                entityType,
+                (EntityRenderer) new PortalEntityRenderer(manager)
+            )
         );
+    
         manager.register(
-            NetherPortalEntity.class,
-            new PortalEntityRenderer(manager)
-        );
-        manager.register(
-            EndPortalEntity.class,
-            new PortalEntityRenderer(manager)
-        );
-        manager.register(
-            Mirror.class,
-            new PortalEntityRenderer(manager)
-        );
-        manager.register(
-            BreakableMirror.class,
-            new PortalEntityRenderer(manager)
-        );
-        manager.register(
-            NewNetherPortalEntity.class,
-            new PortalEntityRenderer(manager)
-        );
-        
-        manager.register(
-            LoadingIndicatorEntity.class,
+            LoadingIndicatorEntity.entityType,
             new LoadingIndicatorRenderer(manager)
         );
     }
@@ -116,10 +117,10 @@ public class ModMainClient {
             CGlobal.clientWorldLoader = new ClientWorldLoader();
             CGlobal.myGameRenderer = new MyGameRenderer();
             CGlobal.clientTeleportationManager = new ClientTeleportationManager();
-    
+        
             OFInterface.isOptifinePresent = getIsOptifinePresent();
             Helper.log(OFInterface.isOptifinePresent ? "Optifine is present" : "Optifine is not present");
-    
+        
             if (OFInterface.isOptifinePresent) {
                 OFInterfaceInitializer.init();
                 OFInterface.initShaderCullingManager.run();

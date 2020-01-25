@@ -89,8 +89,8 @@ public class MixinEntityTracker implements IEEntityTracker {
             int_4 = chunkSectionPos_1.getSectionZ();
         }
         else {
-            int_3 = MathHelper.floor(serverPlayerEntity_1.posX / 16.0D);
-            int_4 = MathHelper.floor(serverPlayerEntity_1.posZ / 16.0D);
+            int_3 = MathHelper.floor(serverPlayerEntity_1.getPosX() / 16.0D);
+            int_4 = MathHelper.floor(serverPlayerEntity_1.getPosZ() / 16.0D);
         }
         
         return getChebyshevDistance(chunkPos_1, int_3, int_4);
@@ -134,11 +134,7 @@ public class MixinEntityTracker implements IEEntityTracker {
         IEThreadedAnvilChunkStorage storage = McHelper.getIEStorage(entity.dimension);
         
         if (player != this.entity) {
-            Vec3d relativePos = (new Vec3d(
-                player.posX,
-                player.posY,
-                player.posZ
-            )).subtract(this.entry.func_219456_b());
+            Vec3d relativePos = (player.getPositionVec()).subtract(this.entry.func_219456_b());
             int maxWatchDistance = Math.min(
                 this.range,
                 (storage.getWatchDistance() - 1) * 16
@@ -157,7 +153,7 @@ public class MixinEntityTracker implements IEEntityTracker {
                 if (!shouldTrack) {
                     ChunkPos chunkPos_1 = new ChunkPos(this.entity.chunkCoordX, this.entity.chunkCoordZ);
                     ChunkHolder chunkHolder_1 = storage.getChunkHolder_(chunkPos_1.asLong());
-                    if (chunkHolder_1 != null && chunkHolder_1.func_219298_c() != null) {
+                    if (chunkHolder_1 != null && chunkHolder_1.getChunkIfComplete() != null) {
                         shouldTrack = true;
                     }
                 }
