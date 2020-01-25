@@ -102,8 +102,6 @@ public class ViewAreaRenderer {
         }
     }
     
-    //according to https://stackoverflow.com/questions/43002528/when-can-hotspot-allocate-objects-on-the-stack
-    //this will not generate gc pressure
     private static void putIntoLocalVertex(
         Consumer<Vec3d> vertexOutput,
         Portal portal,
@@ -154,7 +152,7 @@ public class ViewAreaRenderer {
     
     static private void putIntoVertex(BufferBuilder bufferBuilder, Vec3d pos, Vec3d fogColor) {
         bufferBuilder
-            .vertex(pos.x, pos.y, pos.z)
+            .pos(pos.x, pos.y, pos.z)
             .color((float) fogColor.x, (float) fogColor.y, (float) fogColor.z, 1.0f)
             .endVertex();
     }

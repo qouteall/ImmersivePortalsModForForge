@@ -121,7 +121,7 @@ public class CollisionHelper {
         //switch world and check collision
         World oldWorld = entity.world;
         Vec3d oldPos = entity.getPositionVec();
-        Vec3d oldLastTickPos = Helper.lastTickPosOf(entity);
+        Vec3d oldLastTickPos = McHelper.lastTickPosOf(entity);
     
         entity.world = getWorld(entity.world.isRemote, collidingPortal.dimensionTo);
         entity.setBoundingBox(boxOtherSide);

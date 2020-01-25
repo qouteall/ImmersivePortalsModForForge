@@ -22,6 +22,7 @@ import net.minecraft.client.renderer.Matrix4f;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.shader.Framebuffer;
+import net.minecraft.client.util.LWJGLMemoryUntracker;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameType;
@@ -187,19 +188,19 @@ public class MyRenderHelper {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
-        
-        bufferbuilder.vertex(1, -1, 0).color(255, 255, 255, 255)
+    
+        bufferbuilder.pos(1, -1, 0).color(255, 255, 255, 255)
             .endVertex();
-        bufferbuilder.vertex(1, 1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(1, 1, 0).color(255, 255, 255, 255)
             .endVertex();
-        bufferbuilder.vertex(-1, 1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(-1, 1, 0).color(255, 255, 255, 255)
             .endVertex();
-        
-        bufferbuilder.vertex(-1, 1, 0).color(255, 255, 255, 255)
+    
+        bufferbuilder.pos(-1, 1, 0).color(255, 255, 255, 255)
             .endVertex();
-        bufferbuilder.vertex(-1, -1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(-1, -1, 0).color(255, 255, 255, 255)
             .endVertex();
-        bufferbuilder.vertex(1, -1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(1, -1, 0).color(255, 255, 255, 255)
             .endVertex();
         
         tessellator.draw();
@@ -264,23 +265,23 @@ public class MyRenderHelper {
         Tessellator tessellator_1 = RenderSystem.renderThreadTesselator();
         BufferBuilder bufferBuilder_1 = tessellator_1.getBuffer();
         bufferBuilder_1.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
-        bufferBuilder_1.vertex(0.0D, (double) float_2, 0.0D).tex(0.0F, 0.0F).color(
+        bufferBuilder_1.pos(0.0D, (double) float_2, 0.0D).tex(0.0F, 0.0F).color(
             255,
             255,
             255,
             255
         ).endVertex();
-        bufferBuilder_1.vertex((double) float_1, (double) float_2, 0.0D).tex(
+        bufferBuilder_1.pos((double) float_1, (double) float_2, 0.0D).tex(
             float_3,
             0.0F
         ).color(255, 255, 255, 255).endVertex();
-        bufferBuilder_1.vertex((double) float_1, 0.0D, 0.0D).tex(float_3, float_4).color(
+        bufferBuilder_1.pos((double) float_1, 0.0D, 0.0D).tex(float_3, float_4).color(
             255,
             255,
             255,
             255
         ).endVertex();
-        bufferBuilder_1.vertex(0.0D, 0.0D, 0.0D).tex(0.0F, float_4).color(
+        bufferBuilder_1.pos(0.0D, 0.0D, 0.0D).tex(0.0F, float_4).color(
             255,
             255,
             255,
@@ -297,7 +298,7 @@ public class MyRenderHelper {
     //If I don't do so JVM will crash
     private static final FloatBuffer matrixBuffer = (FloatBuffer) GLX.make(MemoryUtil.memAllocFloat(
         16), (p_209238_0_) -> {
-        Untracker.untrack(MemoryUtil.memAddress(p_209238_0_));
+        LWJGLMemoryUntracker.untrack(MemoryUtil.memAddress(p_209238_0_));
     });
     
     public static void multMatrix(float[] arr) {

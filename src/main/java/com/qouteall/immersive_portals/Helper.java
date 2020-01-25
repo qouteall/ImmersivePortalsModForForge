@@ -257,13 +257,9 @@ public class Helper {
         public T run();
     }
     
-    public static Vec3d lastTickPosOf(Entity entity) {
-        return new Vec3d(entity.prevPosX, entity.prevPosY, entity.prevPosZ);
-    }
-    
     public static Vec3d interpolatePos(Entity entity, float partialTicks) {
         Vec3d currPos = entity.getPositionVec();
-        Vec3d lastTickPos = lastTickPosOf(entity);
+        Vec3d lastTickPos = McHelper.lastTickPosOf(entity);
         return lastTickPos.add(currPos.subtract(lastTickPos).scale(partialTicks));
     }
     

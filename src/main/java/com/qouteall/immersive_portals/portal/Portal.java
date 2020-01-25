@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.SignalArged;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -388,7 +389,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         return entity.dimension == this.dimension &&
             isTeleportable() &&
             isMovedThroughPortal(
-                Helper.lastTickPosOf(entity).add(0, eyeHeight, 0),
+                McHelper.lastTickPosOf(entity).add(0, eyeHeight, 0),
                 entity.getPositionVec().add(0, eyeHeight, 0)
             );
     }

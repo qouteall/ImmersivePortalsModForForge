@@ -4,7 +4,6 @@ import com.qouteall.immersive_portals.*;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
-import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
 import com.qouteall.immersive_portals.network.CtsTeleport;
 import com.qouteall.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.portal.Mirror;
@@ -111,7 +110,7 @@ public class ClientTeleportationManager {
         Vec3d oldPos = player.getPositionVec();
         
         Vec3d newPos = portal.applyTransformationToPoint(oldPos);
-        Vec3d newLastTickPos = portal.applyTransformationToPoint(Helper.lastTickPosOf(player));
+        Vec3d newLastTickPos = portal.applyTransformationToPoint(McHelper.lastTickPosOf(player));
     
         ClientWorld fromWorld = mc.world;
         DimensionType fromDimension = fromWorld.dimension.getType();

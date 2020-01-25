@@ -239,4 +239,8 @@ public class McHelper {
         RenderSystem.loadIdentity();
         RenderSystem.multMatrix(matrixStack.getLast().getPositionMatrix());
     }
+    
+    public static Vec3d lastTickPosOf(Entity entity) {
+        return new Vec3d(entity.prevPosX, entity.prevPosY, entity.prevPosZ);
+    }
 }
