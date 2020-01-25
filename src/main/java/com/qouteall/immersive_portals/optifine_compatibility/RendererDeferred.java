@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.optifine_compatibility;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
@@ -8,6 +9,7 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 import net.optifine.shaders.Shaders;
@@ -26,12 +28,12 @@ public class RendererDeferred extends PortalRenderer {
     }
     
     @Override
-    public void onBeforeTranslucentRendering() {
+    public void onBeforeTranslucentRendering(MatrixStack matrixStack) {
     
     }
     
     @Override
-    public void onAfterTranslucentRendering() {
+    public void onAfterTranslucentRendering(MatrixStack matrixStack) {
         if (isRendering()) {
             return;
         }
@@ -59,7 +61,7 @@ public class RendererDeferred extends PortalRenderer {
     }
     
     @Override
-    protected void doRenderPortal(Portal portal) {
+    protected void doRenderPortal(Portal portal, MatrixStack matrixStack) {
         if (isRendering()) {
             //currently only support one-layer portal
             return;
@@ -78,19 +80,24 @@ public class RendererDeferred extends PortalRenderer {
         
         deferredBuffer.fb.bindFramebuffer(true);
         
-        MyRenderHelper.drawFrameBufferUp(portal, mc.getFramebuffer(), CGlobal.shaderManager);
+        MyRenderHelper.drawFrameBufferUp(
+            portal,
+            mc.getFramebuffer(),
+            CGlobal.shaderManager,
+            matrixStack
+        );
         
         OFInterface.bindToShaderFrameBuffer.run();
     }
     
     @Override
     protected void renderPortalContentWithContextSwitched(
-        Portal portal, Vec3d oldCameraPos
+        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
     ) {
         OFGlobal.shaderContextManager.switchContextAndRun(
             () -> {
                 OFInterface.bindToShaderFrameBuffer.run();
-                super.renderPortalContentWithContextSwitched(portal, oldCameraPos);
+                super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
             }
         );
     }
@@ -124,11 +131,12 @@ public class RendererDeferred extends PortalRenderer {
             GlStateManager.disableTexture();
             GlStateManager.colorMask(false, false, false, false);
             GlStateManager.depthMask(false);
-            MyRenderHelper.setupCameraTransformation();
+            assert false;
+            //MyRenderHelper.setupCameraTransformation();
             GL20.glUseProgram(0);
-            
-            ViewAreaRenderer.drawPortalViewTriangle(portal);
-            
+    
+            //ViewAreaRenderer.drawPortalViewTriangle(portal);
+    
             GlStateManager.enableTexture();
             GlStateManager.colorMask(true, true, true, true);
             GlStateManager.depthMask(true);
@@ -136,16 +144,16 @@ public class RendererDeferred extends PortalRenderer {
     }
     
     @Override
-    public void onRenderCenterEnded() {
+    public void onRenderCenterEnded(MatrixStack matrixStack) {
         if (isRendering()) {
             return;
         }
-    
+        
         //OFHelper.copyFromShaderFbTo(deferredBuffer.fb, GL11.GL_COLOR_BUFFER_BIT);
-    
+        
         GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, mc.getFramebuffer().framebufferObject);
         GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, deferredBuffer.fb.framebufferObject);
-    
+        
         GL30.glBlitFramebuffer(
             0, 0, deferredBuffer.fb.framebufferWidth, deferredBuffer.fb.framebufferHeight,
             0, 0, deferredBuffer.fb.framebufferWidth, deferredBuffer.fb.framebufferHeight,
@@ -153,8 +161,8 @@ public class RendererDeferred extends PortalRenderer {
         );
     
         CHelper.checkGlError();
-    
-        renderPortals();
+        
+        renderPortals(matrixStack);
 
 //        if (MyRenderHelper.getRenderedPortalNum() == 0) {
 //            return;

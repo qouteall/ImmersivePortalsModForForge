@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.optifine_compatibility;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.OFInterface;
@@ -7,6 +8,7 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.Vec3d;
 import net.optifine.shaders.Shaders;
 import org.lwjgl.opengl.GL13;
@@ -21,19 +23,17 @@ public class RendererDebugWithShader extends PortalRenderer {
     
     @Override
     public void renderPortalInEntityRenderer(Portal portal) {
-        if (Shaders.isShadowPass) {
-            ViewAreaRenderer.drawPortalViewTriangle(portal);
-        }
-    }
-    
-    @Override
-    public void onBeforeTranslucentRendering() {
     
     }
     
     @Override
-    public void onAfterTranslucentRendering() {
-        renderPortals();
+    public void onBeforeTranslucentRendering(MatrixStack matrixStack) {
+    
+    }
+    
+    @Override
+    public void onAfterTranslucentRendering(MatrixStack matrixStack) {
+        renderPortals(matrixStack);
     }
     
     @Override
@@ -57,7 +57,7 @@ public class RendererDebugWithShader extends PortalRenderer {
     }
     
     @Override
-    protected void doRenderPortal(Portal portal) {
+    protected void doRenderPortal(Portal portal, MatrixStack matrixStack) {
         if (MyRenderHelper.getRenderedPortalNum() >= 1) {
             return;
         }
@@ -82,18 +82,18 @@ public class RendererDebugWithShader extends PortalRenderer {
     
     @Override
     protected void renderPortalContentWithContextSwitched(
-        Portal portal, Vec3d oldCameraPos
+        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
     ) {
         OFGlobal.shaderContextManager.switchContextAndRun(
             () -> {
                 OFInterface.bindToShaderFrameBuffer.run();
-                super.renderPortalContentWithContextSwitched(portal, oldCameraPos);
+                super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
             }
         );
     }
     
     @Override
-    public void onRenderCenterEnded() {
+    public void onRenderCenterEnded(MatrixStack matrixStack) {
         if (isRendering()) {
             return;
         }

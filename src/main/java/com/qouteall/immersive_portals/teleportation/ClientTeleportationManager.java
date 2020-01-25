@@ -3,11 +3,13 @@ package com.qouteall.immersive_portals.teleportation;
 import com.qouteall.immersive_portals.*;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
+import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.network.CtsTeleport;
 import com.qouteall.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.render.FogRendererContext;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
@@ -167,6 +169,8 @@ public class ClientTeleportationManager {
     private void changePlayerDimension(
         ClientPlayerEntity player, ClientWorld fromWorld, ClientWorld toWorld, Vec3d destination
     ) {
+        DimensionType toDimension = toWorld.dimension.getType();
+        DimensionType fromDimension = fromWorld.dimension.getType();
     
         ClientPlayNetHandler workingNetHandler = ((IEClientWorld) fromWorld).getNetHandler();
         ClientPlayNetHandler fakedNetHandler = ((IEClientWorld) toWorld).getNetHandler();
@@ -178,14 +182,15 @@ public class ClientTeleportationManager {
         ((IEClientWorld) fromWorld).removeEntityWhilstMaintainingCapability(player);
         player.revive();
         player.world = toWorld;
-        player.dimension = toWorld.dimension.getType();
+    
+        player.dimension = toDimension;
         player.setPosition(destination.x, destination.y, destination.z);//update bounding box
     
         toWorld.addPlayer(player.getEntityId(), player);
     
         mc.world = toWorld;
         ((IEMinecraftClient) mc).setWorldRenderer(
-            CGlobal.clientWorldLoader.getWorldRenderer(toWorld.dimension.getType())
+            CGlobal.clientWorldLoader.getWorldRenderer(toDimension)
         );
     
         toWorld.setScoreboard(fromWorld.getScoreboard());
@@ -195,14 +200,15 @@ public class ClientTeleportationManager {
     
         TileEntityRendererDispatcher.instance.setWorld(toWorld);
     
-        CGlobal.clientWorldLoader
-            .getDimensionRenderHelper(toWorld.dimension.getType())
-            .switchToMe();
-        
+        IEGameRenderer gameRenderer = (IEGameRenderer) Minecraft.getInstance().gameRenderer;
+        gameRenderer.setLightmapTextureManager(CGlobal.clientWorldLoader
+            .getDimensionRenderHelper(toDimension).lightmapTexture);
+    
+    
         Helper.log(String.format(
             "Client Changed Dimension from %s to %s time: %s",
-            fromWorld.dimension.getType(),
-            toWorld.dimension.getType(),
+            fromDimension,
+            toDimension,
             tickTimeForTeleportation
         ));
     
@@ -211,8 +217,10 @@ public class ClientTeleportationManager {
         MyRenderHelper.updatePreRenderInfo(MyRenderHelper.partialTicks);
     
         OFInterface.onPlayerTraveled.accept(
-            fromWorld.dimension.getType(), toWorld.dimension.getType()
+            fromDimension, toDimension
         );
+    
+        FogRendererContext.onPlayerTeleport(fromDimension, toDimension);
     }
     
     private void amendChunkEntityStatus(Entity entity) {

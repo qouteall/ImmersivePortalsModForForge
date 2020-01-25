@@ -15,6 +15,7 @@ import com.qouteall.immersive_portals.ducks.*;
 import com.qouteall.immersive_portals.optifine_compatibility.UniformReport;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.DimensionRenderHelper;
+import com.qouteall.immersive_portals.render.MyBuiltChunkStorage;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
@@ -216,18 +217,6 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("rebuild_all")
-            .executes(context -> {
-                Minecraft.getInstance().execute(() -> {
-                    ((IEChunkRenderDispatcher)
-                        ((IEWorldRenderer) Minecraft.getInstance().worldRenderer)
-                            .getChunkRenderDispatcher()
-                    ).rebuildAll();
-                });
-                return 0;
-            })
-        );
-        builder = builder.then(Commands
             .literal("get_player_colliding_portal_client")
             .executes(context -> {
                 Portal collidingPortal =
@@ -377,42 +366,6 @@ public class MyCommandClient {
         );
     }
     
-    private static int reportFogColor(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        StringBuilder str = new StringBuilder();
-        
-        CGlobal.clientWorldLoader.clientWorldMap.values().forEach(world -> {
-            DimensionRenderHelper helper =
-                CGlobal.clientWorldLoader.getDimensionRenderHelper(
-                    world.dimension.getType()
-                );
-            str.append(String.format(
-                "%s %s %s %s\n",
-                world.dimension.getType(),
-                helper.fogRenderer,
-                helper.getFogColor(),
-                ((IEBackgroundRenderer) helper.fogRenderer).getDimensionConstraint()
-            ));
-        });
-        
-        FogRenderer currentFogRenderer = ((IEGameRenderer) Minecraft.getInstance()
-            .gameRenderer
-        ).getBackgroundRenderer();
-        str.append(String.format(
-            "current: %s %s \n switched %s \n",
-            currentFogRenderer,
-            ((IEBackgroundRenderer) currentFogRenderer).getDimensionConstraint(),
-            CGlobal.switchedFogRenderer
-        ));
-        
-        String result = str.toString();
-        
-        Helper.log(str);
-        
-        context.getSource().asPlayer().sendMessage(new StringTextComponent(result));
-        
-        return 0;
-    }
-    
     private static int reportResourceConsumption(CommandContext<CommandSource> context) throws CommandSyntaxException {
         StringBuilder str = new StringBuilder();
         
@@ -432,9 +385,9 @@ public class MyCommandClient {
                 str.append(String.format(
                     "%s %s\n",
                     dimension,
-                    ((IEChunkRenderDispatcher) ((IEWorldRenderer) worldRenderer)
-                        .getChunkRenderDispatcher()
-                    ).getEmployedRendererNum()
+                    ((MyBuiltChunkStorage) ((IEWorldRenderer) worldRenderer)
+                        .getBuiltChunkStorage()
+                    ).getManagedChunkNum()
                 ));
             }
         );
@@ -520,9 +473,7 @@ public class MyCommandClient {
                 DimensionType toDimension = player.dimension;
                 
                 Portal portal = Portal.entityType.create(fromWorld);
-                portal.posX = fromPos.x;
-                portal.posY = fromPos.y;
-                portal.posZ = fromPos.z;
+                portal.setPosition(fromPos.x, fromPos.y, fromPos.z);
                 
                 portal.axisH = new Vec3d(0, 4, 0);
                 portal.axisW = portal.axisH.crossProduct(fromNormal).normalize().scale(4);

@@ -28,7 +28,7 @@ public class MixinPlayerManager {
     private List<ServerPlayerEntity> players;
     
     @Inject(
-        method = "recreatePlayerEntity",
+        method = "Lnet/minecraft/server/management/PlayerList;recreatePlayerEntity(Lnet/minecraft/entity/player/ServerPlayerEntity;Lnet/minecraft/world/dimension/DimensionType;Z)Lnet/minecraft/entity/player/ServerPlayerEntity;",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/server/management/PlayerList;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;)Z"
@@ -62,7 +62,7 @@ public class MixinPlayerManager {
     }
     
     @Inject(
-        method = "initializeConnectionToPlayer",
+        method = "Lnet/minecraft/server/management/PlayerList;initializeConnectionToPlayer(Lnet/minecraft/network/NetworkManager;Lnet/minecraft/entity/player/ServerPlayerEntity;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraftforge/fml/network/NetworkHooks;sendDimensionDataPacket(Lnet/minecraft/network/NetworkManager;Lnet/minecraft/entity/player/ServerPlayerEntity;)V"

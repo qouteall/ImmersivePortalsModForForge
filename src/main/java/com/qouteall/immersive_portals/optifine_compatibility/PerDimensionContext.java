@@ -4,7 +4,6 @@ import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.Vector4f;
-import net.minecraft.client.renderer.texture.ITextureObject;
 import net.minecraft.world.World;
 import net.optifine.expr.IExpressionBool;
 import net.optifine.shaders.*;
@@ -285,7 +284,7 @@ public class PerDimensionContext {
     public int activeCompositeMipmapSetting;
     public Properties loadedShaders;
     public Properties shadersConfig;
-    public ITextureObject defaultTexture;
+//    public ITextureObject defaultTexture;
     public boolean[] shadowHardwareFilteringEnabled;
     public boolean[] shadowMipmapEnabled;
     public boolean[] shadowFilterNearest;

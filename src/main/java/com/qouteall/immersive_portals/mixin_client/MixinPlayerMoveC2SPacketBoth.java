@@ -12,17 +12,19 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @OnlyIn(Dist.CLIENT)
-@Mixin(value = CPlayerPacket.PositionPacket.class)
-public class MixinPlayerMoveC2SPacket_Position {
+@Mixin(value = CPlayerPacket.PositionRotationPacket.class)
+public class MixinPlayerMoveC2SPacketBoth {
     @OnlyIn(Dist.CLIENT)
     @Inject(
-        method = "<init>(DDDZ)V",
+        method = "<init>(DDDFFZ)V",
         at = @At("RETURN")
     )
-    private void onConstruct1(
+    private void onConstruct2(
         double double_1,
         double double_2,
         double double_3,
+        float float_1,
+        float float_2,
         boolean boolean_1,
         CallbackInfo ci
     ) {
@@ -30,5 +32,4 @@ public class MixinPlayerMoveC2SPacket_Position {
         ((IEPlayerMoveC2SPacket) this).setPlayerDimension(dimension);
         assert dimension == Minecraft.getInstance().world.dimension.getType();
     }
-    
 }

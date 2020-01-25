@@ -123,7 +123,7 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
     }
     
     @Inject(
-        method = "teleport",
+        method = "Lnet/minecraft/entity/player/ServerPlayerEntity;teleport(Lnet/minecraft/world/server/ServerWorld;DDDFF)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/world/server/ServerWorld;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;Z)V"

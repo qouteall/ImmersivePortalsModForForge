@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
-import com.qouteall.immersive_portals.Helper;
-import net.minecraft.client.Minecraft;
+import com.qouteall.immersive_portals.CGlobal;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -13,20 +12,17 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.SectionPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.LightType;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeContainer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
-import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.lighting.WorldLightManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 
@@ -39,7 +35,9 @@ public class MyClientChunkManager extends ClientChunkProvider {
     private final WorldLightManager lightingProvider;
     private final ClientWorld world;
     
-    //TODO use Long2ObjectMaps.SynchronizedMap
+    //its performance is a little lower than vanilla
+    //but this is indispensable
+    //there is no Long2ObjectConcurrentHashMap so I use ChunkPos which is less cache friendly
     private ConcurrentHashMap<ChunkPos, Chunk> chunkMap = new ConcurrentHashMap<>();
     
     public MyClientChunkManager(ClientWorld clientWorld_1, int int_1) {
@@ -51,6 +49,8 @@ public class MyClientChunkManager extends ClientChunkProvider {
             true,
             clientWorld_1.getDimension().hasSkyLight()
         );
+        
+        
     }
     
     @Override
@@ -58,28 +58,23 @@ public class MyClientChunkManager extends ClientChunkProvider {
         return this.lightingProvider;
     }
     
-    private static boolean isChunkValid(Chunk worldChunk_1, int int_1, int int_2) {
-        if (worldChunk_1 == null) {
-            return false;
-        }
-        else {
-            ChunkPos chunkPos_1 = worldChunk_1.getPos();
-            return chunkPos_1.x == int_1 && chunkPos_1.z == int_2;
+    @Override
+    public void unloadChunk(int int_1, int int_2) {
+        ChunkPos chunkPos = new ChunkPos(int_1, int_2);
+        Chunk worldChunk_1 = chunkMap.get(chunkPos);
+        if (positionEquals(worldChunk_1, int_1, int_2)) {
+            chunkMap.remove(chunkPos);
         }
     }
     
     @Override
-    public void unloadChunk(int int_1, int int_2) {
-        ChunkPos chunkPos = new ChunkPos(int_1, int_2);
-        Chunk chunk = chunkMap.get(chunkPos);
-        if (isChunkValid(chunk, int_1, int_2)) {
-            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
-                new net.minecraftforge.event.world.ChunkEvent.Unload(chunk)
-            );
-    
-            chunkMap.remove(chunkPos);
-            world.onChunkUnloaded(chunk);
+    public Chunk getChunk(int int_1, int int_2, ChunkStatus chunkStatus_1, boolean boolean_1) {
+        Chunk worldChunk_1 = chunkMap.get(new ChunkPos(int_1, int_2));
+        if (positionEquals(worldChunk_1, int_1, int_2)) {
+            return worldChunk_1;
         }
+        
+        return boolean_1 ? this.emptyChunk : null;
     }
     
     @Override
@@ -87,65 +82,61 @@ public class MyClientChunkManager extends ClientChunkProvider {
         return this.world;
     }
     
-    @Nullable
     @Override
-    public Chunk updateChunkFromPacket(
-        World world_1,
-        int x,
-        int z,
+    public Chunk loadChunk(
+        int int_1,
+        int int_2,
+        BiomeContainer biomeArray_1,
         PacketBuffer packetByteBuf_1,
         CompoundNBT compoundTag_1,
-        int mask,
-        boolean isFullChunk
+        int int_3
     ) {
-        ChunkPos chunkPos = new ChunkPos(x, z);
-        Chunk chunk = chunkMap.get(chunkPos);
-        if (!isChunkValid(chunk, x, z)) {
-            if (!isFullChunk) {
+        ChunkPos chunkPos = new ChunkPos(int_1, int_2);
+        Chunk worldChunk_1 = (Chunk) chunkMap.get(chunkPos);
+        if (!positionEquals(worldChunk_1, int_1, int_2)) {
+            if (biomeArray_1 == null) {
                 LOGGER.warn(
                     "Ignoring chunk since we don't have complete data: {}, {}",
-                    x,
-                    z
+                    int_1,
+                    int_2
                 );
                 return null;
             }
             
-            chunk = new Chunk(
-                world_1,
-                new ChunkPos(x, z),
-                new Biome[256]
-            );
-            chunk.read(packetByteBuf_1, compoundTag_1, mask, isFullChunk);
-            chunkMap.put(chunkPos, chunk);
+            worldChunk_1 = new Chunk(this.world, chunkPos, biomeArray_1);
+            worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
+            chunkMap.put(chunkPos, worldChunk_1);
         }
         else {
-            if (isFullChunk) {
-                Helper.log(String.format(
-                    "received full chunk while chunk is present. entity may duplicate %s %s",
-                    chunk.getWorld().dimension.getType(),
-                    chunk.getPos()
-                ));
-            }
-            chunk.read(packetByteBuf_1, compoundTag_1, mask, isFullChunk);
+            worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
         }
-    
-        ChunkSection[] chunkSections_1 = chunk.getSections();
+        
+        ChunkSection[] chunkSections_1 = worldChunk_1.getSections();
         WorldLightManager lightingProvider_1 = this.getLightManager();
-        lightingProvider_1.func_215571_a(new ChunkPos(x, z), true);
-    
+        lightingProvider_1.enableLightSources(chunkPos, true);
+        
         for (int int_5 = 0; int_5 < chunkSections_1.length; ++int_5) {
             ChunkSection chunkSection_1 = chunkSections_1[int_5];
             lightingProvider_1.updateSectionStatus(
-                SectionPos.of(x, int_5, z),
+                SectionPos.of(int_1, int_5, int_2),
                 ChunkSection.isEmpty(chunkSection_1)
             );
         }
+        
+        this.world.onChunkLoaded(int_1, int_2);
+        return worldChunk_1;
+    }
     
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
-            new net.minecraftforge.event.world.ChunkEvent.Load(chunk)
-        );
-    
-        return chunk;
+    public static void updateLightStatus(Chunk chunk) {
+        ChunkSection[] chunkSections_1 = chunk.getSections();
+        WorldLightManager lightingProvider = chunk.getWorld().getLightManager();
+        for (int int_5 = 0; int_5 < chunkSections_1.length; ++int_5) {
+            ChunkSection chunkSection_1 = chunkSections_1[int_5];
+            lightingProvider.updateSectionStatus(
+                SectionPos.of(chunk.getPos().x, int_5, chunk.getPos().z),
+                ChunkSection.isEmpty(chunkSection_1)
+            );
+        }
     }
     
     @Override
@@ -162,23 +153,21 @@ public class MyClientChunkManager extends ClientChunkProvider {
         //do nothing
     }
     
-    private static int getLoadDistance(int int_1) {
-        return Math.max(2, int_1) + 3;
-    }
-    
     @Override
     public String makeString() {
-        return "ImmPortal Client Chunk " + chunkMap.size();
+        return "Client Chunk >_<" + chunkMap.size();
     }
     
     @Override
-    public ChunkGenerator<?> getChunkGenerator() {
-        return null;
+    public int getLoadedChunksCount() {
+        return chunkMap.size();
     }
     
     @Override
     public void markLightChanged(LightType lightType_1, SectionPos chunkSectionPos_1) {
-        Minecraft.getInstance().worldRenderer.markForRerender(
+        CGlobal.clientWorldLoader.getWorldRenderer(
+            world.dimension.getType()
+        ).markForRerender(
             chunkSectionPos_1.getSectionX(),
             chunkSectionPos_1.getSectionY(),
             chunkSectionPos_1.getSectionZ()
@@ -198,21 +187,19 @@ public class MyClientChunkManager extends ClientChunkProvider {
     @Override
     public boolean isChunkLoaded(Entity entity_1) {
         return this.chunkExists(
-            MathHelper.floor(entity_1.posX) >> 4,
-            MathHelper.floor(entity_1.posZ) >> 4
+            MathHelper.floor(entity_1.getPosX()) >> 4,
+            MathHelper.floor(entity_1.getPosZ()) >> 4
         );
     }
     
-    // $FF: synthetic method
-    //@Nullable
-    @Override
-    public Chunk getChunk(int var1, int var2, ChunkStatus var3, boolean var4) {
-        Chunk worldChunk_1 = chunkMap.get(new ChunkPos(var1, var2));
-        if (isChunkValid(worldChunk_1, var1, var2)) {
-            return worldChunk_1;
+    private static boolean positionEquals(Chunk worldChunk_1, int int_1, int int_2) {
+        if (worldChunk_1 == null) {
+            return false;
         }
-        
-        return var4 ? this.emptyChunk : null;
+        else {
+            ChunkPos chunkPos_1 = worldChunk_1.getPos();
+            return chunkPos_1.x == int_1 && chunkPos_1.z == int_2;
+        }
     }
     
     public int getChunkNum() {

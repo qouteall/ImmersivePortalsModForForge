@@ -15,7 +15,7 @@ import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.Set;
 
-@Mixin(ModelDataManager.class)
+@Mixin(value = ModelDataManager.class, remap = false)
 public class MixinForgeModelDataManager {
     @Shadow
     private static WeakReference<World> currentWorld;

@@ -6,7 +6,7 @@ import net.minecraftforge.fml.network.NetworkHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
-@Mixin(NetworkHooks.class)
+@Mixin(value = NetworkHooks.class, remap = false)
 public class MixinForgeNetworkHooks {
     
     /**
