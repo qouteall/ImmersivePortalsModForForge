@@ -75,6 +75,9 @@ public class ModMainForge {
         });
     
     
+        EntityRendererManager renderManager = Minecraft.getInstance().getRenderManager();
+    
+        ModMainClient.initRenderers(renderManager);
     }
     
     private void enqueueIMC(final InterModEnqueueEvent event) {
@@ -94,9 +97,7 @@ public class ModMainForge {
     
     @SubscribeEvent
     public void onModelRegistry(ModelRegistryEvent event) {
-        EntityRendererManager renderManager = Minecraft.getInstance().getRenderManager();
-        
-        ModMainClient.initRenderers(renderManager);
+    
     }
     
     @SubscribeEvent

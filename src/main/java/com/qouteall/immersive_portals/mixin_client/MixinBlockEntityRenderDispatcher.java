@@ -14,5 +14,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = TileEntityRendererDispatcher.class)
 public class MixinBlockEntityRenderDispatcher {
-    //TODO implement tile entity render culling
+    @Inject(
+        method = "renderTileEntity",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private <E extends TileEntity> void onRenderTileEntity(
+        E tileEntityIn,
+        float partialTicks,
+        MatrixStack matrixStackIn,
+        IRenderTypeBuffer bufferIn,
+        CallbackInfo ci
+    ) {
+        if (CGlobal.renderer.isRendering()) {
+            Portal renderingPortal = CGlobal.renderer.getRenderingPortal();
+            boolean canRender = renderingPortal.canRenderEntityInsideMe(
+                new Vec3d(tileEntityIn.getPos()),
+                0
+            );
+            if (!canRender) {
+                ci.cancel();
+            }
+        }
+    }
 }
