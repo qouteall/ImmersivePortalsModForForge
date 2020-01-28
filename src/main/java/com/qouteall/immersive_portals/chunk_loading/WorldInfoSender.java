@@ -26,7 +26,7 @@ public class WorldInfoSender {
                         player,
                         DimensionManager.getWorld(
                             McHelper.getServer(),
-                            ModMain.alternate,
+                            ModMain.alternate1,
                             true,
                             true
                         )

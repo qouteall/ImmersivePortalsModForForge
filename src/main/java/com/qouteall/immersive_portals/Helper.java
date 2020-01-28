@@ -477,4 +477,16 @@ public class Helper {
         return bBox.obj;
     }
     
+    public static interface ExceptionalSupplier<T> {
+        T supply() throws Exception;
+    }
+    
+    public static <T> T noError(ExceptionalSupplier<T> func) {
+        try {
+            return func.supply();
+        }
+        catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 }
