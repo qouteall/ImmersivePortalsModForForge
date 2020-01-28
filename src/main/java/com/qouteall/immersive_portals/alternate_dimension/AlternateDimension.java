@@ -56,6 +56,7 @@ public class AlternateDimension extends Dimension {
             ((OverworldBiomeProviderSettings) BiomeProviderType.VANILLA_LAYERED.createSettings()).setGeneratorSettings(
                 overworldChunkGeneratorConfig2
             );
+        vanillaLayeredBiomeSourceConfig2.setWorldInfo(world.getWorldInfo());
         
         OverworldBiomeProvider newBiomeSource =
             BiomeProviderType.VANILLA_LAYERED.create(vanillaLayeredBiomeSourceConfig2);
