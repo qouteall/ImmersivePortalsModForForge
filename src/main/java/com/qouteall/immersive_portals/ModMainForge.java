@@ -10,12 +10,14 @@ import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.ModDimension;
@@ -71,6 +73,8 @@ public class ModMainForge {
             CGlobal.doCheckGlError = ConfigClient.getDoCheckGlError();
             Helper.log("Do Check Gl Error: " + CGlobal.doCheckGlError);
         });
+    
+    
     }
     
     private void enqueueIMC(final InterModEnqueueEvent event) {
@@ -86,6 +90,13 @@ public class ModMainForge {
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
     
+    }
+    
+    @SubscribeEvent
+    public void onModelRegistry(ModelRegistryEvent event) {
+        EntityRendererManager renderManager = Minecraft.getInstance().getRenderManager();
+        
+        ModMainClient.initRenderers(renderManager);
     }
     
     @SubscribeEvent

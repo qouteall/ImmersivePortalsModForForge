@@ -45,6 +45,6 @@ public class MixinEntityRenderDispatcher {
         IReloadableResourceManager p_229097_2_,
         CallbackInfo ci
     ) {
-        ModMainClient.initRenderers((EntityRendererManager) (Object) this);
+        //ModMainClient.initRenderers((EntityRendererManager) (Object) this);
     }
 }
