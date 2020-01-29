@@ -21,7 +21,10 @@ public class ModMain {
     public static final MyTaskList serverTaskList = new MyTaskList();
     public static final MyTaskList preRenderTaskList = new MyTaskList();
     
-    public static DimensionType alternate;
+    public static DimensionType alternate1;
+    public static DimensionType alternate2;
+    public static DimensionType alternate3;
+    public static DimensionType alternate4;
     
     
     public static void onInitialize() {

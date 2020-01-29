@@ -12,35 +12,71 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.provider.BiomeProviderType;
+import net.minecraft.world.biome.provider.OverworldBiomeProvider;
+import net.minecraft.world.biome.provider.OverworldBiomeProviderSettings;
 import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.gen.ChunkGeneratorType;
 import net.minecraft.world.gen.EndGenerationSettings;
+import net.minecraft.world.gen.OverworldGenSettings;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 import javax.annotation.Nullable;
 import java.util.Random;
+import java.util.function.Function;
 
 public class AlternateDimension extends Dimension {
     
     public static final BlockPos SPAWN = new BlockPos(100, 50, 0);
     
     private static Random random = new Random();
+    Function<AlternateDimension, ChunkGenerator> chunkGeneratorFunction;
     
     public AlternateDimension(
         World worldIn,
-        DimensionType typeIn
+        DimensionType typeIn,
+        Function<AlternateDimension, ChunkGenerator> chunkGeneratorFunction_
     ) {
         super(worldIn, typeIn, 0.0F);
+        chunkGeneratorFunction = chunkGeneratorFunction_;
     }
     
     public ChunkGenerator<?> createChunkGenerator() {
+        return chunkGeneratorFunction.apply(this);
+    }
+    
+    
+    public ChunkGenerator<?> getChunkGenerator2() {
+        OverworldGenSettings overworldChunkGeneratorConfig2 =
+            (OverworldGenSettings) ChunkGeneratorType.SURFACE.createSettings();
+        OverworldBiomeProviderSettings vanillaLayeredBiomeSourceConfig2 =
+            ((OverworldBiomeProviderSettings) BiomeProviderType.VANILLA_LAYERED
+                .func_226840_a_(this.world.getWorldInfo()))
+                .setGeneratorSettings(
+                    overworldChunkGeneratorConfig2
+                );
+        
+        OverworldBiomeProvider newBiomeSource =
+            BiomeProviderType.VANILLA_LAYERED.create(vanillaLayeredBiomeSourceConfig2);
+        
         EndGenerationSettings generationSettings = ChunkGeneratorType.FLOATING_ISLANDS.createSettings();
         generationSettings.setDefaultBlock(Blocks.STONE.getDefaultState());
         generationSettings.setDefaultFluid(Blocks.AIR.getDefaultState());
+        generationSettings.setSpawnPos(this.getSpawnCoordinate());
+        return ChunkGeneratorType.FLOATING_ISLANDS.create(
+            this.world,
+            newBiomeSource,
+            generationSettings
+        );
+    }
+    
+    public ChunkGenerator<?> getChunkGenerator1() {
+        EndGenerationSettings generationSettings = ChunkGeneratorType.FLOATING_ISLANDS.createSettings();
+        generationSettings.setDefaultBlock(Blocks.STONE.getDefaultState());
+        generationSettings.setDefaultFluid(Blocks.WATER.getDefaultState());
         generationSettings.setSpawnPos(this.getSpawnCoordinate());
         return ChunkGeneratorType.FLOATING_ISLANDS.create(
             this.world,
@@ -52,6 +88,42 @@ public class AlternateDimension extends Dimension {
             generationSettings
         );
     }
+    
+    public ChunkGenerator<?> getChunkGenerator3() {
+        
+        EndGenerationSettings generationSettings = ChunkGeneratorType.FLOATING_ISLANDS.createSettings();
+        generationSettings.setDefaultBlock(Blocks.STONE.getDefaultState());
+        generationSettings.setDefaultFluid(Blocks.WATER.getDefaultState());
+        generationSettings.setSpawnPos(this.getSpawnCoordinate());
+        
+        
+        return new MyFloatingIslandChunkGenerator(
+            world,
+            new ChaosBiomeSource(world.getSeed()),
+            generationSettings
+        
+        );
+
+//        return ChunkGeneratorType.FLOATING_ISLANDS.create(
+//            this.world,
+//            new ChaosBiomeSource(world.getSeed()),
+//            generationSettings
+//        );
+    }
+    
+    public ChunkGenerator<?> getChunkGenerator4() {
+        EndGenerationSettings generationSettings = ChunkGeneratorType.FLOATING_ISLANDS.createSettings();
+        generationSettings.setDefaultBlock(Blocks.STONE.getDefaultState());
+        generationSettings.setDefaultFluid(Blocks.WATER.getDefaultState());
+        generationSettings.setSpawnPos(this.getSpawnCoordinate());
+        
+        return new ErrorTerrainGenerator(
+            world,
+            new ChaosBiomeSource(world.getSeed()),
+            generationSettings
+        );
+    }
+    
     
     /**
      * Calculates the angle of sun and moon in the sky relative to a specified time (usually worldTime)
@@ -176,9 +248,12 @@ public class AlternateDimension extends Dimension {
     @Override
     public void updateWeather(Runnable defaultLogic) {
         ServerWorld overWorld = McHelper.getServer().getWorld(DimensionType.OVERWORLD);
-        ServerWorld thisWorld = McHelper.getServer().getWorld(ModMain.alternate);
-        
-        thisWorld.rainingStrength = overWorld.getRainStrength(1);
-        thisWorld.thunderingStrength = overWorld.getThunderStrength(1);
+    
+        McHelper.getServer().getWorlds().forEach(thisWorld -> {
+            if (thisWorld.dimension instanceof AlternateDimension) {
+                thisWorld.rainingStrength = overWorld.getRainStrength(1);
+                thisWorld.thunderingStrength = overWorld.getThunderStrength(1);
+            }
+        });
     }
 }

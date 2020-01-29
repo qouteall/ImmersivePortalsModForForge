@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.alternate_dimension.AlternateDimension;
 import com.qouteall.immersive_portals.render.FogRendererContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.overlay.BossOverlayGui;
@@ -44,7 +45,7 @@ public class MixinBackgroundRenderer {
     )
     private static Vec3d redirectCameraGetPos(ActiveRenderInfo camera) {
         ClientWorld world = Minecraft.getInstance().world;
-        if (world != null && world.dimension.getType() == ModMain.alternate) {
+        if (world != null && world.dimension instanceof AlternateDimension) {
             return new Vec3d(
                 camera.getProjectedView().x,
                 Math.max(32.0, camera.getProjectedView().y),
