@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.alternate_dimension;
 
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.ModMain;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundNBT;
@@ -240,9 +239,12 @@ public class AlternateDimension extends Dimension {
     @Override
     public void updateWeather(Runnable defaultLogic) {
         ServerWorld overWorld = McHelper.getServer().getWorld(DimensionType.OVERWORLD);
-        ServerWorld thisWorld = McHelper.getServer().getWorld(ModMain.alternate1);
     
-        thisWorld.rainingStrength = overWorld.getRainStrength(1);
-        thisWorld.thunderingStrength = overWorld.getThunderStrength(1);
+        McHelper.getServer().getWorlds().forEach(thisWorld -> {
+            if (thisWorld.dimension instanceof AlternateDimension) {
+                thisWorld.rainingStrength = overWorld.getRainStrength(1);
+                thisWorld.thunderingStrength = overWorld.getThunderStrength(1);
+            }
+        });
     }
 }
