@@ -40,7 +40,7 @@ public class MyFloatingIslandChunkGenerator extends EndChunkGenerator {
     }
     
     @Override
-    protected void func_222546_a(
+    protected void calcNoiseColumn(
         double[] buffer,
         int x,
         int z,
@@ -51,7 +51,7 @@ public class MyFloatingIslandChunkGenerator extends EndChunkGenerator {
         int i,
         int j
     ) {
-        super.func_222546_a(buffer,
+        super.calcNoiseColumn(buffer,
             transformX(x, z), transformZ(x, z),
             d, e, f, g, i, j
         );

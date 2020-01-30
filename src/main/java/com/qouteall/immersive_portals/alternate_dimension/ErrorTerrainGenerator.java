@@ -69,7 +69,7 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
         TaskInfo taskInfo = new TaskInfo();
         
         for (int sectionY = 0; sectionY < 16; sectionY++) {
-            ChunkSection section = protoChunk.func_217332_a(sectionY);
+            ChunkSection section = protoChunk.getSection(sectionY);
             section.lock();
             
             for (int localX = 0; localX < 16; localX++) {

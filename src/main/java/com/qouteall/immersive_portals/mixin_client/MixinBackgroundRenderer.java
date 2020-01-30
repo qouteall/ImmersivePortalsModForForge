@@ -36,26 +36,26 @@ public class MixinBackgroundRenderer {
     
     
     //avoid alternate dimension dark when seeing from overworld
-    @Redirect(
-        method = "updateFogColor",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/ActiveRenderInfo;getProjectedView()Lnet/minecraft/util/math/Vec3d;"
-        )
-    )
-    private static Vec3d redirectCameraGetPos(ActiveRenderInfo camera) {
-        ClientWorld world = Minecraft.getInstance().world;
-        if (world != null && world.dimension instanceof AlternateDimension) {
-            return new Vec3d(
-                camera.getProjectedView().x,
-                Math.max(32.0, camera.getProjectedView().y),
-                camera.getProjectedView().z
-            );
-        }
-        else {
-            return camera.getProjectedView();
-        }
-    }
+//    @Redirect(
+//        method = "updateFogColor",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/client/renderer/ActiveRenderInfo;getProjectedView()Lnet/minecraft/util/math/Vec3d;"
+//        )
+//    )
+//    private static Vec3d redirectCameraGetPos(ActiveRenderInfo camera) {
+//        ClientWorld world = Minecraft.getInstance().world;
+//        if (world != null && world.dimension instanceof AlternateDimension) {
+//            return new Vec3d(
+//                camera.getProjectedView().x,
+//                Math.max(32.0, camera.getProjectedView().y),
+//                camera.getProjectedView().z
+//            );
+//        }
+//        else {
+//            return camera.getProjectedView();
+//        }
+//    }
     
     static {
         FogRendererContext.copyContextFromObject = context -> {

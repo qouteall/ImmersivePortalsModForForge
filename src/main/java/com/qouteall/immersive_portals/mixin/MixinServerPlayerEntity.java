@@ -15,6 +15,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.common.util.ITeleporter;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -80,9 +81,10 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
         }
     }
     
-    @Inject(method = "changeDimension", at = @At("HEAD"))
+    @Inject(method = "changeDimension", at = @At("HEAD"), remap = false)
     private void onChangeDimensionByVanilla(
-        DimensionType dimensionType_1,
+        DimensionType p_changeDimension_1_,
+        ITeleporter p_changeDimension_2_,
         CallbackInfoReturnable<Entity> cir
     ) {
         SGlobal.chunkDataSyncManager.onPlayerRespawn((ServerPlayerEntity) (Object) this);
@@ -126,7 +128,8 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
         method = "Lnet/minecraft/entity/player/ServerPlayerEntity;teleport(Lnet/minecraft/world/server/ServerWorld;DDDFF)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/server/ServerWorld;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;Z)V"
+            target = "Lnet/minecraft/world/server/ServerWorld;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;Z)V",
+            remap = false
         )
     )
     private void onForgeTeleport(

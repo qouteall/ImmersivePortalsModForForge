@@ -28,14 +28,14 @@ class RegionErrorTerrainGenerator {
     }
     
     private void initExpression(long seed) {
-        long realSeed = FastRandom.func_226162_a_(
-            seed, FastRandom.func_226162_a_(
+        long realSeed = FastRandom.mix(
+            seed, FastRandom.mix(
                 regionX, regionZ
             )
         );
         Random random = new Random(realSeed);
         expression = FormulaGenerator.getRandomTriCompositeExpression(random);
-        
+    
         compositionType = (int) (realSeed % 5);
     }
     
