@@ -58,6 +58,10 @@ public abstract class MixinEntityTrackerEntry {
         this.sendSpawnPackets(packet -> sendRedirectedMessage(networkHandler, packet));
         this.trackedEntity.addTrackingPlayer(serverPlayerEntity_1);
         serverPlayerEntity_1.addEntity(this.trackedEntity);
+    
+        net.minecraftforge.event.ForgeEventFactory.onStartEntityTracking(
+            this.trackedEntity, serverPlayerEntity_1
+        );
     }
     
     @Redirect(

@@ -61,8 +61,11 @@ public class MyClientChunkManager extends ClientChunkProvider {
     @Override
     public void unloadChunk(int int_1, int int_2) {
         ChunkPos chunkPos = new ChunkPos(int_1, int_2);
-        Chunk worldChunk_1 = chunkMap.get(chunkPos);
-        if (positionEquals(worldChunk_1, int_1, int_2)) {
+        Chunk chunk = chunkMap.get(chunkPos);
+        if (positionEquals(chunk, int_1, int_2)) {
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+                new net.minecraftforge.event.world.ChunkEvent.Unload(chunk)
+            );
             chunkMap.remove(chunkPos);
         }
     }
@@ -92,8 +95,8 @@ public class MyClientChunkManager extends ClientChunkProvider {
         int int_3
     ) {
         ChunkPos chunkPos = new ChunkPos(int_1, int_2);
-        Chunk worldChunk_1 = (Chunk) chunkMap.get(chunkPos);
-        if (!positionEquals(worldChunk_1, int_1, int_2)) {
+        Chunk chunk = (Chunk) chunkMap.get(chunkPos);
+        if (!positionEquals(chunk, int_1, int_2)) {
             if (biomeArray_1 == null) {
                 LOGGER.warn(
                     "Ignoring chunk since we don't have complete data: {}, {}",
@@ -102,19 +105,19 @@ public class MyClientChunkManager extends ClientChunkProvider {
                 );
                 return null;
             }
-            
-            worldChunk_1 = new Chunk(this.world, chunkPos, biomeArray_1);
-            worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
-            chunkMap.put(chunkPos, worldChunk_1);
+        
+            chunk = new Chunk(this.world, chunkPos, biomeArray_1);
+            chunk.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
+            chunkMap.put(chunkPos, chunk);
         }
         else {
-            worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
+            chunk.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
         }
-        
-        ChunkSection[] chunkSections_1 = worldChunk_1.getSections();
+    
+        ChunkSection[] chunkSections_1 = chunk.getSections();
         WorldLightManager lightingProvider_1 = this.getLightManager();
         lightingProvider_1.enableLightSources(chunkPos, true);
-        
+    
         for (int int_5 = 0; int_5 < chunkSections_1.length; ++int_5) {
             ChunkSection chunkSection_1 = chunkSections_1[int_5];
             lightingProvider_1.updateSectionStatus(
@@ -122,9 +125,14 @@ public class MyClientChunkManager extends ClientChunkProvider {
                 ChunkSection.isEmpty(chunkSection_1)
             );
         }
-        
+    
         this.world.onChunkLoaded(int_1, int_2);
-        return worldChunk_1;
+    
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+            new net.minecraftforge.event.world.ChunkEvent.Load(chunk)
+        );
+    
+        return chunk;
     }
     
     public static void updateLightStatus(Chunk chunk) {
