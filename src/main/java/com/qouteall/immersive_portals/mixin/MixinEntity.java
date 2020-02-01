@@ -146,7 +146,7 @@ public abstract class MixinEntity implements IEEntity {
         )
     )
     private boolean redirectDoesContainFireSource(World world, AxisAlignedBB box_1) {
-        if (collidingPortal != null) {
+        if (collidingPortal == null) {
             return world.isFlammableWithin(box_1);
         }
         else {
