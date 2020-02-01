@@ -11,7 +11,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.function.Consumer;
 
@@ -48,21 +50,46 @@ public abstract class MixinEntityTrackerEntry {
         sendRedirectedMessage(serverPlayNetworkHandler, packet_1);
     }
     
-    /**
-     * @author qouteall
-     * @reason method reference can not be redirected
-     */
-    @Overwrite
-    public void track(ServerPlayerEntity serverPlayerEntity_1) {
-        ServerPlayNetHandler networkHandler = serverPlayerEntity_1.connection;
-        this.sendSpawnPackets(packet -> sendRedirectedMessage(networkHandler, packet));
-        this.trackedEntity.addTrackingPlayer(serverPlayerEntity_1);
-        serverPlayerEntity_1.addEntity(this.trackedEntity);
-    
-        net.minecraftforge.event.ForgeEventFactory.onStartEntityTracking(
-            this.trackedEntity, serverPlayerEntity_1
-        );
+    @Inject(
+        method = "track",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/TrackedEntity;sendSpawnPackets(Ljava/util/function/Consumer;)V"
+        )
+    )
+    private void injectSendpacketsOnStartTracking(ServerPlayerEntity player, CallbackInfo ci) {
+        this.sendSpawnPackets(packet -> sendRedirectedMessage(player.connection, packet));
     }
+    
+    @Redirect(
+        method = "track",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/TrackedEntity;sendSpawnPackets(Ljava/util/function/Consumer;)V"
+        )
+    )
+    private void redirectSendPacketsOnStartTracking(
+        TrackedEntity trackedEntity,
+        Consumer<IPacket<?>> p_219452_1_
+    ) {
+        //nothing
+    }
+
+//    /**
+//     * @author qouteall
+//     * @reason method reference can not be redirected
+//     */
+//    @Overwrite
+//    public void track(ServerPlayerEntity serverPlayerEntity_1) {
+//        ServerPlayNetHandler networkHandler = serverPlayerEntity_1.connection;
+//        this.sendSpawnPackets(packet -> sendRedirectedMessage(networkHandler, packet));
+//        this.trackedEntity.addTrackingPlayer(serverPlayerEntity_1);
+//        serverPlayerEntity_1.addEntity(this.trackedEntity);
+//
+//        net.minecraftforge.event.ForgeEventFactory.onStartEntityTracking(
+//            this.trackedEntity, serverPlayerEntity_1
+//        );
+//    }
     
     @Redirect(
         method = "sendPacket",
