@@ -151,6 +151,17 @@ public class ModMainForge {
             );
         }
         ModMain.alternate4 = DimensionType.byName(resourceLocation);
+    
+        resourceLocation = new ResourceLocation("immersive_portals:alternate5");
+        if (DimensionType.byName(resourceLocation) == null) {
+            DimensionManager.registerDimension(
+                resourceLocation,
+                AlternateDimensionEntry.instance5,
+                null,
+                true
+            );
+        }
+        ModMain.alternate5 = DimensionType.byName(resourceLocation);
     }
     
     @SubscribeEvent
@@ -346,6 +357,12 @@ public class ModMainForge {
             );
             AlternateDimensionEntry.instance4.setRegistryName("immersive_portals:alternate4");
             event.getRegistry().register(AlternateDimensionEntry.instance4);
+    
+            AlternateDimensionEntry.instance5 = new AlternateDimensionEntry(
+                AlternateDimension::getChunkGenerator5
+            );
+            AlternateDimensionEntry.instance5.setRegistryName("immersive_portals:alternate5");
+            event.getRegistry().register(AlternateDimensionEntry.instance5);
         }
     }
 }

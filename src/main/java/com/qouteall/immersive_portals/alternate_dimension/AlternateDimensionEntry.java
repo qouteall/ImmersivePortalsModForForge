@@ -14,6 +14,7 @@ public class AlternateDimensionEntry extends ModDimension {
     public static AlternateDimensionEntry instance2;
     public static AlternateDimensionEntry instance3;
     public static AlternateDimensionEntry instance4;
+    public static AlternateDimensionEntry instance5;
     
     Function<AlternateDimension, ChunkGenerator> chunkGeneratorFunction;
     

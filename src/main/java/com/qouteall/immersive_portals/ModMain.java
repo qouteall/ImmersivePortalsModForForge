@@ -25,6 +25,7 @@ public class ModMain {
     public static DimensionType alternate2;
     public static DimensionType alternate3;
     public static DimensionType alternate4;
+    public static DimensionType alternate5;
     
     
     public static void onInitialize() {

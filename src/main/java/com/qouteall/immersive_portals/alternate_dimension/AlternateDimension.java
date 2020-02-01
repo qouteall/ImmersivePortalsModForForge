@@ -11,6 +11,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.biome.provider.BiomeProviderType;
 import net.minecraft.world.biome.provider.OverworldBiomeProvider;
 import net.minecraft.world.biome.provider.OverworldBiomeProviderSettings;
@@ -103,12 +104,6 @@ public class AlternateDimension extends Dimension {
             generationSettings
         
         );
-
-//        return ChunkGeneratorType.FLOATING_ISLANDS.create(
-//            this.world,
-//            new ChaosBiomeSource(world.getSeed()),
-//            generationSettings
-//        );
     }
     
     public ChunkGenerator<?> getChunkGenerator4() {
@@ -116,10 +111,27 @@ public class AlternateDimension extends Dimension {
         generationSettings.setDefaultBlock(Blocks.STONE.getDefaultState());
         generationSettings.setDefaultFluid(Blocks.WATER.getDefaultState());
         generationSettings.setSpawnPos(this.getSpawnCoordinate());
-        
+    
         return new ErrorTerrainGenerator(
             world,
             new ChaosBiomeSource(world.getSeed()),
+            generationSettings
+        );
+    }
+    
+    public ChunkGenerator<?> getChunkGenerator5() {
+        EndGenerationSettings generationSettings = ChunkGeneratorType.FLOATING_ISLANDS.createSettings();
+        generationSettings.setDefaultBlock(Blocks.STONE.getDefaultState());
+        generationSettings.setDefaultFluid(Blocks.WATER.getDefaultState());
+        generationSettings.setSpawnPos(this.getSpawnCoordinate());
+        
+        return new VoidChunkGenerator(
+            world,
+            BiomeProviderType.FIXED.create(
+                BiomeProviderType.FIXED.func_226840_a_(world.getWorldInfo()).setBiome(
+                    Biomes.PLAINS
+                )
+            ),
             generationSettings
         );
     }
