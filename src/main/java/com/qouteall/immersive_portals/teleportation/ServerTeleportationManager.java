@@ -31,6 +31,9 @@ public class ServerTeleportationManager {
             this, (this_, portal) ->
                 getEntitiesToTeleport(portal).forEach(entity -> {
                     if (!(entity instanceof ServerPlayerEntity)) {
+                        if (entity.isPassenger() || doesEntityClutterContainPlayer(entity)) {
+                            return;
+                        }
                         ModMain.serverTaskList.addTask(() -> {
                             teleportRegularEntity(entity, portal);
                             return true;
@@ -96,6 +99,9 @@ public class ServerTeleportationManager {
         Vec3d posBefore,
         Entity portalEntity
     ) {
+        if (player.getRidingEntity() != null) {
+            return true;
+        }
         return canPlayerReachPos(player, dimensionBefore, posBefore) &&
             portalEntity instanceof Portal &&
             ((Portal) portalEntity).getDistanceToNearestPointInPortal(posBefore) < 20;

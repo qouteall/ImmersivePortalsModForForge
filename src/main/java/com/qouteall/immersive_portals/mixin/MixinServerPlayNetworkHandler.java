@@ -1,13 +1,16 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.ducks.IEPlayerMoveC2SPacket;
 import com.qouteall.immersive_portals.ducks.IEPlayerPositionLookS2CPacket;
 import com.qouteall.immersive_portals.ducks.IEServerPlayNetworkHandler;
 import com.qouteall.immersive_portals.portal.Portal;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.network.play.client.CConfirmTeleportPacket;
+import net.minecraft.network.play.client.CMoveVehiclePacket;
 import net.minecraft.network.play.client.CPlayerPacket;
 import net.minecraft.network.play.server.SPlayerPositionLookPacket;
 import net.minecraft.util.math.Vec3d;
@@ -38,6 +41,18 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     
     @Shadow
     protected abstract boolean func_223133_a(IWorldReader viewableWorld_1);
+    
+    @Shadow
+    private boolean vehicleFloating;
+    
+    @Shadow
+    private double lowestRiddenX1;
+    
+    @Shadow
+    private double lowestRiddenY1;
+    
+    @Shadow
+    private double lowestRiddenZ1;
     
     //do not process move packet when client dimension and server dimension are not synced
     @Inject(
@@ -140,6 +155,43 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         CallbackInfo ci
     ) {
         if (targetPos == null) {
+            ci.cancel();
+        }
+    }
+    
+    @Inject(
+        method = "processVehicleMove",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/network/play/ServerPlayNetHandler;isMoveVehiclePacketInvalid(Lnet/minecraft/network/play/client/CMoveVehiclePacket;)Z"
+        ),
+        cancellable = true
+    )
+    private void onOnVehicleMove(CMoveVehiclePacket packetIn, CallbackInfo ci) {
+        if (SGlobal.serverTeleportationManager.isJustTeleported(player, 20)) {
+            Entity vehicle = player.getLowestRidingEntity();
+            if (vehicle != player) {
+                double d3 = packetIn.getX();
+                double d4 = packetIn.getY();
+                double d5 = packetIn.getZ();
+                float f = packetIn.getYaw();
+                float f1 = packetIn.getPitch();
+                
+                vehicle.setPositionAndRotation(d3, d4, d5, f, f1);
+                this.player.setPositionAndRotation(
+                    d3,
+                    d4,
+                    d5,
+                    this.player.rotationYaw,
+                    this.player.rotationPitch
+                ); // Forge - Resync player position on vehicle moving
+                
+                this.player.getServerWorld().getChunkProvider().updatePlayerPosition(this.player);
+                vehicleFloating = false;
+                lowestRiddenX1 = vehicle.getPosX();
+                lowestRiddenY1 = vehicle.getPosY();
+                lowestRiddenZ1 = vehicle.getPosZ();
+            }
             ci.cancel();
         }
     }
