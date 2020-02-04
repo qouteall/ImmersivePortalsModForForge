@@ -75,7 +75,6 @@ public class ModMainForge {
             Helper.log("Do Check Gl Error: " + CGlobal.doCheckGlError);
         });
     
-    
         EntityRendererManager renderManager = Minecraft.getInstance().getRenderManager();
     
         ModMainClient.initRenderers(renderManager);

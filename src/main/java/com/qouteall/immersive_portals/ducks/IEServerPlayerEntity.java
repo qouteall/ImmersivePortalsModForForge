@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.ducks;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.server.ServerWorld;
 
@@ -9,4 +10,8 @@ public interface IEServerPlayerEntity {
     void updateDimensionTravelAdvancements(ServerWorld fromWorld);
     
     void setIsInTeleportationState(boolean arg);
+    
+    void stopRidingWithoutTeleportRequest();
+    
+    void startRidingWithoutTeleportRequest(Entity newVehicle);
 }

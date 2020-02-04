@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.google.common.collect.HashMultimap;
+import com.mojang.authlib.GameProfile;
 import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEServerPlayerEntity;
@@ -13,6 +14,7 @@ import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.network.play.server.SDestroyEntitiesPacket;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.util.ITeleporter;
@@ -27,13 +29,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.Set;
 
 @Mixin(value = ServerPlayerEntity.class)
-public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
+public abstract class MixinServerPlayerEntity extends PlayerEntity implements IEServerPlayerEntity {
     @Shadow
     public ServerPlayNetHandler connection;
     @Shadow
     private Vec3d enteredNetherPosition;
     
     private HashMultimap<DimensionType, Entity> myRemovedEntities;
+    
+    public MixinServerPlayerEntity(
+        World p_i45324_1_,
+        GameProfile p_i45324_2_
+    ) {
+        super(p_i45324_1_, p_i45324_2_);
+        throw new IllegalStateException();
+    }
     
     @Shadow
     public abstract void func_213846_b(ServerWorld serverWorld_1);
@@ -145,14 +155,24 @@ public abstract class MixinServerPlayerEntity implements IEServerPlayerEntity {
         
         //fix issue with good nights sleep
         player.clearBedPosition();
-        
+    
         NewChunkTrackingGraph.forceRemovePlayer(player);
-        
+    
         GlobalPortalStorage.onPlayerLoggedIn(player);
     }
     
     @Override
     public void setIsInTeleportationState(boolean arg) {
         invulnerableDimensionChange = arg;
+    }
+    
+    @Override
+    public void stopRidingWithoutTeleportRequest() {
+        super.stopRiding();
+    }
+    
+    @Override
+    public void startRidingWithoutTeleportRequest(Entity newVehicle) {
+        super.startRiding(newVehicle, true);
     }
 }

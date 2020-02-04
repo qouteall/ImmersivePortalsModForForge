@@ -10,6 +10,7 @@ import com.qouteall.immersive_portals.network.StcDimensionConfirm;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -97,8 +98,7 @@ public class ServerTeleportationManager {
     ) {
         return canPlayerReachPos(player, dimensionBefore, posBefore) &&
             portalEntity instanceof Portal &&
-            ((Portal) portalEntity).getDistanceToNearestPointInPortal(posBefore) < 20 &&
-            !player.isPassenger();
+            ((Portal) portalEntity).getDistanceToNearestPointInPortal(posBefore) < 20;
     }
     
     private boolean canPlayerReachPos(
@@ -136,6 +136,7 @@ public class ServerTeleportationManager {
             ((IEServerPlayNetworkHandler) player.connection).cancelTeleportRequest();
         }
     
+        McHelper.adjustVehicle(player);
         ((IEServerPlayerEntity) player).setIsInTeleportationState(true);
         player.connection.captureCurrentPosition();
     }
@@ -179,12 +180,14 @@ public class ServerTeleportationManager {
         ServerWorld toWorld,
         Vec3d destination
     ) {
+        Entity vehicle = player.getRidingEntity();
+        if (vehicle != null) {
+            ((IEServerPlayerEntity) player).stopRidingWithoutTeleportRequest();
+        }
+    
         BlockPos oldPos = player.getPosition();
-        
+    
         teleportingEntities.add(player);
-        
-        //TODO fix travel when riding entity
-        player.detach();
     
         //new dimension transition method
         player.dimension = toWorld.dimension.getType();
@@ -205,6 +208,21 @@ public class ServerTeleportationManager {
         );
     
         player.interactionManager.setWorld(toWorld);
+    
+        if (vehicle != null) {
+            Vec3d vehiclePos = new Vec3d(
+                destination.x,
+                McHelper.getVehicleY(vehicle, player),
+                destination.z
+            );
+            changeEntityDimension(
+                vehicle,
+                toWorld.dimension.getType(),
+                vehiclePos
+            );
+            ((IEServerPlayerEntity) player).startRidingWithoutTeleportRequest(vehicle);
+            McHelper.adjustVehicle(player);
+        }
     
         Helper.log(String.format(
             "%s teleported from %s %s to %s %s",
@@ -275,7 +293,7 @@ public class ServerTeleportationManager {
         }
         this.lastTeleportGameTime.put(entity, currGameTime);
     
-        if (entity.isPassenger() || !entity.getPassengers().isEmpty()) {
+        if (entity.isPassenger() || doesEntityClutterContainPlayer(entity)) {
             return;
         }
     
@@ -314,5 +332,22 @@ public class ServerTeleportationManager {
     
         //this is important
         toWorld.func_217460_e(entity);
+    }
+    
+    private boolean doesEntityClutterContainPlayer(Entity entity) {
+        if (entity instanceof PlayerEntity) {
+            return true;
+        }
+        List<Entity> passengerList = entity.getPassengers();
+        if (passengerList.isEmpty()) {
+            return false;
+        }
+        return passengerList.stream().anyMatch(this::doesEntityClutterContainPlayer);
+    }
+    
+    public boolean isJustTeleported(Entity entity, long valveTickTime) {
+        long currGameTime = McHelper.getServerGameTime();
+        Long lastTeleportGameTime = this.lastTeleportGameTime.getOrDefault(entity, 0L);
+        return currGameTime - lastTeleportGameTime < valveTickTime;
     }
 }

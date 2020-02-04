@@ -120,7 +120,7 @@ public class MixinEntityTracker implements IEEntityTracker {
     public void updateTrackingState(List<ServerPlayerEntity> list_1) {
         //ignore the argument
     
-        McHelper.getCopiedPlayerList().forEach(this::updateTrackingState);
+        McHelper.getRawPlayerList().forEach(this::updateTrackingState);
         
     }
     

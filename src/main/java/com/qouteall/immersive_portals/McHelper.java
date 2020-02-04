@@ -56,7 +56,11 @@ public class McHelper {
     }
     
     public static ArrayList<ServerPlayerEntity> getCopiedPlayerList() {
-        return new ArrayList<>(getServer().getPlayerList().getPlayers());
+        return new ArrayList<>(getRawPlayerList());
+    }
+    
+    public static List<ServerPlayerEntity> getRawPlayerList() {
+        return getServer().getPlayerList().getPlayers();
     }
     
     public static void setPosAndLastTickPos(
@@ -242,5 +246,22 @@ public class McHelper {
     
     public static Vec3d lastTickPosOf(Entity entity) {
         return new Vec3d(entity.prevPosX, entity.prevPosY, entity.prevPosZ);
+    }
+    
+    public static double getVehicleY(Entity vehicle, Entity passenger) {
+        return passenger.getPosY() - vehicle.getMountedYOffset() - passenger.getYOffset();
+    }
+    
+    public static void adjustVehicle(Entity entity) {
+        Entity vehicle = entity.getRidingEntity();
+        if (vehicle == null) {
+            return;
+        }
+        
+        vehicle.setPosition(
+            entity.getPosX(),
+            getVehicleY(vehicle, entity),
+            entity.getPosZ()
+        );
     }
 }
