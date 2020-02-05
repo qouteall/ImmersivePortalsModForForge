@@ -100,21 +100,19 @@ public class ClientTeleportationManager {
     }
     
     private void teleportPlayer(Portal portal) {
-        if (isTeleportingFrequently()) {
-            Helper.log("Client Player is teleporting frequently!");
-            if (tickTimeForTeleportation - teleportWhileRidingTime < 20) {
-                //to make it not hacky we need to reconstruct the whole entity managing system
-                return;
-            }
+        if (tickTimeForTeleportation - teleportWhileRidingTime < 20) {
+            //to make it not hacky we need to reconstruct the whole entity managing system
+            return;
         }
+    
         lastTeleportGameTime = tickTimeForTeleportation;
-        
+    
         ClientPlayerEntity player = mc.player;
-        
+    
         DimensionType toDimension = portal.dimensionTo;
-        
+    
         Vec3d oldPos = player.getPositionVec();
-        
+    
         Vec3d newPos = portal.applyTransformationToPoint(oldPos);
         Vec3d newLastTickPos = portal.applyTransformationToPoint(McHelper.lastTickPosOf(player));
         

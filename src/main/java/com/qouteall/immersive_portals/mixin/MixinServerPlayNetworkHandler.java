@@ -171,26 +171,30 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         if (SGlobal.serverTeleportationManager.isJustTeleported(player, 20)) {
             Entity vehicle = player.getLowestRidingEntity();
             if (vehicle != player) {
-                double d3 = packetIn.getX();
-                double d4 = packetIn.getY();
-                double d5 = packetIn.getZ();
+                double newX = packetIn.getX();
+                double newY = packetIn.getY();
+                double newZ = packetIn.getZ();
                 float f = packetIn.getYaw();
                 float f1 = packetIn.getPitch();
-                
-                vehicle.setPositionAndRotation(d3, d4, d5, f, f1);
-                this.player.setPositionAndRotation(
-                    d3,
-                    d4,
-                    d5,
-                    this.player.rotationYaw,
-                    this.player.rotationPitch
-                ); // Forge - Resync player position on vehicle moving
-                
-                this.player.getServerWorld().getChunkProvider().updatePlayerPosition(this.player);
-                vehicleFloating = false;
-                lowestRiddenX1 = vehicle.getPosX();
-                lowestRiddenY1 = vehicle.getPosY();
-                lowestRiddenZ1 = vehicle.getPosZ();
+    
+                if (vehicle.getPositionVec().squareDistanceTo(
+                    newX, newY, newZ
+                ) < 256) {
+                    vehicle.setPositionAndRotation(newX, newY, newZ, f, f1);
+                    this.player.setPositionAndRotation(
+                        newX,
+                        newY,
+                        newZ,
+                        this.player.rotationYaw,
+                        this.player.rotationPitch
+                    ); // Forge - Resync player position on vehicle moving
+        
+                    this.player.getServerWorld().getChunkProvider().updatePlayerPosition(this.player);
+                    vehicleFloating = false;
+                    lowestRiddenX1 = vehicle.getPosX();
+                    lowestRiddenY1 = vehicle.getPosY();
+                    lowestRiddenZ1 = vehicle.getPosZ();
+                }
             }
             ci.cancel();
         }
