@@ -14,7 +14,6 @@ import java.util.WeakHashMap;
 //dynamically adjust the player's loading distance
 //if a player is loading many chunks through portals then his loading distance will decrease
 //if a player is travelling too fast (through or not through portal) then his loading distance will decrease
-//if the server memory is tight then loading distance will decrease
 public class ServerPerformanceAdjust {
     private static class PlayerProfile {
         public int loadingChunkNum = 0;
