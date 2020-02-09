@@ -23,8 +23,4 @@ public class Mirror extends Portal {
         teleportable = false;
     }
     
-    @Override
-    public void move(MoverType typeIn, Vec3d pos) {
-        //mirror cannot be moved
-    }
 }

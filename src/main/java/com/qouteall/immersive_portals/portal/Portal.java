@@ -5,6 +5,7 @@ import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.SignalArged;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.MoverType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
@@ -212,6 +213,11 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
             boundingBoxCache = getPortalCollisionBox();
         }
         return boundingBoxCache;
+    }
+    
+    @Override
+    public void move(MoverType typeIn, Vec3d pos) {
+        //portal cannot be moved
     }
     
     public double getDistanceToPlane(
@@ -502,5 +508,6 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         
         return Math.sqrt(dx * dx + dy * dy);
     }
+    
     
 }
