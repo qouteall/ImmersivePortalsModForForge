@@ -50,8 +50,9 @@ I do culling in fragment shader.
 and I use glClipPlane which is equivalent as culling in fragment shader)
 
 There is another culling method using oblique projection.
-But oblique projection won't work with depth test in some cases.
-(example https://i.ibb.co/NsfB3xg/Example-of-oblique-projection-not-working-with-depth-test.png)
+http://www.terathon.com/lengyel/Lengyel-Oblique.pdf
+But oblique projection won't work when the angle between culling plane normal with
+ view vector is not bigger than 90 degree.
 
 (Rendering portals and mirrors with ray tracing is much simpler than in rasterization.)
 

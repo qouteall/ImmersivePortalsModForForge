@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.*;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
@@ -60,9 +61,18 @@ public abstract class PortalRenderer {
     }
     
     public boolean shouldRenderPlayerItself() {
-        return isRendering() &&
-            mc.renderViewEntity.dimension == MyRenderHelper.originalPlayerDimension &&
-            getRenderingPortal().canRenderEntityInsideMe(MyRenderHelper.originalPlayerPos, -0.01);
+        if (!isRendering()) {
+            return false;
+        }
+        if (mc.renderViewEntity.dimension == MyRenderHelper.originalPlayerDimension) {
+            return getRenderingPortal().canRenderEntityInsideMe(
+                MyRenderHelper.originalPlayerPos.add(
+                    0, mc.renderViewEntity.getEyeHeight(), 0
+                ),
+                0.1
+            );
+        }
+        return false;
     }
     
     public boolean shouldRenderEntityNow(Entity entity) {
@@ -70,7 +80,13 @@ public abstract class PortalRenderer {
             return true;
         }
         if (isRendering()) {
-            return getRenderingPortal().canRenderEntityInsideMe(entity.getPositionVec(), -0.01);
+            if (entity instanceof ClientPlayerEntity) {
+                return shouldRenderPlayerItself();
+            }
+            return getRenderingPortal().canRenderEntityInsideMe(
+                entity.getEyePosition(1),
+                -0.01
+            );
         }
         return true;
     }
