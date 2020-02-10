@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals.mixin;
+package com.qouteall.immersive_portals.mixin.chunk_sync;
 
 import com.mojang.datafixers.util.Either;
 import com.qouteall.immersive_portals.SGlobal;
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 @Mixin(value = ChunkManager.class)
-public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilChunkStorage {
+public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvilChunkStorage {
     @Shadow
     private int viewDistance;
     
@@ -101,23 +101,6 @@ public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilC
         //chunk data packet will be sent on ChunkDataSyncManager
     }
     
-    @Inject(
-        method = "untrack",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private void onUnloadEntity(Entity entity, CallbackInfo ci) {
-        //when the player leave this dimension, do not stop tracking entities
-        if (entity instanceof ServerPlayerEntity) {
-            ServerPlayerEntity player = (ServerPlayerEntity) entity;
-            if (SGlobal.serverTeleportationManager.isTeleporting(player)) {
-                entities.remove(entity.getEntityId());
-                setPlayerTracking(player, false);
-                ci.cancel();
-            }
-        }
-    }
-    
     
     //cancel vanilla packet sending
     @Redirect(
@@ -163,12 +146,6 @@ public abstract class MixinThreadedAnvilChunkStorage implements IEThreadedAnvilC
         });
     }
     
-    @Override
-    public void onPlayerRespawn(ServerPlayerEntity oldPlayer) {
-        entities.values().forEach(obj -> {
-            ((IEEntityTracker) obj).onPlayerRespawn(oldPlayer);
-        });
-    }
     
     @Override
     public int getChunkHolderNum() {
