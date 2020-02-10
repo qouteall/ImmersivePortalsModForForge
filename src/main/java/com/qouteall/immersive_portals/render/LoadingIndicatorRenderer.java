@@ -29,7 +29,7 @@ public class LoadingIndicatorRenderer extends EntityRenderer<LoadingIndicatorEnt
         String[] splited = entity_1.getText().getString().split("\n");
         for (int i = 0; i < splited.length; i++) {
             matrixStack_1.push();
-            matrixStack_1.translate(0, -i * 0.5, 0);
+            matrixStack_1.translate(0, -i * 0.25 - 0.5, 0);
             this.renderName(
                 entity_1,
                 splited[i],

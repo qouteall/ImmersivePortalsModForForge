@@ -82,14 +82,28 @@ public class ChunkVisibilityManager {
         );
     }
     
-    private static ChunkLoader portalDirectLoader(Portal portal) {
-        int renderDistance = getRenderDistanceOnServer();
+    private static int getDirectLoadingDistance(int renderDistance, double distanceToPortal) {
+        if (distanceToPortal < 5) {
+            return renderDistance;
+        }
+        if (distanceToPortal < 15) {
+            return (renderDistance * 2) / 3;
+        }
+        return renderDistance / 3;
+    }
+    
+    private static ChunkLoader portalDirectLoader(
+        Portal portal,
+        ServerPlayerEntity player
+    ) {
+        int renderDistance = ServerPerformanceAdjust.getPlayerLoadingDistance(player);
+        double distance = portal.getDistanceToNearestPointInPortal(player.getPositionVec());
         return new ChunkLoader(
             new DimensionalChunkPos(
                 portal.dimensionTo,
                 new ChunkPos(new BlockPos(portal.destination))
             ),
-            portal.loadFewerChunks ? (renderDistance / 3) : renderDistance
+            getDirectLoadingDistance(renderDistance, distance)
         );
     }
     
@@ -168,8 +182,8 @@ public class ChunkVisibilityManager {
                 portal -> portal.canBeSeenByPlayer(player)
             ).flatMap(
                 portal -> Streams.concat(
-                    Stream.of(portalDirectLoader(portal)),
-            
+                    Stream.of(portalDirectLoader(portal, player)),
+    
                     getEntitiesNearbyWithoutLoadingChunk(
                         McHelper.getServer().getWorld(portal.dimensionTo),
                         portal.destination,
