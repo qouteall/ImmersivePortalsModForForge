@@ -16,6 +16,7 @@ import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.client.event.ModelRegistryEvent;
@@ -34,6 +35,7 @@ import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.IForgeRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -179,16 +181,36 @@ public class ModMainForge {
     public static class RegistryEvents {
         @SubscribeEvent
         public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
-            
-            
+            IForgeRegistry<Block> registry = blockRegistryEvent.getRegistry();
+    
             PortalPlaceholderBlock.instance.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_placeholder")
             );
-            blockRegistryEvent.getRegistry().register(
+    
+            registry.register(
                 PortalPlaceholderBlock.instance
             );
+    
+            ModMain.portalHelperBlock.setRegistryName(
+                new ResourceLocation("immersive_portals", "portal_helper")
+            );
+            registry.register(
+                ModMain.portalHelperBlock
+            );
         }
+    
+        @SubscribeEvent
+        public static void onItemRegistry(final RegistryEvent.Register<Item> event) {
+            IForgeRegistry<Item> registry = event.getRegistry();
         
+            ModMain.portalHelperBlockItem.setRegistryName(
+                new ResourceLocation("immersive_portals", "portal_helper")
+            );
+            registry.register(
+                ModMain.portalHelperBlockItem
+            );
+        }
+    
         @SubscribeEvent
         public static void onEntityRegistry(RegistryEvent.Register<EntityType<?>> event) {
             Portal.entityType = EntityType.Builder.create(
@@ -196,8 +218,8 @@ public class ModMainForge {
             ).size(
                 1, 1
             ).immuneToFire().setCustomClientFactory((a, world) -> new Portal(
-                    Portal.entityType,
-                    world
+                Portal.entityType,
+                world
                 )
             ).build(
                 "immersive_portals:portal"

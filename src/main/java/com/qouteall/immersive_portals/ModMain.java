@@ -10,6 +10,11 @@ import com.qouteall.immersive_portals.network.NetworkMain;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import com.qouteall.immersive_portals.teleportation.ServerTeleportationManager;
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
 import net.minecraft.world.dimension.DimensionType;
 
 public class ModMain {
@@ -27,6 +32,10 @@ public class ModMain {
     public static DimensionType alternate4;
     public static DimensionType alternate5;
     
+    public static final Block portalHelperBlock =
+        new Block(Block.Properties.create(Material.IRON));
+    public static final BlockItem portalHelperBlockItem =
+        new BlockItem(portalHelperBlock, new Item.Properties().group(ItemGroup.MISC));
     
     public static void onInitialize() {
         

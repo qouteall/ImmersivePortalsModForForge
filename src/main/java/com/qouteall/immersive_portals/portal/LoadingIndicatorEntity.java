@@ -8,13 +8,15 @@ import net.minecraft.network.IPacket;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class LoadingIndicatorEntity extends Entity {
     public static EntityType<LoadingIndicatorEntity> entityType;
-    private static final DataParameter<String> text = EntityDataManager.createKey(
-        LoadingIndicatorEntity.class, DataSerializers.STRING
+    private static final DataParameter<ITextComponent> text = EntityDataManager.createKey(
+        LoadingIndicatorEntity.class, DataSerializers.TEXT_COMPONENT
     );
     
     public boolean isAlive = false;
@@ -41,7 +43,7 @@ public class LoadingIndicatorEntity extends Entity {
     
     @Override
     protected void registerData() {
-        dataManager.register(text, "Loading...");
+        dataManager.register(text, new StringTextComponent("Loading..."));
     }
     
     @Override
@@ -59,11 +61,11 @@ public class LoadingIndicatorEntity extends Entity {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
     
-    public void setText(String str) {
+    public void setText(ITextComponent str) {
         dataManager.set(text, str);
     }
     
-    public String getText() {
+    public ITextComponent getText() {
         return dataManager.get(text);
     }
 }
