@@ -75,9 +75,19 @@ public class NewNetherPortalGenerator {
             //this side frame
             blockPos -> NetherPortalMatcher.isObsidian(fromWorld, blockPos),
             //other side area
-            toWorld::isAirBlock,
+            blockPos -> {
+                if (!toWorld.isBlockLoaded(blockPos)) {
+                    return true;
+                }
+                return toWorld.isAirBlock(blockPos);
+            },
             //other side frame
-            blockPos -> NetherPortalMatcher.isObsidian(toWorld, blockPos),
+            blockPos -> {
+                if (!toWorld.isBlockLoaded(blockPos)) {
+                    return false;
+                }
+                return NetherPortalMatcher.isObsidian(toWorld, blockPos);
+            },
             (shape) -> embodyNewFrame(toWorld, shape, Blocks.OBSIDIAN.getDefaultState()),
             NewNetherPortalGenerator::generatePortalEntities,
             new TranslationTextComponent(Items.OBSIDIAN.getTranslationKey())
@@ -211,13 +221,13 @@ public class NewNetherPortalGenerator {
         
         McHelper.performSplitedFindingTaskOnServer(
             iterator,
-            Objects::nonNull,
+            shape -> shape != null && (fromWorld != toWorld || !shape.anchor.equals(foundShape.anchor)),
             (i) -> {
                 boolean isIntact = foundShape.isPortalIntact(
                     thisSideAreaPredicate,
                     thisSideFramePredicate
                 );
-                
+        
                 if (!isIntact) {
                     Helper.log("Nether Portal Generation Aborted");
                     indicatorEntity.remove();

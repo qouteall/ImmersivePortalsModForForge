@@ -176,6 +176,6 @@ repositories {
 apply plugin: 'org.spongepowered.mixin'
 
 mixin {
-    add sourceSets.main, "main.refmap.json"
+    add sourceSets.main, "imm_ptl.refmap.json"
     //add sourceSets.another, "another.refmap.json"
 }
