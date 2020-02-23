@@ -51,5 +51,5 @@ public class CGlobal {
     
     public static boolean renderFewerInFastGraphic = true;
     
-    
+    public static boolean smoothUnload = true;
 }

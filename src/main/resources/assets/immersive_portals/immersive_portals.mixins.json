@@ -2,7 +2,7 @@
   "required": true,
   "package": "com.qouteall.immersive_portals.mixin",
   "compatibilityLevel": "JAVA_8",
-  "refmap": "main.refmap.json",
+  "refmap": "imm_ptl.refmap.json",
   "mixins": [
     "chunk_sync/MixinChunkHolder",
     "chunk_sync/MixinChunkTicketManager",

@@ -328,20 +328,24 @@ public class MyCommandClient {
                 return 0;
             })
         );
-        
+    
         registerSwitchCommand(
             builder, "always_update_display_list",
             k -> CGlobal.alwaysUpdateDisplayList = k
         );
-        
+    
         registerSwitchCommand(
             builder, "gl_check_error",
             k -> CGlobal.doCheckGlError = k
         );
-        
-        
+    
+        registerSwitchCommand(
+            builder, "smooth_unload",
+            k -> CGlobal.smoothUnload = k
+        );
+    
         dispatcher.register(builder);
-        
+    
         Helper.log("Successfully initialized command /immersive_portals_debug");
     }
     
