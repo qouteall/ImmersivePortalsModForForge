@@ -101,7 +101,6 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
         //chunk data packet will be sent on ChunkDataSyncManager
     }
     
-    
     //cancel vanilla packet sending
     @Redirect(
         method = "func_219179_a",

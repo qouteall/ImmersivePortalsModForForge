@@ -14,7 +14,7 @@ import net.minecraftforge.fml.network.simple.SimpleChannel;
 public class NetworkMain {
     private static final String protocol_version = "1";
     public static final SimpleChannel channel = NetworkRegistry.newSimpleChannel(
-        new ResourceLocation("immersive_portals", "main"),
+        new ResourceLocation("imm_ptl", "_"),
         () -> protocol_version,
         protocol_version::equals,
         protocol_version::equals
