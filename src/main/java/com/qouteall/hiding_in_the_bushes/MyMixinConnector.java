@@ -1,5 +1,7 @@
-package com.qouteall.immersive_portals;
+package com.qouteall.hiding_in_the_bushes;
 
+import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ModMainClient;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.Mixins;

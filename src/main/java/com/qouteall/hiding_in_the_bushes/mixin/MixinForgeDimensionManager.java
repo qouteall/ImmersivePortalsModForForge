@@ -1,6 +1,6 @@
-package com.qouteall.immersive_portals.mixin;
+package com.qouteall.hiding_in_the_bushes.mixin;
 
-import com.qouteall.immersive_portals.DimensionSyncManager;
+import com.qouteall.hiding_in_the_bushes.DimensionSyncManager;
 import com.qouteall.immersive_portals.alternate_dimension.AlternateDimensionEntry;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;

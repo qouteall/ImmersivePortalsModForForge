@@ -2,8 +2,8 @@ package com.qouteall.immersive_portals.portal.global_portals;
 
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.network.NetworkMain;
-import com.qouteall.immersive_portals.network.StcUpdateGlobalPortals;
+import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
+import com.qouteall.hiding_in_the_bushes.network.StcUpdateGlobalPortals;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;

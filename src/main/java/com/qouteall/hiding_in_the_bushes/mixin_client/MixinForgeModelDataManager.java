@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals.mixin_client;
+package com.qouteall.hiding_in_the_bushes.mixin_client;
 
 import com.google.common.base.Preconditions;
 import net.minecraft.util.math.BlockPos;

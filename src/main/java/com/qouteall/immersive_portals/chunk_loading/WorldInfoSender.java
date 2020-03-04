@@ -3,14 +3,13 @@ package com.qouteall.immersive_portals.chunk_loading;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.alternate_dimension.AlternateDimension;
-import com.qouteall.immersive_portals.network.NetworkMain;
+import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.server.SChangeGameStatePacket;
 import net.minecraft.network.play.server.SUpdateTimePacket;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.common.DimensionManager;
 
 public class WorldInfoSender {
     public static void init() {

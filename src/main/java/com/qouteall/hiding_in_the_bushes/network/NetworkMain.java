@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals.network;
+package com.qouteall.hiding_in_the_bushes.network;
 
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;

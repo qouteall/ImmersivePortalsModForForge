@@ -1,9 +1,11 @@
-package com.qouteall.immersive_portals;
+package com.qouteall.hiding_in_the_bushes;
 
+import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEDimensionType;
 import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
-import com.qouteall.immersive_portals.network.NetworkMain;
-import com.qouteall.immersive_portals.network.StcDimensionInfo;
+import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
+import com.qouteall.hiding_in_the_bushes.network.StcDimensionInfo;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.server.MinecraftServer;

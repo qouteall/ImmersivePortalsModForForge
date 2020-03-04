@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals.mixin;
+package com.qouteall.hiding_in_the_bushes.mixin;
 
 import com.qouteall.immersive_portals.ducks.IEDimensionType;
 import net.minecraft.world.dimension.DimensionType;

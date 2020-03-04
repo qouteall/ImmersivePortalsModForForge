@@ -1,9 +1,9 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.qouteall.immersive_portals.DimensionSyncManager;
+import com.qouteall.hiding_in_the_bushes.DimensionSyncManager;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.network.NetworkMain;
+import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;

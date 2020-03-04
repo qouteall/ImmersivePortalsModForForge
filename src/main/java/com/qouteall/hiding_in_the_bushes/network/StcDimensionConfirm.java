@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals.network;
+package com.qouteall.hiding_in_the_bushes.network;
 
 import com.qouteall.immersive_portals.CGlobal;
 import net.minecraft.client.Minecraft;

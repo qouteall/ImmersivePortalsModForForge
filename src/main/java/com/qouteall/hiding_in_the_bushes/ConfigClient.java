@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals;
+package com.qouteall.hiding_in_the_bushes;
 
 
 import net.minecraftforge.common.ForgeConfigSpec;

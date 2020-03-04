@@ -1,6 +1,6 @@
-package com.qouteall.immersive_portals.network;
+package com.qouteall.hiding_in_the_bushes.network;
 
-import com.qouteall.immersive_portals.DimensionSyncManager;
+import com.qouteall.hiding_in_the_bushes.DimensionSyncManager;
 import com.qouteall.immersive_portals.Helper;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.PacketBuffer;
