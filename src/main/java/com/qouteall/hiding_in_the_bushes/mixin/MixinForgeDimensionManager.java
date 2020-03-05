@@ -1,7 +1,7 @@
 package com.qouteall.hiding_in_the_bushes.mixin;
 
 import com.qouteall.hiding_in_the_bushes.DimensionSyncManager;
-import com.qouteall.immersive_portals.alternate_dimension.AlternateDimensionEntry;
+import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimensionEntry;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;

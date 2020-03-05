@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals.alternate_dimension;
+package com.qouteall.hiding_in_the_bushes.alternate_dimension;
 
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.Dimension;
