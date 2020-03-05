@@ -122,7 +122,7 @@ public class MixinFrustum implements IEFrustum {
     }
     
     @Inject(
-        method = "isVisible(DDDDDD)Z",
+        method = "isBoxInFrustum",
         at = @At("HEAD"),
         cancellable = true
     )
