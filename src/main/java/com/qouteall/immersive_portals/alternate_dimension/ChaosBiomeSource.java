@@ -6,7 +6,6 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.FuzzedBiomeMagnifier;
 import net.minecraft.world.biome.provider.BiomeProvider;
 import net.minecraft.world.gen.SimplexNoiseGenerator;
-
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Set;

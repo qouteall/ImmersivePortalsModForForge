@@ -405,7 +405,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             RenderType.getBlockRenderTypes().get(0).setupRenderState();
             RenderType.getBlockRenderTypes().get(0).clearRenderState();
         }
-        
+    
         if (MyRenderHelper.isRenderingMirror()) {
             MyRenderHelper.applyMirrorFaceCulling();
         }
@@ -413,11 +413,11 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("RETURN"))
     private void onRenderSkyEnd(MatrixStack matrixStack_1, float float_1, CallbackInfo ci) {
-        
+    
         if (mc.world.dimension instanceof AlternateDimension) {
             AlternateSky.renderAlternateSky(matrixStack_1, float_1);
         }
-        
+    
         MyRenderHelper.recoverFaceCulling();
     }
     
@@ -484,7 +484,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
                 this.mc.player.getPosZ()
             );
         }
-        
+    
         if (CGlobal.renderer.isRendering()) {
             displayListEntitiesDirty = true;
         }

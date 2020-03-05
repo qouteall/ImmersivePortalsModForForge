@@ -91,7 +91,7 @@ public class NetherPortalMatcher {
         if (!innerAreaFilter.test(innerArea)) {
             return null;
         }
-        
+    
         if (!isObsidianFrameIntact(world, normalAxis, innerArea)) {
             return null;
         }

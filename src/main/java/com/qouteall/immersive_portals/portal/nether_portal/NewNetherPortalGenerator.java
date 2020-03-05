@@ -21,7 +21,6 @@ import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
@@ -291,7 +290,7 @@ public class NewNetherPortalGenerator {
                     if (!otherSideAreaPredicate.test(blockPos)) {
                         return null;
                     }
-                    
+    
                     return foundShape.matchShape(
                         otherSideAreaPredicate,
                         otherSideFramePredicate,
@@ -309,7 +308,7 @@ public class NewNetherPortalGenerator {
                     thisSideAreaPredicate,
                     thisSideFramePredicate
                 );
-                
+    
                 if (!isIntact) {
                     Helper.log("Nether Portal Generation Aborted");
                     finishBehavior.run();

@@ -14,9 +14,15 @@ public class MyMixinConnector implements IMixinConnector {
         Mixins.addConfiguration(
             "assets/immersive_portals/immersive_portals.mixins.json"
         );
+        Mixins.addConfiguration(
+            "assets/immersive_portals/immersive_portals.mixins_ma.json"
+        );
         if (FMLEnvironment.dist == Dist.CLIENT) {
             Mixins.addConfiguration(
                 "assets/immersive_portals/immersive_portals.mixins_client.json"
+            );
+            Mixins.addConfiguration(
+                "assets/immersive_portals/immersive_portals.mixins_ma_client.json"
             );
             if (ModMainForge.getIsOptifinePresent()) {
                 Mixins.addConfiguration(

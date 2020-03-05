@@ -14,7 +14,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import net.minecraft.client.util.LWJGLMemoryUntracker;
 
 //When shaders are rendering improperly, it's possibly because

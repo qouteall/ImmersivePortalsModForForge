@@ -28,9 +28,9 @@ import java.util.Set;
 
 @OnlyIn(Dist.CLIENT)
 public class ClientWorldLoader {
-    public Map<DimensionType, ClientWorld> clientWorldMap = new HashMap<>();
-    public Map<DimensionType, WorldRenderer> worldRendererMap = new HashMap<>();
-    public Map<DimensionType, DimensionRenderHelper> renderHelperMap = new HashMap<>();
+    public final Map<DimensionType, ClientWorld> clientWorldMap = new HashMap<>();
+    public final Map<DimensionType, WorldRenderer> worldRendererMap = new HashMap<>();
+    public final Map<DimensionType, DimensionRenderHelper> renderHelperMap = new HashMap<>();
     private Set<DimensionalChunkPos> unloadedChunks = new HashSet<>();
     
     private Minecraft mc = Minecraft.getInstance();

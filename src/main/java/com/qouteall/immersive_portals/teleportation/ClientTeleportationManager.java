@@ -88,7 +88,7 @@ public class ClientTeleportationManager {
                     portal -> onEntityGoInsidePortal(mc.player, portal)
                 );
             }
-        
+    
             lastPlayerHeadPos = mc.player.getEyePosition(MyRenderHelper.partialTicks);
         }
     }
@@ -104,7 +104,7 @@ public class ClientTeleportationManager {
         if (tickTimeForTeleportation <= teleportTickTimeLimit) {
             return;
         }
-        
+    
         lastTeleportGameTime = tickTimeForTeleportation;
     
         ClientPlayerEntity player = mc.player;
@@ -127,7 +127,7 @@ public class ClientTeleportationManager {
         
         player.setPosition(newPos.x, newPos.y, newPos.z);
         McHelper.setPosAndLastTickPos(player, newPos, newLastTickPos);
-        
+    
         player.connection.sendPacket(MyNetworkClient.createCtsTeleport(
             fromDimension,
             oldPos,
@@ -180,28 +180,28 @@ public class ClientTeleportationManager {
     ) {
         Entity vehicle = player.getRidingEntity();
         player.detach();
-        
+    
         DimensionType toDimension = toWorld.dimension.getType();
         DimensionType fromDimension = fromWorld.dimension.getType();
-        
+    
         ClientPlayNetHandler workingNetHandler = ((IEClientWorld) fromWorld).getNetHandler();
         ClientPlayNetHandler fakedNetHandler = ((IEClientWorld) toWorld).getNetHandler();
         ((IEClientPlayNetworkHandler) workingNetHandler).setWorld(toWorld);
         ((IEClientPlayNetworkHandler) fakedNetHandler).setWorld(fromWorld);
         ((IEClientWorld) fromWorld).setNetHandler(fakedNetHandler);
         ((IEClientWorld) toWorld).setNetHandler(workingNetHandler);
-        
+    
         O_O.segregateClientEntity(fromWorld, player);
-        
+    
         player.world = toWorld;
-        
+    
         player.dimension = toDimension;
         player.setPosition(
             destination.x,
             destination.y,
             destination.z
         );//set pos and update bounding box
-        
+    
         toWorld.addPlayer(player.getEntityId(), player);
         
         mc.world = toWorld;
@@ -247,7 +247,7 @@ public class ClientTeleportationManager {
         OFInterface.onPlayerTraveled.accept(fromDimension, toDimension);
         
         FogRendererContext.onPlayerTeleport(fromDimension, toDimension);
-        
+    
         O_O.onPlayerChangeDimensionClient(fromDimension, toDimension);
     }
     

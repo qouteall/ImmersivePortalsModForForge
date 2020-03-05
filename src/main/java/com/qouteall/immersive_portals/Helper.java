@@ -559,7 +559,7 @@ public class Helper {
                 fillBuffer();
                 return iterator.hasNext();
             }
-            
+    
             @Override
             public S next() {
                 fillBuffer();

@@ -202,8 +202,8 @@ public class McHelper {
         Vec3d pos,
         Vec3d lastTickPos
     ) {
-        
-        
+    
+    
         //NOTE do not call entity.setPosition() because it may tick the entity
         entity.setRawPosition(pos.x, pos.y, pos.z);
         entity.lastTickPosX = lastTickPos.x;

@@ -140,7 +140,7 @@ public class BlockManipulationClient {
                 );
             }
         );
-        
+    
         if (remoteHitResult.getHitVec().y < 0.1) {
             remoteHitResult = new BlockRayTraceResult(
                 remoteHitResult.getHitVec(),
@@ -149,7 +149,7 @@ public class BlockManipulationClient {
                 ((BlockRayTraceResult) remoteHitResult).isInside()
             );
         }
-        
+    
         if (remoteHitResult != null) {
             mc.objectMouseOver = null;
             remotePointedDim = portal.dimensionTo;
@@ -189,7 +189,7 @@ public class BlockManipulationClient {
         ClientWorld oldWorld = mc.world;
         mc.world = CGlobal.clientWorldLoader.getOrCreateFakedWorld(remotePointedDim);
         isContextSwitched = true;
-        
+    
         try {
             return mc.playerController.onPlayerDamageBlock(blockPos, direction);
         }
@@ -197,7 +197,7 @@ public class BlockManipulationClient {
             mc.world = oldWorld;
             isContextSwitched = false;
         }
-        
+    
     }
     
     public static void myAttackBlock() {
@@ -206,16 +206,16 @@ public class BlockManipulationClient {
         ClientWorld targetWorld =
             CGlobal.clientWorldLoader.getOrCreateFakedWorld(remotePointedDim);
         BlockPos blockPos = ((BlockRayTraceResult) remoteHitResult).getPos();
-        
+    
         if (targetWorld.isAirBlock(blockPos)) {
             return;
         }
-        
+    
         ClientWorld oldWorld = mc.world;
-        
+    
         mc.world = targetWorld;
         isContextSwitched = true;
-        
+    
         try {
             mc.playerController.clickBlock(
                 blockPos,
@@ -226,7 +226,7 @@ public class BlockManipulationClient {
             mc.world = oldWorld;
             isContextSwitched = false;
         }
-        
+    
         mc.player.swingArm(Hand.MAIN_HAND);
     }
     

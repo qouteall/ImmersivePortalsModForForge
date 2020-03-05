@@ -102,7 +102,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
                 );
                 return null;
             }
-        
+    
             worldChunk_1 = new Chunk(this.world, chunkPos, biomeArray_1);
             worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
             chunkMap.put(chunkPos, worldChunk_1);

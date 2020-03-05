@@ -36,7 +36,6 @@ import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-
 import java.lang.ref.Reference;
 import java.net.URLClassLoader;
 import java.util.Arrays;

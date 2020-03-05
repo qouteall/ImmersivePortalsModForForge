@@ -10,7 +10,6 @@ import net.minecraft.network.play.server.SUpdateTimePacket;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;

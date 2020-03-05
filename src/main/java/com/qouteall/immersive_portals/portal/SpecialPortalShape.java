@@ -1,10 +1,8 @@
 package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.Helper;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.nbt.DoubleNBT;
 import net.minecraft.nbt.ListNBT;
 

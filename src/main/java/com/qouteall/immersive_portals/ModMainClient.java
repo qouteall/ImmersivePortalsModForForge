@@ -61,14 +61,14 @@ public class ModMainClient {
     
     public static void init() {
         Helper.log("initializing client");
-        
-        
+    
+    
         MyNetworkClient.init();
         
         Minecraft.getInstance().execute(() -> {
             CGlobal.rendererUsingStencil = new RendererUsingStencil();
             CGlobal.rendererUsingFrameBuffer = new RendererUsingFrameBuffer();
-            
+    
             CGlobal.renderer = CGlobal.rendererUsingStencil;
             CGlobal.clientWorldLoader = new ClientWorldLoader();
             CGlobal.myGameRenderer = new MyGameRenderer();
@@ -76,9 +76,9 @@ public class ModMainClient {
         });
         
         FarSceneryRenderer.init();
-        
+    
         O_O.loadConfigFabric();
-        
+    
         DubiousLightUpdate.init();
     }
     

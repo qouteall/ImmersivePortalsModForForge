@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
-
 import java.lang.reflect.Method;
 
 public class OFBuiltChunkNeighborFix {

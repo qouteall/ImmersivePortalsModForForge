@@ -37,7 +37,6 @@ import net.minecraft.world.gen.feature.structure.Structure;
 import net.minecraft.world.gen.feature.structure.StructureStart;
 import net.minecraft.world.gen.feature.structure.WoodlandMansionStructure;
 import net.minecraft.world.gen.feature.template.TemplateManager;
-
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
@@ -127,7 +126,7 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
         int chunkZ = chunkPos.z;
         Biome biome = this.getBiome(biomeAccess, chunkPos.asBlockPos());
         BitSet bitSet = chunk.getCarvingMask(carver);
-        
+    
         for (int cx = chunkX - 8; cx <= chunkX + 8; ++cx) {
             for (int cz = chunkZ - 8; cz <= chunkZ + 8; ++cz) {
                 List<ConfiguredCarver<?>> list = biome.getCarvers(carver);
@@ -157,30 +156,30 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
     public void decorate(WorldGenRegion region) {
         try {
             super.decorate(region);
-            
+    
         }
         catch (Throwable throwable) {
             Helper.err("Force ignore exception while generating feature " + throwable);
         }
-        
+    
         int centerChunkX = region.getMainChunkX();
         int centerChunkZ = region.getMainChunkZ();
         int x = centerChunkX * 16;
         int z = centerChunkZ * 16;
         BlockPos blockPos = new BlockPos(x, 0, z);
-        
+    
         for (int pass = 0; pass < 2; pass++) {
             Biome biome = this.getBiome(region.getBiomeManager(), blockPos.add(8, 8, 8));
             SharedSeedRandom chunkRandom = new SharedSeedRandom();
             long currSeed = chunkRandom.setDecorationSeed(region.getSeed() + pass, x, z);
-            
+        
             generateFeatureForStep(
                 region, centerChunkX, centerChunkZ,
                 blockPos, biome, chunkRandom, currSeed,
                 GenerationStage.Decoration.UNDERGROUND_ORES
             );
         }
-        
+    
         SimpleSpawnerFeature.instance.place(
             region,
             this,
@@ -225,9 +224,9 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
         TemplateManager structureManager
     ) {
         randomSeed.setBaseChunkSeed(chunk.getPos().x, chunk.getPos().z);
-        
+    
         Iterator var5 = Feature.STRUCTURES.values().iterator();
-        
+    
         while (var5.hasNext()) {
             Structure<?> structureFeature = (Structure) var5.next();
             if (chunkGenerator.getBiomeProvider().hasStructure(structureFeature)) {

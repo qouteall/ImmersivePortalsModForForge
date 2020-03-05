@@ -103,11 +103,11 @@ public class RendererDebugWithShader extends PortalRenderer {
         if (isRendering()) {
             return;
         }
-        
+    
         if (MyRenderHelper.getRenderedPortalNum() == 0) {
             return;
         }
-        
+    
         GlStateManager.enableAlphaTest();
         Framebuffer mainFrameBuffer = mc.getFramebuffer();
         mainFrameBuffer.bindFramebuffer(true);

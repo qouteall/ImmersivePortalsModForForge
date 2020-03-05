@@ -1,1 +1,1 @@
-MixinConnector: com.qouteall.immersive_portals.MyMixinConnector
+MixinConnector: com.qouteall.hiding_in_the_bushes.MyMixinConnector

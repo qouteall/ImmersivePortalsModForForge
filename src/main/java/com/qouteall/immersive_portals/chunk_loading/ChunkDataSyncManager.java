@@ -37,11 +37,11 @@ public class ChunkDataSyncManager {
      */
     private void onBeginWatch(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
         McHelper.getServer().getProfiler().startSection("begin_watch");
-        
+    
         IEThreadedAnvilChunkStorage ieStorage = McHelper.getIEStorage(chunkPos.dimension);
-        
+    
         sendChunkDataPacketNow(player, chunkPos, ieStorage);
-        
+    
         McHelper.getServer().getProfiler().endSection();
     }
     

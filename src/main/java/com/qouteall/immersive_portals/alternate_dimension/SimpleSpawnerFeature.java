@@ -120,9 +120,9 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
         NoFeatureConfig config
     ) {
         ChunkPos chunkPos = new ChunkPos(pos);
-        
+    
         random.setSeed(chunkPos.asLong() + random.nextInt(2333));
-        
+    
         if (random.nextDouble() < 0.03) {
             generateOnce(world, random, chunkPos);
         }
@@ -155,7 +155,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             height,
             random.nextInt(16)
         );
-        
+    
         for (int dx = -7; dx <= 7; dx++) {
             for (int dz = -7; dz <= 7; dz++) {
                 world.setBlockState(
@@ -165,7 +165,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
                 );
             }
         }
-        
+    
         BlockState spawnerShieldBlock = spawnerShieldSelector.select(random);
         for (BlockPos shieldPos : shieldPoses) {
             world.setBlockState(
@@ -177,7 +177,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
         
         world.setBlockState(spawnerPos, Blocks.SPAWNER.getDefaultState(), 2);
         initSpawnerBlockEntity(world, random, spawnerPos);
-        
+    
         BlockPos shulkerBoxPos = spawnerPos.down();
         initShulkerBoxTreasure(world, random, shulkerBoxPos);
     }
@@ -205,20 +205,20 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             //Helper.err("No Spawner Block Entity???");
             return;
         }
-        
+    
         MobSpawnerTileEntity mobSpawner = (MobSpawnerTileEntity) blockEntity;
         Entity spawnedEntity = entitySelector.select(random).apply(world.getWorld(), random);
         Validate.isTrue(!spawnedEntity.isPassenger());
         CompoundNBT tag = new CompoundNBT();
         spawnedEntity.writeUnlessPassenger(tag);
-        
+    
         removeUnnecessaryTag(tag);
-        
+    
         mobSpawner.getSpawnerBaseLogic().setNextSpawnData(
             new WeightedSpawnerEntity(100, tag)
         );
         mobSpawner.getSpawnerBaseLogic().setEntityType(spawnedEntity.getType());
-        
+    
         CompoundNBT logicTag = mobSpawner.getSpawnerBaseLogic().write(new CompoundNBT());
         logicTag.putShort("RequiredPlayerRange", (short) 64);
         //logicTag.putShort("MinSpawnDelay",(short) 10);

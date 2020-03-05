@@ -19,7 +19,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-
 import java.util.UUID;
 
 public class Portal extends Entity {
@@ -100,15 +99,15 @@ public class Portal extends Entity {
         compoundTag.putInt("dimensionTo", dimensionTo.getId());
         Helper.putVec3d(compoundTag, "destination", destination);
         compoundTag.putBoolean("loadFewerChunks", loadFewerChunks);
-        
+    
         if (specificPlayer != null) {
             compoundTag.putUniqueId("specificPlayer", specificPlayer);
         }
-        
+    
         if (specialShape != null) {
             compoundTag.put("specialShape", specialShape.writeToTag());
         }
-        
+    
         compoundTag.putBoolean("teleportable", teleportable);
     }
     
@@ -353,7 +352,7 @@ public class Portal extends Entity {
             -width / 2 + shrinkFactor,
             height / 2 - shrinkFactor
         );
-        
+    
         return vertices;
     }
     
@@ -419,7 +418,7 @@ public class Portal extends Entity {
         
         Vec3d lineOrigin = from;
         Vec3d lineDirection = to.subtract(from).normalize();
-        
+    
         double collidingT = Helper.getCollidingT(
             getPositionVec(),
             normal,

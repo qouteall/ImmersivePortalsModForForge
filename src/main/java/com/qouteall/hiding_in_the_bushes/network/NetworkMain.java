@@ -63,6 +63,27 @@ public class NetworkMain {
             StcDimensionInfo::new,
             StcDimensionInfo::handle
         );
+        channel.registerMessage(
+            6,
+            StcSpawnEntity.class,
+            StcSpawnEntity::encode,
+            StcSpawnEntity::new,
+            StcSpawnEntity::handle
+        );
+        channel.registerMessage(
+            7,
+            CtsPlayerAction.class,
+            CtsPlayerAction::encode,
+            CtsPlayerAction::new,
+            CtsPlayerAction::handle
+        );
+        channel.registerMessage(
+            8,
+            CtsRightClick.class,
+            CtsRightClick::encode,
+            CtsRightClick::new,
+            CtsRightClick::handle
+        );
     }
     
     public static <T> void sendToServer(T t) {

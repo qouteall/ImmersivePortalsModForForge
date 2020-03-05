@@ -1,12 +1,10 @@
 package com.qouteall.immersive_portals.alternate_dimension;
 
 import com.qouteall.immersive_portals.Helper;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-
 import net.minecraft.util.Tuple;
 
 public class RandomSelector<T> {

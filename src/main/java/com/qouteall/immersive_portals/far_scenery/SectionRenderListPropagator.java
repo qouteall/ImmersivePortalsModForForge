@@ -41,12 +41,12 @@ public class SectionRenderListPropagator {
             if (filter.test(curr)) {
                 result.add(curr);
             }
-            
+    
             for (Direction direction : Direction.values()) {
                 ChunkRenderDispatcher.ChunkRender adjacentChunk = getAdjacentChunk(
                     cameraPos, curr, direction, renderDistance, chunks
                 );
-                
+        
                 if (adjacentChunk != null) {
                     if (visitAndGetIsNewlyVisiting.test(adjacentChunk)) {
                         if (isInFrustum.test(curr)) {

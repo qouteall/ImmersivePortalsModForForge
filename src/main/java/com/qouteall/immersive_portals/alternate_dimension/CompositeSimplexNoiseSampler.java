@@ -2,7 +2,6 @@ package com.qouteall.immersive_portals.alternate_dimension;
 
 import java.util.Random;
 import java.util.stream.IntStream;
-
 import net.minecraft.world.gen.SimplexNoiseGenerator;
 
 public class CompositeSimplexNoiseSampler {

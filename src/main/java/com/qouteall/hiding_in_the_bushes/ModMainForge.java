@@ -24,6 +24,8 @@ import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity
 import com.qouteall.immersive_portals.render.LoadingIndicatorRenderer;
 import com.qouteall.immersive_portals.render.PortalEntityRenderer;
 import net.minecraft.block.Block;
+import net.minecraft.block.SoundType;
+import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
@@ -31,7 +33,9 @@ import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
@@ -281,14 +285,21 @@ public class ModMainForge {
         public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
             IForgeRegistry<Block> registry = blockRegistryEvent.getRegistry();
     
+            PortalPlaceholderBlock.instance = new PortalPlaceholderBlock(
+                Block.Properties.create(Material.PORTAL)
+                    .doesNotBlockMovement()
+                    .sound(SoundType.GLASS)
+                    .hardnessAndResistance(99999, 0)
+                    .lightValue(15)
+            );
             PortalPlaceholderBlock.instance.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_placeholder")
             );
-    
             registry.register(
                 PortalPlaceholderBlock.instance
             );
     
+            ModMain.portalHelperBlock = new Block(Block.Properties.create(Material.IRON));
             ModMain.portalHelperBlock.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_helper")
             );
@@ -301,6 +312,10 @@ public class ModMainForge {
         public static void onItemRegistry(final RegistryEvent.Register<Item> event) {
             IForgeRegistry<Item> registry = event.getRegistry();
         
+            ModMain.portalHelperBlockItem = new BlockItem(
+                ModMain.portalHelperBlock,
+                new Item.Properties().group(ItemGroup.MISC)
+            );
             ModMain.portalHelperBlockItem.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_helper")
             );
@@ -316,8 +331,8 @@ public class ModMainForge {
             ).size(
                 1, 1
             ).immuneToFire().setCustomClientFactory((a, world) -> new Portal(
-                Portal.entityType,
-                world
+                    Portal.entityType,
+                    world
                 )
             ).build(
                 "immersive_portals:portal"
@@ -327,8 +342,8 @@ public class ModMainForge {
                     "immersive_portals:portal"
                 )
             );
-    
-    
+        
+        
             NewNetherPortalEntity.entityType = EntityType.Builder.create(
                 NewNetherPortalEntity::new, EntityClassification.MISC
             ).size(
@@ -342,7 +357,7 @@ public class ModMainForge {
                 NewNetherPortalEntity.entityType.setRegistryName(
                     "immersive_portals:nether_portal_new")
             );
-    
+        
             EndPortalEntity.entityType = EntityType.Builder.create(
                 EndPortalEntity::new, EntityClassification.MISC
             ).size(
@@ -355,7 +370,7 @@ public class ModMainForge {
             event.getRegistry().register(
                 EndPortalEntity.entityType.setRegistryName("immersive_portals:end_portal")
             );
-    
+        
             Mirror.entityType = EntityType.Builder.create(
                 Mirror::new, EntityClassification.MISC
             ).size(
@@ -368,7 +383,7 @@ public class ModMainForge {
             event.getRegistry().register(
                 Mirror.entityType.setRegistryName("immersive_portals:mirror")
             );
-    
+        
             BreakableMirror.entityType = EntityType.Builder.create(
                 BreakableMirror::new, EntityClassification.MISC
             ).size(
@@ -381,7 +396,7 @@ public class ModMainForge {
             event.getRegistry().register(
                 BreakableMirror.entityType.setRegistryName("immersive_portals:breakable_mirror")
             );
-    
+        
             GlobalTrackedPortal.entityType = EntityType.Builder.create(
                 GlobalTrackedPortal::new, EntityClassification.MISC
             ).size(
@@ -395,7 +410,7 @@ public class ModMainForge {
                 GlobalTrackedPortal.entityType.setRegistryName(
                     "immersive_portals:global_tracked_portal")
             );
-    
+        
             BorderPortal.entityType = EntityType.Builder.create(
                 BorderPortal::new, EntityClassification.MISC
             ).size(
@@ -408,7 +423,7 @@ public class ModMainForge {
             event.getRegistry().register(
                 BorderPortal.entityType.setRegistryName("immersive_portals:border_portal")
             );
-    
+        
             VerticalConnectingPortal.entityType = EntityType.Builder.create(
                 VerticalConnectingPortal::new, EntityClassification.MISC
             ).size(
@@ -422,7 +437,7 @@ public class ModMainForge {
                 VerticalConnectingPortal.entityType.setRegistryName(
                     "immersive_portals:end_floor_portal")
             );
-    
+        
             LoadingIndicatorEntity.entityType = EntityType.Builder.create(
                 LoadingIndicatorEntity::new, EntityClassification.MISC
             ).size(

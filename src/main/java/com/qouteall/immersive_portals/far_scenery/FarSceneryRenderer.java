@@ -56,7 +56,7 @@ public class FarSceneryRenderer {
         for (SecondaryFrameBuffer fb : frameBufferSet) {
             fb.prepare(1000, 1000);
         }
-        
+    
         Vec3d currCameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
         renderingTask = FaceRenderingTask.createFarSceneryRenderingTask(
             currCameraPos,
@@ -113,7 +113,7 @@ public class FarSceneryRenderer {
         //equation: planeNormal * p + c > 0
         //-planeNormal * portalCenter = c
         double c = planeNormal.scale(-1).dotProduct(portalPos);
-        
+    
         FSRenderingContext.cullingEquation = new double[]{
             planeNormal.x,
             planeNormal.y,
@@ -133,7 +133,7 @@ public class FarSceneryRenderer {
             -offsetToCamera.x, -offsetToCamera.y, -offsetToCamera.z
         );
         matrixStack.scale((float) distance, (float) distance, (float) distance);
-        
+    
         RenderSystem.enableTexture();
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
@@ -144,10 +144,10 @@ public class FarSceneryRenderer {
         RenderSystem.disableAlphaTest();
         RenderSystem.disableFog();
         RenderSystem.shadeModel(7425);
-        
+    
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferBuilder = tessellator.getBuffer();
-        
+    
         bufferBuilder.begin(GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
         bufferBuilder.pos(-1.0D, -1.0D, 1.0D).tex(1.0F, 0.0F)
             .color(255, 255, 255, 255).endVertex();
@@ -263,11 +263,11 @@ public class FarSceneryRenderer {
         if (CGlobal.renderer.isRendering()) {
             return;
         }
-        
+    
         if (shouldUpdateFarScenery) {
             updateFarScenery();
         }
-        
+    
         Vec3d currCameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
         if (state == State.presenting1AndRendering2) {
             renderFarSceneryBox(

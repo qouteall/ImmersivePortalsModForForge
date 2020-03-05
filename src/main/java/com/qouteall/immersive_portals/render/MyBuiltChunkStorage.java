@@ -51,17 +51,17 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     ) {
         super(chunkBuilder_1, world_1, int_1, worldRenderer_1);
         factory = chunkBuilder_1;
-        
+    
         ModMain.postClientTickSignal.connectWithWeakRef(
             this, MyBuiltChunkStorage::tick
         );
-        
+    
         builtChunkBuffer = new ObjectBuffer<>(
             countChunksX * countChunksY * countChunksZ,
             () -> factory.new ChunkRender(),
             ChunkRenderDispatcher.ChunkRender::deleteGlResources
         );
-        
+    
         ModMain.preRenderSignal.connectWithWeakRef(this, (this_) -> {
             Minecraft.getInstance().getProfiler().startSection("reserve");
             this_.builtChunkBuffer.reserveObjects(countChunksX * countChunksY * countChunksZ / 70);

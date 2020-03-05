@@ -16,7 +16,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-
 import java.util.Random;
 import java.util.UUID;
 
@@ -150,7 +149,7 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
     @OnlyIn(Dist.CLIENT)
     private void addSoundAndParticle() {
         Random random = world.getRandom();
-        
+    
         for (int i = 0; i < (int) Math.ceil(width * height / 20); i++) {
             if (random.nextInt(8) == 0) {
                 double px = (random.nextDouble() * 2 - 1) * (width / 2);

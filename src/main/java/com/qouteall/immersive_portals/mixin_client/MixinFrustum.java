@@ -122,7 +122,7 @@ public class MixinFrustum implements IEFrustum {
     }
     
     @Inject(
-        method = "isBoxInFrustum",
+        method = "Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;isBoxInFrustum(DDDDDD)Z",
         at = @At("HEAD"),
         cancellable = true
     )

@@ -178,26 +178,26 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     private void onOnVehicleMove(CMoveVehiclePacket packet, CallbackInfo ci) {
         if (Global.serverTeleportationManager.isJustTeleported(player, 40)) {
             Entity entity = this.player.getLowestRidingEntity();
-            
+    
             if (entity != player) {
                 double currX = entity.getPosX();
                 double currY = entity.getPosY();
                 double currZ = entity.getPosZ();
-                
+        
                 double newX = packet.getX();
                 double newY = packet.getY();
                 double newZ = packet.getZ();
-                
+        
                 if (entity.getPositionVec().squareDistanceTo(
                     newX, newY, newZ
                 ) < 256) {
                     float yaw = packet.getYaw();
                     float pitch = packet.getPitch();
-                    
+            
                     entity.setPositionAndRotation(newX, newY, newZ, yaw, pitch);
-                    
+            
                     this.player.getServerWorld().getChunkProvider().updatePlayerPosition(this.player);
-                    
+            
                     vehicleFloating = true;
                     lowestRiddenX1 = entity.getPosX();
                     lowestRiddenY1 = entity.getPosY();

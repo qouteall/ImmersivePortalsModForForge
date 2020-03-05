@@ -6,7 +6,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.util.FastRandom;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
-
 import java.util.Random;
 
 public class ErrorTerrainComposition {

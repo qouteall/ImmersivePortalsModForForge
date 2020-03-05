@@ -2,7 +2,6 @@ package com.qouteall.immersive_portals.alternate_dimension;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.util.FastRandom;
-
 import java.util.Arrays;
 import java.util.Random;
 

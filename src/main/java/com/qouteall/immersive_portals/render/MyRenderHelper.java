@@ -354,6 +354,10 @@ public class MyRenderHelper {
     }
     
     public static void earlyUpdateLight() {
+        if (CGlobal.clientWorldLoader == null) {
+            return;
+        }
+    
         CGlobal.clientWorldLoader.clientWorldMap.values().forEach(
             world -> {
                 if (world != Minecraft.getInstance().world) {

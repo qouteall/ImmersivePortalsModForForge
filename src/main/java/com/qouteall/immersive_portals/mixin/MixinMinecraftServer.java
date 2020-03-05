@@ -58,7 +58,7 @@ public class MixinMinecraftServer implements IEMinecraftServer {
         CallbackInfo ci
     ) {
         Helper.refMinecraftServer = new WeakReference<>((MinecraftServer) ((Object) this));
-        
+    
         O_O.loadConfigFabric();
     }
     

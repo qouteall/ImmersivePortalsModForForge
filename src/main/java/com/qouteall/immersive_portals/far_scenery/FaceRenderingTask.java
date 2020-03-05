@@ -232,7 +232,7 @@ public class FaceRenderingTask {
     
     private static void beginRenderLayer(RenderType renderLayer) {
         renderLayer.setupRenderState();
-        
+    
         //TODO translucent sort
     }
     

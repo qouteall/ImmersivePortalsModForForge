@@ -11,7 +11,6 @@ import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.Vector4f;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.optifine.expr.IExpressionBool;
 import net.optifine.shaders.*;
@@ -1020,7 +1019,7 @@ public abstract class MOShaders {
     
     //avoid uninit when creating faked world
     @Inject(method = "checkWorldChanged", at = @At("HEAD"), cancellable = true)
-    private static void onCheckWorldChanged(World world, CallbackInfo ci) {
+    private static void onCheckWorldChanged(ClientWorld world, CallbackInfo ci) {
         if (CGlobal.clientWorldLoader.getIsLoadingFakedWorld()) {
             ci.cancel();
         }

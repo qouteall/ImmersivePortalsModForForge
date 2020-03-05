@@ -6,7 +6,6 @@ import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 
 import java.time.Duration;
-
 import net.minecraft.profiler.Profiler;
 
 @Mixin(Profiler.class)
