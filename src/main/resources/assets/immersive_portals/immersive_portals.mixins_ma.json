@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "com.qouteall.hiding_in_the_bushes.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "imm_ptl.refmap.json",
+  "mixins": [
+    "alternate_dimension/MixinMobSpawnerLogic",
+    "MixinDimensionType",
+    "MixinForgeDimensionManager",
+    "MixinForgeNetworkHooks",
+    "MixinMinecraftServer_MA",
+    "MixinPlayerManager_MA",
+    "MixinServerPlayerEntity_MA"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

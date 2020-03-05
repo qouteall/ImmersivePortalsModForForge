@@ -19,12 +19,10 @@
     "position_sync/MixinPlayerPositionLookS2CPacket",
     "position_sync/MixinServerPlayNetworkHandler",
     "MixinCommandManager",
-    "MixinDimensionType",
-    "MixinForgeDimensionManager",
-    "MixinForgeNetworkHooks",
     "MixinMetricsData",
     "MixinMinecraftServer",
     "MixinPlayerManager",
+    "MixinProfilerSystem",
     "MixinServerChunkManager",
     "MixinServerWorld",
     "MixinWorld"
