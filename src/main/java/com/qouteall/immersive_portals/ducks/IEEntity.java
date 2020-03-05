@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.ducks;
 
-import net.minecraft.entity.Entity;
+import com.qouteall.immersive_portals.portal.Portal;
 
 public interface IEEntity {
-    Entity getCollidingPortal();
+    Portal getCollidingPortal();
 }

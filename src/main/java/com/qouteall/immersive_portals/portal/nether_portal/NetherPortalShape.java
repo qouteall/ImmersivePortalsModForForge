@@ -36,9 +36,9 @@ public class NetherPortalShape {
         this.axis = axis;
         
         calcAnchor();
-        
+    
         calcFrameArea();
-        
+    
         calcAreaBox();
     }
     
@@ -259,11 +259,7 @@ public class NetherPortalShape {
     public boolean isFrameIntact(
         Predicate<BlockPos> isObsidian
     ) {
-        if (area.isEmpty()) {
-            return false;
-        }
-        
-        return frameAreaWithoutCorner.stream().allMatch(isObsidian);
+        return frameAreaWithoutCorner.stream().allMatch(isObsidian::test);
     }
     
     public boolean isPortalIntact(
@@ -277,7 +273,7 @@ public class NetherPortalShape {
     public void initPortalPosAxisShape(Portal portal, boolean doInvert) {
         Vec3d center = innerAreaBox.getCenterVec();
         portal.setPosition(center.x, center.y, center.z);
-        
+    
         Direction[] anotherFourDirections = Helper.getAnotherFourDirections(axis);
         Direction wDirection;
         Direction hDirection;
@@ -293,10 +289,10 @@ public class NetherPortalShape {
         portal.axisH = new Vec3d(hDirection.getDirectionVec());
         portal.width = Helper.getCoordinate(innerAreaBox.getSize(), wDirection.getAxis());
         portal.height = Helper.getCoordinate(innerAreaBox.getSize(), hDirection.getAxis());
-        
+    
         SpecialPortalShape shape = new SpecialPortalShape();
         Vec3d offset = new Vec3d(
-            Direction.getFacingFromAxisDirection(axis, Direction.AxisDirection.POSITIVE)
+            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axis)
                 .getDirectionVec()
         ).scale(0.5);
         for (BlockPos blockPos : area) {
@@ -311,7 +307,7 @@ public class NetherPortalShape {
                 p2LocalX, p2LocalY
             );
         }
-        
+    
         portal.specialShape = shape;
     }
     

@@ -9,12 +9,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = CPlayerPacket.class)
+@Mixin(CPlayerPacket.class)
 public class MixinPlayerMoveC2SPacket_S implements IEPlayerMoveC2SPacket {
     private DimensionType playerDimension;
     
     @Inject(
-        method = "readPacketData",
+        method = "Lnet/minecraft/network/play/client/CPlayerPacket;readPacketData(Lnet/minecraft/network/PacketBuffer;)V",
         at = @At("HEAD")
     )
     private void onRead(PacketBuffer packetByteBuf_1, CallbackInfo ci) {
@@ -22,7 +22,7 @@ public class MixinPlayerMoveC2SPacket_S implements IEPlayerMoveC2SPacket {
     }
     
     @Inject(
-        method = "writePacketData",
+        method = "Lnet/minecraft/network/play/client/CPlayerPacket;writePacketData(Lnet/minecraft/network/PacketBuffer;)V",
         at = @At("HEAD")
     )
     private void onWrite(PacketBuffer packetByteBuf_1, CallbackInfo ci) {

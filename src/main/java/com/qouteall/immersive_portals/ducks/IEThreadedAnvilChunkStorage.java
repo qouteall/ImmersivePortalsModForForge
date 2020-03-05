@@ -15,6 +15,4 @@ public interface IEThreadedAnvilChunkStorage {
     ChunkHolder getChunkHolder_(long long_1);
     
     void onPlayerRespawn(ServerPlayerEntity oldPlayer);
-    
-    int getChunkHolderNum();
 }

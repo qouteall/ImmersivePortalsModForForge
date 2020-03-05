@@ -1,8 +1,6 @@
 package com.qouteall.immersive_portals;
 
 import com.google.common.collect.Streams;
-import com.mojang.brigadier.CommandDispatcher;
-import com.qouteall.immersive_portals.commands.MyCommandClient;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
@@ -10,7 +8,6 @@ import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
-import net.minecraft.command.CommandSource;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
@@ -25,6 +22,7 @@ import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
 
 @OnlyIn(Dist.CLIENT)
 public class CHelper {
+    
     private static int reportedErrorNum = 0;
     
     public static NetworkPlayerInfo getClientPlayerListEntry() {
@@ -53,6 +51,11 @@ public class CHelper {
         return CGlobal.clientWorldLoader.getOrCreateFakedWorld(dimension);
     }
     
+    public static List<GlobalTrackedPortal> getClientGlobalPortal(World world) {
+        List<GlobalTrackedPortal> globalPortals = ((IEClientWorld) world).getGlobalPortals();
+        return globalPortals;
+    }
+    
     public static Stream<Portal> getClientNearbyPortals(double range) {
         ClientPlayerEntity player = Minecraft.getInstance().player;
         List<GlobalTrackedPortal> globalPortals = ((IEClientWorld) player.world).getGlobalPortals();
@@ -74,16 +77,8 @@ public class CHelper {
         }
     }
     
-    public static void initCommandClientOnly(CommandDispatcher<CommandSource> dispatcher) {
-        MyCommandClient.register(dispatcher);
-    }
-    
-    public static void printChat(String str) {
-        Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(new StringTextComponent(str));
-    }
-    
     public static void checkGlError() {
-        if (!CGlobal.doCheckGlError) {
+        if (!Global.doCheckGlError) {
             return;
         }
         if (reportedErrorNum > 100) {
@@ -97,8 +92,9 @@ public class CHelper {
         }
     }
     
-    public static List<GlobalTrackedPortal> getClientGlobalPortal(World world) {
-        List<GlobalTrackedPortal> globalPortals = ((IEClientWorld) world).getGlobalPortals();
-        return globalPortals;
+    public static void printChat(String str) {
+        Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(
+            new StringTextComponent(str)
+        );
     }
 }

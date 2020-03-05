@@ -1,16 +1,15 @@
 package com.qouteall.immersive_portals.mixin.entity_sync;
 
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
-import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.SectionPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.TrackedEntity;
@@ -54,8 +53,11 @@ public class MixinEntityTracker implements IEEntityTracker {
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        NetworkMain.sendRedirected(
-            serverPlayNetworkHandler.player, entity.dimension, packet_1
+        serverPlayNetworkHandler.sendPacket(
+            MyNetwork.createRedirectedMessage(
+                entity.dimension,
+                packet_1
+            )
         );
     }
     
@@ -70,31 +72,14 @@ public class MixinEntityTracker implements IEEntityTracker {
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        NetworkMain.sendRedirected(
-            serverPlayNetworkHandler.player, entity.dimension, packet_1
+        serverPlayNetworkHandler.sendPacket(
+            MyNetwork.createRedirectedMessage(
+                entity.dimension,
+                packet_1
+            )
         );
     }
     
-    //copied
-    private static int getChebyshevDistance(
-        ChunkPos chunkPos_1,
-        ServerPlayerEntity serverPlayerEntity_1,
-        boolean boolean_1
-    ) {
-        int int_3;
-        int int_4;
-        if (boolean_1) {
-            SectionPos chunkSectionPos_1 = serverPlayerEntity_1.getManagedSectionPos();
-            int_3 = chunkSectionPos_1.getSectionX();
-            int_4 = chunkSectionPos_1.getSectionZ();
-        }
-        else {
-            int_3 = MathHelper.floor(serverPlayerEntity_1.getPosX() / 16.0D);
-            int_4 = MathHelper.floor(serverPlayerEntity_1.getPosZ() / 16.0D);
-        }
-        
-        return getChebyshevDistance(chunkPos_1, int_3, int_4);
-    }
     
     //copied
     private static int getChebyshevDistance(ChunkPos chunkPos_1, int int_1, int int_2) {
@@ -105,7 +90,6 @@ public class MixinEntityTracker implements IEEntityTracker {
     
     /**
      * @author qouteall
-     * @reason
      */
     @Overwrite
     public void updateTrackingState(ServerPlayerEntity player) {
@@ -114,7 +98,7 @@ public class MixinEntityTracker implements IEEntityTracker {
     
     /**
      * @author qouteall
-     * @reason
+     * performance may be slowed down
      */
     @Overwrite
     public void updateTrackingState(List<ServerPlayerEntity> list_1) {
@@ -134,6 +118,8 @@ public class MixinEntityTracker implements IEEntityTracker {
         IEThreadedAnvilChunkStorage storage = McHelper.getIEStorage(entity.dimension);
         
         if (player != this.entity) {
+            McHelper.checkDimension(this.entity);
+    
             Vec3d relativePos = (player.getPositionVec()).subtract(this.entry.func_219456_b());
             int maxWatchDistance = Math.min(
                 this.range,
@@ -142,9 +128,9 @@ public class MixinEntityTracker implements IEEntityTracker {
             boolean isWatchedNow =
                 NewChunkTrackingGraph.isPlayerWatchingChunkWithinRaidus(
                     player,
-                    entity.dimension,
-                    entity.chunkCoordX,
-                    entity.chunkCoordZ,
+                    this.entity.dimension,
+                    this.entity.chunkCoordX,
+                    this.entity.chunkCoordZ,
                     maxWatchDistance
                 ) &&
                     this.entity.isSpectatedByPlayer(player);

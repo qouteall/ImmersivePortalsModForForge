@@ -2,7 +2,6 @@ package com.qouteall.hiding_in_the_bushes;
 
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.ducks.IEDimensionType;
 import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
 import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
 import com.qouteall.hiding_in_the_bushes.network.StcDimensionInfo;

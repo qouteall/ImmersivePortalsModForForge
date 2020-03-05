@@ -1,8 +1,10 @@
 package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
@@ -54,7 +56,7 @@ public class BreakableMirror extends Mirror {
     public void tick() {
         super.tick();
         if (!world.isRemote) {
-            if (world.getGameTime() % 50 == getEntityId() % 50) {
+            if (world.getGameTime() % 10 == getEntityId() % 10) {
                 checkWallIntegrity();
             }
         }
@@ -62,16 +64,11 @@ public class BreakableMirror extends Mirror {
     
     @Override
     public boolean isPortalValid() {
-        if (world.isRemote) {
-            return super.isPortalValid();
-        }
-        else {
-            return super.isPortalValid() && wallArea != null;
-        }
+        return super.isPortalValid() && wallArea != null;
     }
     
     private void checkWallIntegrity() {
-        boolean wallValid = wallArea.streamOfMutable().allMatch(
+        boolean wallValid = wallArea.fastStream().allMatch(
             blockPos ->
                 isGlass(world, blockPos)
         );
@@ -82,6 +79,7 @@ public class BreakableMirror extends Mirror {
     
     private static boolean isGlass(World world, BlockPos blockPos) {
         return world.getBlockState(blockPos).getBlock() == Blocks.GLASS;
+        //return world.getBlockState(blockPos).getMaterial() == Material.GLASS;
     }
     
     public static BreakableMirror createMirror(
@@ -92,17 +90,9 @@ public class BreakableMirror extends Mirror {
         if (!isGlass(world, glassPos)) {
             return null;
         }
-        
-        IntegerAABBInclusive wallArea = new IntegerAABBInclusive(glassPos, glassPos);
-        
-        for (Direction direction : Helper.getAnotherFourDirections(facing.getAxis())) {
-            wallArea = Helper.expandArea(
-                wallArea,
-                blockPos -> isGlass(world, blockPos),
-                direction
-            );
-        }
-        
+    
+        IntegerAABBInclusive wallArea = findGlassWallArea(world, glassPos, facing);
+    
         BreakableMirror breakableMirror = BreakableMirror.entityType.create(world);
         Vec3d pos = new Vec3d(
             (double) (wallArea.l.getX() + wallArea.h.getX()) / 2,
@@ -118,37 +108,64 @@ public class BreakableMirror extends Mirror {
         );
         breakableMirror.destination = pos;
         breakableMirror.dimensionTo = world.dimension.getType();
-        
-        Tuple<Direction.Axis, Direction.Axis> axises = Helper.getAnotherTwoAxis(facing.getAxis());
-        if (facing.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
-            axises = new Tuple<>(axises.getB(), axises.getA());
-        }
+    
+        Tuple<Direction.Axis, Direction.Axis> axises = Helper.getPerpendicularAxis(facing);
     
         Direction.Axis wAxis = axises.getA();
         Direction.Axis hAxis = axises.getB();
         float width = Helper.getCoordinate(wallArea.getSize(), wAxis);
-        float height = Helper.getCoordinate(wallArea.getSize(), hAxis);
-        
+        int height = Helper.getCoordinate(wallArea.getSize(), hAxis);
+    
         breakableMirror.axisW = new Vec3d(
-            Direction.getFacingFromAxisDirection(
-                wAxis,
-                Direction.AxisDirection.POSITIVE
-            ).getDirectionVec()
+            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, wAxis).getDirectionVec()
         );
         breakableMirror.axisH = new Vec3d(
-            Direction.getFacingFromAxisDirection(
-                hAxis,
-                Direction.AxisDirection.POSITIVE
-            ).getDirectionVec()
+            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, hAxis).getDirectionVec()
         );
-    
         breakableMirror.width = width;
         breakableMirror.height = height;
-        
+    
         breakableMirror.wallArea = wallArea;
     
         world.addEntity(breakableMirror);
-        
+    
+        breakIntersectedMirror(breakableMirror);
+    
         return breakableMirror;
+    }
+    
+    public static IntegerAABBInclusive findGlassWallArea(
+        ServerWorld world,
+        BlockPos glassPos,
+        Direction facing
+    ) {
+        IntegerAABBInclusive wallArea = new IntegerAABBInclusive(glassPos, glassPos);
+        
+        for (Direction direction : Helper.getAnotherFourDirections(facing.getAxis())) {
+            wallArea = Helper.expandArea(
+                wallArea,
+                blockPos -> isGlass(world, blockPos),
+                direction
+            );
+        }
+        return wallArea;
+    }
+    
+    private static void breakIntersectedMirror(BreakableMirror newMirror) {
+        McHelper.getEntitiesNearby(
+            newMirror,
+            BreakableMirror.class,
+            10
+        ).filter(
+            mirror1 -> mirror1.getNormal().dotProduct(newMirror.getNormal()) > 0.5
+        ).filter(
+            mirror1 -> IntegerAABBInclusive.getIntersect(
+                mirror1.wallArea, newMirror.wallArea
+            ) != null
+        ).filter(
+            mirror -> mirror != newMirror
+        ).forEach(
+            Entity::remove
+        );
     }
 }

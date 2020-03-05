@@ -1,9 +1,9 @@
 package com.qouteall.immersive_portals.mixin.chunk_sync;
 
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEChunkHolder;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
-import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.dimension.DimensionType;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(value = ChunkHolder.class)
+@Mixin(ChunkHolder.class)
 public class MixinChunkHolder implements IEChunkHolder {
     
     @Shadow
@@ -26,7 +26,6 @@ public class MixinChunkHolder implements IEChunkHolder {
     
     /**
      * @author qouteall
-     * @reason whatever
      */
     @Overwrite
     private void sendToTracking(IPacket<?> packet_1, boolean boolean_1) {
@@ -36,10 +35,10 @@ public class MixinChunkHolder implements IEChunkHolder {
         NewChunkTrackingGraph.getPlayersViewingChunk(
             dimension, pos.x, pos.z
         ).forEach(player ->
-            NetworkMain.sendRedirected(
-                player,
-                dimension,
-                packet_1
+            player.connection.sendPacket(
+                MyNetwork.createRedirectedMessage(
+                    dimension, packet_1
+                )
             )
         );
     

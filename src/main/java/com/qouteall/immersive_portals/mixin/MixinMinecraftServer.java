@@ -5,6 +5,7 @@ import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.mojang.datafixers.DataFixer;
+import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
@@ -27,15 +28,20 @@ import java.lang.ref.WeakReference;
 import java.net.Proxy;
 import java.util.function.BooleanSupplier;
 
-@Mixin(value = MinecraftServer.class)
+@Mixin(MinecraftServer.class)
 public class MixinMinecraftServer implements IEMinecraftServer {
     @Shadow
     @Final
     private FrameTimer frameTimer;
+    
+    @Shadow
+    @Final
+    private File anvilFile;
+    
     private boolean portal_areAllWorldsLoaded;
     
     @Inject(
-        method = "<init>",
+        method = "Lnet/minecraft/server/MinecraftServer;<init>(Ljava/io/File;Ljava/net/Proxy;Lcom/mojang/datafixers/DataFixer;Lnet/minecraft/command/Commands;Lcom/mojang/authlib/yggdrasil/YggdrasilAuthenticationService;Lcom/mojang/authlib/minecraft/MinecraftSessionService;Lcom/mojang/authlib/GameProfileRepository;Lnet/minecraft/server/management/PlayerProfileCache;Lnet/minecraft/world/chunk/listener/IChunkStatusListenerFactory;Ljava/lang/String;)V",
         at = @At("RETURN")
     )
     private void onServerConstruct(
@@ -52,11 +58,12 @@ public class MixinMinecraftServer implements IEMinecraftServer {
         CallbackInfo ci
     ) {
         Helper.refMinecraftServer = new WeakReference<>((MinecraftServer) ((Object) this));
-        portal_areAllWorldsLoaded = false;
+        
+        O_O.loadConfigFabric();
     }
     
     @Inject(
-        method = "updateTimeLightAndEntities",
+        method = "Lnet/minecraft/server/MinecraftServer;updateTimeLightAndEntities(Ljava/util/function/BooleanSupplier;)V",
         at = @At("TAIL")
     )
     private void onServerTick(BooleanSupplier booleanSupplier_1, CallbackInfo ci) {
@@ -73,27 +80,27 @@ public class MixinMinecraftServer implements IEMinecraftServer {
     }
     
     @Inject(
-        method = "loadAllWorlds",
+        method = "Lnet/minecraft/server/MinecraftServer;loadAllWorlds(Ljava/lang/String;Ljava/lang/String;JLnet/minecraft/world/WorldType;Lcom/google/gson/JsonElement;)V",
         at = @At("RETURN")
     )
     private void onFinishedLoadingAllWorlds(
-        String saveName,
-        String worldNameIn,
+        String name,
+        String serverName,
         long seed,
-        WorldType type,
-        JsonElement generatorOptions,
+        WorldType generatorType,
+        JsonElement generatorSettings,
         CallbackInfo ci
     ) {
         portal_areAllWorldsLoaded = true;
     }
     
     @Override
-    public boolean portal_getAreAllWorldsLoaded() {
-        return portal_areAllWorldsLoaded;
+    public FrameTimer getMetricsDataNonClientOnly() {
+        return frameTimer;
     }
     
     @Override
-    public FrameTimer getMetricsDataNonClientOnly() {
-        return frameTimer;
+    public boolean portal_getAreAllWorldsLoaded() {
+        return portal_areAllWorldsLoaded;
     }
 }

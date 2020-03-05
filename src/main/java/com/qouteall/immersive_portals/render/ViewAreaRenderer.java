@@ -102,6 +102,8 @@ public class ViewAreaRenderer {
         }
     }
     
+    //according to https://stackoverflow.com/questions/43002528/when-can-hotspot-allocate-objects-on-the-stack
+    //this will not generate gc pressure
     private static void putIntoLocalVertex(
         Consumer<Vec3d> vertexOutput,
         Portal portal,
@@ -186,16 +188,16 @@ public class ViewAreaRenderer {
         
         DimensionRenderHelper helper =
             CGlobal.clientWorldLoader.getDimensionRenderHelper(portal.dimensionTo);
-        
+    
         Helper.SimpleBox<Vec3d> boxOfFogColor = new Helper.SimpleBox<>(null);
-        
+    
         FogRendererContext.swappingManager.swapAndInvoke(
             portal.dimensionTo,
             () -> {
                 boxOfFogColor.obj = FogRendererContext.getCurrentFogColor.get();
             }
         );
-        
+    
         Vec3d fogColor = boxOfFogColor.obj;
         
         GlStateManager.enableCull();
@@ -216,7 +218,7 @@ public class ViewAreaRenderer {
             MyRenderHelper.partialTicks,
             portal instanceof Mirror ? 0 : 0.45F
         );
-        
+    
         McHelper.runWithTransformation(
             matrixStack,
             () -> tessellator.draw()

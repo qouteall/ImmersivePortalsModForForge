@@ -2,11 +2,8 @@ package com.qouteall.immersive_portals.mixin.entity_sync;
 
 import com.google.common.collect.HashMultimap;
 import com.mojang.authlib.GameProfile;
-import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.ducks.IEServerPlayerEntity;
-import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -17,18 +14,16 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.common.util.ITeleporter;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Set;
 
-@Mixin(value = ServerPlayerEntity.class)
+@Mixin(ServerPlayerEntity.class)
 public abstract class MixinServerPlayerEntity extends PlayerEntity implements IEServerPlayerEntity {
     @Shadow
     public ServerPlayNetHandler connection;
@@ -38,31 +33,21 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
     private HashMultimap<DimensionType, Entity> myRemovedEntities;
     
     public MixinServerPlayerEntity(
-        World p_i45324_1_,
-        GameProfile p_i45324_2_
+        World world,
+        GameProfile profile
     ) {
-        super(p_i45324_1_, p_i45324_2_);
+        super(world, profile);
         throw new IllegalStateException();
     }
     
     @Shadow
-    public abstract void func_213846_b(ServerWorld serverWorld_1);
-    
-    @Shadow
     private boolean invulnerableDimensionChange;
     
-    @Override
-    public void setEnteredNetherPos(Vec3d pos) {
-        enteredNetherPosition = pos;
-    }
-    
-    @Override
-    public void updateDimensionTravelAdvancements(ServerWorld fromWorld) {
-        func_213846_b(fromWorld);
-    }
+    @Shadow
+    protected abstract void func_213846_b(ServerWorld targetWorld);
     
     @Inject(
-        method = "sendChunkUnload",
+        method = "Lnet/minecraft/entity/player/ServerPlayerEntity;sendChunkUnload(Lnet/minecraft/util/math/ChunkPos;)V",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -71,19 +56,21 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
     }
     
     @Inject(
-        method = "tick",
+        method = "Lnet/minecraft/entity/player/ServerPlayerEntity;tick()V",
         at = @At("TAIL")
     )
     private void onTicking(CallbackInfo ci) {
         if (myRemovedEntities != null) {
             myRemovedEntities.keySet().forEach(dimension -> {
                 Set<Entity> list = myRemovedEntities.get(dimension);
-                NetworkMain.sendRedirected(
-                    connection.player, dimension,
-                    new SDestroyEntitiesPacket(
-                        list.stream().mapToInt(
-                            Entity::getEntityId
-                        ).toArray()
+                connection.sendPacket(
+                    MyNetwork.createRedirectedMessage(
+                        dimension,
+                        new SDestroyEntitiesPacket(
+                            list.stream().mapToInt(
+                                Entity::getEntityId
+                            ).toArray()
+                        )
                     )
                 );
             });
@@ -91,25 +78,18 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
         }
     }
     
-    @Inject(method = "changeDimension", at = @At("HEAD"), remap = false)
-    private void onChangeDimensionByVanilla(
-        DimensionType p_changeDimension_1_,
-        ITeleporter p_changeDimension_2_,
-        CallbackInfoReturnable<Entity> cir
-    ) {
-        SGlobal.chunkDataSyncManager.onPlayerRespawn((ServerPlayerEntity) (Object) this);
-    }
     
     /**
      * @author qouteall
-     * @reason
      */
     @Overwrite
     public void removeEntity(Entity entity_1) {
         if (entity_1 instanceof PlayerEntity) {
-            NetworkMain.sendRedirected(
-                connection.player, entity_1.dimension,
-                new SDestroyEntitiesPacket(entity_1.getEntityId())
+            this.connection.sendPacket(
+                MyNetwork.createRedirectedMessage(
+                    entity_1.dimension,
+                    new SDestroyEntitiesPacket(entity_1.getEntityId())
+                )
             );
         }
         else {
@@ -125,7 +105,6 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
     
     /**
      * @author qouteall
-     * @reason
      */
     @Overwrite
     public void addEntity(Entity entity_1) {
@@ -134,31 +113,14 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
         }
     }
     
-    @Inject(
-        method = "Lnet/minecraft/entity/player/ServerPlayerEntity;teleport(Lnet/minecraft/world/server/ServerWorld;DDDFF)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/server/ServerWorld;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;Z)V",
-            remap = false
-        )
-    )
-    private void onForgeTeleport(
-        ServerWorld p_200619_1_,
-        double x,
-        double y,
-        double z,
-        float yaw,
-        float pitch,
-        CallbackInfo ci
-    ) {
-        ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-        
-        //fix issue with good nights sleep
-        player.clearBedPosition();
+    @Override
+    public void setEnteredNetherPos(Vec3d pos) {
+        enteredNetherPosition = pos;
+    }
     
-        NewChunkTrackingGraph.forceRemovePlayer(player);
-    
-        GlobalPortalStorage.onPlayerLoggedIn(player);
+    @Override
+    public void updateDimensionTravelAdvancements(ServerWorld fromWorld) {
+        func_213846_b(fromWorld);
     }
     
     @Override

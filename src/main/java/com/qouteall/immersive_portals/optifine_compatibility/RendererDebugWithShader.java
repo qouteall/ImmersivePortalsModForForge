@@ -5,7 +5,10 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.render.*;
+import com.qouteall.immersive_portals.render.MyRenderHelper;
+import com.qouteall.immersive_portals.render.PortalRenderer;
+import com.qouteall.immersive_portals.render.SecondaryFrameBuffer;
+import com.qouteall.immersive_portals.render.ShaderManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.world.ClientWorld;
@@ -23,7 +26,10 @@ public class RendererDebugWithShader extends PortalRenderer {
     
     @Override
     public void renderPortalInEntityRenderer(Portal portal) {
-    
+        if (Shaders.isShadowPass) {
+            assert false;
+            //ViewAreaRenderer.drawPortalViewTriangle(portal);
+        }
     }
     
     @Override
@@ -105,7 +111,7 @@ public class RendererDebugWithShader extends PortalRenderer {
         GlStateManager.enableAlphaTest();
         Framebuffer mainFrameBuffer = mc.getFramebuffer();
         mainFrameBuffer.bindFramebuffer(true);
-        
+    
         deferredBuffer.fb.framebufferRender(
             mainFrameBuffer.framebufferWidth,
             mainFrameBuffer.framebufferHeight

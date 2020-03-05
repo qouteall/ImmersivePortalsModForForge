@@ -1,13 +1,17 @@
 package com.qouteall.immersive_portals.portal.global_portals;
 
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
-import com.qouteall.hiding_in_the_bushes.network.StcUpdateGlobalPortals;
+import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.network.IPacket;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.WorldSavedData;
@@ -28,65 +32,74 @@ public class GlobalPortalStorage extends WorldSavedData {
     }
     
     public static void onPlayerLoggedIn(ServerPlayerEntity player) {
-        McHelper.getServer().getWorlds().forEach(world -> {
-            NetworkMain.sendToPlayer(
-                player,
-                new StcUpdateGlobalPortals(
-                    get(world).write(new CompoundNBT()),
-                    world.dimension.getType()
-                )
-            );
-        });
+        McHelper.getServer().getWorlds().forEach(
+            world -> {
+                GlobalPortalStorage storage = get(world);
+                if (!storage.data.isEmpty()) {
+                    player.connection.sendPacket(
+                        MyNetwork.createGlobalPortalUpdate(
+                            storage
+                        )
+                    );
+                }
+            }
+        );
+        NewChunkTrackingGraph.updateForPlayer(player);
     }
     
     public void onDataChanged() {
         setDirty(true);
-        
-        StcUpdateGlobalPortals packet = new StcUpdateGlobalPortals(
-            get(world.get()).write(new CompoundNBT()),
-            world.get().dimension.getType()
-        );
     
+        IPacket packet = MyNetwork.createGlobalPortalUpdate(this);
         McHelper.getCopiedPlayerList().forEach(
-            player -> NetworkMain.sendToPlayer(player, packet)
-        );
-    }
-    
-    public static GlobalPortalStorage get(
-        ServerWorld world
-    ) {
-        return world.getSavedData().getOrCreate(
-            () -> new GlobalPortalStorage("global_portal", world),
-            "global_portal"
+            player -> player.connection.sendPacket(packet)
         );
     }
     
     @Override
-    public void read(CompoundNBT nbt) {
+    public void read(CompoundNBT var1) {
+        
         ServerWorld currWorld = world.get();
         Validate.notNull(currWorld);
-        List<GlobalTrackedPortal> newData1 = getPortalsFromTag(nbt, currWorld);
+        List<GlobalTrackedPortal> newData = getPortalsFromTag(var1, currWorld);
         
-        data = newData1;
+        data = newData;
     }
     
-    public static List<GlobalTrackedPortal> getPortalsFromTag(CompoundNBT nbt, World currWorld) {
-        /**{@link CompoundNBT#getType()}*/
-        ListNBT listTag = nbt.getList("data", 10);
+    public static List<GlobalTrackedPortal> getPortalsFromTag(
+        CompoundNBT var1,
+        World currWorld
+    ) {
+        /**{@link CompoundTag#getType()}*/
+        ListNBT listTag = var1.getList("data", 10);
         
-        List<GlobalTrackedPortal> newData1 = new ArrayList<>();
+        List<GlobalTrackedPortal> newData = new ArrayList<>();
         
         for (int i = 0; i < listTag.size(); i++) {
-            CompoundNBT tag = listTag.getCompound(i);
-            Entity e = McHelper.readEntity(tag, currWorld);
-            if (e instanceof GlobalTrackedPortal) {
-                newData1.add(((GlobalTrackedPortal) e));
+            CompoundNBT compoundTag = listTag.getCompound(i);
+            GlobalTrackedPortal e = readPortalFromTag(currWorld, compoundTag);
+            if (e != null) {
+                newData.add(e);
             }
             else {
-                Helper.err("error reading portal" + tag);
+                Helper.err("error reading portal" + compoundTag);
             }
         }
-        return newData1;
+        return newData;
+    }
+    
+    public static GlobalTrackedPortal readPortalFromTag(World currWorld, CompoundNBT compoundTag) {
+        ResourceLocation entityId = new ResourceLocation(compoundTag.getString("entity_type"));
+        EntityType<?> entityType = Registry.ENTITY_TYPE.getOrDefault(entityId);
+        
+        Entity e = entityType.create(currWorld);
+        e.read(compoundTag);
+        
+        if (!(e instanceof GlobalTrackedPortal)) {
+            return null;
+        }
+        
+        return (GlobalTrackedPortal) e;
     }
     
     @Override
@@ -101,12 +114,26 @@ public class GlobalPortalStorage extends WorldSavedData {
         
         for (GlobalTrackedPortal portal : data) {
             Validate.isTrue(portal.world == currWorld);
-            CompoundNBT e = McHelper.writeEntityWithId(portal);
-            listTag.add(e);
+            CompoundNBT tag = new CompoundNBT();
+            portal.writeWithoutTypeId(tag);
+            tag.putString(
+                "entity_type",
+                EntityType.getKey(portal.getType()).toString()
+            );
+            listTag.add(tag);
         }
         
         var1.put("data", listTag);
         
         return var1;
+    }
+    
+    public static GlobalPortalStorage get(
+        ServerWorld world
+    ) {
+        return world.getSavedData().getOrCreate(
+            () -> new GlobalPortalStorage("global_portal", world),
+            "global_portal"
+        );
     }
 }

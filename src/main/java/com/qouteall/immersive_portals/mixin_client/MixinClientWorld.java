@@ -1,17 +1,20 @@
 package com.qouteall.immersive_portals.mixin_client;
 
+import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.ducks.IEWorld;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.profiler.IProfiler;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldSettings;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.dimension.DimensionType;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,11 +22,13 @@ import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-@Mixin(value = ClientWorld.class)
+@Mixin(ClientWorld.class)
 public abstract class MixinClientWorld implements IEClientWorld {
     @Shadow
     @Final
@@ -31,11 +36,7 @@ public abstract class MixinClientWorld implements IEClientWorld {
     private ClientPlayNetHandler connection;
     
     @Shadow
-    @Final
-    private Int2ObjectMap<Entity> entitiesById;
-    
-    @Shadow
-    protected abstract void removeEntity(Entity p_217414_1_);
+    public abstract Entity getEntityByID(int id);
     
     private List<GlobalTrackedPortal> globalTrackedPortals;
     
@@ -59,19 +60,9 @@ public abstract class MixinClientWorld implements IEClientWorld {
         globalTrackedPortals = arg;
     }
     
-    @Override
-    public void removeEntityWhilstMaintainingCapability(Entity entityToRemove) {
-        int eid = entityToRemove.getEntityId();
-        Entity entity = entitiesById.remove(eid);
-        if (entity != null) {
-            //keep the capability
-            entity.remove(true);
-            this.removeEntity(entity);
-        }
-    }
-    
+    //use my client chunk manager
     @Inject(
-        method = "<init>",
+        method = "Lnet/minecraft/client/world/ClientWorld;<init>(Lnet/minecraft/client/network/play/ClientPlayNetHandler;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/dimension/DimensionType;ILnet/minecraft/profiler/IProfiler;Lnet/minecraft/client/renderer/WorldRenderer;)V",
         at = @At("RETURN")
     )
     void onConstructed(
@@ -90,7 +81,7 @@ public abstract class MixinClientWorld implements IEClientWorld {
     
     //avoid entity duplicate when an entity travels
     @Inject(
-        method = "addEntityImpl",
+        method = "Lnet/minecraft/client/world/ClientWorld;addEntityImpl(ILnet/minecraft/entity/Entity;)V",
         at = @At("TAIL")
     )
     private void onOnEntityAdded(int entityId, Entity entityIn, CallbackInfo ci) {
@@ -99,5 +90,34 @@ public abstract class MixinClientWorld implements IEClientWorld {
             .forEach(world -> world.removeEntityFromWorld(entityId));
     }
     
+    //avoid alternate dimension dark
+    @Inject(
+        method = "Lnet/minecraft/client/world/ClientWorld;getHorizonHeight()D",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void onGetSkyDarknessHeight(CallbackInfoReturnable<Double> cir) {
+        ClientWorld clientWorld = (ClientWorld) (Object) this;
+        if (clientWorld.dimension instanceof AlternateDimension) {
+            cir.setReturnValue(-100d);
+            cir.cancel();
+        }
+    }
     
+    //avoid dark sky in alternate dimension when player is in end biome
+    @Redirect(
+        method = "Lnet/minecraft/client/world/ClientWorld;getSkyColor(Lnet/minecraft/util/math/BlockPos;F)Lnet/minecraft/util/math/Vec3d;",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/world/ClientWorld;getBiome(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome;"
+        )
+    )
+    private Biome redirectGetBiomeInSkyRendering(ClientWorld world, BlockPos pos) {
+        if (world.dimension instanceof AlternateDimension) {
+            return Biomes.PLAINS;
+        }
+        else {
+            return world.getBiome(pos);
+        }
+    }
 }

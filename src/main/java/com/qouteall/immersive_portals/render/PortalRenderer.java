@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public abstract class PortalRenderer {
     
     public static final Minecraft mc = Minecraft.getInstance();
-    protected Supplier<Integer> maxPortalLayer = () -> CGlobal.maxPortalLayer;
+    protected Supplier<Integer> maxPortalLayer = () -> Global.maxPortalLayer;
     protected Stack<Portal> portalLayers = new Stack<>();
     
     //this WILL be called when rendering portal
@@ -65,9 +65,10 @@ public abstract class PortalRenderer {
             return false;
         }
         if (mc.renderViewEntity.dimension == MyRenderHelper.originalPlayerDimension) {
-            return getRenderingPortal().canRenderEntityInsideMe(
+            Portal renderingPortal = getRenderingPortal();
+            return renderingPortal.canRenderEntityInsideMe(
                 MyRenderHelper.originalPlayerPos.add(
-                    0, mc.renderViewEntity.getEyeHeight(), 0
+                    0, mc.renderViewEntity.getPosYEye(), 0
                 ),
                 0.1
             );
@@ -84,8 +85,7 @@ public abstract class PortalRenderer {
                 return shouldRenderPlayerItself();
             }
             return getRenderingPortal().canRenderEntityInsideMe(
-                entity.getEyePosition(1),
-                -0.01
+                entity.getEyePosition(1), -0.01
             );
         }
         return true;
@@ -94,7 +94,7 @@ public abstract class PortalRenderer {
     protected void renderPortals(MatrixStack matrixStack) {
         assert mc.renderViewEntity.world == mc.world;
         assert mc.renderViewEntity.dimension == mc.world.dimension.getType();
-        
+    
         //currently does not support nested portal rendering in mirror
         if (MyRenderHelper.isRenderingMirror()) {
             return;
@@ -113,9 +113,9 @@ public abstract class PortalRenderer {
             Helper.err("rendering invalid portal " + portal);
             return;
         }
-        
+    
         Vec3d thisTickEyePos = getRoughTestCameraPos();
-        
+    
         if (!portal.isInFrontOfPortal(thisTickEyePos)) {
             return;
         }
@@ -163,16 +163,15 @@ public abstract class PortalRenderer {
         
         Entity cameraEntity = mc.renderViewEntity;
         ActiveRenderInfo camera = mc.gameRenderer.getActiveRenderInfo();
-        
+    
         if (getPortalLayer() >= 2 &&
             portal.getDistanceToNearestPointInPortal(cameraEntity.getPositionVec()) >
                 (16 * maxPortalLayer.get())
         ) {
             return;
         }
-        
+    
         MyRenderHelper.onBeginPortalWorldRendering(portalLayers);
-        
         
         assert cameraEntity.world == mc.world;
         
@@ -208,7 +207,7 @@ public abstract class PortalRenderer {
         GlStateManager.enableDepthTest();
         GlStateManager.disableBlend();
         MyRenderHelper.restoreViewPort();
-        
+    
         CGlobal.myGameRenderer.resetFog();
     }
     

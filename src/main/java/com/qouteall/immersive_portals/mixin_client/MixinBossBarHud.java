@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(BossOverlayGui.class)
 public class MixinBossBarHud {
-    @Inject(method = "shouldCreateFog", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "Lnet/minecraft/client/gui/overlay/BossOverlayGui;shouldCreateFog()Z", at = @At("HEAD"), cancellable = true)
     private void onShouldThickenFog(CallbackInfoReturnable<Boolean> cir) {
         cir.setReturnValue(false);
         cir.cancel();

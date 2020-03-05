@@ -1,8 +1,6 @@
 package com.qouteall.immersive_portals.my_util;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Queue;
 
 //NOTE if the task returns true, it will be deleted
 //if the task returns false, it will be invoked again at next time
@@ -22,7 +20,7 @@ public class MyTaskList {
     public synchronized void processTasks() {
         tasks.addAll(tasksToAdd);
         tasksToAdd.clear();
-        
+    
         tasks.removeIf(task -> task.runAndGetIsSucceeded());
     }
     

@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.mixin.collision;
 
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEEntity;
+import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundNBT;
@@ -15,8 +16,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = Entity.class)
+@Mixin(Entity.class)
 public abstract class MixinEntity implements IEEntity {
     //world.getEntities is not reliable
     //it has a small chance to ignore collided entities
@@ -24,7 +26,7 @@ public abstract class MixinEntity implements IEEntity {
     //so when player stops colliding a portal, it will not stop colliding instantly
     //it will stop colliding when counter turn to 0
     
-    private Entity collidingPortal;
+    private Portal collidingPortal;
     private int stopCollidingPortalCounter;
     
     @Shadow
@@ -32,9 +34,6 @@ public abstract class MixinEntity implements IEEntity {
     
     @Shadow
     public World world;
-    
-    @Shadow
-    protected abstract Vec3d getAllowedMovement(Vec3d vec3d_1);
     
     @Shadow
     public abstract void setBoundingBox(AxisAlignedBB box_1);
@@ -46,28 +45,19 @@ public abstract class MixinEntity implements IEEntity {
     public DimensionType dimension;
     
     @Shadow
-    public double posX;
-    
-    @Shadow
-    public double posZ;
-    
-    @Shadow
-    public double posY;
-    
-    @Shadow
-    public abstract float getEyeHeight();
+    protected abstract Vec3d getAllowedMovement(Vec3d vec3d_1);
     
     //maintain collidingPortal field
-    @Inject(method = "tick", at = @At("HEAD"))
+    @Inject(method = "Lnet/minecraft/entity/Entity;tick()V", at = @At("HEAD"))
     private void onTicking(CallbackInfo ci) {
         if (collidingPortal != null) {
-            if ((collidingPortal).dimension != dimension) {
+            if (collidingPortal.dimension != dimension) {
                 collidingPortal = null;
             }
         }
-        
-        Entity nowCollidingPortal =
-            (Entity) (Object) CollisionHelper.getCollidingPortalUnreliable((Entity) (Object) this);
+    
+        Portal nowCollidingPortal =
+            CollisionHelper.getCollidingPortalUnreliable((Entity) (Object) this);
         if (nowCollidingPortal == null) {
             if (stopCollidingPortalCounter > 0) {
                 stopCollidingPortalCounter--;
@@ -81,9 +71,9 @@ public abstract class MixinEntity implements IEEntity {
             stopCollidingPortalCounter = 1;
         }
     }
-    
+
     @Redirect(
-        method = "move",
+        method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/Vec3d;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/entity/Entity;getAllowedMovement(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;"
@@ -91,9 +81,8 @@ public abstract class MixinEntity implements IEEntity {
     )
     private Vec3d redirectHandleCollisions(Entity entity, Vec3d attemptedMove) {
         if (attemptedMove.lengthSquared() > 256) {
-            Helper.err(entity + " moved too fast " + attemptedMove);
-            return attemptedMove;
-            //return getAllowedMovement(attemptedMove);
+            Helper.err("Entity moving too fast " + entity + attemptedMove);
+            return Vec3d.ZERO;
         }
     
         if (collidingPortal == null) {
@@ -103,8 +92,8 @@ public abstract class MixinEntity implements IEEntity {
         if (entity.isBeingRidden() || entity.isPassenger()) {
             return getAllowedMovement(attemptedMove);
         }
-        
-        Vec3d result = CollisionHelper.handleCollisionHalfwayInPortal1(
+    
+        Vec3d result = CollisionHelper.handleCollisionHalfwayInPortal(
             (Entity) (Object) this,
             attemptedMove,
             collidingPortal,
@@ -116,7 +105,7 @@ public abstract class MixinEntity implements IEEntity {
     //don't burn when jumping into end portal
     //teleportation is instant and accurate in client but not in server
     //so collision may sometimes be incorrect when client teleported but server did not teleport
-    @Inject(method = "setInLava", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "Lnet/minecraft/entity/Entity;setInLava()V", at = @At("HEAD"), cancellable = true)
     private void onSetInLava(CallbackInfo ci) {
         if (CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
             ci.cancel();
@@ -125,7 +114,7 @@ public abstract class MixinEntity implements IEEntity {
     
     //don't burn when jumping into end portal
     @Redirect(
-        method = "move",
+        method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/Vec3d;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/entity/Entity;dealFireDamage(I)V"
@@ -137,25 +126,57 @@ public abstract class MixinEntity implements IEEntity {
         }
     }
     
-    //don't burn when jumping into end portal
-    @Redirect(
-        method = "move",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/World;isFlammableWithin(Lnet/minecraft/util/math/AxisAlignedBB;)Z"
-        )
+    
+    @Inject(
+        method = "Lnet/minecraft/entity/Entity;isImmuneToFire()Z",
+        at = @At("HEAD"),
+        cancellable = true
     )
-    private boolean redirectDoesContainFireSource(World world, AxisAlignedBB box_1) {
-        if (collidingPortal == null) {
-            return world.isFlammableWithin(box_1);
+    private void onIsFireImmune(CallbackInfoReturnable<Boolean> cir) {
+        if (collidingPortal != null) {
+            cir.setReturnValue(true);
+            cir.cancel();
         }
-        else {
-            return false;
+    }
+    
+    @Inject(
+        method = "Lnet/minecraft/entity/Entity;setFire(I)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void onSetOnFireFor(int int_1, CallbackInfo ci) {
+        if (CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
+            ci.cancel();
+        }
+    }
+    
+    @Inject(
+        method = "Lnet/minecraft/entity/Entity;dealFireDamage(I)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void onBurn(int int_1, CallbackInfo ci) {
+        if (CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
+            ci.cancel();
         }
     }
     
     @Redirect(
-        method = "doBlockCollisions",
+        method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/Vec3d;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/entity/Entity;isInWaterRainOrBubbleColumn()Z"
+        )
+    )
+    private boolean redirectIsWet(Entity entity) {
+        if (collidingPortal != null) {
+            return true;
+        }
+        return entity.isInWaterRainOrBubbleColumn();
+    }
+
+    @Redirect(
+        method = "Lnet/minecraft/entity/Entity;doBlockCollisions()V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/entity/Entity;getBoundingBox()Lnet/minecraft/util/math/AxisAlignedBB;"
@@ -166,7 +187,7 @@ public abstract class MixinEntity implements IEEntity {
     }
     
     @Inject(
-        method = "read",
+        method = "Lnet/minecraft/entity/Entity;read(Lnet/minecraft/nbt/CompoundNBT;)V",
         at = @At("RETURN")
     )
     private void onReadFinished(CompoundNBT compound, CallbackInfo ci) {
@@ -183,7 +204,7 @@ public abstract class MixinEntity implements IEEntity {
     }
     
     @Override
-    public Entity getCollidingPortal() {
+    public Portal getCollidingPortal() {
         return collidingPortal;
     }
 }

@@ -1,6 +1,6 @@
 package com.qouteall.hiding_in_the_bushes.mixin;
 
-import com.qouteall.immersive_portals.ducks.IEDimensionType;
+import com.qouteall.hiding_in_the_bushes.IEDimensionType;
 import net.minecraft.world.dimension.DimensionType;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;

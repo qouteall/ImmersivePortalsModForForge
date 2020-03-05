@@ -12,24 +12,24 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = TileEntityRendererDispatcher.class)
+@Mixin(TileEntityRendererDispatcher.class)
 public class MixinBlockEntityRenderDispatcher {
     @Inject(
-        method = "renderTileEntity",
+        method = "Lnet/minecraft/client/renderer/tileentity/TileEntityRendererDispatcher;renderTileEntity(Lnet/minecraft/tileentity/TileEntity;FLcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;)V",
         at = @At("HEAD"),
         cancellable = true
     )
     private <E extends TileEntity> void onRenderTileEntity(
-        E tileEntityIn,
-        float partialTicks,
-        MatrixStack matrixStackIn,
-        IRenderTypeBuffer bufferIn,
+        E blockEntity,
+        float tickDelta,
+        MatrixStack matrix,
+        IRenderTypeBuffer vertexConsumerProvider,
         CallbackInfo ci
     ) {
         if (CGlobal.renderer.isRendering()) {
             Portal renderingPortal = CGlobal.renderer.getRenderingPortal();
             boolean canRender = renderingPortal.canRenderEntityInsideMe(
-                new Vec3d(tileEntityIn.getPos()),
+                new Vec3d(blockEntity.getPos()),
                 0
             );
             if (!canRender) {

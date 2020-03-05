@@ -1,29 +1,31 @@
 package com.qouteall.immersive_portals.portal;
 
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.SignalArged;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MoverType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
-import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
-import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
-import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.util.UUID;
 
-public class Portal extends Entity implements IEntityAdditionalSpawnData {
+public class Portal extends Entity {
     public static EntityType<Portal> entityType;
     
+    //basic properties
     public double width = 0;
     public double height = 0;
     public Vec3d axisW;
@@ -31,6 +33,7 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     public DimensionType dimensionTo;
     public Vec3d destination;
     
+    //additional properteis
     public boolean loadFewerChunks = true;
     public boolean teleportable = true;
     public UUID specificPlayer;
@@ -82,9 +85,10 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         if (compoundTag.contains("teleportable")) {
             teleportable = compoundTag.getBoolean("teleportable");
         }
-        else {
-            teleportable = true;
-        }
+    }
+    
+    public boolean isTeleportable() {
+        return teleportable;
     }
     
     @Override
@@ -96,46 +100,71 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         compoundTag.putInt("dimensionTo", dimensionTo.getId());
         Helper.putVec3d(compoundTag, "destination", destination);
         compoundTag.putBoolean("loadFewerChunks", loadFewerChunks);
+        
         if (specificPlayer != null) {
             compoundTag.putUniqueId("specificPlayer", specificPlayer);
         }
+        
         if (specialShape != null) {
             compoundTag.put("specialShape", specialShape.writeToTag());
         }
+        
         compoundTag.putBoolean("teleportable", teleportable);
-    }
-    
-    public Vec3d getNormal() {
-        if (normal == null)
-            normal = axisW.crossProduct(axisH).normalize();
-        return normal;
-    }
-    
-    public boolean isTeleportable() {
-        return teleportable;
-    }
-    
-    public Vec3d getContentDirection() {
-        return getNormal().scale(-1);
     }
     
     @Override
     public IPacket<?> createSpawnPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
+        return MyNetwork.createStcSpawnEntity(this);
     }
     
     @Override
     public void tick() {
+//        if (boundingBoxCache == null) {
+//            boundingBoxCache = getPortalCollisionBox();
+//        }
+//        setBoundingBox(boundingBoxCache);
+    
         if (world.isRemote) {
             clientPortalTickSignal.emit(this);
+            tickClient();
         }
         else {
             if (!isPortalValid()) {
                 Helper.log("removed invalid portal" + this);
-                remove();
+                removed = true;
                 return;
             }
             serverPortalTickSignal.emit(this);
+        }
+    }
+    
+    @Override
+    public AxisAlignedBB getBoundingBox() {
+        if (axisW == null) {
+            //avoid npe with pehkui
+            //pehkui will invoke this when axisW is not initialized
+            boundingBoxCache = null;
+            return new AxisAlignedBB(0, 0, 0, 0, 0, 0);
+        }
+        if (boundingBoxCache == null) {
+            boundingBoxCache = getPortalCollisionBox();
+        }
+        return boundingBoxCache;
+    }
+    
+    @Override
+    public void move(MoverType type, Vec3d movement) {
+        //portal cannot be moved
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    private void tickClient() {
+        ClientPlayerEntity player = Minecraft.getInstance().player;
+        if (player != null) {
+            if (!canBeSeenByPlayer(player)) {
+                //removed in client but not in server
+                remove();
+            }
         }
     }
     
@@ -148,90 +177,6 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
             destination != null;
     }
     
-    public boolean canBeSeenByPlayer(PlayerEntity player) {
-        return true;
-    }
-    
-    @Override
-    public void writeSpawnData(PacketBuffer buffer) {
-        buffer.writeDouble(width);
-        buffer.writeDouble(height);
-        buffer.writeDouble(axisW.x);
-        buffer.writeDouble(axisW.y);
-        buffer.writeDouble(axisW.z);
-        buffer.writeDouble(axisH.x);
-        buffer.writeDouble(axisH.y);
-        buffer.writeDouble(axisH.z);
-        buffer.writeInt(dimensionTo.getId());
-        buffer.writeDouble(destination.x);
-        buffer.writeDouble(destination.y);
-        buffer.writeDouble(destination.z);
-        buffer.writeBoolean(loadFewerChunks);
-        buffer.writeBoolean(teleportable);
-    
-        CompoundNBT specialShapeTag = new CompoundNBT();
-        if (specialShape != null) {
-            specialShapeTag.put("data", specialShape.writeToTag());
-        }
-        buffer.writeCompoundTag(specialShapeTag);
-    }
-    
-    @Override
-    public void readSpawnData(PacketBuffer buffer) {
-        width = buffer.readDouble();
-        height = buffer.readDouble();
-        axisW = new Vec3d(
-            buffer.readDouble(),
-            buffer.readDouble(),
-            buffer.readDouble()
-        );
-        axisH = new Vec3d(
-            buffer.readDouble(),
-            buffer.readDouble(),
-            buffer.readDouble()
-        );
-        dimensionTo = DimensionType.getById(buffer.readInt());
-        destination = new Vec3d(
-            buffer.readDouble(),
-            buffer.readDouble(),
-            buffer.readDouble()
-        );
-        loadFewerChunks = buffer.readBoolean();
-        teleportable = buffer.readBoolean();
-    
-        CompoundNBT specialShapeTag = buffer.readCompoundTag();
-        if (specialShapeTag.contains("data")) {
-            specialShape = new SpecialPortalShape(
-                specialShapeTag.getList("data", 6)
-            );
-        }
-    }
-    
-    @Override
-    public AxisAlignedBB getBoundingBox() {
-        if (boundingBoxCache == null) {
-            boundingBoxCache = getPortalCollisionBox();
-        }
-        return boundingBoxCache;
-    }
-    
-    @Override
-    public void move(MoverType typeIn, Vec3d pos) {
-        //portal cannot be moved
-    }
-    
-    public double getDistanceToPlane(
-        Vec3d pos
-    ) {
-        return pos.subtract(getPositionVec()).dotProduct(getNormal());
-    }
-    
-    public boolean isInFrontOfPortal(
-        Vec3d playerPos
-    ) {
-        return getDistanceToPlane(playerPos) > 0;
-    }
-    
     public boolean canRenderPortalInsideMe(Portal anotherPortal) {
         if (anotherPortal.dimension != dimensionTo) {
             return false;
@@ -242,64 +187,6 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     public boolean canRenderEntityInsideMe(Vec3d entityPos, double valve) {
         double v = entityPos.subtract(destination).dotProduct(getContentDirection());
         return v > valve;
-    }
-    
-    public Vec3d getPointInPlane(double xInPlane, double yInPlane) {
-        return getPositionVec().add(getPointInPlaneRelativeToCenter(xInPlane, yInPlane));
-    }
-    
-    public Vec3d getPointInPlaneRelativeToCenter(double xInPlane, double yInPlane) {
-        return axisW.scale(xInPlane).add(axisH.scale(yInPlane));
-    }
-    
-    //3  2
-    //1  0
-    public Vec3d[] getFourVertices(double shrinkFactor) {
-        Vec3d[] vertices = new Vec3d[4];
-        vertices[0] = getPointInPlane(width / 2 - shrinkFactor, -height / 2 + shrinkFactor);
-        vertices[1] = getPointInPlane(-width / 2 + shrinkFactor, -height / 2 + shrinkFactor);
-        vertices[2] = getPointInPlane(width / 2 - shrinkFactor, height / 2 - shrinkFactor);
-        vertices[3] = getPointInPlane(-width / 2 + shrinkFactor, height / 2 - shrinkFactor);
-    
-        return vertices;
-    }
-    
-    //3  2
-    //1  0
-    public Vec3d[] getFourVerticesRelativeToCenter(double shrinkFactor) {
-        Vec3d[] vertices = new Vec3d[4];
-        vertices[0] = getPointInPlaneRelativeToCenter(
-            width / 2 - shrinkFactor,
-            -height / 2 + shrinkFactor
-        );
-        vertices[1] = getPointInPlaneRelativeToCenter(
-            -width / 2 + shrinkFactor,
-            -height / 2 + shrinkFactor
-        );
-        vertices[2] = getPointInPlaneRelativeToCenter(
-            width / 2 - shrinkFactor,
-            height / 2 - shrinkFactor
-        );
-        vertices[3] = getPointInPlaneRelativeToCenter(
-            -width / 2 + shrinkFactor,
-            height / 2 - shrinkFactor
-        );
-    
-        return vertices;
-    }
-    
-    @Override
-    public String toString() {
-        return String.format(
-            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)}",
-            getClass().getSimpleName(),
-            getEntityId(),
-            Direction.getFacingFromVector(
-                getNormal().x, getNormal().y, getNormal().z
-            ),
-            dimension, (int) getPosX(), (int) getPosY(), (int) getPosZ(),
-            dimensionTo, (int) destination.x, (int) destination.y, (int) destination.z
-        );
     }
     
     //0 and 3 are connected
@@ -366,6 +253,109 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         portals[3].height = height;
     }
     
+    public boolean shouldEntityTeleport(Entity entity) {
+        return entity.dimension == this.dimension &&
+            isTeleportable() &&
+            isMovedThroughPortal(
+                entity.getEyePosition(0),
+                entity.getEyePosition(1)
+            );
+    }
+    
+    public void onEntityTeleportedOnServer(Entity entity) {
+        //nothing
+    }
+    
+    public boolean canBeSeenByPlayer(PlayerEntity player) {
+        if (specificPlayer == null) {
+            return true;
+        }
+        else {
+            return specificPlayer.equals(player.getUniqueID());
+        }
+    }
+    
+    @Override
+    public String toString() {
+        return String.format(
+            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)}",
+            getClass().getSimpleName(),
+            getEntityId(),
+            Direction.getFacingFromVector(
+                getNormal().x, getNormal().y, getNormal().z
+            ),
+            dimension, (int) getPosX(), (int) getPosY(), (int) getPosZ(),
+            dimensionTo, (int) destination.x, (int) destination.y, (int) destination.z
+        );
+    }
+    
+    //Geometry----------
+    
+    public Vec3d getNormal() {
+        if (normal == null)
+            normal = axisW.crossProduct(axisH).normalize();
+        return normal;
+    }
+    
+    public Vec3d getContentDirection() {
+        return getNormal().scale(-1);
+    }
+    
+    public double getDistanceToPlane(
+        Vec3d pos
+    ) {
+        return pos.subtract(getPositionVec()).dotProduct(getNormal());
+    }
+    
+    public boolean isInFrontOfPortal(
+        Vec3d playerPos
+    ) {
+        return getDistanceToPlane(playerPos) > 0;
+    }
+    
+    public Vec3d getPointInPlane(double xInPlane, double yInPlane) {
+        return getPositionVec().add(getPointInPlaneRelativeToCenter(xInPlane, yInPlane));
+    }
+    
+    public Vec3d getPointInPlaneRelativeToCenter(double xInPlane, double yInPlane) {
+        return axisW.scale(xInPlane).add(axisH.scale(yInPlane));
+    }
+    
+    //3  2
+    //1  0
+    public Vec3d[] getFourVertices(double shrinkFactor) {
+        Vec3d[] vertices = new Vec3d[4];
+        vertices[0] = getPointInPlane(width / 2 - shrinkFactor, -height / 2 + shrinkFactor);
+        vertices[1] = getPointInPlane(-width / 2 + shrinkFactor, -height / 2 + shrinkFactor);
+        vertices[2] = getPointInPlane(width / 2 - shrinkFactor, height / 2 - shrinkFactor);
+        vertices[3] = getPointInPlane(-width / 2 + shrinkFactor, height / 2 - shrinkFactor);
+        
+        return vertices;
+    }
+    
+    //3  2
+    //1  0
+    public Vec3d[] getFourVerticesRelativeToCenter(double shrinkFactor) {
+        Vec3d[] vertices = new Vec3d[4];
+        vertices[0] = getPointInPlaneRelativeToCenter(
+            width / 2 - shrinkFactor,
+            -height / 2 + shrinkFactor
+        );
+        vertices[1] = getPointInPlaneRelativeToCenter(
+            -width / 2 + shrinkFactor,
+            -height / 2 + shrinkFactor
+        );
+        vertices[2] = getPointInPlaneRelativeToCenter(
+            width / 2 - shrinkFactor,
+            height / 2 - shrinkFactor
+        );
+        vertices[3] = getPointInPlaneRelativeToCenter(
+            -width / 2 + shrinkFactor,
+            height / 2 - shrinkFactor
+        );
+        
+        return vertices;
+    }
     
     public Vec3d applyTransformationToPoint(Vec3d pos) {
         Vec3d offset = destination.subtract(getPositionVec());
@@ -384,25 +374,15 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
     private AxisAlignedBB getPortalCollisionBox() {
         return new AxisAlignedBB(
             getPointInPlane(width / 2, height / 2)
-                .add(getNormal().scale(0.1)),
+                .add(getNormal().scale(0.2)),
             getPointInPlane(-width / 2, -height / 2)
-                .add(getNormal().scale(-0.1))
+                .add(getNormal().scale(-0.2))
         );
-    }
-    
-    public boolean shouldEntityTeleport(Entity entity) {
-        float eyeHeight = entity.getEyeHeight();
-        return entity.dimension == this.dimension &&
-            isTeleportable() &&
-            isMovedThroughPortal(
-                McHelper.lastTickPosOf(entity).add(0, eyeHeight, 0),
-                entity.getPositionVec().add(0, eyeHeight, 0)
-            );
     }
     
     public boolean isPointInPortalProjection(Vec3d pos) {
         Vec3d offset = pos.subtract(getPositionVec());
-        
+    
         double yInPlane = offset.dotProduct(axisH);
         double xInPlane = offset.dotProduct(axisW);
     
@@ -419,28 +399,14 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         return roughResult;
     }
     
-    public Vec3d getPointInPortalProjection(Vec3d pos) {
-        Vec3d myPos = getPositionVec();
-        Vec3d offset = pos.subtract(myPos);
-        
-        double yInPlane = offset.dotProduct(axisH);
-        double xInPlane = offset.dotProduct(axisW);
-        
-        return myPos.add(
-            axisW.scale(xInPlane)
-        ).add(
-            axisH.scale(yInPlane)
-        );
-    }
-    
     public boolean isMovedThroughPortal(
         Vec3d lastTickPos,
         Vec3d pos
     ) {
-        return rayTrace(lastTickPos, pos) != null;
+        return pick(lastTickPos, pos) != null;
     }
     
-    public Vec3d rayTrace(
+    public Vec3d pick(
         Vec3d from,
         Vec3d to
     ) {
@@ -470,10 +436,6 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         }
     }
     
-    public void onEntityTeleportedOnServer(Entity entity) {
-        //nothing
-    }
-    
     public double getDistanceToNearestPointInPortal(
         Vec3d point
     ) {
@@ -501,13 +463,25 @@ public class Portal extends Entity implements IEntityAdditionalSpawnData {
         double wx1 = rectAX - pointX;
         double wx2 = rectBX - pointX;
         double dx = (wx1 * wx2 < 0 ? 0 : Math.min(Math.abs(wx1), Math.abs(wx2)));
-        
+    
         double wy1 = rectAY - pointY;
         double wy2 = rectBY - pointY;
         double dy = (wy1 * wy2 < 0 ? 0 : Math.min(Math.abs(wy1), Math.abs(wy2)));
-        
+    
         return Math.sqrt(dx * dx + dy * dy);
     }
     
-    
+    public Vec3d getPointInPortalProjection(Vec3d pos) {
+        Vec3d myPos = getPositionVec();
+        Vec3d offset = pos.subtract(myPos);
+        
+        double yInPlane = offset.dotProduct(axisH);
+        double xInPlane = offset.dotProduct(axisW);
+        
+        return myPos.add(
+            axisW.scale(xInPlane)
+        ).add(
+            axisH.scale(yInPlane)
+        );
+    }
 }

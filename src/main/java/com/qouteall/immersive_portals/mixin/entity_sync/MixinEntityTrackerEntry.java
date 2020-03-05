@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.mixin.entity_sync;
 
-import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.function.Consumer;
 
 //NOTE must redirect all packets about entities
-@Mixin(value = TrackedEntity.class)
+@Mixin(TrackedEntity.class)
 public abstract class MixinEntityTrackerEntry {
     @Shadow
     @Final
@@ -30,13 +30,16 @@ public abstract class MixinEntityTrackerEntry {
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        NetworkMain.sendRedirected(
-            serverPlayNetworkHandler.player, trackedEntity.dimension, packet_1
+        serverPlayNetworkHandler.sendPacket(
+            MyNetwork.createRedirectedMessage(
+                trackedEntity.dimension,
+                packet_1
+            )
         );
     }
     
     @Redirect(
-        method = "tick",
+        method = "Lnet/minecraft/world/TrackedEntity;tick()V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/network/play/ServerPlayNetHandler;sendPacket(Lnet/minecraft/network/IPacket;)V"
@@ -50,7 +53,7 @@ public abstract class MixinEntityTrackerEntry {
     }
     
     @Inject(
-        method = "track",
+        method = "Lnet/minecraft/world/TrackedEntity;track(Lnet/minecraft/entity/player/ServerPlayerEntity;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/world/TrackedEntity;sendSpawnPackets(Ljava/util/function/Consumer;)V"
@@ -61,37 +64,33 @@ public abstract class MixinEntityTrackerEntry {
     }
     
     @Redirect(
-        method = "track",
+        method = "Lnet/minecraft/world/TrackedEntity;track(Lnet/minecraft/entity/player/ServerPlayerEntity;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/world/TrackedEntity;sendSpawnPackets(Ljava/util/function/Consumer;)V"
         )
     )
     private void redirectSendPacketsOnStartTracking(
-        TrackedEntity trackedEntity,
-        Consumer<IPacket<?>> p_219452_1_
+        TrackedEntity entityTrackerEntry,
+        Consumer<IPacket<?>> sender
     ) {
         //nothing
     }
 
 //    /**
 //     * @author qouteall
-//     * @reason method reference can not be redirected
+//     * overwrite because method reference can not be redirected
 //     */
 //    @Overwrite
-//    public void track(ServerPlayerEntity serverPlayerEntity_1) {
-//        ServerPlayNetHandler networkHandler = serverPlayerEntity_1.connection;
-//        this.sendSpawnPackets(packet -> sendRedirectedMessage(networkHandler, packet));
-//        this.trackedEntity.addTrackingPlayer(serverPlayerEntity_1);
-//        serverPlayerEntity_1.addEntity(this.trackedEntity);
-//
-//        net.minecraftforge.event.ForgeEventFactory.onStartEntityTracking(
-//            this.trackedEntity, serverPlayerEntity_1
-//        );
+//    public void startTracking(ServerPlayerEntity serverPlayerEntity_1) {
+//        ServerPlayNetworkHandler networkHandler = serverPlayerEntity_1.networkHandler;
+//        this.sendPackets(packet -> sendRedirectedMessage(networkHandler, packet));
+//        this.entity.onStartedTrackingBy(serverPlayerEntity_1);
+//        serverPlayerEntity_1.onStartedTracking(this.entity);
 //    }
     
     @Redirect(
-        method = "sendPacket",
+        method = "Lnet/minecraft/world/TrackedEntity;sendPacket(Lnet/minecraft/network/IPacket;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/network/play/ServerPlayNetHandler;sendPacket(Lnet/minecraft/network/IPacket;)V"

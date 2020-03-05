@@ -55,26 +55,28 @@ public class MyRenderHelper {
     public static Vec3d lastCameraPos = Vec3d.ZERO;
     public static Vec3d cameraPosDelta = Vec3d.ZERO;
     
+    public static boolean shouldForceDisableCull = false;
+    
     public static void updatePreRenderInfo(
         float partialTicks_
     ) {
         Entity cameraEntity = Minecraft.getInstance().renderViewEntity;
-    
+        
         if (cameraEntity == null) {
             return;
         }
-    
+        
         MyRenderHelper.originalPlayerDimension = cameraEntity.dimension;
         MyRenderHelper.originalPlayerPos = cameraEntity.getPositionVec();
         MyRenderHelper.originalPlayerLastTickPos = McHelper.lastTickPosOf(cameraEntity);
         NetworkPlayerInfo entry = CHelper.getClientPlayerListEntry();
         MyRenderHelper.originalGameMode = entry != null ? entry.getGameType() : GameType.CREATIVE;
         partialTicks = partialTicks_;
-    
+        
         renderedDimensions.clear();
         lastPortalRenderInfos = portalRenderInfos;
         portalRenderInfos = new ArrayList<>();
-    
+        
         FogRendererContext.update();
     }
     
@@ -114,7 +116,7 @@ public class MyRenderHelper {
         ).collect(Collectors.toList());
         portalRenderInfos.add(currRenderInfo);
         renderedDimensions.add(portalLayers.peek().dimensionTo);
-        
+    
         CHelper.checkGlError();
     }
     
@@ -139,7 +141,7 @@ public class MyRenderHelper {
             matrixStack,
             () -> {
                 shaderManager.loadContentShaderAndShaderVars(0);
-                
+    
                 if (OFInterface.isShaders.getAsBoolean()) {
                     GlStateManager.viewport(
                         0,
@@ -148,20 +150,20 @@ public class MyRenderHelper {
                         PortalRenderer.mc.getFramebuffer().framebufferHeight
                     );
                 }
-                
+    
                 GlStateManager.enableTexture();
                 GlStateManager.activeTexture(GL13.GL_TEXTURE0);
-                
+    
                 GlStateManager.bindTexture(textureProvider.framebufferTexture);
                 GlStateManager.texParameter(3553, 10241, 9729);
                 GlStateManager.texParameter(3553, 10240, 9729);
                 GlStateManager.texParameter(3553, 10242, 10496);
                 GlStateManager.texParameter(3553, 10243, 10496);
-                
+    
                 ViewAreaRenderer.drawPortalViewTriangle(portal, matrixStack);
-                
+    
                 shaderManager.unloadShader();
-                
+    
                 OFInterface.resetViewport.run();
             }
         );
@@ -327,8 +329,8 @@ public class MyRenderHelper {
                 float[] arr = getMirrorTransformation(mirror.getNormal());
                 Matrix4f matrix = new Matrix4f();
                 ((IEMatrix4f) (Object) matrix).loadFromArray(arr);
-                matrixStack.getLast().getPositionMatrix().multiply(matrix);
-                matrixStack.getLast().getNormalMatrix().mul(new Matrix3f(matrix));
+                matrixStack.getLast().getMatrix().mul(matrix);
+                matrixStack.getLast().getNormal().mul(new Matrix3f(matrix));
                 
                 matrixStack.translate(-relativePos.x, -relativePos.y, -relativePos.z);
             }
@@ -350,4 +352,25 @@ public class MyRenderHelper {
             0, 0, 0, 1
         };
     }
+    
+    public static void earlyUpdateLight() {
+        CGlobal.clientWorldLoader.clientWorldMap.values().forEach(
+            world -> {
+                if (world != Minecraft.getInstance().world) {
+                    int updateNum = world.getChunkProvider().getLightManager().tick(
+                        1000, true, true
+                    );
+                }
+            }
+        );
+    }
+    
+    public static void applyMirrorFaceCulling() {
+        glCullFace(GL_FRONT);
+    }
+    
+    public static void recoverFaceCulling() {
+        glCullFace(GL_BACK);
+    }
+    
 }

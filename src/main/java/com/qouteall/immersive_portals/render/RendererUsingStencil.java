@@ -85,7 +85,7 @@ public class RendererUsingStencil extends PortalRenderer {
         MatrixStack matrixStack
     ) {
         int outerPortalStencilValue = getPortalLayer();
-        
+    
         mc.getProfiler().startSection("render_view_area");
         boolean anySamplePassed = QueryManager.renderAndGetDoesAnySamplePassed(() -> {
             renderPortalViewAreaToStencil(portal, matrixStack);
@@ -95,18 +95,18 @@ public class RendererUsingStencil extends PortalRenderer {
         if (!anySamplePassed) {
             return;
         }
-        
+    
         //PUSH
         portalLayers.push(portal);
         
         int thisPortalStencilValue = outerPortalStencilValue + 1;
-        
+    
         mc.getProfiler().startSection("clear_depth_of_view_area");
         clearDepthOfThePortalViewArea(portal);
         mc.getProfiler().endSection();
-        
+    
         manageCameraAndRenderPortalContent(portal);
-        
+    
         restoreDepthOfPortalViewArea(portal, matrixStack);
         
         clampStencilValue(outerPortalStencilValue);

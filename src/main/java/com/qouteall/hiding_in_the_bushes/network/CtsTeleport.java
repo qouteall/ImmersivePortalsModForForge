@@ -1,7 +1,7 @@
 package com.qouteall.hiding_in_the_bushes.network;
 
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.SGlobal;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.Vec3d;
@@ -41,15 +41,13 @@ public class CtsTeleport {
     }
     
     public void handle(Supplier<NetworkEvent.Context> context) {
-        ModMain.serverTaskList.addTask(() -> {
-            SGlobal.serverTeleportationManager.onPlayerTeleportedInClient(
+        context.get().enqueueWork(() -> {
+            Global.serverTeleportationManager.onPlayerTeleportedInClient(
                 (ServerPlayerEntity) context.get().getSender(),
                 dimensionBefore,
                 posBefore,
                 portalEntityId
             );
-        
-            return true;
         });
         context.get().setPacketHandled(true);
     }

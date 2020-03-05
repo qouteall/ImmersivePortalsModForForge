@@ -7,10 +7,13 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.EquipmentSlotType;
+import net.minecraft.item.Items;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
@@ -26,7 +29,7 @@ public class EndPortalEntity extends Portal {
     }
     
     public static void onEndPortalComplete(ServerWorld world, BlockPattern.PatternHelper pattern) {
-        Portal portal = entityType.create(world);
+        Portal portal = new EndPortalEntity(entityType, world);
         
         Vec3d center = new Vec3d(pattern.getFrontTopLeft()).add(-1.5, 0.5, -1.5);
         portal.setPosition(center.x, center.y, center.z);
@@ -37,6 +40,7 @@ public class EndPortalEntity extends Portal {
     
         portal.axisW = new Vec3d(0, 0, 1);
         portal.axisH = new Vec3d(1, 0, 0);
+    
         portal.width = 3;
         portal.height = 3;
         
@@ -47,7 +51,7 @@ public class EndPortalEntity extends Portal {
     
     @Override
     public void onEntityTeleportedOnServer(Entity entity) {
-        if (entity instanceof LivingEntity) {
+        if (shouldAddSlowFalling(entity)) {
             LivingEntity livingEntity = (LivingEntity) entity;
             livingEntity.addPotionEffect(
                 new EffectInstance(
@@ -59,6 +63,24 @@ public class EndPortalEntity extends Portal {
         }
         if (entity instanceof ServerPlayerEntity) {
             generateObsidianPlatform();
+        }
+    }
+    
+    private boolean shouldAddSlowFalling(Entity entity) {
+        if (entity instanceof LivingEntity) {
+            if (entity instanceof ServerPlayerEntity) {
+                ServerPlayerEntity player = (ServerPlayerEntity) entity;
+                if (player.interactionManager.getGameType() == GameType.CREATIVE) {
+                    return false;
+                }
+                if (player.getItemStackFromSlot(EquipmentSlotType.CHEST).getItem() == Items.ELYTRA) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else {
+            return false;
         }
     }
     

@@ -13,11 +13,20 @@ import net.minecraft.util.ResourceLocation;
 //this is not correlated with optifine shaders
 public class ShaderManager {
     private int idContentShaderProgram = -1;
+    private int idGradientSky = -1;
     
     public ShaderManager() {
+        loadShaders();
+    }
+    
+    public void loadShaders() {
         idContentShaderProgram = compileShaderPrograms(
             "immersive_portals:shaders/content_shader_vs.glsl",
             "immersive_portals:shaders/content_shader_fs.glsl"
+        );
+        idGradientSky = compileShaderPrograms(
+            "immersive_portals:shaders/gradient_sky_vs.glsl",
+            "immersive_portals:shaders/gradient_sky_fs.glsl"
         );
     }
     
@@ -92,7 +101,7 @@ public class ShaderManager {
         GL20.glUniformMatrix4fv(uniProjection, false, Helper.getProjectionMatrix());
         
         GL20.glUniform1i(uniSampler, textureSlot);
-        
+    
         GL20.glUniform1f(uniWidth, Minecraft.getInstance().getMainWindow().getFramebufferWidth());
         GL20.glUniform1f(
             uniHeight,
@@ -102,5 +111,17 @@ public class ShaderManager {
     
     public void unloadShader() {
         GL20.glUseProgram(0);
+    }
+    
+    public void loadGradientSkyShader(float origin) {
+        GL20.glUseProgram(idGradientSky);
+        
+        int uniModelView = GL20.glGetUniformLocation(idGradientSky, "modelView");
+        int uniProjection = GL20.glGetUniformLocation(idGradientSky, "projection");
+        GL20.glUniformMatrix4fv(uniModelView, false, Helper.getModelViewMatrix());
+        GL20.glUniformMatrix4fv(uniProjection, false, Helper.getProjectionMatrix());
+        
+        int uniOrigin = GL20.glGetUniformLocation(idGradientSky, "origin");
+        GL20.glUniform1f(uniOrigin, origin);
     }
 }

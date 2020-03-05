@@ -3,20 +3,20 @@ package com.qouteall.immersive_portals.alternate_dimension;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.biome.provider.BiomeProvider;
 import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.gen.*;
+import net.minecraft.world.gen.EndChunkGenerator;
+import net.minecraft.world.gen.EndGenerationSettings;
 
 public class VoidChunkGenerator extends EndChunkGenerator {
-    
     public VoidChunkGenerator(
-        IWorld p_i48956_1_,
-        BiomeProvider p_i48956_2_,
-        EndGenerationSettings p_i48956_3_
+        IWorld iWorld,
+        BiomeProvider biomeSource,
+        EndGenerationSettings floatingIslandsChunkGeneratorConfig
     ) {
-        super(p_i48956_1_, p_i48956_2_, p_i48956_3_);
+        super(iWorld, biomeSource, floatingIslandsChunkGeneratorConfig);
     }
     
     @Override
-    public void makeBase(IWorld p_222537_1_, IChunk p_222537_2_) {
+    public void makeBase(IWorld world, IChunk chunk) {
         //nothing
     }
 }

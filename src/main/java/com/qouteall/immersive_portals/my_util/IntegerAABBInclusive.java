@@ -12,8 +12,6 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-//import com.sun.istack.internal.Nullable;
-
 public class IntegerAABBInclusive {
     
     public final BlockPos l;
@@ -61,8 +59,8 @@ public class IntegerAABBInclusive {
         
         return expandOrShrink(
             Helper.scale(
-                Direction.getFacingFromAxisDirection(
-                    axis, Direction.AxisDirection.POSITIVE
+                Direction.getFacingFromAxis(
+                    Direction.AxisDirection.POSITIVE, axis
                 ).getDirectionVec(),
                 n
             )
@@ -98,7 +96,7 @@ public class IntegerAABBInclusive {
     
     //it will get only one mutable block pos object
     //don't store its reference. store its copy
-    public Stream<BlockPos> streamOfMutable() {
+    public Stream<BlockPos> fastStream() {
         return BlockPos.getAllInBox(l, h);
     }
     
@@ -205,21 +203,9 @@ public class IntegerAABBInclusive {
     public Stream<BlockPos> forSixSurfaces(
         Function<Stream<IntegerAABBInclusive>, Stream<IntegerAABBInclusive>> mapper
     ) {
-        IntegerAABBInclusive[] array = getSurfaceBoxes();
-    
-        Stream<IntegerAABBInclusive> surfaceBoxes = mapper.apply(
-            Arrays.stream(array).filter(IntegerAABBInclusive::isSorted)
-        );
-    
-        return surfaceBoxes.flatMap(
-            IntegerAABBInclusive::stream
-        );
-    }
-    
-    private IntegerAABBInclusive[] getSurfaceBoxes() {
         assert isSorted();
-        
-        return new IntegerAABBInclusive[]{
+    
+        IntegerAABBInclusive[] array = {
             getSurfaceLayer(Direction.DOWN),
             getSurfaceLayer(Direction.NORTH).getAdjusted(
                 0, 1, 0,
@@ -242,19 +228,11 @@ public class IntegerAABBInclusive {
                 -1, 0, -1
             )
         };
-    }
     
-    public Stream<BlockPos> forSixSurfacesMutable(
-        Function<Stream<IntegerAABBInclusive>, Stream<IntegerAABBInclusive>> mapper
-    ) {
-        IntegerAABBInclusive[] array = getSurfaceBoxes();
-        
-        Stream<IntegerAABBInclusive> surfaceBoxes = mapper.apply(
+        return mapper.apply(
             Arrays.stream(array).filter(IntegerAABBInclusive::isSorted)
-        );
-        
-        return surfaceBoxes.flatMap(
-            IntegerAABBInclusive::streamOfMutable
+        ).flatMap(
+            IntegerAABBInclusive::stream
         );
     }
     

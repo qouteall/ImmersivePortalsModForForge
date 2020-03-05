@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public class MixinClientPlayerEntity {
     //use portal culled collision box
     @Redirect(
-        method = "func_205027_h",
+        method = "Lnet/minecraft/client/entity/player/ClientPlayerEntity;shouldBlockPushPlayer(Lnet/minecraft/util/math/BlockPos;)Z",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/entity/player/ClientPlayerEntity;getBoundingBox()Lnet/minecraft/util/math/AxisAlignedBB;"

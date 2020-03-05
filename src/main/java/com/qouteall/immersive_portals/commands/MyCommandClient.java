@@ -6,25 +6,27 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
-import com.qouteall.immersive_portals.ducks.*;
+import com.qouteall.immersive_portals.ducks.IEEntity;
+import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
+import com.qouteall.immersive_portals.far_scenery.FSRenderingContext;
+import com.qouteall.immersive_portals.far_scenery.FarSceneryRenderer;
 import com.qouteall.immersive_portals.optifine_compatibility.UniformReport;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.render.DimensionRenderHelper;
 import com.qouteall.immersive_portals.render.MyBuiltChunkStorage;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.SectionPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -36,6 +38,8 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.lang.ref.Reference;
+import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -153,14 +157,14 @@ public class MyCommandClient {
         builder = builder.then(Commands
             .literal("multithreaded_chunk_loading_enable")
             .executes(context -> {
-                SGlobal.isChunkLoadingMultiThreaded = true;
+                Global.isChunkLoadingMultiThreaded = true;
                 return 0;
             })
         );
         builder = builder.then(Commands
             .literal("multithreaded_chunk_loading_disable")
             .executes(context -> {
-                SGlobal.isChunkLoadingMultiThreaded = false;
+                Global.isChunkLoadingMultiThreaded = false;
                 return 0;
             })
         );
@@ -198,7 +202,8 @@ public class MyCommandClient {
                 ServerPlayerEntity player = context.getSource().asPlayer();
                 List<Entity> entities = player.world.getEntitiesWithinAABB(
                     Entity.class,
-                    new AxisAlignedBB(player.getPosition()).grow(32)
+                    new AxisAlignedBB(player.getPosition()).grow(32),
+                    e -> true
                 );
                 McHelper.serverLog(player, entities.toString());
                 return 0;
@@ -220,11 +225,8 @@ public class MyCommandClient {
             .literal("get_player_colliding_portal_client")
             .executes(context -> {
                 Portal collidingPortal =
-                    (Portal) ((IEEntity) Minecraft.getInstance().player).getCollidingPortal();
-                McHelper.serverLog(
-                    context.getSource().asPlayer(),
-                    collidingPortal != null ? collidingPortal.toString() : "null"
-                );
+                    ((IEEntity) Minecraft.getInstance().player).getCollidingPortal();
+                McHelper.serverLog(context.getSource().asPlayer(), collidingPortal.toString());
                 return 0;
             })
         );
@@ -245,48 +247,48 @@ public class MyCommandClient {
             })
         );
         builder = builder.then(Commands
-            .literal("new_nether_portal_enable")
+            .literal("vanilla_chunk_culling_enable")
             .executes(context -> {
-                SGlobal.doUseNewNetherPortal = true;
+                Minecraft.getInstance().renderChunksMany = true;
                 return 0;
             })
         );
         builder = builder.then(Commands
-            .literal("new_nether_portal_disable")
+            .literal("vanilla_chunk_culling_disable")
             .executes(context -> {
-                SGlobal.doUseNewNetherPortal = false;
+                Minecraft.getInstance().renderChunksMany = false;
                 return 0;
             })
         );
         builder = builder.then(Commands
             .literal("render_mode_normal")
             .executes(context -> {
-                CGlobal.renderMode = CGlobal.RenderMode.normal;
+                Global.renderMode = Global.RenderMode.normal;
                 return 0;
             })
         );
         builder = builder.then(Commands
             .literal("render_mode_compatibility")
             .executes(context -> {
-                CGlobal.renderMode = CGlobal.RenderMode.compatibility;
+                Global.renderMode = Global.RenderMode.compatibility;
                 return 0;
             })
         );
         builder = builder.then(Commands
             .literal("render_mode_debug")
             .executes(context -> {
-                CGlobal.renderMode = CGlobal.RenderMode.debug;
+                Global.renderMode = Global.RenderMode.debug;
                 return 0;
             })
         );
         builder = builder.then(Commands
             .literal("render_mode_none")
             .executes(context -> {
-                CGlobal.renderMode = CGlobal.RenderMode.none;
+                Global.renderMode = Global.RenderMode.none;
                 return 0;
             })
         );
-        builder = builder.then(Commands
+        builder.then(Commands
             .literal("report_chunk_loaders")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
@@ -297,6 +299,19 @@ public class MyCommandClient {
                         player, loader.toString()
                     )
                 );
+                return 0;
+            })
+        );
+        builder.then(Commands
+            .literal("check_light")
+            .executes(context -> {
+                Minecraft mc = Minecraft.getInstance();
+                mc.execute(() -> {
+                    mc.world.getChunkProvider().getLightManager().updateSectionStatus(
+                        SectionPos.from(mc.player.getPosition()),
+                        false
+                    );
+                });
                 return 0;
             })
         );
@@ -328,25 +343,58 @@ public class MyCommandClient {
                 return 0;
             })
         );
-    
         registerSwitchCommand(
-            builder, "always_update_display_list",
-            k -> CGlobal.alwaysUpdateDisplayList = k
+            builder,
+            "render_fewer_on_fast_graphic",
+            cond -> CGlobal.renderFewerInFastGraphic = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "gl_check_error",
+            cond -> Global.doCheckGlError = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "far_scenery",
+            cond -> FSRenderingContext.isFarSceneryEnabled = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "smooth_chunk_unload",
+            cond -> CGlobal.smoothChunkUnload = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "update_far_scenery",
+            cond -> FarSceneryRenderer.shouldUpdateFarScenery = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "early_light_update",
+            cond -> CGlobal.earlyClientLightUpdate = cond
         );
     
-        registerSwitchCommand(
-            builder, "gl_check_error",
-            k -> CGlobal.doCheckGlError = k
-        );
-    
-        registerSwitchCommand(
-            builder, "smooth_unload",
-            k -> CGlobal.smoothUnload = k
+        builder.then(Commands
+            .literal("print_class_path")
+            .executes(context -> {
+                printClassPath();
+                return 0;
+            })
         );
     
         dispatcher.register(builder);
     
         Helper.log("Successfully initialized command /immersive_portals_debug");
+    }
+    
+    private static void printClassPath() {
+        System.out.println(
+            Arrays.stream(
+                ((URLClassLoader) ClassLoader.getSystemClassLoader()).getURLs()
+            ).map(
+                url -> "\"" + url.getFile().substring(1).replace("%20", " ") + "\""
+            ).collect(Collectors.joining(",\n"))
+        );
     }
     
     private static void registerSwitchCommand(
@@ -400,11 +448,9 @@ public class MyCommandClient {
         McHelper.getServer().getWorlds().forEach(
             world -> {
                 str.append(String.format(
-                    "%s %s %s\n",
+                    "%s %s\n",
                     world.dimension.getType(),
-                    world.getForcedChunks().size(),
-                    ((IEThreadedAnvilChunkStorage) world.getChunkProvider().chunkManager)
-                        .getChunkHolderNum()
+                    world.getForcedChunks().size()
                 ));
             }
         );
@@ -432,7 +478,7 @@ public class MyCommandClient {
     }
     
     private static int setMaxPortalLayer(int m) {
-        CGlobal.maxPortalLayer = m;
+        Global.maxPortalLayer = m;
         return 0;
     }
     
@@ -475,20 +521,23 @@ public class MyCommandClient {
             addPortalFunctionality = (playerEntity) -> {
                 Vec3d toPos = playerEntity.getPositionVec();
                 DimensionType toDimension = player.dimension;
-                
-                Portal portal = Portal.entityType.create(fromWorld);
-                portal.setPosition(fromPos.x, fromPos.y, fromPos.z);
-                
-                portal.axisH = new Vec3d(0, 4, 0);
-                portal.axisW = portal.axisH.crossProduct(fromNormal).normalize().scale(4);
-                
+    
+                Portal portal = new Portal(Portal.entityType, fromWorld);
+                portal.setRawPosition(fromPos.x, fromPos.y, fromPos.z);
+    
+                portal.axisH = new Vec3d(0, 1, 0);
+                portal.axisW = portal.axisH.crossProduct(fromNormal).normalize();
+    
                 portal.dimensionTo = toDimension;
                 portal.destination = toPos;
-                
+    
+                portal.width = 4;
+                portal.height = 4;
+    
                 assert portal.isPortalValid();
-                
+    
                 fromWorld.addEntity(portal);
-                
+    
                 addPortalFunctionality = originalAddPortalFunctionality;
             };
         };
@@ -522,4 +571,5 @@ public class MyCommandClient {
         );
         return 0;
     }
+    
 }

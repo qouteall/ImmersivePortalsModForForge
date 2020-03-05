@@ -2,9 +2,8 @@ package com.qouteall.immersive_portals.ducks;
 
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.renderer.ViewFrustum;
+import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
-
-import java.util.List;
 
 public interface IEWorldRenderer {
     EntityRendererManager getEntityRenderDispatcher();
@@ -15,4 +14,5 @@ public interface IEWorldRenderer {
     
     void setVisibleChunks(ObjectList l);
     
+    ChunkRenderDispatcher getChunkBuilder();
 }

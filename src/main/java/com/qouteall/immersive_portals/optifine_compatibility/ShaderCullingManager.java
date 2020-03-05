@@ -1,18 +1,11 @@
 package com.qouteall.immersive_portals.optifine_compatibility;
 
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.Helper;
-import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import net.optifine.shaders.Program;
 import net.optifine.shaders.uniform.ShaderUniform1f;
 import net.optifine.shaders.uniform.ShaderUniform3f;
-import net.optifine.shaders.uniform.ShaderUniforms;
-import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,23 +28,21 @@ public class ShaderCullingManager {
     public static boolean cullingEnabled = true;
     
     public static void init() {
-        try {
-            InputStream inputStream =
-                Minecraft.getInstance().getResourceManager().getResource(
-                    transformation
-                ).getInputStream();
-            
-            toReplace = IOUtils.toString(inputStream, Charset.defaultCharset());
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-        
-        Helper.log("loaded shader code replacement\n" + toReplace);
-        
-        ShaderUniforms shaderUniforms = OFGlobal.getShaderUniforms.get();
-        uniform_equationXYZ = shaderUniforms.make3f("cullingEquationXYZ");
-        uniform_equationW = shaderUniforms.make1f("cullingEquationW");
+//        try {
+//            InputStream inputStream =
+//                MinecraftClient.getInstance().getResourceManager().getResource(
+//                    transformation
+//                ).getInputStream();
+//
+//            toReplace = IOUtils.toString(inputStream, Charset.defaultCharset());
+//        }
+//        catch (IOException e) {
+//            throw new IllegalArgumentException(e);
+//        }
+//
+//        ShaderUniforms shaderUniforms = OFGlobal.getShaderUniforms.get();
+//        uniform_equationXYZ = shaderUniforms.make3f("cullingEquationXYZ");
+//        uniform_equationW = shaderUniforms.make1f("cullingEquationW");
     }
     
     public static StringBuilder modifyFragShaderCode(StringBuilder rawCode) {

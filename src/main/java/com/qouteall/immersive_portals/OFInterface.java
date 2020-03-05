@@ -33,11 +33,9 @@ public class OFInterface {
     
     public static BooleanSupplier shouldDisableFog = returnFalse;
     
-    
     public static Consumer<Object> createNewRenderInfosNormal = (a) -> {
     };
     
     public static Runnable initShaderCullingManager = invokeNothing;
     
-    public static BooleanSupplier isRenderRegions = returnFalse;
 }

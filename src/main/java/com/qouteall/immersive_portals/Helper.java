@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals;
 
 import com.google.common.collect.Streams;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.server.MinecraftServer;
@@ -11,8 +12,6 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.server.ServerWorld;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.BufferUtils;
@@ -31,9 +30,7 @@ import java.util.stream.Stream;
 
 public class Helper {
     
-    private static final Logger LOGGER = LogManager.getContext(
-        Helper.class.getClassLoader(), false
-    ).getLogger("Portal");
+    private static final Logger LOGGER = LogManager.getLogger();
     
     public static void assertWithSideEffects(boolean cond) {
         //assert cond;
@@ -128,9 +125,9 @@ public class Helper {
     }
     
     public static Vec3i getUnitFromAxis(Direction.Axis axis) {
-        return Direction.getFacingFromAxisDirection(
-            axis,
-            Direction.AxisDirection.POSITIVE
+        return Direction.getFacingFromAxis(
+            Direction.AxisDirection.POSITIVE,
+            axis
         ).getDirectionVec();
     }
     
@@ -140,6 +137,11 @@ public class Helper {
     
     public static double getCoordinate(Vec3d v, Direction.Axis axis) {
         return axis.getCoordinate(v.x, v.y, v.z);
+    }
+    
+    public static int getCoordinate(Vec3i v, Direction direction) {
+        return getCoordinate(v, direction.getAxis()) *
+            (direction.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1 : -1);
     }
     
     public static <A, B> Tuple<B, A> swaped(Tuple<A, B> p) {
@@ -200,17 +202,17 @@ public class Helper {
             axisOfNormal
         );
         return new Direction[]{
-            Direction.getFacingFromAxisDirection(
-                anotherTwoAxis.getA(), Direction.AxisDirection.POSITIVE
+            Direction.getFacingFromAxis(
+                Direction.AxisDirection.POSITIVE, anotherTwoAxis.getA()
             ),
-            Direction.getFacingFromAxisDirection(
-                anotherTwoAxis.getB(), Direction.AxisDirection.POSITIVE
+            Direction.getFacingFromAxis(
+                Direction.AxisDirection.POSITIVE, anotherTwoAxis.getB()
             ),
-            Direction.getFacingFromAxisDirection(
-                anotherTwoAxis.getA(), Direction.AxisDirection.NEGATIVE
+            Direction.getFacingFromAxis(
+                Direction.AxisDirection.NEGATIVE, anotherTwoAxis.getA()
             ),
-            Direction.getFacingFromAxisDirection(
-                anotherTwoAxis.getB(), Direction.AxisDirection.NEGATIVE
+            Direction.getFacingFromAxis(
+                Direction.AxisDirection.NEGATIVE, anotherTwoAxis.getB()
             )
         };
     }
@@ -228,6 +230,36 @@ public class Helper {
             }
         }
         return firstResult ? BatchTestResult.all_true : BatchTestResult.all_false;
+    }
+    
+    @Deprecated
+    public static Tuple<Direction.Axis, Direction.Axis> getPerpendicularAxis(Direction facing) {
+        Tuple<Direction.Axis, Direction.Axis> axises = getAnotherTwoAxis(facing.getAxis());
+        if (facing.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
+            axises = new Tuple<>(axises.getB(), axises.getA());
+        }
+        return axises;
+    }
+    
+    public static Tuple<Direction, Direction> getPerpendicularDirections(Direction facing) {
+        Tuple<Direction.Axis, Direction.Axis> axises = getAnotherTwoAxis(facing.getAxis());
+        if (facing.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
+            axises = new Tuple<>(axises.getB(), axises.getA());
+        }
+        return new Tuple<>(
+            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axises.getA()),
+            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axises.getB())
+        );
+    }
+    
+    public static Vec3d getBoxSize(AxisAlignedBB box) {
+        return new Vec3d(box.getXSize(), box.getYSize(), box.getZSize());
+    }
+    
+    public static AxisAlignedBB getBoxSurface(AxisAlignedBB box, Direction direction) {
+        double size = getCoordinate(getBoxSize(box), direction.getAxis());
+        Vec3d shrinkVec = new Vec3d(direction.getDirectionVec()).scale(size);
+        return box.contract(shrinkVec.x, shrinkVec.y, shrinkVec.z);
     }
     
     public static class SimpleBox<T> {
@@ -274,10 +306,6 @@ public class Helper {
                 e.printStackTrace();
             }
         };
-    }
-    
-    public static ServerWorld getOverWorldOnServer() {
-        return McHelper.getServer().getWorld(DimensionType.OVERWORLD);
     }
     
     public static void doNotEatExceptionMessage(
@@ -338,18 +366,20 @@ public class Helper {
                 return new Tuple<>(aIterator.next(), bIterator.next());
             }
         };
-        
+    
         return Streams.stream(iterator);
     }
     
     public static void log(Object str) {
-        LOGGER.info(str);
-        //System.out.println(str);
+        LOGGER.info("[Portal] " + str);
     }
     
     public static void err(Object str) {
-        LOGGER.error(str);
-        //System.err.println(str);
+        LOGGER.error("[Portal] " + str);
+    }
+    
+    public static void dbg(Object str) {
+        LOGGER.debug("[Portal] " + str);
     }
     
     public static Vec3d[] eightVerticesOf(AxisAlignedBB box) {
@@ -415,6 +445,10 @@ public class Helper {
         return (long) (second * 1000000000L);
     }
     
+    public static double nanoToSecond(long nano) {
+        return nano / 1000000000.0;
+    }
+    
     public enum BatchTestResult {
         all_true,
         all_false,
@@ -439,51 +473,136 @@ public class Helper {
         return currentBox;
     }
     
-    
-    public static Vec3d getBoxSize(AxisAlignedBB box) {
-        return new Vec3d(box.getXSize(), box.getYSize(), box.getZSize());
-    }
-    
-    public static AxisAlignedBB getBoxSurface(AxisAlignedBB box, Direction direction) {
-        double size = getCoordinate(getBoxSize(box), direction.getAxis());
-        Vec3d shrinkVec = new Vec3d(direction.getDirectionVec()).scale(size);
-        return box.contract(shrinkVec.x, shrinkVec.y, shrinkVec.z);
-    }
-    
-    public static Tuple<Direction, Direction> getPerpendicularDirections(Direction facing) {
-        Tuple<Direction.Axis, Direction.Axis> axises = getAnotherTwoAxis(facing.getAxis());
-        if (facing.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
-            axises = new Tuple<>(axises.getB(), axises.getA());
-        }
-        return new Tuple<>(
-            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axises.getA()),
-            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axises.getB())
-        );
-    }
-    
     public static <A, B> B reduceWithDifferentType(
         B start,
         Stream<A> stream,
         BiFunction<B, A, B> func
     ) {
-        SimpleBox<B> bBox = new SimpleBox<>(start);
-        stream.forEach(a -> {
-            bBox.obj = func.apply(bBox.obj, a);
-        });
-        return bBox.obj;
+        return stream.reduce(
+            start,
+            func,
+            (a, b) -> {
+                throw new IllegalStateException("combiner should only be used in parallel");
+            }
+        );
+//        SimpleBox<B> bBox = new SimpleBox<>(start);
+//        stream.forEach(a -> {
+//            bBox.obj = func.apply(bBox.obj, a);
+//        });
+//        return bBox.obj;
     }
     
-    public static interface ExceptionalSupplier<T> {
-        T supply() throws Exception;
-    }
-    
-    public static <T> T noError(ExceptionalSupplier<T> func) {
+    public static <T> T noError(Callable<T> func) {
         try {
-            return func.supply();
+            return func.call();
         }
         catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }
     
+    public static interface ExceptionalRunnable {
+        void run() throws Throwable;
+    }
+    
+    public static void noError(ExceptionalRunnable runnable) {
+        try {
+            runnable.run();
+        }
+        catch (Throwable e) {
+            throw new IllegalStateException(e);
+        }
+    }
+    
+    //ObjectList does not override removeIf() so its complexity is O(n^2)
+    //this is O(n)
+    public static <T> void removeIf(ObjectList<T> list, Predicate<T> predicate) {
+        int placingIndex = 0;
+        for (int i = 0; i < list.size(); i++) {
+            T curr = list.get(i);
+            if (!predicate.test(curr)) {
+                list.set(placingIndex, curr);
+                placingIndex += 1;
+            }
+        }
+        list.removeElements(placingIndex, list.size());
+    }
+    
+    public static <T, S> Stream<S> wrapAdjacentAndMap(
+        Stream<T> stream,
+        BiFunction<T, T, S> function
+    ) {
+        Iterator<T> iterator = stream.iterator();
+        return Streams.stream(new Iterator<S>() {
+            private boolean isBuffered = false;
+            private T buffer;
+            
+            private void fillBuffer() {
+                if (!isBuffered) {
+                    assert iterator.hasNext();
+                    isBuffered = true;
+                    buffer = iterator.next();
+                }
+            }
+            
+            private T takeBuffer() {
+                assert isBuffered;
+                isBuffered = false;
+                return buffer;
+            }
+            
+            @Override
+            public boolean hasNext() {
+                if (!iterator.hasNext()) {
+                    return false;
+                }
+                fillBuffer();
+                return iterator.hasNext();
+            }
+            
+            @Override
+            public S next() {
+                fillBuffer();
+                T a = takeBuffer();
+                fillBuffer();
+                return function.apply(a, buffer);
+            }
+        });
+    }
+    
+    //map and reduce at the same time
+    public static <A, B> Stream<B> mapReduce(
+        Stream<A> stream,
+        BiFunction<B, A, B> func,
+        SimpleBox<B> startValue
+    ) {
+        return stream.map(a -> {
+            startValue.obj = func.apply(startValue.obj, a);
+            return startValue.obj;
+        });
+    }
+    
+    //another implementation using mapReduce but creates more garbage objects
+    public static <T, S> Stream<S> wrapAdjacentAndMap1(
+        Stream<T> stream,
+        BiFunction<T, T, S> function
+    ) {
+        Iterator<T> iterator = stream.iterator();
+        if (!iterator.hasNext()) {
+            return Stream.empty();
+        }
+        T firstValue = iterator.next();
+        Stream<T> newStream = Streams.stream(iterator);
+        return mapReduce(
+            newStream,
+            (Tuple<T, S> lastPair, T curr) ->
+                new Tuple<T, S>(curr, function.apply(lastPair.getA(), curr)),
+            new SimpleBox<>(new Tuple<T, S>(firstValue, null))
+        ).map(pair -> pair.getB());
+    }
+    
+    public static <T> T makeIntoExpression(T t, Consumer<T> func) {
+        func.accept(t);
+        return t;
+    }
 }

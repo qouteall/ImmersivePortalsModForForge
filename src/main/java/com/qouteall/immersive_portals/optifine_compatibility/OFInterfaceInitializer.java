@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.optifine_compatibility;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.OFInterface;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.WorldRenderer;
@@ -16,10 +17,10 @@ import java.lang.reflect.Field;
 public class OFInterfaceInitializer {
     private static Field gameRenderer_fogStandard;
     
+    private static Field worldRenderer_renderInfosNormal;
+    
     public static void init() {
         Validate.isTrue(OFInterface.isOptifinePresent);
-        
-        OFWorldRendererFix.init();
         
         OFInterface.isShaders = Config::isShaders;
         OFInterface.isShadowPass = () -> Config.isShaders() && Shaders.isShadowPass;
@@ -79,10 +80,19 @@ public class OFInterfaceInitializer {
             //but with optifine it will always use one object
             //we need to switch chunkInfos correctly
             //if we do not put it a new object, it will clear the original chunkInfos
-            OFWorldRendererFix.createNewRenderInfosNormal((WorldRenderer) newWorldRenderer1);
+    
+            if (worldRenderer_renderInfosNormal == null) {
+                worldRenderer_renderInfosNormal = Helper.noError(() ->
+                    WorldRenderer.class.getDeclaredField("renderInfosNormal")
+                );
+                worldRenderer_renderInfosNormal.setAccessible(true);
+            }
+    
+            Helper.noError(() -> {
+                worldRenderer_renderInfosNormal.set(newWorldRenderer1, new ObjectArrayList<>(512));
+                return null;
+            });
         };
         OFInterface.initShaderCullingManager = ShaderCullingManager::init;
-        
-        Helper.log("OF Interface Initialized");
     }
 }

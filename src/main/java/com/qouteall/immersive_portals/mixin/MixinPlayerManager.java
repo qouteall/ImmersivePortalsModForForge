@@ -1,101 +1,51 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.qouteall.hiding_in_the_bushes.DimensionSyncManager;
-import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
-import net.minecraft.network.NetworkManager;
 import net.minecraft.server.management.PlayerList;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-@Mixin(value = PlayerList.class)
+@Mixin(PlayerList.class)
 public class MixinPlayerManager {
     @Shadow
     @Final
     private List<ServerPlayerEntity> players;
     
-    @Inject(
-        method = "Lnet/minecraft/server/management/PlayerList;recreatePlayerEntity(Lnet/minecraft/entity/player/ServerPlayerEntity;Lnet/minecraft/world/dimension/DimensionType;Z)Lnet/minecraft/entity/player/ServerPlayerEntity;",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/server/management/PlayerList;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;)Z",
-            remap = false
-        )
-    )
-    private void onPlayerRespawn(
-        ServerPlayerEntity oldPlayer,
-        DimensionType dimensionType_1,
-        boolean boolean_1,
-        CallbackInfoReturnable<ServerPlayerEntity> cir
-    ) {
-        if (oldPlayer.dimension == dimensionType_1) {
-            Helper.log("Avoided refreshing chunk visibility for player");
-            return;
+    @Inject(method = "Lnet/minecraft/server/management/PlayerList;sendWorldInfo(Lnet/minecraft/entity/player/ServerPlayerEntity;Lnet/minecraft/world/server/ServerWorld;)V", at = @At("RETURN"))
+    private void onSendWorldInfo(ServerPlayerEntity player, ServerWorld world, CallbackInfo ci) {
+        if (!Global.serverTeleportationManager.isFiringMyChangeDimensionEvent) {
+            GlobalPortalStorage.onPlayerLoggedIn(player);
         }
-        SGlobal.chunkDataSyncManager.onPlayerRespawn(oldPlayer);
     }
     
+    //sometimes the server side player dimension is not same as client
+    //so redirect it
     @Inject(
-        method = "recreatePlayerEntity",
-        at = @At("RETURN"),
+        method = "Lnet/minecraft/server/management/PlayerList;sendPacketToAllPlayersInDimension(Lnet/minecraft/network/IPacket;Lnet/minecraft/world/dimension/DimensionType;)V",
+        at = @At("HEAD"),
         cancellable = true
     )
-    private void onPlayerReapawnFinished(
-        ServerPlayerEntity serverPlayerEntity_1,
-        DimensionType dimensionType_1,
-        boolean boolean_1,
-        CallbackInfoReturnable<ServerPlayerEntity> cir
-    ) {
-        GlobalPortalStorage.onPlayerLoggedIn(cir.getReturnValue());
+    public void sendToDimension(IPacket<?> packet, DimensionType dimension, CallbackInfo ci) {
+        players.stream()
+            .filter(player -> player.dimension == dimension)
+            .forEach(player -> player.connection.sendPacket(
+                MyNetwork.createRedirectedMessage(
+                    dimension,
+                    packet
+                )
+            ));
+        ci.cancel();
     }
-    
-    @Inject(
-        method = "Lnet/minecraft/server/management/PlayerList;initializeConnectionToPlayer(Lnet/minecraft/network/NetworkManager;Lnet/minecraft/entity/player/ServerPlayerEntity;)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraftforge/fml/network/NetworkHooks;sendDimensionDataPacket(Lnet/minecraft/network/NetworkManager;Lnet/minecraft/entity/player/ServerPlayerEntity;)V",
-            remap = false
-        )
-    )
-    private void onJustBeforeInitializingConnection(
-        NetworkManager netManager,
-        ServerPlayerEntity playerIn,
-        CallbackInfo ci
-    ) {
-        DimensionSyncManager.sendDimensionInfo(playerIn);
-    }
-    
-    @Inject(method = "initializeConnectionToPlayer", at = @At("TAIL"))
-    private void onOnPlayerConnect(
-        NetworkManager netManager,
-        ServerPlayerEntity playerIn,
-        CallbackInfo ci
-    ) {
-        GlobalPortalStorage.onPlayerLoggedIn(playerIn);
-    }
-    
-    /**
-     * @author qouteall
-     * @reason send packet even when player is not in that dimension
-     */
-    @Overwrite
-    public void sendPacketToAllPlayersInDimension(IPacket<?> packetIn, DimensionType dimension) {
-        players.forEach(player ->
-            NetworkMain.sendRedirected(player, dimension, packetIn)
-        );
-    }
-    
 }

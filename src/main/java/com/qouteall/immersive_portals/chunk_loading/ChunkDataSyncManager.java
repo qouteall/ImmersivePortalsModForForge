@@ -1,14 +1,15 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
-import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.server.SChunkDataPacket;
 import net.minecraft.network.play.server.SUnloadChunkPacket;
 import net.minecraft.network.play.server.SUpdateLightPacket;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.EmptyChunk;
+import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ChunkManager;
@@ -31,13 +32,16 @@ public class ChunkDataSyncManager {
         );
     }
     
+    /**
+     * {@link ThreadedAnvilChunkStorage#sendChunkDataPackets(ServerPlayerEntity, Packet[], WorldChunk)}
+     */
     private void onBeginWatch(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
         McHelper.getServer().getProfiler().startSection("begin_watch");
-    
+        
         IEThreadedAnvilChunkStorage ieStorage = McHelper.getIEStorage(chunkPos.dimension);
-    
+        
         sendChunkDataPacketNow(player, chunkPos, ieStorage);
-    
+        
         McHelper.getServer().getProfiler().endSection();
     }
     
@@ -86,71 +90,56 @@ public class ChunkDataSyncManager {
         ServerPlayerEntity player,
         DimensionalChunkPos chunkPos,
         IEThreadedAnvilChunkStorage ieStorage,
-        Chunk chunk
+        IChunk chunk
     ) {
         Validate.notNull(chunk);
-        
+    
         McHelper.getServer().getProfiler().startSection("send_chunk_data");
-        
-        //debug
-        //Helper.log("Send " + chunkPos);
-        
+    
         assert chunk != null;
         assert !(chunk instanceof EmptyChunk);
-        NetworkMain.sendRedirected(
-            player,
-            chunkPos.dimension,
-            new SChunkDataPacket(
-                ((Chunk) chunk),
-                65535
+        player.connection.sendPacket(
+            MyNetwork.createRedirectedMessage(
+                chunkPos.dimension,
+                new SChunkDataPacket(
+                    ((Chunk) chunk),
+                    65535
+                )
             )
         );
-        
-        NetworkMain.sendRedirected(
-            player,
-            chunkPos.dimension,
-            new SUpdateLightPacket(
-                chunkPos.getChunkPos(),
-                ieStorage.getLightingProvider()
+    
+        player.connection.sendPacket(
+            MyNetwork.createRedirectedMessage(
+                chunkPos.dimension,
+                new SUpdateLightPacket(
+                    chunkPos.getChunkPos(),
+                    ieStorage.getLightingProvider()
+                )
             )
         );
-        
+    
         //update the entity trackers
         ((ChunkManager) ieStorage).updatePlayerPosition(player);
-        
+    
         McHelper.getServer().getProfiler().endSection();
     }
     
     private void onEndWatch(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
     
+        //do not send unload packet instantly
+        //watch for a period of time.
+        //if player still needs the chunk, stop unloading.
+    
         sendUnloadPacket(player, chunkPos);
-
-//        ModMain.serverTaskList.addTask(()->{
-//            if (NewChunkTrackingGraph.isPlayerWatchingChunk(
-//                player,
-//                chunkPos.dimension,
-//                chunkPos.x,
-//                chunkPos.z
-//            )) {
-//                return true;
-//            }
-//
-//            sendUnloadPacket(player, chunkPos);
-//            return true;
-//        });
-    
-    
     }
     
     public void sendUnloadPacket(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
-        //debug
-        //Helper.log("Unload " + chunkPos);
-    
-        NetworkMain.sendRedirected(
-            player,
-            chunkPos.dimension,
-            new SUnloadChunkPacket(
-                chunkPos.x, chunkPos.z
+        player.connection.sendPacket(
+            MyNetwork.createRedirectedMessage(
+                chunkPos.dimension,
+                new SUnloadChunkPacket(
+                    chunkPos.x, chunkPos.z
+                )
             )
         );
     }

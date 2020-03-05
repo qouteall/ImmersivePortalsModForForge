@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.mixin.position_sync;
 
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.SGlobal;
 import com.qouteall.immersive_portals.ducks.IEPlayerMoveC2SPacket;
 import com.qouteall.immersive_portals.ducks.IEPlayerPositionLookS2CPacket;
 import com.qouteall.immersive_portals.ducks.IEServerPlayNetworkHandler;
@@ -26,7 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Set;
 
-@Mixin(value = ServerPlayNetHandler.class)
+@Mixin(ServerPlayNetHandler.class)
 public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetworkHandler {
     @Shadow
     public ServerPlayerEntity player;
@@ -40,7 +40,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     private int networkTickCount;
     
     @Shadow
-    protected abstract boolean func_223133_a(IWorldReader viewableWorld_1);
+    protected abstract boolean func_223133_a(IWorldReader worldView_1);
     
     @Shadow
     private boolean vehicleFloating;
@@ -56,7 +56,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     
     //do not process move packet when client dimension and server dimension are not synced
     @Inject(
-        method = "processPlayer",
+        method = "Lnet/minecraft/network/play/ServerPlayNetHandler;processPlayer(Lnet/minecraft/network/play/client/CPlayerPacket;)V",
         at = @At(
             value = "INVOKE",
             shift = At.Shift.AFTER,
@@ -66,10 +66,17 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     )
     private void onProcessMovePacket(CPlayerPacket packet, CallbackInfo ci) {
         DimensionType packetDimension = ((IEPlayerMoveC2SPacket) packet).getPlayerDimension();
-        
+    
         assert packetDimension != null;
-        
+    
+        if (Global.serverTeleportationManager.isJustTeleported(player, 100)) {
+            cancelTeleportRequest();
+        }
+    
         if (player.dimension != packetDimension) {
+            Global.serverTeleportationManager.acceptDubiousMovePacket(
+                player, packet, packetDimension
+            );
             ci.cancel();
         }
     }
@@ -78,7 +85,6 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
      * make PlayerPositionLookS2CPacket contain dimension data
      *
      * @author qouteall
-     * @reason
      */
     @Overwrite
     public void setPlayerLocation(
@@ -89,10 +95,11 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         float float_2,
         Set<SPlayerPositionLookPacket.Flags> set_1
     ) {
-        Helper.log(String.format("request teleport %s in %s to %s %s %s",
-            player.getName().getString(),
+        Helper.log(String.format("request teleport %s %s (%d %d %d)->(%d %d %d)",
+            player.getName().getUnformattedComponentText(),
             player.dimension,
-            double_1, double_2, double_3
+            (int) player.getPosX(), (int) player.getPosY(), (int) player.getPosZ(),
+            (int) double_1, (int) double_2, (int) double_3
         ));
     
         double double_4 = set_1.contains(SPlayerPositionLookPacket.Flags.X) ? this.player.getPosX() : 0.0D;
@@ -100,13 +107,12 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         double double_6 = set_1.contains(SPlayerPositionLookPacket.Flags.Z) ? this.player.getPosZ() : 0.0D;
         float float_3 = set_1.contains(SPlayerPositionLookPacket.Flags.Y_ROT) ? this.player.rotationYaw : 0.0F;
         float float_4 = set_1.contains(SPlayerPositionLookPacket.Flags.X_ROT) ? this.player.rotationPitch : 0.0F;
-        this.targetPos = new Vec3d(double_1, double_2, double_3);
+        //this.requestedTeleportPos = new Vec3d(double_1, double_2, double_3);
         if (++this.teleportId == Integer.MAX_VALUE) {
             this.teleportId = 0;
         }
     
         this.lastPositionUpdate = this.networkTickCount;
-    
         this.player.setPositionAndRotation(double_1, double_2, double_3, float_1, float_2);
         SPlayerPositionLookPacket packet_1 = new SPlayerPositionLookPacket(
             double_1 - double_4,
@@ -124,7 +130,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     //server will check the collision when receiving position packet from client
     //we treat collision specially when player is halfway through a portal
     @Redirect(
-        method = "processPlayer",
+        method = "Lnet/minecraft/network/play/ServerPlayNetHandler;processPlayer(Lnet/minecraft/network/play/client/CPlayerPacket;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/network/play/ServerPlayNetHandler;func_223133_a(Lnet/minecraft/world/IWorldReader;)Z"
@@ -132,8 +138,11 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     )
     private boolean onCheckPlayerCollision(
         ServerPlayNetHandler serverPlayNetworkHandler,
-        IWorldReader world
+        IWorldReader worldView_1
     ) {
+        if (Global.serverTeleportationManager.isJustTeleported(player, 100)) {
+            return true;
+        }
         boolean portalsNearby = !player.world.getEntitiesWithinAABB(
             Portal.class,
             player.getBoundingBox().grow(4),
@@ -142,60 +151,60 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         if (portalsNearby) {
             return true;
         }
-        return func_223133_a(world);
+        return func_223133_a(worldView_1);
     }
     
     @Inject(
-        method = "processConfirmTeleport",
+        method = "Lnet/minecraft/network/play/ServerPlayNetHandler;processConfirmTeleport(Lnet/minecraft/network/play/client/CConfirmTeleportPacket;)V",
         at = @At("HEAD"),
         cancellable = true
     )
-    private void onProcessConfirmTeleport(
-        CConfirmTeleportPacket packetIn,
-        CallbackInfo ci
-    ) {
+    private void onOnTeleportConfirm(CConfirmTeleportPacket packet, CallbackInfo ci) {
         if (targetPos == null) {
             ci.cancel();
         }
     }
     
+    //do not reject move when player is riding and entering portal
+    //the client packet is not validated (validating it needs dimension info in packet)
     @Inject(
-        method = "processVehicleMove",
+        method = "Lnet/minecraft/network/play/ServerPlayNetHandler;processVehicleMove(Lnet/minecraft/network/play/client/CMoveVehiclePacket;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/network/play/ServerPlayNetHandler;isMoveVehiclePacketInvalid(Lnet/minecraft/network/play/client/CMoveVehiclePacket;)Z"
         ),
         cancellable = true
     )
-    private void onOnVehicleMove(CMoveVehiclePacket packetIn, CallbackInfo ci) {
-        if (SGlobal.serverTeleportationManager.isJustTeleported(player, 20)) {
-            Entity vehicle = player.getLowestRidingEntity();
-            if (vehicle != player) {
-                double newX = packetIn.getX();
-                double newY = packetIn.getY();
-                double newZ = packetIn.getZ();
-                float f = packetIn.getYaw();
-                float f1 = packetIn.getPitch();
-    
-                if (vehicle.getPositionVec().squareDistanceTo(
+    private void onOnVehicleMove(CMoveVehiclePacket packet, CallbackInfo ci) {
+        if (Global.serverTeleportationManager.isJustTeleported(player, 40)) {
+            Entity entity = this.player.getLowestRidingEntity();
+            
+            if (entity != player) {
+                double currX = entity.getPosX();
+                double currY = entity.getPosY();
+                double currZ = entity.getPosZ();
+                
+                double newX = packet.getX();
+                double newY = packet.getY();
+                double newZ = packet.getZ();
+                
+                if (entity.getPositionVec().squareDistanceTo(
                     newX, newY, newZ
                 ) < 256) {
-                    vehicle.setPositionAndRotation(newX, newY, newZ, f, f1);
-                    this.player.setPositionAndRotation(
-                        newX,
-                        newY,
-                        newZ,
-                        this.player.rotationYaw,
-                        this.player.rotationPitch
-                    ); // Forge - Resync player position on vehicle moving
-        
+                    float yaw = packet.getYaw();
+                    float pitch = packet.getPitch();
+                    
+                    entity.setPositionAndRotation(newX, newY, newZ, yaw, pitch);
+                    
                     this.player.getServerWorld().getChunkProvider().updatePlayerPosition(this.player);
-                    vehicleFloating = false;
-                    lowestRiddenX1 = vehicle.getPosX();
-                    lowestRiddenY1 = vehicle.getPosY();
-                    lowestRiddenZ1 = vehicle.getPosZ();
+                    
+                    vehicleFloating = true;
+                    lowestRiddenX1 = entity.getPosX();
+                    lowestRiddenY1 = entity.getPosY();
+                    lowestRiddenZ1 = entity.getPosZ();
                 }
             }
+            
             ci.cancel();
         }
     }

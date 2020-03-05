@@ -14,17 +14,19 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = TicketManager.class)
-public class MixinChunkTicketManager implements IEChunkTicketManager {
-    @Shadow
-    private long currentTime;
+@Mixin(TicketManager.class)
+public abstract class MixinChunkTicketManager implements IEChunkTicketManager {
     
     @Shadow
     @Final
     private Long2ObjectMap<ObjectSet<ServerPlayerEntity>> playersByChunkPos;
     
+    
+    @Shadow
+    protected abstract void setViewDistance(int viewDistance);
+    
     //avoid NPE
-    @Inject(method = "removePlayer", at = @At("HEAD"))
+    @Inject(method = "Lnet/minecraft/world/server/TicketManager;removePlayer(Lnet/minecraft/util/math/SectionPos;Lnet/minecraft/entity/player/ServerPlayerEntity;)V", at = @At("HEAD"))
     private void onHandleChunkLeave(
         SectionPos chunkSectionPos_1,
         ServerPlayerEntity serverPlayerEntity_1,
@@ -32,5 +34,10 @@ public class MixinChunkTicketManager implements IEChunkTicketManager {
     ) {
         long long_1 = chunkSectionPos_1.asChunkPos().asLong();
         playersByChunkPos.putIfAbsent(long_1, new ObjectOpenHashSet<>());
+    }
+    
+    @Override
+    public void mySetWatchDistance(int newWatchDistance) {
+        setViewDistance(newWatchDistance);
     }
 }

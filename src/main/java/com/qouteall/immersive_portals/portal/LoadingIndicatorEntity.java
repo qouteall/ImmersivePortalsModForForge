@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.portal;
 
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
@@ -11,10 +12,10 @@ import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.network.NetworkHooks;
 
 public class LoadingIndicatorEntity extends Entity {
     public static EntityType<LoadingIndicatorEntity> entityType;
+    
     private static final DataParameter<ITextComponent> text = EntityDataManager.createKey(
         LoadingIndicatorEntity.class, DataSerializers.TEXT_COMPONENT
     );
@@ -34,7 +35,7 @@ public class LoadingIndicatorEntity extends Entity {
     public void tick() {
         super.tick();
     
-        if (!world.isRemote) {
+        if (!world.isRemote()) {
             if (!isAlive) {
                 remove();
             }
@@ -43,7 +44,7 @@ public class LoadingIndicatorEntity extends Entity {
     
     @Override
     protected void registerData() {
-        dataManager.register(text, new StringTextComponent("Loading..."));
+        getDataManager().register(text, new StringTextComponent("Loading..."));
     }
     
     @Override
@@ -58,14 +59,14 @@ public class LoadingIndicatorEntity extends Entity {
     
     @Override
     public IPacket<?> createSpawnPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
+        return MyNetwork.createStcSpawnEntity(this);
     }
     
     public void setText(ITextComponent str) {
-        dataManager.set(text, str);
+        getDataManager().set(text, str);
     }
     
     public ITextComponent getText() {
-        return dataManager.get(text);
+        return getDataManager().get(text);
     }
 }

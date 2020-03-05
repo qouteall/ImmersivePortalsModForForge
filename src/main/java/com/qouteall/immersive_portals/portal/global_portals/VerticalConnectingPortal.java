@@ -6,7 +6,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-
 import java.util.function.Predicate;
 
 public class VerticalConnectingPortal extends GlobalTrackedPortal {
@@ -32,6 +31,7 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     ) {
         super(entityType_1, world_1);
     }
+    
     
     public static void connect(
         DimensionType from,
@@ -98,11 +98,19 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     ) {
         ServerWorld endWorld = McHelper.getServer().getWorld(dimension);
         GlobalPortalStorage storage = GlobalPortalStorage.get(endWorld);
-        
+    
         storage.data.removeIf(
             portal -> portal instanceof VerticalConnectingPortal && predicate.test(portal)
         );
-        
+    
         storage.onDataChanged();
+    }
+    
+    public static VerticalConnectingPortal getConnectingPortal(
+        World world, ConnectorType type
+    ) {
+        return (VerticalConnectingPortal) McHelper.getGlobalPortals(world).stream()
+            .filter(getPredicate(type))
+            .findFirst().orElse(null);
     }
 }

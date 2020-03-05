@@ -1,24 +1,18 @@
 package com.qouteall.immersive_portals;
 
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
+import com.qouteall.immersive_portals.alternate_dimension.FormulaGenerator;
 import com.qouteall.immersive_portals.chunk_loading.ChunkDataSyncManager;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
-import com.qouteall.immersive_portals.chunk_loading.ServerPerformanceAdjust;
 import com.qouteall.immersive_portals.chunk_loading.WorldInfoSender;
 import com.qouteall.immersive_portals.my_util.MyTaskList;
 import com.qouteall.immersive_portals.my_util.Signal;
-import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
-import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
-import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import com.qouteall.immersive_portals.teleportation.ServerTeleportationManager;
 import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
 import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.world.dimension.DimensionType;
 
 public class ModMain {
-    //after world ticking
     public static final Signal postClientTickSignal = new Signal();
     public static final Signal postServerTickSignal = new Signal();
     public static final Signal preRenderSignal = new Signal();
@@ -26,67 +20,34 @@ public class ModMain {
     public static final MyTaskList serverTaskList = new MyTaskList();
     public static final MyTaskList preRenderTaskList = new MyTaskList();
     
+    public static Block portalHelperBlock;
+    public static BlockItem portalHelperBlockItem;
+    
     public static DimensionType alternate1;
     public static DimensionType alternate2;
     public static DimensionType alternate3;
     public static DimensionType alternate4;
     public static DimensionType alternate5;
     
-    public static final Block portalHelperBlock =
-        new Block(Block.Properties.create(Material.IRON));
-    public static final BlockItem portalHelperBlockItem =
-        new BlockItem(portalHelperBlock, new Item.Properties().group(ItemGroup.MISC));
-    
-    public static void onInitialize() {
+    public static void init() {
+        Helper.log("initializing common");
         
-        NetherPortalEntity.init();
         
-        NewNetherPortalEntity.init();
-        
-        NetworkMain.init();
+        MyNetwork.init();
         
         postClientTickSignal.connect(clientTaskList::processTasks);
         postServerTickSignal.connect(serverTaskList::processTasks);
         preRenderSignal.connect(preRenderTaskList::processTasks);
         
-        SGlobal.serverTeleportationManager = new ServerTeleportationManager();
-        SGlobal.chunkDataSyncManager = new ChunkDataSyncManager();
-        
-        WorldInfoSender.init();
+        Global.serverTeleportationManager = new ServerTeleportationManager();
+        Global.chunkDataSyncManager = new ChunkDataSyncManager();
         
         NewChunkTrackingGraph.init();
         
-        ServerPerformanceAdjust.init();
+        WorldInfoSender.init();
+        
+        FormulaGenerator.init();
         
     }
     
-    public static void checkMixinState() {
-        if (!SGlobal.isServerMixinApplied) {
-            String message =
-                "Mixin is NOT loaded. Install MixinBootstrap." +
-                    " https://www.curseforge.com/minecraft/mc-mods/immersive-portals-for-forge";
-    
-            try {
-                Class.forName("org.spongepowered.asm.launch.Phases");
-                Helper.err("What? Mixin is in classpath???");
-            }
-            catch (ClassNotFoundException e) {
-                e.printStackTrace();
-                Helper.err("Mixin is not in classpath");
-            }
-    
-            Helper.err(message);
-            throw new IllegalStateException(message);
-        }
-    }
-    
-    public static boolean isMixinInClasspath() {
-        try {
-            Class.forName("org.spongepowered.asm.launch.Phases");
-            return true;
-        }
-        catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
 }

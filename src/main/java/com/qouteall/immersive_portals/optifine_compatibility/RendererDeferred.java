@@ -3,7 +3,6 @@ package com.qouteall.immersive_portals.optifine_compatibility;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.*;
@@ -15,9 +14,6 @@ import net.minecraft.util.math.Vec3d;
 import net.optifine.shaders.Shaders;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
-
-import static org.lwjgl.opengl.GL11.GL_NEAREST;
 
 public class RendererDeferred extends PortalRenderer {
     SecondaryFrameBuffer deferredBuffer = new SecondaryFrameBuffer();
@@ -34,10 +30,7 @@ public class RendererDeferred extends PortalRenderer {
     
     @Override
     public void onAfterTranslucentRendering(MatrixStack matrixStack) {
-        if (isRendering()) {
-            return;
-        }
-        OFHelper.copyFromShaderFbTo(deferredBuffer.fb, GL11.GL_DEPTH_BUFFER_BIT);
+        renderPortals(matrixStack);
     }
     
     @Override
@@ -66,16 +59,18 @@ public class RendererDeferred extends PortalRenderer {
             //currently only support one-layer portal
             return;
         }
-        
+    
+        OFHelper.copyFromShaderFbTo(deferredBuffer.fb, GL11.GL_DEPTH_BUFFER_BIT);
+    
         if (!testShouldRenderPortal(portal)) {
             return;
         }
-        
+    
         portalLayers.push(portal);
-        
+    
         manageCameraAndRenderPortalContent(portal);
         //it will bind the gbuffer of rendered dimension
-        
+    
         portalLayers.pop();
         
         deferredBuffer.fb.bindFramebuffer(true);
@@ -104,9 +99,10 @@ public class RendererDeferred extends PortalRenderer {
     
     @Override
     public void renderPortalInEntityRenderer(Portal portal) {
-//        if (shouldRenderPortalInEntityRenderer(portal)) {
-//            ViewAreaRenderer.drawPortalViewTriangle(portal);
-//        }
+        if (shouldRenderPortalInEntityRenderer(portal)) {
+            assert false;
+            //ViewAreaRenderer.drawPortalViewTriangle(portal);
+        }
     }
     
     private boolean shouldRenderPortalInEntityRenderer(Portal portal) {
@@ -126,12 +122,11 @@ public class RendererDeferred extends PortalRenderer {
     
     //NOTE it will write to shader depth buffer
     private boolean testShouldRenderPortal(Portal portal) {
+        assert false;
         return QueryManager.renderAndGetDoesAnySamplePassed(() -> {
             GlStateManager.enableDepthTest();
             GlStateManager.disableTexture();
             GlStateManager.colorMask(false, false, false, false);
-            GlStateManager.depthMask(false);
-            assert false;
             //MyRenderHelper.setupCameraTransformation();
             GL20.glUseProgram(0);
     
@@ -139,7 +134,6 @@ public class RendererDeferred extends PortalRenderer {
     
             GlStateManager.enableTexture();
             GlStateManager.colorMask(true, true, true, true);
-            GlStateManager.depthMask(true);
         });
     }
     
@@ -148,25 +142,10 @@ public class RendererDeferred extends PortalRenderer {
         if (isRendering()) {
             return;
         }
-        
-        //OFHelper.copyFromShaderFbTo(deferredBuffer.fb, GL11.GL_COLOR_BUFFER_BIT);
-        
-        GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, mc.getFramebuffer().framebufferObject);
-        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, deferredBuffer.fb.framebufferObject);
-        
-        GL30.glBlitFramebuffer(
-            0, 0, deferredBuffer.fb.framebufferWidth, deferredBuffer.fb.framebufferHeight,
-            0, 0, deferredBuffer.fb.framebufferWidth, deferredBuffer.fb.framebufferHeight,
-            GL11.GL_COLOR_BUFFER_BIT, GL_NEAREST
-        );
     
-        CHelper.checkGlError();
-        
-        renderPortals(matrixStack);
-
-//        if (MyRenderHelper.getRenderedPortalNum() == 0) {
-//            return;
-//        }
+        if (MyRenderHelper.getRenderedPortalNum() == 0) {
+            return;
+        }
     
         GlStateManager.enableAlphaTest();
         Framebuffer mainFrameBuffer = mc.getFramebuffer();
@@ -174,7 +153,7 @@ public class RendererDeferred extends PortalRenderer {
     
         MyRenderHelper.myDrawFrameBuffer(
             deferredBuffer.fb,
-            false,
+            true,
             false
         );
     }

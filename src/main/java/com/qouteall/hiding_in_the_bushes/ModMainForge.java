@@ -1,21 +1,31 @@
 package com.qouteall.hiding_in_the_bushes;
 
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
-import com.qouteall.immersive_portals.SGlobal;
+import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
 import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimensionEntry;
-import com.qouteall.immersive_portals.portal.*;
+import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkNeighborFix;
+import com.qouteall.immersive_portals.optifine_compatibility.OFInterfaceInitializer;
+import com.qouteall.immersive_portals.portal.BreakableMirror;
+import com.qouteall.immersive_portals.portal.EndPortalEntity;
+import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
+import com.qouteall.immersive_portals.portal.Mirror;
+import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
-import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
+import com.qouteall.immersive_portals.render.LoadingIndicatorRenderer;
+import com.qouteall.immersive_portals.render.PortalEntityRenderer;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
@@ -24,6 +34,8 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -41,14 +53,19 @@ import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.IForgeRegistry;
+import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Arrays;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod("immersive_portals")
 public class ModMainForge {
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
+    
+    public static boolean isServerMixinApplied = false;
     
     public ModMainForge() {
         // Register the setup method for modloading
@@ -59,32 +76,79 @@ public class ModMainForge {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
         // Register the doClientStuff method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::doClientStuff);
-    
+        
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
-    
+        
         ConfigClient.init();
     }
     
+    private static void initPortalRenderers() {
+        EntityRendererManager manager = Minecraft.getInstance().getRenderManager();
+        
+        Arrays.stream(new EntityType<?>[]{
+            Portal.entityType,
+            NewNetherPortalEntity.entityType,
+            EndPortalEntity.entityType,
+            Mirror.entityType,
+            BreakableMirror.entityType,
+            GlobalTrackedPortal.entityType,
+            BorderPortal.entityType,
+            VerticalConnectingPortal.entityType
+        }).peek(
+            Validate::notNull
+        ).forEach(
+            entityType -> manager.register(
+                entityType,
+                (EntityRenderer) new PortalEntityRenderer(manager)
+            )
+        );
+        
+        manager.register(
+            LoadingIndicatorEntity.entityType,
+            new LoadingIndicatorRenderer(manager)
+        );
+    }
+    
     private void setup(final FMLCommonSetupEvent event) {
-        ModMain.onInitialize();
+        ModMain.init();
     }
     
     private void doClientStuff(final FMLClientSetupEvent event) {
-        ModMainClient.onInitializeClient();
-    
+        ModMainClient.init();
+        
         Minecraft.getInstance().execute(() -> {
             if (ConfigClient.isInitialCompatibilityRenderMode()) {
-                CGlobal.renderMode = CGlobal.RenderMode.compatibility;
+                Global.renderMode = Global.RenderMode.compatibility;
                 Helper.log("Initially Switched to Compatibility Render Mode");
             }
-            CGlobal.doCheckGlError = ConfigClient.getDoCheckGlError();
-            Helper.log("Do Check Gl Error: " + CGlobal.doCheckGlError);
+            Global.doCheckGlError = ConfigClient.getDoCheckGlError();
+            Helper.log("Do Check Gl Error: " + Global.doCheckGlError);
         });
+        
+        initPortalRenderers();
+        
+        OFInterface.isOptifinePresent = getIsOptifinePresent();
+        
+        if (OFInterface.isOptifinePresent) {
+            OFBuiltChunkNeighborFix.init();
+            OFInterfaceInitializer.init();
+        }
+        
+        Helper.log(OFInterface.isOptifinePresent ? "Optifine is present" : "Optifine is not present");
+    }
     
-        EntityRendererManager renderManager = Minecraft.getInstance().getRenderManager();
-    
-        ModMainClient.initRenderers(renderManager);
+    @OnlyIn(Dist.CLIENT)
+    public static boolean getIsOptifinePresent() {
+        try {
+            //do not load other optifine classes that loads vanilla classes
+            //that would load the class before mixin
+            Class.forName("optifine.ZipResourceProvider");
+            return true;
+        }
+        catch (ClassNotFoundException e) {
+            return false;
+        }
     }
     
     private void enqueueIMC(final InterModEnqueueEvent event) {
@@ -107,9 +171,38 @@ public class ModMainForge {
     
     }
     
+    public static void checkMixinState() {
+        if (!isServerMixinApplied) {
+            String message =
+                "Mixin is NOT loaded. Install MixinBootstrap." +
+                    " https://www.curseforge.com/minecraft/mc-mods/immersive-portals-for-forge";
+            
+            try {
+                Class.forName("org.spongepowered.asm.launch.Phases");
+                Helper.err("What? Mixin is in classpath???");
+            }
+            catch (ClassNotFoundException e) {
+                Helper.err("Mixin is not in classpath");
+            }
+            
+            Helper.err(message);
+            throw new IllegalStateException(message);
+        }
+    }
+    
+    public static boolean isMixinInClasspath() {
+        try {
+            Class.forName("org.spongepowered.asm.launch.Phases");
+            return true;
+        }
+        catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+    
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
-        ModMain.checkMixinState();
+        checkMixinState();
     }
     
     @SubscribeEvent
@@ -172,7 +265,7 @@ public class ModMainForge {
     
     @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        if (!SGlobal.serverTeleportationManager.isFiringMyChangeDimensionEvent) {
+        if (!Global.serverTeleportationManager.isFiringMyChangeDimensionEvent) {
             PlayerEntity player = event.getPlayer();
             if (player instanceof ServerPlayerEntity) {
                 GlobalPortalStorage.onPlayerLoggedIn((ServerPlayerEntity) player);
@@ -235,19 +328,6 @@ public class ModMainForge {
                 )
             );
     
-            NetherPortalEntity.entityType = EntityType.Builder.create(
-                NetherPortalEntity::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) ->
-                new NetherPortalEntity(NetherPortalEntity.entityType, world)
-            ).build(
-                "immersive_portals:breakable_nether_portal"
-            );
-            event.getRegistry().register(
-                NetherPortalEntity.entityType.setRegistryName(
-                    "immersive_portals:breakable_nether_portal")
-            );
     
             NewNetherPortalEntity.entityType = EntityType.Builder.create(
                 NewNetherPortalEntity::new, EntityClassification.MISC

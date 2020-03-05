@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = SPlayerPositionLookPacket.class)
+@Mixin(SPlayerPositionLookPacket.class)
 public class MixinPlayerPositionLookS2CPacket implements IEPlayerPositionLookS2CPacket {
     private DimensionType playerDimension;
     
@@ -24,7 +24,7 @@ public class MixinPlayerPositionLookS2CPacket implements IEPlayerPositionLookS2C
     }
     
     @Inject(
-        method = "readPacketData",
+        method = "Lnet/minecraft/network/play/server/SPlayerPositionLookPacket;readPacketData(Lnet/minecraft/network/PacketBuffer;)V",
         at = @At("HEAD")
     )
     private void onRead(PacketBuffer packetByteBuf_1, CallbackInfo ci) {
@@ -32,7 +32,7 @@ public class MixinPlayerPositionLookS2CPacket implements IEPlayerPositionLookS2C
     }
     
     @Inject(
-        method = "writePacketData",
+        method = "Lnet/minecraft/network/play/server/SPlayerPositionLookPacket;writePacketData(Lnet/minecraft/network/PacketBuffer;)V",
         at = @At("HEAD")
     )
     private void onWrite(PacketBuffer packetByteBuf_1, CallbackInfo ci) {

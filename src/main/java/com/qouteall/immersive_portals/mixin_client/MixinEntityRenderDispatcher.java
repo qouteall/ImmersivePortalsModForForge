@@ -1,25 +1,19 @@
 package com.qouteall.immersive_portals.mixin_client;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.ModMainClient;
-import com.qouteall.immersive_portals.render.MyRenderHelper;
-import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.culling.ClippingHelperImpl;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.entity.Entity;
-import net.minecraft.resources.IReloadableResourceManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = EntityRendererManager.class)
+
+@Mixin(EntityRendererManager.class)
 public class MixinEntityRenderDispatcher {
     @Inject(
-        method = "shouldRender",
+        method = "Lnet/minecraft/client/renderer/entity/EntityRendererManager;shouldRender(Lnet/minecraft/entity/Entity;Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;DDD)Z",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -37,14 +31,4 @@ public class MixinEntityRenderDispatcher {
         }
     }
     
-    @Inject(
-        method = "registerRenderers", at = @At("RETURN")
-    )
-    private void onRegisterRenderers(
-        ItemRenderer p_229097_1_,
-        IReloadableResourceManager p_229097_2_,
-        CallbackInfo ci
-    ) {
-        //ModMainClient.initRenderers((EntityRendererManager) (Object) this);
-    }
 }

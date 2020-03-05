@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.mixin.entity_sync;
 
-import com.qouteall.immersive_portals.SGlobal;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -16,16 +16,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ChunkManager.class)
 public abstract class MixinThreadedAnvilChunkStorage_E implements IEThreadedAnvilChunkStorage {
-    
     @Shadow
     @Final
     private Int2ObjectMap entities;
     
     @Shadow
-    abstract void setPlayerTracking(ServerPlayerEntity p_219234_1_, boolean p_219234_2_);
+    abstract void setPlayerTracking(ServerPlayerEntity player, boolean added);
     
     @Inject(
-        method = "untrack",
+        method = "Lnet/minecraft/world/server/ChunkManager;untrack(Lnet/minecraft/entity/Entity;)V",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -33,7 +32,7 @@ public abstract class MixinThreadedAnvilChunkStorage_E implements IEThreadedAnvi
         //when the player leave this dimension, do not stop tracking entities
         if (entity instanceof ServerPlayerEntity) {
             ServerPlayerEntity player = (ServerPlayerEntity) entity;
-            if (SGlobal.serverTeleportationManager.isTeleporting(player)) {
+            if (Global.serverTeleportationManager.isTeleporting(player)) {
                 entities.remove(entity.getEntityId());
                 setPlayerTracking(player, false);
                 ci.cancel();

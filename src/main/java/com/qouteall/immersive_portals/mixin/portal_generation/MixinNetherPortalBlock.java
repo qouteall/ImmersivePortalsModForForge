@@ -8,11 +8,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = NetherPortalBlock.class)
+@Mixin(NetherPortalBlock.class)
 public class MixinNetherPortalBlock {
     
     @Inject(
-        method = "trySpawnPortal",
+        method = "Lnet/minecraft/block/NetherPortalBlock;trySpawnPortal(Lnet/minecraft/world/IWorld;Lnet/minecraft/util/math/BlockPos;)Z",
         at = @At("HEAD"),
         cancellable = true
     )

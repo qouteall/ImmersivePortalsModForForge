@@ -1,12 +1,23 @@
 package com.qouteall.immersive_portals.mixin.chunk_sync;
 
 import com.mojang.datafixers.util.Either;
-import com.qouteall.immersive_portals.SGlobal;
-import com.qouteall.immersive_portals.ducks.IEEntityTracker;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
-import net.minecraft.entity.Entity;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.concurrent.ITaskExecutor;
@@ -16,22 +27,8 @@ import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ChunkManager;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.server.ServerWorldLightManager;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-
-@Mixin(value = ChunkManager.class)
+@Mixin(ChunkManager.class)
 public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvilChunkStorage {
     @Shadow
     private int viewDistance;
@@ -56,9 +53,6 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
     @Shadow
     @Final
     private Int2ObjectMap entities;
-    
-    @Shadow
-    private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> immutableLoadedChunks;
     
     @Shadow
     @Final
@@ -90,10 +84,9 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
     
     /**
      * @author qouteall
-     * @reason
      */
     @Overwrite
-    public void sendChunkData(
+    private void sendChunkData(
         ServerPlayerEntity player,
         IPacket<?>[] packets_1,
         Chunk worldChunk_1
@@ -103,7 +96,7 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
     
     //cancel vanilla packet sending
     @Redirect(
-        method = "func_219179_a",
+        method = "Lnet/minecraft/world/server/ChunkManager;func_219179_a(Lnet/minecraft/world/server/ChunkHolder;)Ljava/util/concurrent/CompletableFuture;",
         at = @At(
             value = "INVOKE",
             target = "Ljava/util/concurrent/CompletableFuture;thenAcceptAsync(Ljava/util/function/Consumer;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"
@@ -119,7 +112,7 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
     
     //do my packet sending
     @Inject(
-        method = "func_219179_a",
+        method = "Lnet/minecraft/world/server/ChunkManager;func_219179_a(Lnet/minecraft/world/server/ChunkHolder;)Ljava/util/concurrent/CompletableFuture;",
         at = @At("RETURN"),
         cancellable = true
     )
@@ -132,9 +125,9 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
         future.thenAcceptAsync((either) -> {
             either.mapLeft((worldChunk) -> {
                 this.field_219268_v.getAndIncrement();
-                
-                SGlobal.chunkDataSyncManager.onChunkProvidedDeferred(worldChunk);
-                
+    
+                Global.chunkDataSyncManager.onChunkProvidedDeferred(worldChunk);
+    
                 return Either.left(worldChunk);
             });
         }, (runnable) -> {
@@ -143,11 +136,5 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
                 runnable
             ));
         });
-    }
-    
-    
-    @Override
-    public int getChunkHolderNum() {
-        return immutableLoadedChunks.size();
     }
 }

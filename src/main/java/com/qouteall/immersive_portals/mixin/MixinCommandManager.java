@@ -1,9 +1,7 @@
 package com.qouteall.immersive_portals.mixin;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.SGlobal;
+import com.qouteall.immersive_portals.commands.MyCommandClient;
 import com.qouteall.immersive_portals.commands.MyCommandServer;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
@@ -14,26 +12,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = Commands.class)
+@Mixin(Commands.class)
 public class MixinCommandManager {
     @Shadow
     @Final
     private CommandDispatcher<CommandSource> dispatcher;
     
     @Inject(
-        method = "<init>",
+        method = "Lnet/minecraft/command/Commands;<init>(Z)V",
         at = @At("RETURN")
     )
     private void initCommands(boolean isOnServer, CallbackInfo ci) {
         if (!isOnServer) {
-            McHelper.initCommandClientOnly(dispatcher);
+            MyCommandClient.register(dispatcher);
         }
         MyCommandServer.register(dispatcher);
     }
     
-    static {
-        SGlobal.isServerMixinApplied = true;
-        
-        Helper.log("Mixin Applied");
-    }
 }

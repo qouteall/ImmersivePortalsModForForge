@@ -10,7 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.Vector4f;
-import net.minecraft.world.World;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.dimension.DimensionType;
 import net.optifine.expr.IExpressionBool;
 import net.optifine.shaders.*;
@@ -18,10 +18,7 @@ import net.optifine.shaders.config.*;
 import net.optifine.shaders.uniform.*;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GLCapabilities;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -39,7 +36,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-@Mixin(value = Shaders.class, remap = false)
+@Pseudo
+@Mixin(targets = "net.optifine.shaders.Shaders")
 public abstract class MOShaders {
     @Shadow
     static Minecraft mc;
@@ -786,7 +784,7 @@ public abstract class MOShaders {
     @Shadow
     private static Map<String, String> shaderPackResources;
     @Shadow
-    private static World currentWorld;
+    private static ClientWorld currentWorld;
     @Shadow
     private static List<Integer> shaderPackDimensions;
     @Shadow
@@ -1021,7 +1019,7 @@ public abstract class MOShaders {
     
     //avoid uninit when creating faked world
     @Inject(method = "checkWorldChanged", at = @At("HEAD"), cancellable = true)
-    private static void onCheckWorldChanged(World world, CallbackInfo ci) {
+    private static void onCheckWorldChanged(ClientWorld world, CallbackInfo ci) {
         if (CGlobal.clientWorldLoader.getIsLoadingFakedWorld()) {
             ci.cancel();
         }
@@ -1047,6 +1045,22 @@ public abstract class MOShaders {
             ci.cancel();
         }
     }
+
+//    @Redirect(
+//        method = "loadShaderPack",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/client/MinecraftClient;reloadResourcesConcurrently()Ljava/util/concurrent/CompletableFuture;"
+//        )
+//    )
+//    private static CompletableFuture<Void> redirectReloadResource(MinecraftClient minecraftClient) {
+//        if (!OFGlobal.shaderContextManager.isContextSwitched()) {
+//            return minecraftClient.reloadResourcesConcurrently();
+//        }
+//        else {
+//            return null;
+//        }
+//    }
     
     @Inject(method = "init", at = @At("HEAD"))
     private static void onInit(CallbackInfo ci) {
@@ -1436,8 +1450,8 @@ public abstract class MOShaders {
             activeCompositeMipmapSetting = context.activeCompositeMipmapSetting;
             loadedShaders = context.loadedShaders;
             shadersConfig = context.shadersConfig;
+//            defaultTexture = context.defaultTexture;
             assert false;
-            //defaultTexture = context.defaultTexture;
             shadowHardwareFilteringEnabled = context.shadowHardwareFilteringEnabled;
             shadowMipmapEnabled = context.shadowMipmapEnabled;
             shadowFilterNearest = context.shadowFilterNearest;
@@ -1499,7 +1513,8 @@ public abstract class MOShaders {
             shaderPackSeparateAo = context.shaderPackSeparateAo;
             shaderPackFrustumCulling = context.shaderPackFrustumCulling;
             shaderPackResources = context.shaderPackResources;
-            currentWorld = context.currentWorld;
+//            currentWorld = context.currentWorld;
+            assert false;
             shaderPackDimensions = context.shaderPackDimensions;
             customTexturesGbuffers = context.customTexturesGbuffers;
             customTexturesComposite = context.customTexturesComposite;
@@ -1831,8 +1846,8 @@ public abstract class MOShaders {
             context.activeCompositeMipmapSetting = activeCompositeMipmapSetting;
             context.loadedShaders = loadedShaders;
             context.shadersConfig = shadersConfig;
-            assert false;
 //            context.defaultTexture = defaultTexture;
+            assert false;
             context.shadowHardwareFilteringEnabled = shadowHardwareFilteringEnabled;
             context.shadowMipmapEnabled = shadowMipmapEnabled;
             context.shadowFilterNearest = shadowFilterNearest;

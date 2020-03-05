@@ -9,5 +9,5 @@ public interface IEMinecraftClient {
     
     Screen getCurrentScreen();
     
-    void setWorldRenderer(WorldRenderer arg);
+    void setWorldRenderer(WorldRenderer r);
 }

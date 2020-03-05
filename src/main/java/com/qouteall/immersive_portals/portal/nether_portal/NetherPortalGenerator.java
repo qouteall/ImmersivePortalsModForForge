@@ -25,7 +25,6 @@ public class NetherPortalGenerator {
         );
     }
     
-    
     public static IntegerAABBInclusive findAirCubePlacement(
         ServerWorld toWorld,
         BlockPos mappedPosInOtherDimension,

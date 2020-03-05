@@ -18,7 +18,7 @@ public class MyMixinConnector implements IMixinConnector {
             Mixins.addConfiguration(
                 "assets/immersive_portals/immersive_portals.mixins_client.json"
             );
-            if (ModMainClient.getIsOptifinePresent()) {
+            if (ModMainForge.getIsOptifinePresent()) {
                 Mixins.addConfiguration(
                     "assets/immersive_portals/immersive_portals.mixins_with_optifine.json"
                 );

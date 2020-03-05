@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
-@Mixin(value = ClippingHelperImpl.class)
+@Mixin(ClippingHelperImpl.class)
 public class MixinFrustum implements IEFrustum {
     @Shadow
     private double cameraX;
@@ -35,7 +35,7 @@ public class MixinFrustum implements IEFrustum {
     private Vec3d portalDestInLocalCoordinate;
     
     @Inject(
-        method = "setCameraPosition",
+        method = "Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;setCameraPosition(DDD)V",
         at = @At("TAIL")
     )
     private void onSetOrigin(double double_1, double double_2, double double_3, CallbackInfo ci) {
@@ -84,7 +84,8 @@ public class MixinFrustum implements IEFrustum {
         if (MyRenderHelper.isRenderingMirror()) {
             return false;
         }
-        
+    
+    
         Vec3d[] eightVertices = Helper.eightVerticesOf(box);
     
         Helper.BatchTestResult left = Helper.batchTest(
@@ -117,12 +118,11 @@ public class MixinFrustum implements IEFrustum {
             return true;
         }
     
-    
         return false;
     }
     
     @Inject(
-        method = "isBoxInFrustum",
+        method = "isVisible(DDDDDD)Z",
         at = @At("HEAD"),
         cancellable = true
     )

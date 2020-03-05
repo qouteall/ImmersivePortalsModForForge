@@ -6,15 +6,11 @@ import com.qouteall.immersive_portals.ducks.IEServerWorld;
 import com.qouteall.immersive_portals.my_util.SignalBiArged;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongList;
-import it.unimi.dsi.fastutil.longs.LongSortedSet;
+import it.unimi.dsi.fastutil.longs.*;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,8 +23,6 @@ public class NewChunkTrackingGraph {
     }
     
     public static class ChunkRecord {
-        //comparing to HashSet, ArrayList is more cache friendly
-        //use parallel array to avoid small object allocation
         public ArrayList<ServerPlayerEntity> watchingPlayers = new ArrayList<>();
         public LongList lastWatchTimeList = new LongArrayList();
         public IntList distanceToSourceList = new IntArrayList();
@@ -87,13 +81,16 @@ public class NewChunkTrackingGraph {
                 }
             }
         }
-        
+    
         public boolean isBeingWatchedByAnyPlayer() {
             return !watchingPlayers.isEmpty();
         }
     }
     
     private static final Map<DimensionType, Long2ObjectLinkedOpenHashMap<ChunkRecord>> data = new HashMap<>();
+    
+    public static final ArrayList<ChunkVisibilityManager.ChunkLoader>
+        additionalChunkLoaders = new ArrayList<>();
     
     public static final SignalBiArged<ServerPlayerEntity, DimensionalChunkPos> beginWatchChunkSignal = new SignalBiArged<>();
     public static final SignalBiArged<ServerPlayerEntity, DimensionalChunkPos> endWatchChunkSignal = new SignalBiArged<>();
@@ -154,9 +151,9 @@ public class NewChunkTrackingGraph {
         });
         
         McHelper.getServer().getWorlds().forEach(world -> {
-            
+    
             LongSortedSet currentLoadedChunks = getChunkRecordMap(world.dimension.getType()).keySet();
-            
+    
             currentLoadedChunks.forEach(
                 (long longChunkPos) -> ((IEServerWorld) world).setChunkForcedWithoutImmediateLoading(
                     ChunkPos.getX(longChunkPos),
@@ -164,11 +161,25 @@ public class NewChunkTrackingGraph {
                     true
                 )
             );
-            
+    
+            LongSortedSet additionalLoadedChunks = new LongLinkedOpenHashSet();
+            additionalChunkLoaders.forEach(chunkLoader -> chunkLoader.foreachChunkPos(
+                (dim, x, z, dis) -> {
+                    if (world.dimension.getType() == dim) {
+                        additionalLoadedChunks.add(ChunkPos.asLong(x, z));
+                        ((IEServerWorld) world).setChunkForcedWithoutImmediateLoading(
+                            x, z, true
+                        );
+                    }
+                }
+            ));
+    
             LongList chunksToUnload = new LongArrayList();
             //I can't use filter here because it will box Long
             world.getForcedChunks().forEach((long longChunkPos) -> {
-                if (!currentLoadedChunks.contains(longChunkPos)) {
+                if (!currentLoadedChunks.contains(longChunkPos) &&
+                    !additionalLoadedChunks.contains(longChunkPos)
+                ) {
                     chunksToUnload.add(longChunkPos);
                 }
             });
@@ -182,9 +193,6 @@ public class NewChunkTrackingGraph {
     }
     
     private static long getUnloadTimeValve() {
-        if (ServerPerformanceAdjust.getIsServerLagging()) {
-            return 41;
-        }
         return 15 * 20;
     }
     
@@ -206,7 +214,7 @@ public class NewChunkTrackingGraph {
         boolean isLoadedNow
     ) {
         ServerWorld world = McHelper.getServer().getWorld(dimension);
-        
+    
         world.forceChunk(chunkPos.x, chunkPos.z, isLoadedNow);
     }
     
@@ -248,6 +256,7 @@ public class NewChunkTrackingGraph {
     
     public static void cleanup() {
         data.clear();
+        additionalChunkLoaders.clear();
     }
     
     public static Stream<ServerPlayerEntity> getPlayersViewingChunk(
@@ -265,11 +274,10 @@ public class NewChunkTrackingGraph {
     public static void forceRemovePlayer(ServerPlayerEntity player) {
         data.values().forEach(map -> map.values().forEach(
             chunkRecord -> chunkRecord.removeInactiveWatcher(
-                (player1, l, d) -> player1.getEntityId() == player.getEntityId(),
+                (player1, l, d) -> player1 == player,
                 p -> {
                 }
             )
         ));
-        purge();
     }
 }

@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals.mixin_client;
 
-import com.mojang.blaze3d.platform.GLX;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEFrameBuffer;
@@ -13,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = Framebuffer.class)
+@Mixin(Framebuffer.class)
 public abstract class MixinFrameBuffer implements IEFrameBuffer {
     
     private boolean isStencilBufferEnabled;
@@ -24,11 +23,7 @@ public abstract class MixinFrameBuffer implements IEFrameBuffer {
     public int framebufferTextureHeight;
     
     @Shadow
-    public abstract void createBuffers(
-        int p_216492_1_,
-        int p_216492_2_,
-        boolean p_216492_3_
-    );
+    public abstract void createBuffers(int int_1, int int_2, boolean boolean_1);
     
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(
@@ -42,7 +37,7 @@ public abstract class MixinFrameBuffer implements IEFrameBuffer {
     }
     
     @Inject(
-        method = "createBuffers",
+        method = "Lnet/minecraft/client/shader/Framebuffer;createBuffers(IIZ)V",
         at = @At(
             value = "INVOKE",
             target = "Lcom/mojang/blaze3d/platform/GlStateManager;bindRenderbuffer(II)V"
@@ -75,7 +70,7 @@ public abstract class MixinFrameBuffer implements IEFrameBuffer {
     
             this_.checkFramebufferComplete();
             this_.framebufferClear(isMac);
-            this_.unbindFramebuffer();
+            this_.unbindFramebufferTexture();
     
             CHelper.checkGlError();
     

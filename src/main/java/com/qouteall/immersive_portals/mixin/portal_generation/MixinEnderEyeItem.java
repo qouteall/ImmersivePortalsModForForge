@@ -19,9 +19,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = EnderEyeItem.class)
+@Mixin(EnderEyeItem.class)
 public class MixinEnderEyeItem {
-    @Inject(method = "onItemUse", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "Lnet/minecraft/item/EnderEyeItem;onItemUse(Lnet/minecraft/item/ItemUseContext;)Lnet/minecraft/util/ActionResultType;", at = @At("HEAD"), cancellable = true)
     private void onUseOnBlock(
         ItemUseContext itemUsageContext_1,
         CallbackInfoReturnable<ActionResultType> cir

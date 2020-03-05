@@ -43,33 +43,11 @@ public class NetherPortalMatcher {
             );
     }
     
-    public static Stream<BlockPos> fromNearToFarWithinHeightLimitForMutable(
-        BlockPos searchingCenter,
-        int maxRadius,
-        IntegerAABBInclusive heightLimit
-    ) {
-        return IntStream
-            .range(0, maxRadius)
-            .boxed()
-            .flatMap(
-                r -> new IntegerAABBInclusive(
-                    new BlockPos(-r, -r, -r),
-                    new BlockPos(r, r, r)
-                ).getMoved(
-                    searchingCenter
-                ).forSixSurfacesMutable(
-                    stream -> stream.map(
-                        box -> IntegerAABBInclusive.getIntersect(box, heightLimit)
-                    ).filter(Objects::nonNull)
-                )
-            );
-    }
-    
     //------------------------------------------------------------
     //detect frame from inner pos
     
     public static final int maxFrameSize = 40;
-    public static final int findingRadius = 150;
+    public static int findingRadius = 128;
     public static final IntegerAABBInclusive heightLimitOverworld = new IntegerAABBInclusive(
         new BlockPos(Integer.MIN_VALUE, 2, Integer.MIN_VALUE),
         new BlockPos(Integer.MAX_VALUE, 254, Integer.MAX_VALUE)
@@ -85,6 +63,7 @@ public class NetherPortalMatcher {
         return dimension == DimensionType.THE_NETHER ? heightLimitNether : heightLimitOverworld;
     }
     
+    @Deprecated
     //return null for no legal obsidian frame
     public static ObsidianFrame detectFrameFromInnerPos(
         IWorld world,
@@ -112,7 +91,7 @@ public class NetherPortalMatcher {
         if (!innerAreaFilter.test(innerArea)) {
             return null;
         }
-    
+        
         if (!isObsidianFrameIntact(world, normalAxis, innerArea)) {
             return null;
         }
@@ -120,6 +99,7 @@ public class NetherPortalMatcher {
         return new ObsidianFrame(normalAxis, innerArea);
     }
     
+    @Deprecated
     public static ObsidianFrame detectFrameFromInnerPos(
         IWorld world,
         BlockPos innerPos,
@@ -202,9 +182,9 @@ public class NetherPortalMatcher {
     ) {
         BlockPos lowExtremity = detectStickForOneDirection(
             center,
-            Direction.getFacingFromAxisDirection(
-                axis,
-                Direction.AxisDirection.NEGATIVE
+            Direction.getFacingFromAxis(
+                Direction.AxisDirection.NEGATIVE,
+                axis
             ),
             predicate
         );
@@ -214,9 +194,9 @@ public class NetherPortalMatcher {
         
         BlockPos highExtremity = detectStickForOneDirection(
             center,
-            Direction.getFacingFromAxisDirection(
-                axis,
-                Direction.AxisDirection.POSITIVE
+            Direction.getFacingFromAxis(
+                Direction.AxisDirection.POSITIVE,
+                axis
             ),
             predicate
         );
@@ -273,7 +253,7 @@ public class NetherPortalMatcher {
     ) {
         IntegerAABBInclusive aboveLavaLake = getAirCubeOnGround(
             areaSize.add(20, 20, 20), world, searchingCenter,
-            heightLimit, findingRadius / 4,
+            heightLimit, findingRadius,
             blockPos -> isLavaLake(world, blockPos)
         );
         if (aboveLavaLake != null) {
@@ -284,9 +264,12 @@ public class NetherPortalMatcher {
         Helper.log("Generated Portal On Ground");
     
         IntegerAABBInclusive biggerArea = getAirCubeOnSolidGround(
-            areaSize.add(6, 0, 6), world, searchingCenter,
+            areaSize.add(5, 0, 5), world, searchingCenter,
             heightLimit, findingRadius
         );
+        if (biggerArea == null) {
+            return null;
+        }
         return pushDownBox(world, biggerArea.getSubBoxInCenter(areaSize));
     }
     
@@ -444,6 +427,7 @@ public class NetherPortalMatcher {
     //detect existing obsidian frame
     
     //@Nullable
+    @Deprecated
     public static ObsidianFrame findEmptyObsidianFrame(
         IWorld world,
         BlockPos searchingCenter,
@@ -452,15 +436,15 @@ public class NetherPortalMatcher {
         int findingRadius
     ) {
         Tuple<Direction.Axis, Direction.Axis> anotherTwoAxis = Helper.getAnotherTwoAxis(normalAxis);
-        Direction roughTestObsidianFace1 = Direction.getFacingFromAxisDirection(
-            anotherTwoAxis.getA(),
-            Direction.AxisDirection.POSITIVE
+        Direction roughTestObsidianFace1 = Direction.getFacingFromAxis(
+            Direction.AxisDirection.POSITIVE,
+            anotherTwoAxis.getA()
         );
-        Direction roughTestObsidianFace2 = Direction.getFacingFromAxisDirection(
-            anotherTwoAxis.getB(),
-            Direction.AxisDirection.POSITIVE
+        Direction roughTestObsidianFace2 = Direction.getFacingFromAxis(
+            Direction.AxisDirection.POSITIVE,
+            anotherTwoAxis.getB()
         );
-        
+    
         Optional<ObsidianFrame> result =
             fromNearToFarWithinHeightLimit(searchingCenter, findingRadius, heightLimitOverworld)
                 .filter(
@@ -535,4 +519,5 @@ public class NetherPortalMatcher {
         
         return airCube.getMoved(new Vec3i(0, -downShift, 0));
     }
+    
 }

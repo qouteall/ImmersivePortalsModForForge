@@ -9,13 +9,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = NetworkManager.class)
+@Mixin(NetworkManager.class)
 public class MixinClientConnection {
     @Shadow
     private Channel channel;
     
     //avoid crashing by npe
-    @Inject(method = "closeChannel", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "Lnet/minecraft/network/NetworkManager;closeChannel(Lnet/minecraft/util/text/ITextComponent;)V", at = @At("HEAD"), cancellable = true)
     private void onBeforeDisconnect(ITextComponent text_1, CallbackInfo ci) {
         if (channel == null) {
             ci.cancel();

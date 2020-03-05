@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
@@ -18,9 +17,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = Minecraft.class)
+@Mixin(Minecraft.class)
 public class MixinMinecraftClient implements IEMinecraftClient {
+    @Final
     @Shadow
+    @Mutable
     private Framebuffer framebuffer;
     
     @Shadow
@@ -31,27 +32,29 @@ public class MixinMinecraftClient implements IEMinecraftClient {
     @Final
     public WorldRenderer worldRenderer;
     
+    @Inject(at = @At("TAIL"), method = "<init>")
+    private void onInitEnded(CallbackInfo info) {
+        OFInterface.initShaderCullingManager.run();
+    }
+    
     @Inject(
-        method = "runTick",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/world/ClientWorld;tick(Ljava/util/function/BooleanSupplier;)V",
             shift = At.Shift.AFTER
-        )
+        ),
+        method = "Lnet/minecraft/client/Minecraft;runTick()V"
     )
     private void onClientTick(CallbackInfo ci) {
         ModMain.postClientTickSignal.emit();
     }
     
     @Inject(
-        method = "updateWorldRenderer",
+        method = "Lnet/minecraft/client/Minecraft;updateWorldRenderer(Lnet/minecraft/client/world/ClientWorld;)V",
         at = @At("HEAD")
     )
     private void onSetWorld(ClientWorld clientWorld_1, CallbackInfo ci) {
         CGlobal.clientWorldLoader.cleanUp();
-        if (OFInterface.isOptifinePresent) {
-            //OFGlobal.shaderContextManager.cleanup();
-        }
     }
     
     @Override
@@ -65,7 +68,7 @@ public class MixinMinecraftClient implements IEMinecraftClient {
     }
     
     @Override
-    public void setWorldRenderer(WorldRenderer arg) {
-        worldRenderer = arg;
+    public void setWorldRenderer(WorldRenderer r) {
+        worldRenderer = r;
     }
 }

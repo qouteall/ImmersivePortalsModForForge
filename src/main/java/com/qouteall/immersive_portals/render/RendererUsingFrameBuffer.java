@@ -55,15 +55,15 @@ public class RendererUsingFrameBuffer extends PortalRenderer {
             //only support one-layer portal
             return;
         }
-        
+    
         if (!testShouldRenderPortal(portal, matrixStack)) {
             return;
         }
         
         portalLayers.push(portal);
-        
+    
         Framebuffer oldFrameBuffer = mc.getFramebuffer();
-        
+    
         ((IEMinecraftClient) mc).setFrameBuffer(secondaryFrameBuffer.fb);
         secondaryFrameBuffer.fb.bindFramebuffer(true);
         
@@ -74,14 +74,14 @@ public class RendererUsingFrameBuffer extends PortalRenderer {
             Minecraft.IS_RUNNING_ON_MAC
         );
         GL11.glDisable(GL11.GL_STENCIL_TEST);
-        
+    
         manageCameraAndRenderPortalContent(portal);
         
         ((IEMinecraftClient) mc).setFrameBuffer(oldFrameBuffer);
         oldFrameBuffer.bindFramebuffer(true);
         
         portalLayers.pop();
-        
+    
         renderSecondBufferIntoMainBuffer(portal, matrixStack);
     }
     

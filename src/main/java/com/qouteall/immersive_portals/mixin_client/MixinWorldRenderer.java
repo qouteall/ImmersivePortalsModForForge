@@ -2,29 +2,46 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ClientWorldLoader;
+import com.qouteall.immersive_portals.alternate_dimension.AlternateSky;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
+import com.qouteall.immersive_portals.far_scenery.FarSceneryRenderer;
 import com.qouteall.immersive_portals.render.MyBuiltChunkStorage;
+import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.ActiveRenderInfo;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.Matrix4f;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ViewFrustum;
+import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.ClippingHelperImpl;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.renderer.vertex.VertexBuffer;
+import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = WorldRenderer.class)
+@Mixin(WorldRenderer.class)
 public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     @Shadow
@@ -81,9 +98,29 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     @Shadow
     private boolean displayListEntitiesDirty;
     
-    //NOTE getViewVector is a wrong name
+    
+    @Shadow
+    private VertexBuffer skyVBO;
+    
+    @Shadow
+    @Final
+    private VertexFormat skyVertexFormat;
+    
+    @Shadow
+    @Final
+    private TextureManager textureManager;
+    
+    @Shadow
+    private VertexBuffer sky2VBO;
+    
+    @Shadow
+    private ChunkRenderDispatcher renderDispatcher;
+    
+    @Shadow
+    protected abstract void updateChunks(long limitTime);
+    
     @Redirect(
-        method = "getViewVector",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/WorldRenderer;renderBlockLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V"
@@ -97,9 +134,10 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         double double_2,
         double double_3
     ) {
-        boolean isTranslucent = renderLayer_1 == RenderType.translucent();
+        boolean isTranslucent = renderLayer_1 == RenderType.getTranslucent();
         if (isTranslucent) {
             CGlobal.renderer.onBeforeTranslucentRendering(matrices);
+            FarSceneryRenderer.onBeforeTranslucentRendering(matrices);
         }
         renderBlockLayer(
             renderLayer_1, matrices,
@@ -107,12 +145,13 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         );
         if (isTranslucent) {
             CGlobal.renderer.onAfterTranslucentRendering(matrices);
+    
         }
         
     }
     
     @Redirect(
-        method = "getViewVector",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
         at = @At(
             value = "INVOKE",
             target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"
@@ -125,7 +164,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     }
     
     @Redirect(
-        method = "loadRenderers",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;loadRenderers()V",
         at = @At(
             value = "NEW",
             target = "net/minecraft/client/renderer/ViewFrustum"
@@ -151,7 +190,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     //apply culling and apply optimization
     @Inject(
-        method = "renderBlockLayer",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;renderBlockLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
         at = @At("HEAD")
     )
     private void onStartRenderLayer(
@@ -162,28 +201,22 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         double double_3,
         CallbackInfo ci
     ) {
+        ObjectList<?> visibleChunks = this.renderInfos;
+        if (renderLayer_1 == RenderType.getSolid()) {
+            MyGameRenderer.doPruneVisibleChunks(visibleChunks);
+        }
+    
         if (CGlobal.renderer.isRendering()) {
-            if (CGlobal.renderFewerInFastGraphic) {
-                if (renderLayer_1 == RenderType.solid()) {
-                    if (!Minecraft.getInstance().gameSettings.fancyGraphics) {
-                        CGlobal.myGameRenderer.pruneVisibleChunks(
-                            renderInfos,
-                            renderDistanceChunks
-                        );
-                    }
-                }
-            }
-            
             CGlobal.myGameRenderer.updateCullingPlane(matrixStack_1);
             CGlobal.myGameRenderer.startCulling();
             if (MyRenderHelper.isRenderingMirror()) {
-                GL11.glCullFace(GL11.GL_FRONT);
+                MyRenderHelper.applyMirrorFaceCulling();
             }
         }
     }
     
     @Inject(
-        method = "renderBlockLayer",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;renderBlockLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
         at = @At("TAIL")
     )
     private void onStopRenderLayer(
@@ -196,13 +229,13 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     ) {
         if (CGlobal.renderer.isRendering()) {
             CGlobal.myGameRenderer.endCulling();
-            GL11.glCullFace(GL11.GL_BACK);
+            MyRenderHelper.recoverFaceCulling();
         }
     }
     
     //to let the player be rendered when rendering portal
     @Redirect(
-        method = "getViewVector",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/ActiveRenderInfo;isThirdPerson()Z"
@@ -217,7 +250,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     //render player itself when rendering portal
     @Redirect(
-        method = "getViewVector",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/WorldRenderer;renderEntity(Lnet/minecraft/entity/Entity;DDDFLcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;)V"
@@ -254,11 +287,11 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             float_1,
             matrixStack_1, vertexConsumerProvider_1
         );
+    
     }
     
-    //render weather in correct transformation
     @Inject(
-        method = "getViewVector",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/WorldRenderer;renderRainSnow(Lnet/minecraft/client/renderer/LightTexture;FDDD)V"
@@ -281,9 +314,8 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         }
     }
     
-    //render weather in correct transformation
     @Inject(
-        method = "getViewVector",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/WorldRenderer;renderRainSnow(Lnet/minecraft/client/renderer/LightTexture;FDDD)V",
@@ -308,13 +340,13 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     //avoid render glowing entities when rendering portal
     @Redirect(
-        method = "getViewVector",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/entity/Entity;isGlowing()Z"
         )
     )
-    private boolean doNotRenderGlowingWhenRenderingPortal(Entity entity) {
+    private boolean redirectGlowing(Entity entity) {
         if (CGlobal.renderer.isRendering()) {
             return false;
         }
@@ -324,7 +356,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     private static boolean isReloadingOtherWorldRenderers = false;
     
     //reload other world renderers when the main world renderer is reloaded
-    @Inject(method = "loadRenderers", at = @At("TAIL"))
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;loadRenderers()V", at = @At("TAIL"))
     private void onReload(CallbackInfo ci) {
         ClientWorldLoader clientWorldLoader = CGlobal.clientWorldLoader;
         WorldRenderer this_ = (WorldRenderer) (Object) this;
@@ -353,40 +385,43 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     //avoid translucent sort while rendering portal
     @Redirect(
-        method = "renderBlockLayer",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;renderBlockLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/RenderType;translucent()Lnet/minecraft/client/renderer/RenderType;"
+            target = "Lnet/minecraft/client/renderer/RenderType;getTranslucent()Lnet/minecraft/client/renderer/RenderType;"
         )
     )
     private RenderType redirectGetTranslucent() {
         if (CGlobal.renderer.isRendering()) {
             return null;
         }
-        return RenderType.translucent();
+        return RenderType.getTranslucent();
     }
     
-    @Inject(method = "renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("HEAD"))
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("HEAD"))
     private void onRenderSkyBegin(MatrixStack matrixStack_1, float float_1, CallbackInfo ci) {
         if (CGlobal.renderer.isRendering()) {
             //reset gl states
-            RenderType.getBlockRenderTypes().get(0).enable();
-            RenderType.getBlockRenderTypes().get(0).disable();
+            RenderType.getBlockRenderTypes().get(0).setupRenderState();
+            RenderType.getBlockRenderTypes().get(0).clearRenderState();
         }
         
         if (MyRenderHelper.isRenderingMirror()) {
-            GL11.glCullFace(GL11.GL_FRONT);
+            MyRenderHelper.applyMirrorFaceCulling();
         }
     }
     
-    @Inject(method = "renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("RETURN"))
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("RETURN"))
     private void onRenderSkyEnd(MatrixStack matrixStack_1, float float_1, CallbackInfo ci) {
-        GL11.glCullFace(GL11.GL_BACK);
+        
+        if (mc.world.dimension instanceof AlternateDimension) {
+            AlternateSky.renderAlternateSky(matrixStack_1, float_1);
+        }
+        
+        MyRenderHelper.recoverFaceCulling();
     }
     
-    @Inject(
-        method = "getViewVector", at = @At("HEAD")
-    )
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V", at = @At("HEAD"))
     private void onBeforeRender(
         MatrixStack matrices,
         float tickDelta,
@@ -421,10 +456,15 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         renderInfos = l;
     }
     
+    @Override
+    public ChunkRenderDispatcher getChunkBuilder() {
+        return renderDispatcher;
+    }
+    
     //update builtChunkStorage every frame
     //update terrain when rendering portal
     @Inject(
-        method = "setupTerrain",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;setupTerrain(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;ZIZ)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher;setRenderPosition(Lnet/minecraft/util/math/Vec3d;)V"
@@ -450,16 +490,19 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         }
     }
     
-    @ModifyVariable(
-        method = "updateChunks",
-        at = @At("HEAD")
+    @Redirect(
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/WorldRenderer;updateChunks(J)V"
+        )
     )
-    private long modifyLimitTime(long limitTime) {
+    private void redirectUpdateChunks(WorldRenderer worldRenderer, long limitTime) {
         if (CGlobal.renderer.isRendering()) {
-            return 0;
+            updateChunks(0);
         }
         else {
-            return limitTime;
+            updateChunks(limitTime);
         }
     }
     
@@ -479,4 +522,17 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         }
     }
     
+    
+    @Redirect(
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/IRenderTypeBuffer$Impl;finish(Lnet/minecraft/client/renderer/RenderType;)V"
+        )
+    )
+    private void redirectVertexDraw(IRenderTypeBuffer.Impl immediate, RenderType layer) {
+        MyRenderHelper.shouldForceDisableCull = MyRenderHelper.isRenderingMirror();
+        immediate.finish(layer);
+        MyRenderHelper.shouldForceDisableCull = false;
+    }
 }

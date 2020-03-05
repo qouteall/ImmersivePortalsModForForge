@@ -1,53 +1,17 @@
 package com.qouteall.immersive_portals;
 
+import com.qouteall.hiding_in_the_bushes.MyNetworkClient;
+import com.qouteall.hiding_in_the_bushes.O_O;
+import com.qouteall.immersive_portals.far_scenery.FarSceneryRenderer;
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
-import com.qouteall.immersive_portals.optifine_compatibility.OFInterfaceInitializer;
-import com.qouteall.immersive_portals.portal.*;
-import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
-import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
-import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
-import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
-import com.qouteall.immersive_portals.render.*;
+import com.qouteall.immersive_portals.render.MyGameRenderer;
+import com.qouteall.immersive_portals.render.PortalRenderer;
+import com.qouteall.immersive_portals.render.RendererUsingFrameBuffer;
+import com.qouteall.immersive_portals.render.RendererUsingStencil;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
-import net.minecraft.client.GameSettings;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererManager;
-import net.minecraft.entity.EntityType;
-import org.apache.commons.lang3.Validate;
-
-import java.lang.reflect.Field;
-import java.util.Arrays;
 
 public class ModMainClient {
-    
-    
-    public static void initRenderers(EntityRendererManager manager) {
-        Arrays.stream(new EntityType<?>[]{
-            Portal.entityType,
-            NetherPortalEntity.entityType,
-            NewNetherPortalEntity.entityType,
-            EndPortalEntity.entityType,
-            Mirror.entityType,
-            BreakableMirror.entityType,
-            GlobalTrackedPortal.entityType,
-            BorderPortal.entityType,
-            VerticalConnectingPortal.entityType
-        }).peek(
-            Validate::notNull
-        ).forEach(
-            entityType -> manager.register(
-                entityType,
-                (EntityRenderer) new PortalEntityRenderer(manager)
-            )
-        );
-    
-        manager.register(
-            LoadingIndicatorEntity.entityType,
-            new LoadingIndicatorRenderer(manager)
-        );
-    }
     
     public static void switchToCorrectRenderer() {
         if (CGlobal.renderer.isRendering()) {
@@ -55,7 +19,7 @@ public class ModMainClient {
             return;
         }
         if (OFInterface.isShaders.getAsBoolean()) {
-            switch (CGlobal.renderMode) {
+            switch (Global.renderMode) {
                 case normal:
                     switchRenderer(OFGlobal.rendererMixed);
                     break;
@@ -71,7 +35,7 @@ public class ModMainClient {
             }
         }
         else {
-            switch (CGlobal.renderMode) {
+            switch (Global.renderMode) {
                 case normal:
                     switchRenderer(CGlobal.rendererUsingStencil);
                     break;
@@ -95,64 +59,27 @@ public class ModMainClient {
         }
     }
     
-    public static boolean getIsOptifinePresent() {
-        try {
-            //do not load other optifine classes that loads vanilla classes
-            //that would load the class before mixin
-            Class.forName("optifine.ZipResourceProvider");
-            return true;
-        }
-        catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
-    
-    public static void onInitializeClient() {
+    public static void init() {
         Helper.log("initializing client");
-    
+        
+        
+        MyNetworkClient.init();
+        
         Minecraft.getInstance().execute(() -> {
             CGlobal.rendererUsingStencil = new RendererUsingStencil();
-        
+            CGlobal.rendererUsingFrameBuffer = new RendererUsingFrameBuffer();
+            
             CGlobal.renderer = CGlobal.rendererUsingStencil;
             CGlobal.clientWorldLoader = new ClientWorldLoader();
             CGlobal.myGameRenderer = new MyGameRenderer();
             CGlobal.clientTeleportationManager = new ClientTeleportationManager();
-        
-            OFInterface.isOptifinePresent = getIsOptifinePresent();
-            Helper.log(OFInterface.isOptifinePresent ? "Optifine is present" : "Optifine is not present");
-        
-            if (OFInterface.isOptifinePresent) {
-                OFInterfaceInitializer.init();
-                OFInterface.initShaderCullingManager.run();
-            }
         });
+        
+        FarSceneryRenderer.init();
+        
+        O_O.loadConfigFabric();
+        
+        DubiousLightUpdate.init();
     }
     
-    private static Field gameSettings_ofRenderRegions;
-    
-    public static void turnOffRenderRegionOption() {
-        if (!OFInterface.isOptifinePresent) {
-            return;
-        }
-        
-        if (gameSettings_ofRenderRegions == null) {
-            try {
-                gameSettings_ofRenderRegions =
-                    GameSettings.class.getDeclaredField("ofRenderRegions");
-            }
-            catch (NoSuchFieldException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-        
-        try {
-            gameSettings_ofRenderRegions.set(
-                Minecraft.getInstance().gameSettings,
-                false
-            );
-        }
-        catch (IllegalAccessException e) {
-            throw new IllegalStateException(e);
-        }
-    }
 }

@@ -55,7 +55,27 @@ public class MyFloatingIslandChunkGenerator extends EndChunkGenerator {
             transformX(x, z), transformZ(x, z),
             d, e, f, g, i, j
         );
-        
+
+//        IESurfaceChunkGenerator ie = (IESurfaceChunkGenerator) this;
+//
+//        double[] ds = this.computeNoiseRange(x, z);
+//        double h = ds[0];
+//        double k = ds[1];
+//        double l = this.method_16409();
+//        double m = this.method_16410();
+//
+//        for(int n = 0; n < this.getNoiseSizeY(); ++n) {
+//            double o = ie.sampleNoise_(x, n, z, d, e, f, g);
+//            o -= this.computeNoiseFalloff(h, k, n);
+//            if ((double)n > l) {
+//                o = MathHelper.clampedLerp(o, (double)j, ((double)n - l) / (double)i);
+//            } else if ((double)n < m) {
+//                o = MathHelper.clampedLerp(o, -30.0D, (m - (double)n) / (m - 1.0D));
+//            }
+//
+//            buffer[n] = o;
+//        }
+    
     }
     
 }
