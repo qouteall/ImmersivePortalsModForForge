@@ -14,7 +14,7 @@ loaderVersion="[28,)" #mandatory (28 is current forge version)
 # The modid of the mod
 modId="immersive_portals" #mandatory
 # The version number of the mod - there's a few well known ${} variables useable here or just hardcode it
-version="0.4" #mandatory
+version="0.5" #mandatory
  # A display name for the mod
 displayName="Immersive Portals" #mandatory
 # A URL to query for updates for this mod. See the JSON update specification <here>
@@ -34,7 +34,7 @@ https://www.curseforge.com/minecraft/mc-mods/immersive-portals-for-forge
 '''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies.examplemod]] #optional
-    # the modid of the dependency
+    # the modid of the dependencyr
     modId="forge" #mandatory
     # Does this dependency have to exist - if not, ordering below must be specified
     mandatory=true #mandatory

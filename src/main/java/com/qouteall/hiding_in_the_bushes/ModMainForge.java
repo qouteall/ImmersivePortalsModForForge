@@ -1,6 +1,5 @@
 package com.qouteall.hiding_in_the_bushes;
 
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
@@ -87,6 +86,7 @@ public class ModMainForge {
         ConfigClient.init();
     }
     
+    @OnlyIn(Dist.CLIENT)
     private static void initPortalRenderers() {
         EntityRendererManager manager = Minecraft.getInstance().getRenderManager();
         
@@ -131,8 +131,8 @@ public class ModMainForge {
         });
         
         initPortalRenderers();
-        
-        OFInterface.isOptifinePresent = getIsOptifinePresent();
+    
+        OFInterface.isOptifinePresent = MyMixinConnector.getIsOptifinePresent();
         
         if (OFInterface.isOptifinePresent) {
             OFBuiltChunkNeighborFix.init();
@@ -140,19 +140,6 @@ public class ModMainForge {
         }
         
         Helper.log(OFInterface.isOptifinePresent ? "Optifine is present" : "Optifine is not present");
-    }
-    
-    @OnlyIn(Dist.CLIENT)
-    public static boolean getIsOptifinePresent() {
-        try {
-            //do not load other optifine classes that loads vanilla classes
-            //that would load the class before mixin
-            Class.forName("optifine.ZipResourceProvider");
-            return true;
-        }
-        catch (ClassNotFoundException e) {
-            return false;
-        }
     }
     
     private void enqueueIMC(final InterModEnqueueEvent event) {

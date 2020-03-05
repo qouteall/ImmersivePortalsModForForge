@@ -411,11 +411,11 @@ public class Portal extends Entity {
     ) {
         double lastDistance = getDistanceToPlane(from);
         double nowDistance = getDistanceToPlane(to);
-        
+    
         if (!(lastDistance > 0 && nowDistance < 0)) {
             return null;
         }
-        
+    
         Vec3d lineOrigin = from;
         Vec3d lineDirection = to.subtract(from).normalize();
     
@@ -426,7 +426,7 @@ public class Portal extends Entity {
             lineDirection
         );
         Vec3d collidingPoint = lineOrigin.add(lineDirection.scale(collidingT));
-        
+    
         if (isPointInPortalProjection(collidingPoint)) {
             return collidingPoint;
         }
