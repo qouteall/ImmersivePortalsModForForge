@@ -34,10 +34,4 @@ public class HandReachTweak {
     }
     
     
-    public static void init() {
-    
-    
-    }
-    
-    
 }
