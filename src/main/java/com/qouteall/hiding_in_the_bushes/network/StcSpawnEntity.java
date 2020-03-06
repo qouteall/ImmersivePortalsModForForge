@@ -2,6 +2,7 @@ package com.qouteall.hiding_in_the_bushes.network;
 
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -81,13 +82,16 @@ public class StcSpawnEntity {
             ));
             return;
         }
-        
-        Entity entity = entityType.get().create(
-            world
-        );
+    
+        Entity entity = entityType.get().create(world);
         entity.read(tag);
         entity.setEntityId(entityId);
         entity.setPacketCoordinates(entity.getPosX(), entity.getPosY(), entity.getPosZ());
         world.addEntity(entityId, entity);
+    
+        if (entity instanceof Portal) {
+            //do not create client world while rendering or gl states will be disturbed
+            CGlobal.clientWorldLoader.getOrCreateFakedWorld(((Portal) entity).dimensionTo);
+        }
     }
 }

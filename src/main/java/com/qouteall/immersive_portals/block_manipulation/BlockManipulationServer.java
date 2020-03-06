@@ -64,15 +64,19 @@ public class BlockManipulationServer {
     ) {
         Vec3d pos = new Vec3d(requestPos);
         Vec3d playerPos = player.getPositionVec();
+        double multiplier = HandReachTweak.getActualHandReachMultiplier(player);
+        double distanceSquare = 6 * 6 * multiplier * multiplier;
         if (player.dimension == dimension) {
-            return playerPos.squareDistanceTo(pos) < 100;
+            if (playerPos.squareDistanceTo(pos) < distanceSquare) {
+                return true;
+            }
         }
         return McHelper.getServerPortalsNearby(
             player,
             20
         ).anyMatch(portal ->
             portal.dimensionTo == dimension &&
-                portal.applyTransformationToPoint(playerPos).squareDistanceTo(pos) < 100
+                portal.applyTransformationToPoint(playerPos).squareDistanceTo(pos) < distanceSquare
         );
     }
     

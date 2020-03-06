@@ -4,6 +4,8 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "imm_ptl.refmap.json",
   "mixins": [
+    "block_manipulation/MixinLivingEntity",
+    "block_manipulation/MixinStatusEffect",
     "chunk_sync/MixinChunkHolder",
     "chunk_sync/MixinChunkTicketManager",
     "chunk_sync/MixinThreadedAnvilChunkStorage_C",

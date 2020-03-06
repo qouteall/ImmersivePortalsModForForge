@@ -41,14 +41,20 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MyCommandServer {
+    public static void registerClientDebugCommand(
+        CommandDispatcher<CommandSource> dispatcher
+    ) {
+        MyCommandClient.register(dispatcher);
+    }
+    
     public static void register(
         CommandDispatcher<CommandSource> dispatcher
     ) {
-    
+        
         LiteralArgumentBuilder<CommandSource> builder = Commands
             .literal("portal")
             .requires(commandSource -> commandSource.hasPermissionLevel(2));
-    
+        
         builder.then(Commands
             .literal("border_set")
             .then(Commands

@@ -510,7 +510,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     //minecraft has two places rebuilding chunks in render thread
     //one in updateChunks() one in setupTerrain()
     @ModifyConstant(
-        method = "setupTerrain",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;setupTerrain(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;ZIZ)V",
         constant = @Constant(doubleValue = 768.0D)
     )
     private double modifyRebuildRange(double original) {

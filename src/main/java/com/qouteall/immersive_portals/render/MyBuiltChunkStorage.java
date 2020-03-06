@@ -18,7 +18,11 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.Validate;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -129,10 +133,14 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     
     @Override
     public void markForRerender(int int_1, int int_2, int int_3, boolean boolean_1) {
+        //this method may get called by another thread?
         ChunkRenderDispatcher.ChunkRender builtChunk = provideBuiltChunk(
             new BlockPos(int_1 * 16, int_2 * 16, int_3 * 16)
         );
         builtChunk.setNeedsUpdate(boolean_1);
+//        MinecraftClient.getInstance().execute(() -> {
+//
+//        });
     }
     
     private Preset myCreatePreset(double playerXCoord, double playerZCoord) {

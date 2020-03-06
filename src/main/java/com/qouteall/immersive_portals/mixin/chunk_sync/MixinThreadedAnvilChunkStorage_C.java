@@ -85,7 +85,7 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
      * @author qouteall
      */
     @Overwrite
-    private void sendChunkData(
+    public void sendChunkData(
         ServerPlayerEntity player,
         IPacket<?>[] packets_1,
         Chunk worldChunk_1
