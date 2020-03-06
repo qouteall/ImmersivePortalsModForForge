@@ -1,12 +1,13 @@
 package com.qouteall.hiding_in_the_bushes;
 
+import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
+import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimensionEntry;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.OFInterface;
-import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
-import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimensionEntry;
+import com.qouteall.immersive_portals.block_manipulation.HandReachTweak;
 import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkNeighborFix;
 import com.qouteall.immersive_portals.optifine_compatibility.OFInterfaceInitializer;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
@@ -19,6 +20,7 @@ import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
+import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalMatcher;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import com.qouteall.immersive_portals.render.LoadingIndicatorRenderer;
 import com.qouteall.immersive_portals.render.PortalEntityRenderer;
@@ -30,12 +32,18 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
+import net.minecraft.potion.Effect;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.EffectType;
+import net.minecraft.potion.Potion;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -82,8 +90,9 @@ public class ModMainForge {
         
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
-        
+    
         ConfigClient.init();
+        ConfigServer.init();
     }
     
     @OnlyIn(Dist.CLIENT)
@@ -122,12 +131,14 @@ public class ModMainForge {
         ModMainClient.init();
         
         Minecraft.getInstance().execute(() -> {
-            if (ConfigClient.isInitialCompatibilityRenderMode()) {
+            if (ConfigClient.instance.compatibilityRenderMode.get()) {
                 Global.renderMode = Global.RenderMode.compatibility;
                 Helper.log("Initially Switched to Compatibility Render Mode");
             }
-            Global.doCheckGlError = ConfigClient.getDoCheckGlError();
+            Global.doCheckGlError = ConfigClient.instance.doCheckGlError.get();
             Helper.log("Do Check Gl Error: " + Global.doCheckGlError);
+            Global.renderYourselfInPortal = ConfigClient.instance.renderYourselfInPortal.get();
+            Global.maxPortalLayer = ConfigClient.instance.maxPortalLayer.get();
         });
         
         initPortalRenderers();
@@ -154,7 +165,8 @@ public class ModMainForge {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
-    
+        NetherPortalMatcher.findingRadius = ConfigServer.instance.portalSearchingRange.get();
+        Global.longerReachInCreative = ConfigServer.instance.longReachInCreative.get();
     }
     
     @SubscribeEvent
@@ -471,6 +483,38 @@ public class ModMainForge {
             );
             AlternateDimensionEntry.instance5.setRegistryName("immersive_portals:alternate5");
             event.getRegistry().register(AlternateDimensionEntry.instance5);
+        }
+    
+        @SubscribeEvent
+        public static void onEffectRegistry(RegistryEvent.Register<Effect> event) {
+            Effect.class.hashCode();
+            HandReachTweak.longerReachEffect = HandReachTweak.statusEffectConstructor
+                .apply(EffectType.BENEFICIAL, 0)
+                .addAttributesModifier(
+                    HandReachTweak.handReachMultiplierAttribute,
+                    "91AEAA56-2333-2333-2333-2F7F68070635",
+                    0.5,
+                    AttributeModifier.Operation.MULTIPLY_TOTAL
+                );
+            Registry.register(
+                Registry.EFFECTS,
+                new ResourceLocation("immersive_portals", "longer_reach"),
+                HandReachTweak.longerReachEffect
+            );
+        }
+    
+        @SubscribeEvent
+        public static void onPotionRegistry(RegistryEvent.Register<Potion> event) {
+            HandReachTweak.longerReachPotion = new Potion(
+                new EffectInstance(
+                    HandReachTweak.longerReachEffect, 3600, 1
+                )
+            );
+            Registry.register(
+                Registry.POTION,
+                new ResourceLocation("immersive_portals", "longer_reach_potion"),
+                HandReachTweak.longerReachPotion
+            );
         }
     }
 }

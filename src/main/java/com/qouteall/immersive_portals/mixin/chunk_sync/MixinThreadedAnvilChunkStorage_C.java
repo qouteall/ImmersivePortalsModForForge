@@ -4,6 +4,15 @@ import com.mojang.datafixers.util.Either;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.IPacket;
+import net.minecraft.util.concurrent.ITaskExecutor;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkTaskPriorityQueueSorter;
+import net.minecraft.world.server.ChunkHolder;
+import net.minecraft.world.server.ChunkManager;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.server.ServerWorldLightManager;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -17,15 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.IPacket;
-import net.minecraft.util.concurrent.ITaskExecutor;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkTaskPriorityQueueSorter;
-import net.minecraft.world.server.ChunkHolder;
-import net.minecraft.world.server.ChunkManager;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.server.ServerWorldLightManager;
 
 @Mixin(ChunkManager.class)
 public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvilChunkStorage {

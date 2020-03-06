@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.optifine_compatibility;
 
 import com.mojang.blaze3d.platform.GLX;
 import com.qouteall.immersive_portals.CHelper;
+import net.minecraft.client.util.LWJGLMemoryUntracker;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL20C;
@@ -14,7 +15,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import net.minecraft.client.util.LWJGLMemoryUntracker;
 
 //When shaders are rendering improperly, it's possibly because
 //an uniform variable is not initialized

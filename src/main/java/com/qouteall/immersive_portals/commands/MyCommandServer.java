@@ -32,6 +32,7 @@ import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -54,7 +55,7 @@ public class MyCommandServer {
         LiteralArgumentBuilder<CommandSource> builder = Commands
             .literal("portal")
             .requires(commandSource -> commandSource.hasPermissionLevel(2));
-        
+    
         builder.then(Commands
             .literal("border_set")
             .then(Commands

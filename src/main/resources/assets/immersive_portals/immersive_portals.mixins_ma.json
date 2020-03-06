@@ -7,7 +7,7 @@
     "alternate_dimension/MixinMobSpawnerLogic",
     "block_manipulation/MixinItem",
     "block_manipulation/MixinServerPlayerInteractionManager",
-    "block_manipulation/MixinServerPlayNetworkHandler",
+    "block_manipulation/MixinServerPlayNetworkHandler_B",
     "MixinDimensionType",
     "MixinForgeDimensionManager",
     "MixinForgeNetworkHooks",

@@ -11,6 +11,8 @@ public class ConfigClient {
     public static final ForgeConfigSpec spec;
     public final ForgeConfigSpec.BooleanValue compatibilityRenderMode;
     public final ForgeConfigSpec.BooleanValue doCheckGlError;
+    public final ForgeConfigSpec.IntValue maxPortalLayer;
+    public final ForgeConfigSpec.BooleanValue renderYourselfInPortal;
     
     public ConfigClient(ForgeConfigSpec.Builder builder) {
         compatibilityRenderMode = builder
@@ -18,15 +20,14 @@ public class ConfigClient {
             .define("compatibility_render_mode", false);
         doCheckGlError = builder
             .comment("With this the performance may drop")
-            .define("do_check_gl_error", false);
-    }
-    
-    public static boolean isInitialCompatibilityRenderMode() {
-        return instance.compatibilityRenderMode.get();
-    }
-    
-    public static boolean getDoCheckGlError() {
-        return instance.doCheckGlError.get();
+            .define("check_gl_error", false);
+        maxPortalLayer = builder
+            .comment("Max Portal-in-portal Render Layer")
+            .defineInRange("max_portal_layer", 5, 1, 10);
+        renderYourselfInPortal = builder
+            .comment("Render Yourself In Portal")
+            .define("render_yourself_in_portal", true);
+        
     }
     
     static {

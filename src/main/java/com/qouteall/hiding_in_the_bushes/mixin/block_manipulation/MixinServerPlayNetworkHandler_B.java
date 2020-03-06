@@ -7,8 +7,6 @@ import net.minecraft.network.play.ServerPlayNetHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(ServerPlayNetHandler.class)
@@ -25,6 +23,6 @@ public class MixinServerPlayNetworkHandler_B {
     )
     private double modifyPlacingBlockRangeSquared(IAttributeInstance iAttributeInstance) {
         double multiplier = HandReachTweak.getActualHandReachMultiplier(player);
-        return iAttributeInstance.getValue() * multiplier * multiplier;
+        return iAttributeInstance.getValue() * multiplier;
     }
 }
