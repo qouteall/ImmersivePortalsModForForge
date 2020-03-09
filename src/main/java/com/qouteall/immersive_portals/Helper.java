@@ -214,21 +214,21 @@ public class Helper {
             )
         };
     }
-    
-    public static BatchTestResult batchTest(
-        Vec3d[] testObjs,
-        Predicate<Vec3d> predicate
-    ) {
-        assert testObjs.length == 8;
-        boolean firstResult = predicate.test(testObjs[0]);
-        for (int i = 1; i < testObjs.length; i++) {
-            boolean thisResult = predicate.test(testObjs[i]);
-            if (thisResult != firstResult) {
-                return BatchTestResult.both;
-            }
-        }
-        return firstResult ? BatchTestResult.all_true : BatchTestResult.all_false;
-    }
+
+//    public static BatchTestResult batchTest(
+//        Vec3d[] testObjs,
+//        Predicate<Vec3d> predicate
+//    ) {
+//        assert testObjs.length == 8;
+//        boolean firstResult = predicate.test(testObjs[0]);
+//        for (int i = 1; i < testObjs.length; i++) {
+//            boolean thisResult = predicate.test(testObjs[i]);
+//            if (thisResult != firstResult) {
+//                return BatchTestResult.both;
+//            }
+//        }
+//        return firstResult ? BatchTestResult.all_true : BatchTestResult.all_false;
+//    }
     
     @Deprecated
     public static Tuple<Direction.Axis, Direction.Axis> getPerpendicularAxis(Direction facing) {
@@ -258,6 +258,23 @@ public class Helper {
         double size = getCoordinate(getBoxSize(box), direction.getAxis());
         Vec3d shrinkVec = new Vec3d(direction.getDirectionVec()).scale(size);
         return box.contract(shrinkVec.x, shrinkVec.y, shrinkVec.z);
+    }
+    
+    public static IntegerAABBInclusive expandRectangle(
+        BlockPos startingPos,
+        Predicate<BlockPos> blockPosPredicate, Direction.Axis axis
+    ) {
+        IntegerAABBInclusive wallArea = new IntegerAABBInclusive(startingPos, startingPos);
+        
+        for (Direction direction : getAnotherFourDirections(axis)) {
+            
+            wallArea = expandArea(
+                wallArea,
+                blockPosPredicate,
+                direction
+            );
+        }
+        return wallArea;
     }
     
     public static class SimpleBox<T> {
@@ -362,7 +379,7 @@ public class Helper {
                 return new Tuple<>(aIterator.next(), bIterator.next());
             }
         };
-    
+        
         return Streams.stream(iterator);
     }
     
@@ -443,12 +460,6 @@ public class Helper {
     
     public static double nanoToSecond(long nano) {
         return nano / 1000000000.0;
-    }
-    
-    public enum BatchTestResult {
-        all_true,
-        all_false,
-        both
     }
     
     public static IntegerAABBInclusive expandArea(
@@ -555,7 +566,7 @@ public class Helper {
                 fillBuffer();
                 return iterator.hasNext();
             }
-    
+            
             @Override
             public S next() {
                 fillBuffer();

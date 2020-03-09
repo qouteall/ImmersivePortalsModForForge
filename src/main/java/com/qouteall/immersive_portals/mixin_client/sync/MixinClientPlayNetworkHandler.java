@@ -194,11 +194,11 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
             counter[0] = (int) (Math.random() * 200);
             ModMain.clientTaskList.addTask(() -> {
                 ClientWorld world1 = CGlobal.clientWorldLoader.getWorld(pos.dimension);
-    
+        
                 if (world1.getChunkProvider().chunkExists(pos.x, pos.z)) {
                     return true;
                 }
-    
+        
                 if (counter[0] > 0) {
                     counter[0]--;
                     return false;

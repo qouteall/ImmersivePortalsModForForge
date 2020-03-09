@@ -11,8 +11,9 @@ import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.portal.GeometryPortalShape;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.portal.SpecialPortalShape;
+import com.qouteall.immersive_portals.portal.global_portals.BorderBarrierFiller;
 import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
@@ -32,7 +33,6 @@ import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -85,6 +85,15 @@ public class MyCommandServer {
             .literal("border_remove")
             .executes(context -> {
                 BorderPortal.removeBorderPortal(context.getSource().getWorld());
+                return 0;
+            })
+        );
+        builder.then(Commands
+            .literal("fill_border_with_barrier")
+            .executes(context -> {
+                BorderBarrierFiller.onCommandExecuted(
+                    context.getSource().asPlayer()
+                );
                 return 0;
             })
         );
@@ -524,19 +533,26 @@ public class MyCommandServer {
         newPortal.destination = portal.getPositionVec();
         newPortal.loadFewerChunks = portal.loadFewerChunks;
         newPortal.specificPlayer = portal.specificPlayer;
-        
+    
         newPortal.width = portal.width;
         newPortal.height = portal.height;
         newPortal.axisW = portal.axisW;
         newPortal.axisH = portal.axisH.scale(-1);
-        
+    
         if (portal.specialShape != null) {
-            newPortal.specialShape = new SpecialPortalShape();
+            newPortal.specialShape = new GeometryPortalShape();
             initFlippedShape(newPortal, portal.specialShape);
         }
-        
+    
+        newPortal.initCullableRange(
+            portal.cullableXStart,
+            portal.cullableXEnd,
+            -portal.cullableYStart,
+            -portal.cullableYEnd
+        );
+    
         toWorld.addEntity(newPortal);
-        
+    
         return newPortal;
     }
     
@@ -557,25 +573,32 @@ public class MyCommandServer {
         newPortal.destination = portal.destination;
         newPortal.loadFewerChunks = portal.loadFewerChunks;
         newPortal.specificPlayer = portal.specificPlayer;
-        
+    
         newPortal.width = portal.width;
         newPortal.height = portal.height;
         newPortal.axisW = portal.axisW;
         newPortal.axisH = portal.axisH.scale(-1);
-        
+    
         if (portal.specialShape != null) {
-            newPortal.specialShape = new SpecialPortalShape();
+            newPortal.specialShape = new GeometryPortalShape();
             initFlippedShape(newPortal, portal.specialShape);
         }
-        
+    
+        newPortal.initCullableRange(
+            portal.cullableXStart,
+            portal.cullableXEnd,
+            -portal.cullableYStart,
+            -portal.cullableYEnd
+        );
+    
         world.addEntity(newPortal);
-        
+    
         return newPortal;
     }
     
-    private static void initFlippedShape(Portal newPortal, SpecialPortalShape specialShape) {
+    private static void initFlippedShape(Portal newPortal, GeometryPortalShape specialShape) {
         newPortal.specialShape.triangles = specialShape.triangles.stream()
-            .map(triangle -> new SpecialPortalShape.TriangleInPlane(
+            .map(triangle -> new GeometryPortalShape.TriangleInPlane(
                 triangle.x1,
                 -triangle.y1,
                 triangle.x2,

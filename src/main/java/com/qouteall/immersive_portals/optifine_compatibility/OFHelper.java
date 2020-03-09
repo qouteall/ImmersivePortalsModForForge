@@ -32,7 +32,7 @@ public class OFHelper {
             Helper.err("OpenGL Error" + errorCode);
             Helper.log(message);
             CHelper.printChat(message);
-    
+            
             Global.renderMode = Global.RenderMode.compatibility;
         }
     

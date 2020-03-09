@@ -43,7 +43,7 @@ public class ModMainClient {
                     switchRenderer(CGlobal.rendererUsingFrameBuffer);
                     break;
                 case debug:
-                    //TODO add debug renderer for non shader mode
+                    switchRenderer(CGlobal.rendererDebug);
                     break;
                 case none:
                     switchRenderer(CGlobal.rendererDummy);
@@ -61,14 +61,15 @@ public class ModMainClient {
     
     public static void init() {
         Helper.log("initializing client");
-    
-    
+        
+        
+        
         MyNetworkClient.init();
         
         Minecraft.getInstance().execute(() -> {
             CGlobal.rendererUsingStencil = new RendererUsingStencil();
             CGlobal.rendererUsingFrameBuffer = new RendererUsingFrameBuffer();
-    
+        
             CGlobal.renderer = CGlobal.rendererUsingStencil;
             CGlobal.clientWorldLoader = new ClientWorldLoader();
             CGlobal.myGameRenderer = new MyGameRenderer();
@@ -79,7 +80,7 @@ public class ModMainClient {
     
         O_O.loadConfigFabric();
     
-        DubiousLightUpdate.init();
+        DubiousThings.init();
     }
     
 }

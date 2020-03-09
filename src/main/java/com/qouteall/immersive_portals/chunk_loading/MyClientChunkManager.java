@@ -102,7 +102,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
                 );
                 return null;
             }
-    
+            
             worldChunk_1 = new Chunk(this.world, chunkPos, biomeArray_1);
             worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
             chunkMap.put(chunkPos, worldChunk_1);
@@ -110,11 +110,11 @@ public class MyClientChunkManager extends ClientChunkProvider {
         else {
             worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
         }
-    
+        
         ChunkSection[] chunkSections_1 = worldChunk_1.getSections();
         WorldLightManager lightingProvider_1 = this.getLightManager();
         lightingProvider_1.enableLightSources(chunkPos, true);
-    
+        
         for (int int_5 = 0; int_5 < chunkSections_1.length; ++int_5) {
             ChunkSection chunkSection_1 = chunkSections_1[int_5];
             lightingProvider_1.updateSectionStatus(
@@ -122,7 +122,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
                 ChunkSection.isEmpty(chunkSection_1)
             );
         }
-    
+        
         this.world.onChunkLoaded(int_1, int_2);
         return worldChunk_1;
     }

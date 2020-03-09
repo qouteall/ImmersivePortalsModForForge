@@ -189,7 +189,7 @@ public class MyGameRenderer {
         //equation: planeNormal * p + c > 0
         //-planeNormal * portalCenter = c
         double c = planeNormal.scale(-1).dotProduct(portalPos);
-    
+        
         return new double[]{
             planeNormal.x,
             planeNormal.y,
@@ -230,14 +230,18 @@ public class MyGameRenderer {
     }
     
     public void resetFog() {
+        if (OFInterface.isFogDisabled.getAsBoolean()) {
+            return;
+        }
+    
         ActiveRenderInfo camera = mc.gameRenderer.getActiveRenderInfo();
         float g = mc.gameRenderer.getFarPlaneDistance();
-        
+    
         Vec3d cameraPos = camera.getProjectedView();
         double d = cameraPos.getX();
         double e = cameraPos.getY();
         double f = cameraPos.getZ();
-        
+    
         boolean bl2 = mc.world.dimension.doesXZShowFog(
             MathHelper.floor(d),
             MathHelper.floor(e)
@@ -249,7 +253,6 @@ public class MyGameRenderer {
             Math.max(g - 16.0F, 32.0F),
             bl2
         );
-        
     }
     
     //render fewer chunks when rendering portal

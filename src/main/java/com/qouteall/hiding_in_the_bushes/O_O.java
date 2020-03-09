@@ -1,9 +1,12 @@
 package com.qouteall.hiding_in_the_bushes;
 
 import com.qouteall.immersive_portals.Global;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IWorld;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
@@ -56,5 +59,9 @@ public class O_O {
     
     public static void loadConfigFabric() {
         //nothing
+    }
+    
+    public static boolean isObsidian(IWorld world, BlockPos obsidianPos) {
+        return world.getBlockState(obsidianPos).isPortalFrame(world, obsidianPos);
     }
 }

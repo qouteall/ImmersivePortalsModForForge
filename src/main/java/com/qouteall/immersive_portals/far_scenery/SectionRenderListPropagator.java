@@ -23,10 +23,7 @@ public class SectionRenderListPropagator {
     ) {
         List<ChunkRenderDispatcher.ChunkRender> result = new ArrayList<>();
         
-        ChunkRenderDispatcher.ChunkRender starting = chunks.myGetRenderChunkRaw(
-            cameraPos,
-            chunks.renderChunks
-        );
+        ChunkRenderDispatcher.ChunkRender starting = chunks.myGetRenderChunkRaw(cameraPos, chunks.renderChunks);
         
         Predicate<ChunkRenderDispatcher.ChunkRender> visitAndGetIsNewlyVisiting =
             builtChunk -> builtChunk.setFrameIndex(uniqueInt);

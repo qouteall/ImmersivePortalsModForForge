@@ -63,7 +63,7 @@ public class ClientWorldLoader {
             });
         }
         renderHelperMap.values().forEach(DimensionRenderHelper::tick);
-    
+        
     }
     
     private void tickRemoteWorld(ClientWorld newWorld) {
@@ -118,7 +118,7 @@ public class ClientWorldLoader {
         if (!clientWorldMap.containsKey(dimension)) {
             return createFakedClientWorld(dimension);
         }
-    
+        
         return getWorld(dimension);
     }
     

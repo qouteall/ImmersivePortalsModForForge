@@ -19,7 +19,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-
 import java.util.UUID;
 
 public class Portal extends Entity {
@@ -37,10 +36,15 @@ public class Portal extends Entity {
     public boolean loadFewerChunks = true;
     public boolean teleportable = true;
     public UUID specificPlayer;
-    public SpecialPortalShape specialShape;
+    public GeometryPortalShape specialShape;
     
     private AxisAlignedBB boundingBoxCache;
     private Vec3d normal;
+    
+    public double cullableXStart = 0;
+    public double cullableXEnd = 0;
+    public double cullableYStart = 0;
+    public double cullableYEnd = 0;
     
     public static final SignalArged<Portal> clientPortalTickSignal = new SignalArged<>();
     public static final SignalArged<Portal> serverPortalTickSignal = new SignalArged<>();
@@ -75,7 +79,7 @@ public class Portal extends Entity {
             specificPlayer = compoundTag.getUniqueId("specificPlayer");
         }
         if (compoundTag.contains("specialShape")) {
-            specialShape = new SpecialPortalShape(
+            specialShape = new GeometryPortalShape(
                 compoundTag.getList("specialShape", 6)
             );
             if (specialShape.triangles.isEmpty()) {
@@ -85,6 +89,30 @@ public class Portal extends Entity {
         if (compoundTag.contains("teleportable")) {
             teleportable = compoundTag.getBoolean("teleportable");
         }
+        if (compoundTag.contains("cullableXStart")) {
+            cullableXStart = compoundTag.getDouble("cullableXStart");
+            cullableXEnd = compoundTag.getDouble("cullableXEnd");
+            cullableYStart = compoundTag.getDouble("cullableYStart");
+            cullableYEnd = compoundTag.getDouble("cullableYEnd");
+        }
+        else {
+            if (specialShape != null) {
+                cullableXStart = 0;
+                cullableXEnd = 0;
+                cullableYStart = 0;
+                cullableYEnd = 0;
+            }
+            else {
+                initDefaultCullableRange();
+            }
+        }
+    }
+    
+    public boolean isCullable() {
+        if (specialShape == null) {
+            initDefaultCullableRange();
+        }
+        return cullableXStart != cullableXEnd;
     }
     
     public boolean isTeleportable() {
@@ -100,16 +128,43 @@ public class Portal extends Entity {
         compoundTag.putInt("dimensionTo", dimensionTo.getId());
         Helper.putVec3d(compoundTag, "destination", destination);
         compoundTag.putBoolean("loadFewerChunks", loadFewerChunks);
-    
+        
         if (specificPlayer != null) {
             compoundTag.putUniqueId("specificPlayer", specificPlayer);
         }
-    
+        
         if (specialShape != null) {
             compoundTag.put("specialShape", specialShape.writeToTag());
         }
-    
+        
         compoundTag.putBoolean("teleportable", teleportable);
+        
+        if (specialShape == null) {
+            initDefaultCullableRange();
+        }
+        compoundTag.putDouble("cullableXStart", cullableXStart);
+        compoundTag.putDouble("cullableXEnd", cullableXEnd);
+        compoundTag.putDouble("cullableYStart", cullableYStart);
+        compoundTag.putDouble("cullableYEnd", cullableYEnd);
+    }
+    
+    public void initDefaultCullableRange() {
+        cullableXStart = -(width / 2);
+        cullableXEnd = (width / 2);
+        cullableYStart = -(height / 2);
+        cullableYEnd = (height / 2);
+    }
+    
+    public void initCullableRange(
+        double cullableXStart,
+        double cullableXEnd,
+        double cullableYStart,
+        double cullableYEnd
+    ) {
+        this.cullableXStart = Math.min(cullableXStart, cullableXEnd);
+        this.cullableXEnd = Math.max(cullableXStart, cullableXEnd);
+        this.cullableYStart = Math.min(cullableYStart, cullableYEnd);
+        this.cullableYEnd = Math.max(cullableYStart, cullableYEnd);
     }
     
     @Override
@@ -119,11 +174,6 @@ public class Portal extends Entity {
     
     @Override
     public void tick() {
-//        if (boundingBoxCache == null) {
-//            boundingBoxCache = getPortalCollisionBox();
-//        }
-//        setBoundingBox(boundingBoxCache);
-    
         if (world.isRemote) {
             clientPortalTickSignal.emit(this);
             tickClient();
@@ -226,27 +276,27 @@ public class Portal extends Entity {
         assert portals[1].dimension == dimension1;
         assert portals[2].dimension == dimension2;
         assert portals[3].dimension == dimension2;
-    
+        
         portals[0].dimensionTo = dimension2;
         portals[1].dimensionTo = dimension2;
         portals[2].dimensionTo = dimension1;
         portals[3].dimensionTo = dimension1;
-    
+        
         portals[0].axisW = wAxisVec;
         portals[1].axisW = wAxisVec.scale(-1);
         portals[2].axisW = wAxisVec;
         portals[3].axisW = wAxisVec.scale(-1);
-    
+        
         portals[0].axisH = hAxisVec;
         portals[1].axisH = hAxisVec;
         portals[2].axisH = hAxisVec;
         portals[3].axisH = hAxisVec;
-    
+        
         portals[0].width = width;
         portals[1].width = width;
         portals[2].width = width;
         portals[3].width = width;
-    
+        
         portals[0].height = height;
         portals[1].height = height;
         portals[2].height = height;
@@ -357,6 +407,30 @@ public class Portal extends Entity {
         return vertices;
     }
     
+    //3  2
+    //1  0
+    public Vec3d[] getFourVerticesCullableRelativeToCenter(double shrinkFactor) {
+        Vec3d[] vertices = new Vec3d[4];
+        vertices[0] = getPointInPlaneRelativeToCenter(
+            cullableXEnd - shrinkFactor,
+            cullableYStart + shrinkFactor
+        );
+        vertices[1] = getPointInPlaneRelativeToCenter(
+            cullableXStart + shrinkFactor,
+            cullableYStart + shrinkFactor
+        );
+        vertices[2] = getPointInPlaneRelativeToCenter(
+            cullableXEnd - shrinkFactor,
+            cullableYEnd - shrinkFactor
+        );
+        vertices[3] = getPointInPlaneRelativeToCenter(
+            cullableXStart + shrinkFactor,
+            cullableYEnd - shrinkFactor
+        );
+        
+        return vertices;
+    }
+    
     public Vec3d applyTransformationToPoint(Vec3d pos) {
         Vec3d offset = destination.subtract(getPositionVec());
         return pos.add(offset);
@@ -412,22 +486,17 @@ public class Portal extends Entity {
     ) {
         double lastDistance = getDistanceToPlane(from);
         double nowDistance = getDistanceToPlane(to);
-    
+        
         if (!(lastDistance > 0 && nowDistance < 0)) {
             return null;
         }
-    
+        
         Vec3d lineOrigin = from;
         Vec3d lineDirection = to.subtract(from).normalize();
-    
-        double collidingT = Helper.getCollidingT(
-            getPositionVec(),
-            normal,
-            lineOrigin,
-            lineDirection
-        );
+        
+        double collidingT = Helper.getCollidingT(getPositionVec(), normal, lineOrigin, lineDirection);
         Vec3d collidingPoint = lineOrigin.add(lineDirection.scale(collidingT));
-    
+        
         if (isPointInPortalProjection(collidingPoint)) {
             return collidingPoint;
         }
@@ -463,11 +532,11 @@ public class Portal extends Entity {
         double wx1 = rectAX - pointX;
         double wx2 = rectBX - pointX;
         double dx = (wx1 * wx2 < 0 ? 0 : Math.min(Math.abs(wx1), Math.abs(wx2)));
-    
+        
         double wy1 = rectAY - pointY;
         double wy2 = rectBY - pointY;
         double dy = (wy1 * wy2 < 0 ? 0 : Math.min(Math.abs(wy1), Math.abs(wy2)));
-    
+        
         return Math.sqrt(dx * dx + dy * dy);
     }
     

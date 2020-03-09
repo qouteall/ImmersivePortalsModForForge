@@ -67,15 +67,9 @@ public class RendererMixed extends PortalRenderer {
             GL11.glClear(GL11.GL_STENCIL_BUFFER_BIT);
         }
         else {
-            GL30.glBindFramebuffer(
-                GL30.GL_READ_FRAMEBUFFER,
-                deferredFbs[portalLayer - 1].fb.framebufferObject
-            );
-            GL30.glBindFramebuffer(
-                GL30.GL_DRAW_FRAMEBUFFER,
-                deferredFbs[portalLayer].fb.framebufferObject
-            );
-    
+            GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, deferredFbs[portalLayer - 1].fb.framebufferObject);
+            GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, deferredFbs[portalLayer].fb.framebufferObject);
+            
             GL30.glBlitFramebuffer(
                 0, 0, deferredFbs[0].fb.framebufferWidth, deferredFbs[0].fb.framebufferHeight,
                 0, 0, deferredFbs[0].fb.framebufferWidth, deferredFbs[0].fb.framebufferHeight,
@@ -130,18 +124,15 @@ public class RendererMixed extends PortalRenderer {
         GlStateManager.colorMask(true, true, true, true);
         Shaders.useProgram(Shaders.ProgramNone);
         //GuiLighting.disable();
-    
+        
         if (MyRenderHelper.getRenderedPortalNum() == 0) {
             return;
         }
-    
+        
         Framebuffer mainFrameBuffer = mc.getFramebuffer();
         mainFrameBuffer.bindFramebuffer(true);
-    
-        deferredFbs[0].fb.framebufferRender(
-            mainFrameBuffer.framebufferWidth,
-            mainFrameBuffer.framebufferHeight
-        );
+        
+        deferredFbs[0].fb.framebufferRender(mainFrameBuffer.framebufferWidth, mainFrameBuffer.framebufferHeight);
     }
     
     @Override
@@ -186,13 +177,13 @@ public class RendererMixed extends PortalRenderer {
             initStencilForLayer(portalLayer);
             
             deferredFbs[portalLayer].fb.bindFramebuffer(true);
-    
+            
             GL11.glEnable(GL_STENCIL_TEST);
             GL11.glStencilFunc(GL11.GL_EQUAL, portalLayer, 0xFF);
             GL11.glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
             
             myDrawPortalViewArea(portal);
-    
+            
             GL11.glDisable(GL_STENCIL_TEST);
             
             OFInterface.bindToShaderFrameBuffer.run();
@@ -202,16 +193,16 @@ public class RendererMixed extends PortalRenderer {
     //maybe it's similar to rendererUsingStencil's ?
     private void myDrawPortalViewArea(Portal portal) {
         assert false;
-    
+        
         GlStateManager.enableDepthTest();
         GlStateManager.disableTexture();
         GlStateManager.colorMask(false, false, false, false);
-    
+        
         //MyRenderHelper.setupCameraTransformation();
         GL20.glUseProgram(0);
-    
+        
         //ViewAreaRenderer.drawPortalViewTriangle(portal);
-    
+        
         GlStateManager.enableTexture();
         GlStateManager.colorMask(true, true, true, true);
     }

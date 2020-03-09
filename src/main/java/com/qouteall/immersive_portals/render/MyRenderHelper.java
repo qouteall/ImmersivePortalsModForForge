@@ -96,7 +96,7 @@ public class MyRenderHelper {
         IEGameRenderer gameRenderer = (IEGameRenderer) Minecraft.getInstance().gameRenderer;
         gameRenderer.setLightmapTextureManager(CGlobal.clientWorldLoader
             .getDimensionRenderHelper(mc.world.dimension.getType()).lightmapTexture);
-    
+        
         if (getRenderedPortalNum() != 0) {
             //recover chunk renderer dispatcher
             ((IEWorldRenderer) mc.worldRenderer).getBuiltChunkStorage().updateChunkPositions(
@@ -104,7 +104,7 @@ public class MyRenderHelper {
                 mc.renderViewEntity.getPosZ()
             );
         }
-    
+        
         Vec3d currCameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
         cameraPosDelta = currCameraPos.subtract(lastCameraPos);
         if (cameraPosDelta.lengthSquared() > 1) {
@@ -201,14 +201,14 @@ public class MyRenderHelper {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
-    
+        
         bufferbuilder.pos(1, -1, 0).color(255, 255, 255, 255)
             .endVertex();
         bufferbuilder.pos(1, 1, 0).color(255, 255, 255, 255)
             .endVertex();
         bufferbuilder.pos(-1, 1, 0).color(255, 255, 255, 255)
             .endVertex();
-    
+        
         bufferbuilder.pos(-1, 1, 0).color(255, 255, 255, 255)
             .endVertex();
         bufferbuilder.pos(-1, -1, 0).color(255, 255, 255, 255)
@@ -267,8 +267,8 @@ public class MyRenderHelper {
         }
         GlStateManager.enableBlend();
         GlStateManager.disableColorMaterial();
-    
-    
+        
+        
         GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
         textureProvider.bindFramebufferTexture();
         float float_1 = (float) int_1;
@@ -325,16 +325,13 @@ public class MyRenderHelper {
             CGlobal.renderer.getRenderingPortal() instanceof Mirror;
     }
     
-    public static void setupTransformationForMirror(
-        ActiveRenderInfo camera,
-        MatrixStack matrixStack
-    ) {
+    public static void setupTransformationForMirror(ActiveRenderInfo camera, MatrixStack matrixStack) {
         if (CGlobal.renderer.isRendering()) {
             Portal renderingPortal = CGlobal.renderer.getRenderingPortal();
             if (renderingPortal instanceof Mirror) {
                 Mirror mirror = (Mirror) renderingPortal;
                 Vec3d relativePos = mirror.getPositionVec().subtract(camera.getProjectedView());
-                
+    
                 matrixStack.translate(relativePos.x, relativePos.y, relativePos.z);
                 
                 float[] arr = getMirrorTransformation(mirror.getNormal());
@@ -342,7 +339,7 @@ public class MyRenderHelper {
                 ((IEMatrix4f) (Object) matrix).loadFromArray(arr);
                 matrixStack.getLast().getMatrix().mul(matrix);
                 matrixStack.getLast().getNormal().mul(new Matrix3f(matrix));
-                
+    
                 matrixStack.translate(-relativePos.x, -relativePos.y, -relativePos.z);
             }
         }
@@ -365,10 +362,10 @@ public class MyRenderHelper {
     }
     
     public static void earlyUpdateLight() {
-        if (CGlobal.clientWorldLoader == null) {
+        if(CGlobal.clientWorldLoader==null){
             return;
         }
-    
+        
         CGlobal.clientWorldLoader.clientWorldMap.values().forEach(
             world -> {
                 if (world != Minecraft.getInstance().world) {

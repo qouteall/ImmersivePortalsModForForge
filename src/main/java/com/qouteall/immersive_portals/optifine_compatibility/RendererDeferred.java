@@ -63,18 +63,18 @@ public class RendererDeferred extends PortalRenderer {
             //currently only support one-layer portal
             return;
         }
-    
+        
         OFHelper.copyFromShaderFbTo(deferredBuffer.fb, GL11.GL_DEPTH_BUFFER_BIT);
-    
+        
         if (!testShouldRenderPortal(portal)) {
             return;
         }
-    
+        
         portalLayers.push(portal);
-    
+        
         manageCameraAndRenderPortalContent(portal);
         //it will bind the gbuffer of rendered dimension
-    
+        
         portalLayers.pop();
         
         deferredBuffer.fb.bindFramebuffer(true);
@@ -133,9 +133,9 @@ public class RendererDeferred extends PortalRenderer {
             GlStateManager.colorMask(false, false, false, false);
             //MyRenderHelper.setupCameraTransformation();
             GL20.glUseProgram(0);
-    
+            
             //ViewAreaRenderer.drawPortalViewTriangle(portal);
-    
+            
             GlStateManager.enableTexture();
             GlStateManager.colorMask(true, true, true, true);
         });
@@ -146,15 +146,15 @@ public class RendererDeferred extends PortalRenderer {
         if (isRendering()) {
             return;
         }
-    
+        
         if (MyRenderHelper.getRenderedPortalNum() == 0) {
             return;
         }
-    
+        
         GlStateManager.enableAlphaTest();
         Framebuffer mainFrameBuffer = mc.getFramebuffer();
         mainFrameBuffer.bindFramebuffer(true);
-    
+        
         MyRenderHelper.myDrawFrameBuffer(
             deferredBuffer.fb,
             true,

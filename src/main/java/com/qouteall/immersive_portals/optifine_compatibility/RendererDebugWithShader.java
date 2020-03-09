@@ -103,18 +103,15 @@ public class RendererDebugWithShader extends PortalRenderer {
         if (isRendering()) {
             return;
         }
-    
+        
         if (MyRenderHelper.getRenderedPortalNum() == 0) {
             return;
         }
-    
+        
         GlStateManager.enableAlphaTest();
         Framebuffer mainFrameBuffer = mc.getFramebuffer();
         mainFrameBuffer.bindFramebuffer(true);
-    
-        deferredBuffer.fb.framebufferRender(
-            mainFrameBuffer.framebufferWidth,
-            mainFrameBuffer.framebufferHeight
-        );
+        
+        deferredBuffer.fb.framebufferRender(mainFrameBuffer.framebufferWidth, mainFrameBuffer.framebufferHeight);
     }
 }

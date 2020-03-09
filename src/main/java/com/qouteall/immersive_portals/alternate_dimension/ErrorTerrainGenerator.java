@@ -37,7 +37,6 @@ import net.minecraft.world.gen.feature.structure.Structure;
 import net.minecraft.world.gen.feature.structure.StructureStart;
 import net.minecraft.world.gen.feature.structure.WoodlandMansionStructure;
 import net.minecraft.world.gen.feature.template.TemplateManager;
-
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
@@ -116,18 +115,14 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
     
     //carve more
     @Override
-    public void func_225550_a_(
-        BiomeManager biomeAccess,
-        IChunk chunk,
-        GenerationStage.Carving carver
-    ) {
+    public void func_225550_a_(BiomeManager biomeAccess, IChunk chunk, GenerationStage.Carving carver) {
         SharedSeedRandom chunkRandom = new SharedSeedRandom();
         ChunkPos chunkPos = chunk.getPos();
         int chunkX = chunkPos.x;
         int chunkZ = chunkPos.z;
         Biome biome = this.getBiome(biomeAccess, chunkPos.asBlockPos());
         BitSet bitSet = chunk.getCarvingMask(carver);
-    
+        
         for (int cx = chunkX - 8; cx <= chunkX + 8; ++cx) {
             for (int cz = chunkZ - 8; cz <= chunkZ + 8; ++cz) {
                 List<ConfiguredCarver<?>> list = biome.getCarvers(carver);

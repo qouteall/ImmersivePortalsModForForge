@@ -18,7 +18,6 @@ import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-
 import java.util.Random;
 
 public class PortalPlaceholderBlock extends Block {
@@ -91,7 +90,7 @@ public class PortalPlaceholderBlock extends Block {
         BlockPos blockPos,
         BlockPos neighborPos
     ) {
-        if (!world.isRemote()) {
+        if(!world.isRemote()){
             Direction.Axis axis = thisState.get(AXIS);
             if (direction.getAxis() != axis) {
                 McHelper.getEntitiesNearby(
@@ -108,7 +107,7 @@ public class PortalPlaceholderBlock extends Block {
                 );
             }
         }
-    
+        
         return super.updatePostPlacement(
             thisState,
             direction,
@@ -130,7 +129,7 @@ public class PortalPlaceholderBlock extends Block {
         //nothing
     }
     
-    
+   
     //---------These are copied from BlockBarrier
     @Override
     public boolean propagatesSkylightDown(

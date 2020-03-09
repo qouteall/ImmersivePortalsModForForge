@@ -29,7 +29,7 @@ public class EndPortalEntity extends Portal {
     }
     
     public static void onEndPortalComplete(ServerWorld world, BlockPattern.PatternHelper pattern) {
-        Portal portal = new EndPortalEntity(entityType, world);
+        Portal portal = new EndPortalEntity(entityType,world);
         
         Vec3d center = new Vec3d(pattern.getFrontTopLeft()).add(-1.5, 0.5, -1.5);
         portal.setPosition(center.x, center.y, center.z);
@@ -37,15 +37,15 @@ public class EndPortalEntity extends Portal {
         portal.destination = new Vec3d(0, 120, 0);
         
         portal.dimensionTo = DimensionType.THE_END;
-    
+        
         portal.axisW = new Vec3d(0, 0, 1);
         portal.axisH = new Vec3d(1, 0, 0);
-    
+        
         portal.width = 3;
         portal.height = 3;
         
         portal.loadFewerChunks = false;
-    
+        
         world.addEntity(portal);
     }
     

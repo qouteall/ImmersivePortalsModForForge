@@ -36,7 +36,6 @@ import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-
 import java.lang.ref.Reference;
 import java.net.URLClassLoader;
 import java.util.Arrays;
@@ -373,6 +372,11 @@ public class MyCommandClient {
             "early_light_update",
             cond -> CGlobal.earlyClientLightUpdate = cond
         );
+        registerSwitchCommand(
+            builder,
+            "super_advanced_frustum_culling",
+            cond -> CGlobal.useSuperAdvancedFrustumCulling = cond
+        );
     
         builder.then(Commands
             .literal("print_class_path")
@@ -383,7 +387,7 @@ public class MyCommandClient {
         );
     
         dispatcher.register(builder);
-    
+        
         Helper.log("Successfully initialized command /immersive_portals_debug");
     }
     
@@ -521,23 +525,23 @@ public class MyCommandClient {
             addPortalFunctionality = (playerEntity) -> {
                 Vec3d toPos = playerEntity.getPositionVec();
                 DimensionType toDimension = player.dimension;
-    
+                
                 Portal portal = new Portal(Portal.entityType, fromWorld);
                 portal.setRawPosition(fromPos.x, fromPos.y, fromPos.z);
-    
+                
                 portal.axisH = new Vec3d(0, 1, 0);
                 portal.axisW = portal.axisH.crossProduct(fromNormal).normalize();
-    
+                
                 portal.dimensionTo = toDimension;
                 portal.destination = toPos;
-    
+                
                 portal.width = 4;
                 portal.height = 4;
-    
+                
                 assert portal.isPortalValid();
-    
+                
                 fromWorld.addEntity(portal);
-    
+                
                 addPortalFunctionality = originalAddPortalFunctionality;
             };
         };

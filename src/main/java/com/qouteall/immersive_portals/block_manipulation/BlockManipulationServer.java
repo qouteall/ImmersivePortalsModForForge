@@ -102,7 +102,7 @@ public class BlockManipulationServer {
         if (player.isCreative()) {
             return true;
         }
-    
+        
         float progress = 1.0F;
         BlockState blockState = world.getBlockState(pos);
         if (!blockState.isAir()) {

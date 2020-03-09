@@ -65,7 +65,7 @@ public class MixinEnderEyeItem {
                             );
                         }
                     }
-    
+                    
                     world.playBroadcastSound(1038, blockPos_2.add(1, 0, 1), 0);
                     
                     EndPortalEntity.onEndPortalComplete(((ServerWorld) world), pattern);

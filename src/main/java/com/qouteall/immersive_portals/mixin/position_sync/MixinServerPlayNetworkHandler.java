@@ -2,10 +2,10 @@ package com.qouteall.immersive_portals.mixin.position_sync;
 
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEPlayerMoveC2SPacket;
 import com.qouteall.immersive_portals.ducks.IEPlayerPositionLookS2CPacket;
 import com.qouteall.immersive_portals.ducks.IEServerPlayNetworkHandler;
-import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.ServerPlayNetHandler;
@@ -111,7 +111,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         if (++this.teleportId == Integer.MAX_VALUE) {
             this.teleportId = 0;
         }
-    
+        
         this.lastPositionUpdate = this.networkTickCount;
         this.player.setPositionAndRotation(double_1, double_2, double_3, float_1, float_2);
         SPlayerPositionLookPacket packet_1 = new SPlayerPositionLookPacket(
@@ -143,11 +143,10 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         if (Global.serverTeleportationManager.isJustTeleported(player, 100)) {
             return true;
         }
-        boolean portalsNearby = !player.world.getEntitiesWithinAABB(
-            Portal.class,
-            player.getBoundingBox().grow(4),
-            e -> true
-        ).isEmpty();
+        boolean portalsNearby = McHelper.getServerPortalsNearby(
+            player,
+            5
+        ).findAny().isPresent();
         if (portalsNearby) {
             return true;
         }
@@ -178,12 +177,12 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     private void onOnVehicleMove(CMoveVehiclePacket packet, CallbackInfo ci) {
         if (Global.serverTeleportationManager.isJustTeleported(player, 40)) {
             Entity entity = this.player.getLowestRidingEntity();
-    
+        
             if (entity != player) {
                 double currX = entity.getPosX();
                 double currY = entity.getPosY();
                 double currZ = entity.getPosZ();
-        
+            
                 double newX = packet.getX();
                 double newY = packet.getY();
                 double newZ = packet.getZ();

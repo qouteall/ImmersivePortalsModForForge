@@ -93,7 +93,7 @@ public class ClientTeleportationManager {
                     portal -> onEntityGoInsidePortal(mc.player, portal)
                 );
             }
-    
+            
             lastPlayerHeadPos = mc.player.getEyePosition(MyRenderHelper.partialTicks);
         }
     }

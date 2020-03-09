@@ -93,9 +93,9 @@ public class ChunkDataSyncManager {
         IChunk chunk
     ) {
         Validate.notNull(chunk);
-    
+        
         McHelper.getServer().getProfiler().startSection("send_chunk_data");
-    
+        
         assert chunk != null;
         assert !(chunk instanceof EmptyChunk);
         player.connection.sendPacket(
@@ -107,7 +107,7 @@ public class ChunkDataSyncManager {
                 )
             )
         );
-    
+        
         player.connection.sendPacket(
             MyNetwork.createRedirectedMessage(
                 chunkPos.dimension,
@@ -117,15 +117,15 @@ public class ChunkDataSyncManager {
                 )
             )
         );
-    
+        
         //update the entity trackers
         ((ChunkManager) ieStorage).updatePlayerPosition(player);
-    
+        
         McHelper.getServer().getProfiler().endSection();
     }
     
     private void onEndWatch(ServerPlayerEntity player, DimensionalChunkPos chunkPos) {
-    
+        
         //do not send unload packet instantly
         //watch for a period of time.
         //if player still needs the chunk, stop unloading.

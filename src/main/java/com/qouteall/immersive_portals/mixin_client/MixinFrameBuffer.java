@@ -67,15 +67,15 @@ public abstract class MixinFrameBuffer implements IEFrameBuffer {
                 GL30.GL_RENDERBUFFER,
                 this_.depthBuffer
             );
-    
+        
             this_.checkFramebufferComplete();
             this_.framebufferClear(isMac);
             this_.unbindFramebufferTexture();
     
             CHelper.checkGlError();
-    
+        
             Helper.log("Frame Buffer Reloaded with Stencil Buffer");
-    
+        
             ci.cancel();
         }
     }
@@ -89,11 +89,7 @@ public abstract class MixinFrameBuffer implements IEFrameBuffer {
     public void setIsStencilBufferEnabledAndReload(boolean cond) {
         if (isStencilBufferEnabled != cond) {
             isStencilBufferEnabled = cond;
-            createBuffers(
-                framebufferTextureWidth,
-                framebufferTextureHeight,
-                Minecraft.IS_RUNNING_ON_MAC
-            );
+            createBuffers(framebufferTextureWidth, framebufferTextureHeight, Minecraft.IS_RUNNING_ON_MAC);
         }
     }
 }

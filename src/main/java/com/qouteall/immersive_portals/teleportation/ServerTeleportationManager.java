@@ -18,7 +18,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -81,19 +80,19 @@ public class ServerTeleportationManager {
                 ).findFirst().orElse(null);
         }
         lastTeleportGameTime.put(player, McHelper.getServerGameTime());
-    
+        
         if (canPlayerTeleport(player, dimensionBefore, posBefore, portalEntity)) {
             if (isTeleporting(player)) {
                 Helper.err(player.toString() + "is teleporting frequently");
             }
-        
+            
             Portal portal = (Portal) portalEntity;
-        
+            
             DimensionType dimensionTo = portal.dimensionTo;
             Vec3d newPos = portal.applyTransformationToPoint(posBefore);
-        
+            
             teleportPlayer(player, dimensionTo, newPos);
-        
+            
             portal.onEntityTeleportedOnServer(player);
         }
         else {
@@ -199,23 +198,23 @@ public class ServerTeleportationManager {
         if (vehicle != null) {
             ((IEServerPlayerEntity) player).stopRidingWithoutTeleportRequest();
         }
-    
+        
         BlockPos oldPos = player.getPosition();
-    
+        
         teleportingEntities.add(player);
-    
+        
         O_O.segregateServerPlayer(fromWorld, player);
-    
+        
         player.setPosition(destination.x, destination.y, destination.z);
-    
+        
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
         toWorld.func_217447_b(player);
-    
+        
         toWorld.chunkCheck(player);
-    
+        
         player.interactionManager.setWorld(toWorld);
-    
+        
         if (vehicle != null) {
             Vec3d vehiclePos = new Vec3d(
                 destination.x,
@@ -230,7 +229,7 @@ public class ServerTeleportationManager {
             ((IEServerPlayerEntity) player).startRidingWithoutTeleportRequest(vehicle);
             McHelper.adjustVehicle(player);
         }
-    
+        
         Helper.log(String.format(
             "%s :: (%s %s %s %s)->(%s %s %s %s)",
             player.getName().getUnformattedComponentText(),
@@ -239,13 +238,13 @@ public class ServerTeleportationManager {
             toWorld.dimension.getType(),
             (int) player.getPosX(), (int) player.getPosY(), (int) player.getPosZ()
         ));
-    
+        
         O_O.onPlayerTravelOnServer(
             player,
             fromWorld.dimension.getType(),
             toWorld.dimension.getType()
         );
-    
+        
         //this is used for the advancement of "we need to go deeper"
         //and the advancement of travelling for long distance through nether
         if (toWorld.dimension.getType() == DimensionType.THE_NETHER) {
@@ -253,8 +252,9 @@ public class ServerTeleportationManager {
             ((IEServerPlayerEntity) player).setEnteredNetherPos(player.getPositionVec());
         }
         ((IEServerPlayerEntity) player).updateDimensionTravelAdvancements(fromWorld);
-    
-    
+        
+        
+        
         GlobalPortalStorage.onPlayerLoggedIn(player);
     }
     
@@ -263,7 +263,7 @@ public class ServerTeleportationManager {
             player.dimension,
             player.getPositionVec()
         );
-    
+        
         player.connection.sendPacket(packet);
     }
     
@@ -313,20 +313,20 @@ public class ServerTeleportationManager {
     private void teleportRegularEntity(Entity entity, Portal portal) {
         assert entity.dimension == portal.dimension;
         assert !(entity instanceof ServerPlayerEntity);
-    
+        
         long currGameTime = McHelper.getServerGameTime();
         Long lastTeleportGameTime = this.lastTeleportGameTime.getOrDefault(entity, 0L);
         if (currGameTime - lastTeleportGameTime < 2) {
             return;
         }
         this.lastTeleportGameTime.put(entity, currGameTime);
-    
+        
         if (entity.isPassenger() || doesEntityClutterContainPlayer(entity)) {
             return;
         }
-    
+        
         Vec3d newPos = portal.applyTransformationToPoint(entity.getPositionVec());
-    
+        
         if (portal.dimensionTo != entity.dimension) {
             changeEntityDimension(entity, portal.dimensionTo, newPos);
         }
@@ -334,7 +334,7 @@ public class ServerTeleportationManager {
         entity.setPosition(
             newPos.x, newPos.y, newPos.z
         );
-    
+        
         portal.onEntityTeleportedOnServer(entity);
     }
     

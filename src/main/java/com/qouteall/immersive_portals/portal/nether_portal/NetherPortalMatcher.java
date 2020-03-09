@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
+import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
 import net.minecraft.block.Blocks;
@@ -126,7 +127,7 @@ public class NetherPortalMatcher {
                 )
             ).allMatch(
                 box -> box.stream().allMatch(
-                    blockPos -> isObsidian(world, blockPos)
+                    blockPos -> O_O.isObsidian(world, blockPos)
                 )
             );
     }
@@ -227,10 +228,6 @@ public class NetherPortalMatcher {
             ),
             predicate
         );
-    }
-    
-    public static boolean isObsidian(IWorld world, BlockPos obsidianPos) {
-        return world.getBlockState(obsidianPos) == Blocks.OBSIDIAN.getDefaultState();
     }
     
     private static boolean isAir(IWorld world, BlockPos pos) {
@@ -444,7 +441,7 @@ public class NetherPortalMatcher {
             Direction.AxisDirection.POSITIVE,
             anotherTwoAxis.getB()
         );
-    
+        
         Optional<ObsidianFrame> result =
             fromNearToFarWithinHeightLimit(searchingCenter, findingRadius, heightLimitOverworld)
                 .filter(
@@ -467,6 +464,7 @@ public class NetherPortalMatcher {
         return result.orElse(null);
     }
     
+    @Deprecated
     private static boolean isAirOnObsidian(
         IWorld world,
         BlockPos blockPos,
@@ -474,11 +472,11 @@ public class NetherPortalMatcher {
         Direction obsidianFace2
     ) {
         return world.isAirBlock(blockPos) &&
-            isObsidian(
+            O_O.isObsidian(
                 world,
                 blockPos.add(obsidianFace1.getDirectionVec())
             ) &&
-            isObsidian(
+            O_O.isObsidian(
                 world,
                 blockPos.add(obsidianFace2.getDirectionVec())
             );

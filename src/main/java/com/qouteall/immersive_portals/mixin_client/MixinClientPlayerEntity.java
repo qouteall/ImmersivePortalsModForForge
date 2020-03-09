@@ -1,23 +1,35 @@
 package com.qouteall.immersive_portals.mixin_client;
 
-import com.qouteall.immersive_portals.teleportation.CollisionHelper;
+import com.qouteall.immersive_portals.ducks.IEEntity;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ClientPlayerEntity.class)
 public class MixinClientPlayerEntity {
-    //use portal culled collision box
-    @Redirect(
+    @Inject(
         method = "Lnet/minecraft/client/entity/player/ClientPlayerEntity;shouldBlockPushPlayer(Lnet/minecraft/util/math/BlockPos;)Z",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/entity/player/ClientPlayerEntity;getBoundingBox()Lnet/minecraft/util/math/AxisAlignedBB;"
-        )
+        at = @At("HEAD"),
+        cancellable = true
     )
-    private AxisAlignedBB redirectGetBoundingBox(ClientPlayerEntity clientPlayerEntity) {
-        return CollisionHelper.getActiveCollisionBox(clientPlayerEntity);
+    private void onCannotFitAt(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
+        if (((IEEntity) this).getCollidingPortal() != null) {
+            cir.setReturnValue(false);
+        }
     }
+    
+    //use portal culled collision box
+//    @Redirect(
+//        method = "cannotFitAt",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/client/network/ClientPlayerEntity;getBoundingBox()Lnet/minecraft/util/math/Box;"
+//        )
+//    )
+//    private Box redirectGetBoundingBox(ClientPlayerEntity clientPlayerEntity) {
+//        return CollisionHelper.getActiveCollisionBox(clientPlayerEntity);
+//    }
 }

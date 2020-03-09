@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
+import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.portal.IBreakablePortal;
@@ -16,14 +17,13 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-
 import java.util.Random;
 import java.util.UUID;
 
 public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
     public static EntityType<NewNetherPortalEntity> entityType;
     
-    public NetherPortalShape netherPortalShape;
+    public BlockPortalShape blockPortalShape;
     public UUID reversePortalId;
     public boolean unbreakable = false;
     
@@ -42,14 +42,14 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
         if (world.isRemote) {
             return super.isPortalValid();
         }
-        return super.isPortalValid() && netherPortalShape != null && reversePortalId != null;
+        return super.isPortalValid() && blockPortalShape != null && reversePortalId != null;
     }
     
     @Override
     protected void readAdditional(CompoundNBT compoundTag) {
         super.readAdditional(compoundTag);
         if (compoundTag.contains("netherPortalShape")) {
-            netherPortalShape = new NetherPortalShape(compoundTag.getCompound("netherPortalShape"));
+            blockPortalShape = new BlockPortalShape(compoundTag.getCompound("netherPortalShape"));
         }
         reversePortalId = compoundTag.getUniqueId("reversePortalId");
         unbreakable = compoundTag.getBoolean("unbreakable");
@@ -58,8 +58,8 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
     @Override
     protected void writeAdditional(CompoundNBT compoundTag) {
         super.writeAdditional(compoundTag);
-        if (netherPortalShape != null) {
-            compoundTag.put("netherPortalShape", netherPortalShape.toTag());
+        if (blockPortalShape != null) {
+            compoundTag.put("netherPortalShape", blockPortalShape.toTag());
         }
         compoundTag.putUniqueId("reversePortalId", reversePortalId);
         compoundTag.putBoolean("unbreakable", unbreakable);
@@ -69,8 +69,8 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
     private void breakPortalOnThisSide() {
         assert shouldBreakNetherPortal;
         assert !removed;
-        
-        netherPortalShape.area.forEach(
+    
+        blockPortalShape.area.forEach(
             blockPos -> {
                 if (world.getBlockState(blockPos).getBlock() == PortalPlaceholderBlock.instance) {
                     world.setBlockState(
@@ -80,7 +80,7 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
             }
         );
         this.remove();
-    
+        
         Helper.log("Broke " + this);
     }
     
@@ -99,7 +99,7 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
     @Override
     public void tick() {
         super.tick();
-    
+        
         if (world.isRemote) {
             addSoundAndParticle();
         }
@@ -114,7 +114,7 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
                 }
             }
         }
-    
+        
     }
     
     private void checkPortalIntegrity() {
@@ -134,23 +134,23 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
         }
     }
     
-    private boolean isPortalIntactOnThisSide() {
+    protected boolean isPortalIntactOnThisSide() {
         assert McHelper.getServer() != null;
     
-        return netherPortalShape.area.stream()
+        return blockPortalShape.area.stream()
             .allMatch(blockPos ->
                 world.getBlockState(blockPos).getBlock() == PortalPlaceholderBlock.instance
             ) &&
-            netherPortalShape.frameAreaWithoutCorner.stream()
+            blockPortalShape.frameAreaWithoutCorner.stream()
                 .allMatch(blockPos ->
-                    world.getBlockState(blockPos).getBlock() == Blocks.OBSIDIAN
+                    O_O.isObsidian(world, blockPos)
                 );
     }
     
     @OnlyIn(Dist.CLIENT)
-    private void addSoundAndParticle() {
+    protected void addSoundAndParticle() {
         Random random = world.getRandom();
-    
+        
         for (int i = 0; i < (int) Math.ceil(width * height / 20); i++) {
             if (random.nextInt(8) == 0) {
                 double px = (random.nextDouble() * 2 - 1) * (width / 2);

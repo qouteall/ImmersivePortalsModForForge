@@ -133,7 +133,7 @@ public abstract class PortalRenderer {
         if (!portal.isInFrontOfPortal(thisTickEyePos)) {
             return;
         }
-    
+        
         if (isRendering()) {
             //avoid rendering reverse portal inside portal
             Portal outerPortal = portalLayers.peek();
@@ -230,17 +230,17 @@ public abstract class PortalRenderer {
     ) {
         GlStateManager.enableAlphaTest();
         GlStateManager.enableCull();
-    
+        
         WorldRenderer worldRenderer = CGlobal.clientWorldLoader.getWorldRenderer(portal.dimensionTo);
         ClientWorld destClientWorld = CGlobal.clientWorldLoader.getOrCreateFakedWorld(portal.dimensionTo);
-    
+        
         CHelper.checkGlError();
-    
+        
         CGlobal.myGameRenderer.renderWorld(
             MyRenderHelper.partialTicks, worldRenderer, destClientWorld, oldCameraPos, oldWorld
         );
     
         CHelper.checkGlError();
-    
+        
     }
 }

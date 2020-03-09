@@ -407,10 +407,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             ))
             .add(50, Helper.makeIntoExpression(
                 new ItemStack(() -> Items.POTION, 1),
-                itemStack -> PotionUtils.addPotionToItemStack(
-                    itemStack,
-                    HandReachTweak.longerReachPotion
-                )
+                itemStack -> PotionUtils.addPotionToItemStack(itemStack, HandReachTweak.longerReachPotion)
             ))
             .build();
     

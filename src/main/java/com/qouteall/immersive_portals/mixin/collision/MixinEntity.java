@@ -55,7 +55,7 @@ public abstract class MixinEntity implements IEEntity {
                 collidingPortal = null;
             }
         }
-    
+        
         Portal nowCollidingPortal =
             CollisionHelper.getCollidingPortalUnreliable((Entity) (Object) this);
         if (nowCollidingPortal == null) {
@@ -84,15 +84,15 @@ public abstract class MixinEntity implements IEEntity {
             Helper.err("Entity moving too fast " + entity + attemptedMove);
             return Vec3d.ZERO;
         }
-    
+        
         if (collidingPortal == null) {
             return getAllowedMovement(attemptedMove);
         }
-    
+        
         if (entity.isBeingRidden() || entity.isPassenger()) {
             return getAllowedMovement(attemptedMove);
         }
-    
+        
         Vec3d result = CollisionHelper.handleCollisionHalfwayInPortal(
             (Entity) (Object) this,
             attemptedMove,

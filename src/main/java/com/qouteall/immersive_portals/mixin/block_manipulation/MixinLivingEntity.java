@@ -11,8 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntity.class)
 public abstract class MixinLivingEntity {
-    @Shadow
-    public abstract AbstractAttributeMap getAttributes();
+    @Shadow public abstract AbstractAttributeMap getAttributes();
     
     @Inject(
         method = "Lnet/minecraft/entity/LivingEntity;registerAttributes()V",

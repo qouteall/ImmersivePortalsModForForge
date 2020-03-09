@@ -80,19 +80,20 @@ public class OFInterfaceInitializer {
             //but with optifine it will always use one object
             //we need to switch chunkInfos correctly
             //if we do not put it a new object, it will clear the original chunkInfos
-    
+            
             if (worldRenderer_renderInfosNormal == null) {
                 worldRenderer_renderInfosNormal = Helper.noError(() ->
                     WorldRenderer.class.getDeclaredField("renderInfosNormal")
                 );
                 worldRenderer_renderInfosNormal.setAccessible(true);
             }
-    
+            
             Helper.noError(() -> {
                 worldRenderer_renderInfosNormal.set(newWorldRenderer1, new ObjectArrayList<>(512));
                 return null;
             });
         };
         OFInterface.initShaderCullingManager = ShaderCullingManager::init;
+        OFInterface.isFogDisabled = () -> Config.isFogOff();
     }
 }

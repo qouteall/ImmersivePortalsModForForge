@@ -37,14 +37,14 @@ public class ModMain {
         postClientTickSignal.connect(clientTaskList::processTasks);
         postServerTickSignal.connect(serverTaskList::processTasks);
         preRenderSignal.connect(preRenderTaskList::processTasks);
-    
+        
         Global.serverTeleportationManager = new ServerTeleportationManager();
         Global.chunkDataSyncManager = new ChunkDataSyncManager();
-    
+        
         NewChunkTrackingGraph.init();
-    
+        
         WorldInfoSender.init();
-    
+        
         FormulaGenerator.init();
     }
     

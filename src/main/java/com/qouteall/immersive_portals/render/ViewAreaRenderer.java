@@ -6,9 +6,9 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
+import com.qouteall.immersive_portals.portal.GeometryPortalShape;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.portal.SpecialPortalShape;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
@@ -84,9 +84,9 @@ public class ViewAreaRenderer {
         Vec3d posInPlayerCoordinate,
         Vec3d offset
     ) {
-        SpecialPortalShape specialShape = portal.specialShape;
-        
-        for (SpecialPortalShape.TriangleInPlane triangle : specialShape.triangles) {
+        GeometryPortalShape specialShape = portal.specialShape;
+    
+        for (GeometryPortalShape.TriangleInPlane triangle : specialShape.triangles) {
             putIntoLocalVertex(
                 vertexOutput, portal, offset, posInPlayerCoordinate,
                 triangle.x1, triangle.y1
@@ -177,7 +177,7 @@ public class ViewAreaRenderer {
         vertexOutput.accept(d);
         vertexOutput.accept(a);
         vertexOutput.accept(b);
-    
+        
     }
     
     public static void drawPortalViewTriangle(
@@ -260,7 +260,7 @@ public class ViewAreaRenderer {
         Vec3d d = projected.add(dx).subtract(dy).add(correction);
     
         Vec3d mid = projected.add(normal.scale(-0.5));
-    
+        
         Consumer<Vec3d> compactVertexOutput = vertexOutput;
         
         compactVertexOutput.accept(b);

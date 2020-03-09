@@ -65,21 +65,16 @@ public abstract class MixinServerWorld implements IEServerWorld {
         int l = MathHelper.ceil((box.maxZ + 2.0D) / 16.0D);
         List<T> list = Lists.newArrayList();
         AbstractChunkProvider chunkManager = this.getChunkProvider();
-    
+        
         for (int m = i; m < j; ++m) {
             for (int n = k; n < l; ++n) {
                 Chunk worldChunk = (Chunk) portal_getChunkIfLoaded(m, n);
                 if (worldChunk != null) {
-                    worldChunk.getEntitiesOfTypeWithinAABB(
-                        (Class) entityClass,
-                        box,
-                        list,
-                        predicate
-                    );
+                    worldChunk.getEntitiesOfTypeWithinAABB((Class) entityClass, box, list, predicate);
                 }
             }
         }
-    
+        
         return list;
     }
     

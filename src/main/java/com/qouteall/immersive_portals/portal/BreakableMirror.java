@@ -91,7 +91,11 @@ public class BreakableMirror extends Mirror {
             return null;
         }
     
-        IntegerAABBInclusive wallArea = findGlassWallArea(world, glassPos, facing);
+        IntegerAABBInclusive wallArea = Helper.expandRectangle(
+            glassPos,
+            blockPos -> isGlass(world, blockPos),
+            facing.getAxis()
+        );
     
         BreakableMirror breakableMirror = BreakableMirror.entityType.create(world);
         Vec3d pos = new Vec3d(
@@ -115,7 +119,7 @@ public class BreakableMirror extends Mirror {
         Direction.Axis hAxis = axises.getB();
         float width = Helper.getCoordinate(wallArea.getSize(), wAxis);
         int height = Helper.getCoordinate(wallArea.getSize(), hAxis);
-    
+        
         breakableMirror.axisW = new Vec3d(
             Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, wAxis).getDirectionVec()
         );
@@ -124,31 +128,14 @@ public class BreakableMirror extends Mirror {
         );
         breakableMirror.width = width;
         breakableMirror.height = height;
-    
+        
         breakableMirror.wallArea = wallArea;
-    
+        
         world.addEntity(breakableMirror);
     
         breakIntersectedMirror(breakableMirror);
-    
-        return breakableMirror;
-    }
-    
-    public static IntegerAABBInclusive findGlassWallArea(
-        ServerWorld world,
-        BlockPos glassPos,
-        Direction facing
-    ) {
-        IntegerAABBInclusive wallArea = new IntegerAABBInclusive(glassPos, glassPos);
         
-        for (Direction direction : Helper.getAnotherFourDirections(facing.getAxis())) {
-            wallArea = Helper.expandArea(
-                wallArea,
-                blockPos -> isGlass(world, blockPos),
-                direction
-            );
-        }
-        return wallArea;
+        return breakableMirror;
     }
     
     private static void breakIntersectedMirror(BreakableMirror newMirror) {

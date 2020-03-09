@@ -94,7 +94,7 @@ public class RendererUsingStencil extends PortalRenderer {
         MatrixStack matrixStack
     ) {
         int outerPortalStencilValue = getPortalLayer();
-    
+        
         //test
         //CGlobal.clientWorldLoader.getOrCreateFakedWorld(portal.dimensionTo);
     
@@ -103,7 +103,7 @@ public class RendererUsingStencil extends PortalRenderer {
             renderPortalViewAreaToStencil(portal, matrixStack);
         });
         mc.getProfiler().endSection();
-    
+        
         if (!anySamplePassed) {
             return;
         }
@@ -137,10 +137,10 @@ public class RendererUsingStencil extends PortalRenderer {
         Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
     ) {
         int thisPortalStencilValue = getPortalLayer();
-    
+        
         //draw content in the mask
         GL11.glStencilFunc(GL_EQUAL, thisPortalStencilValue, 0xFF);
-    
+        
         //do not manipulate stencil packetBuffer now
         GL11.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     
@@ -160,18 +160,18 @@ public class RendererUsingStencil extends PortalRenderer {
         //NOTE about GL_INCR:
         //if multiple triangles occupy the same pixel and passed stencil and depth tests,
         //its stencil value will still increase by one
-    
+        
         GL11.glStencilMask(0xFF);
-    
+        
         GlStateManager.disableBlend();
     
         GL20.glUseProgram(0);
     
         RenderSystem.enableDepthTest();
         GlStateManager.depthMask(true);
-    
+        
         ViewAreaRenderer.drawPortalViewTriangle(portal, matrixStack);
-    
+        
         GlStateManager.enableBlend();
     
         CHelper.checkGlError();
@@ -216,16 +216,16 @@ public class RendererUsingStencil extends PortalRenderer {
         Portal portal, MatrixStack matrixStack
     ) {
         int thisPortalStencilValue = getPortalLayer();
-    
+        
         //do not manipulate stencil packetBuffer
         GL11.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     
         //only draw in portalView area
         GL11.glStencilFunc(GL_LEQUAL, thisPortalStencilValue, 0xFF);
-    
+        
         //do not manipulate color packetBuffer
         GL11.glColorMask(false, false, false, false);
-    
+        
         //do manipulate the depth packetBuffer
         GL11.glDepthMask(true);
     
@@ -234,7 +234,7 @@ public class RendererUsingStencil extends PortalRenderer {
         GlStateManager.enableDepthTest();
     
         ViewAreaRenderer.drawPortalViewTriangle(portal, matrixStack);
-    
+        
         GL11.glColorMask(true, true, true, true);
     }
     

@@ -204,7 +204,7 @@ public class IntegerAABBInclusive {
         Function<Stream<IntegerAABBInclusive>, Stream<IntegerAABBInclusive>> mapper
     ) {
         assert isSorted();
-    
+        
         IntegerAABBInclusive[] array = {
             getSurfaceLayer(Direction.DOWN),
             getSurfaceLayer(Direction.NORTH).getAdjusted(
@@ -228,7 +228,7 @@ public class IntegerAABBInclusive {
                 -1, 0, -1
             )
         };
-    
+        
         return mapper.apply(
             Arrays.stream(array).filter(IntegerAABBInclusive::isSorted)
         ).flatMap(
