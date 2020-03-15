@@ -62,7 +62,26 @@ public class ClientWorldLoader {
                 }
             });
         }
-        renderHelperMap.values().forEach(DimensionRenderHelper::tick);
+        
+        boolean lightmapTextureConflict = false;
+        for (DimensionRenderHelper helper : renderHelperMap.values()) {
+            helper.tick();
+            if (helper.world != mc.world) {
+                if (helper.lightmapTexture == mc.gameRenderer.getLightTexture()) {
+                    Helper.err(String.format(
+                        "Lightmap Texture Conflict %s %s",
+                        helper.world.dimension.getType(),
+                        mc.world.dimension.getType()
+                    ));
+                    lightmapTextureConflict = true;
+                }
+            }
+        }
+        if (lightmapTextureConflict) {
+            renderHelperMap.values().forEach(DimensionRenderHelper::cleanUp);
+            renderHelperMap.clear();
+            Helper.log("Refreshed Lightmaps");
+        }
         
     }
     
@@ -89,6 +108,8 @@ public class ClientWorldLoader {
         
         clientWorldMap.clear();
         worldRendererMap.clear();
+        
+        renderHelperMap.values().forEach(DimensionRenderHelper::cleanUp);
         renderHelperMap.clear();
         
         isInitialized = false;

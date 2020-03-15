@@ -7,7 +7,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.ForcedChunksSaveData;
 import net.minecraft.world.chunk.AbstractChunkProvider;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunk;
@@ -30,30 +29,6 @@ public abstract class MixinServerWorld implements IEServerWorld {
     
     @Shadow
     public abstract ServerChunkProvider getChunkProvider();
-    
-    @Override
-    public void setChunkForcedWithoutImmediateLoading(int x, int z, boolean forced) {
-        ForcedChunksSaveData forcedChunkState = (ForcedChunksSaveData) this.getSavedData().getOrCreate(
-            ForcedChunksSaveData::new,
-            "chunks"
-        );
-        ChunkPos chunkPos = new ChunkPos(x, z);
-        long l = chunkPos.asLong();
-        boolean bl2;
-        if (forced) {
-            bl2 = forcedChunkState.getChunks().add(l);
-        }
-        else {
-            bl2 = forcedChunkState.getChunks().remove(l);
-        }
-        
-        forcedChunkState.setDirty(bl2);
-        if (bl2) {
-            this.getChunkProvider().forceChunk(chunkPos, forced);
-        }
-        
-        
-    }
     
     @Override
     public <T extends Entity> List<T> getEntitiesWithoutImmediateChunkLoading(

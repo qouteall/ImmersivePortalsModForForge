@@ -6,10 +6,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public interface IEServerWorld {
-    void setChunkForcedWithoutImmediateLoading(
-        int x, int z, boolean forced
-    );
-    
     public <T extends Entity> List<T> getEntitiesWithoutImmediateChunkLoading(
         Class<? extends T> entityClass,
         AxisAlignedBB box,

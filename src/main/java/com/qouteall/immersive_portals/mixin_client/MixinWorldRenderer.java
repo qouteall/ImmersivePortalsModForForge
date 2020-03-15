@@ -13,6 +13,7 @@ import com.qouteall.immersive_portals.far_scenery.FarSceneryRenderer;
 import com.qouteall.immersive_portals.render.MyBuiltChunkStorage;
 import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
+import com.qouteall.immersive_portals.render.TransformationManager;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -212,7 +213,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         if (CGlobal.renderer.isRendering()) {
             CGlobal.myGameRenderer.updateCullingPlane(matrixStack_1);
             CGlobal.myGameRenderer.startCulling();
-            if (MyRenderHelper.isRenderingMirror()) {
+            if (MyRenderHelper.isRenderingOddNumberOfMirrors()) {
                 MyRenderHelper.applyMirrorFaceCulling();
             }
         }
@@ -414,24 +415,39 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             }
         }
     
-        if (MyRenderHelper.isRenderingMirror()) {
+        if (MyRenderHelper.isRenderingOddNumberOfMirrors()) {
             MyRenderHelper.applyMirrorFaceCulling();
+        }
+    }
+    
+    //fix sun abnormal with optifine and fog disabled
+    @Inject(
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V",
+        at = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/client/renderer/WorldRenderer;SUN_TEXTURES:Lnet/minecraft/util/ResourceLocation;"
+        )
+    )
+    private void onStartRenderingSun(MatrixStack matrixStack, float f, CallbackInfo ci) {
+        if (OFInterface.isFogDisabled.getAsBoolean()) {
+            GL11.glDisable(GL11.GL_FOG);
         }
     }
     
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("RETURN"))
     private void onRenderSkyEnd(MatrixStack matrixStack_1, float float_1, CallbackInfo ci) {
-    
+        
         if (mc.world.dimension instanceof AlternateDimension) {
             AlternateSky.renderAlternateSky(matrixStack_1, float_1);
         }
-    
+        
         if (CGlobal.renderer.isRendering()) {
             //fix sky abnormal with optifine and fog disabled
+            GL11.glDisable(GL11.GL_FOG);
             GlStateManager.enableFog();
             GlStateManager.disableFog();
         }
-    
+        
         MyRenderHelper.recoverFaceCulling();
     }
     
@@ -447,7 +463,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         Matrix4f matrix4f,
         CallbackInfo ci
     ) {
-        MyRenderHelper.setupTransformationForMirror(camera, matrices);
+        TransformationManager.processTransformation(camera, matrices);
     }
     
     @Override
@@ -533,7 +549,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         }
     }
     
-    
     @Redirect(
         method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
         at = @At(
@@ -542,8 +557,25 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         )
     )
     private void redirectVertexDraw(IRenderTypeBuffer.Impl immediate, RenderType layer) {
-        MyRenderHelper.shouldForceDisableCull = MyRenderHelper.isRenderingMirror();
+        MyRenderHelper.shouldForceDisableCull = MyRenderHelper.isRenderingOddNumberOfMirrors();
         immediate.finish(layer);
         MyRenderHelper.shouldForceDisableCull = false;
     }
+
+//    //test
+//    @Redirect(
+//        method = "renderClouds(Lnet/minecraft/client/util/math/MatrixStack;FDDD)V",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lcom/mojang/blaze3d/systems/RenderSystem;enableDepthTest()V"
+//        )
+//    )
+//    private void onCloudEnableDepthTest() {
+//        if (CGlobal.renderer.isRendering()) {
+//            McHelper.test();
+//        }
+//        else {
+//            RenderSystem.enableDepthTest();
+//        }
+//    }
 }

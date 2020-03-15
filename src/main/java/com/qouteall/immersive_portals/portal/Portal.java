@@ -3,8 +3,8 @@ package com.qouteall.immersive_portals.portal;
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.my_util.SignalArged;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.renderer.Quaternion;
+import net.minecraft.client.renderer.Vector3f;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MoverType;
@@ -17,8 +17,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+
 import java.util.UUID;
 
 public class Portal extends Entity {
@@ -40,11 +39,16 @@ public class Portal extends Entity {
     
     private AxisAlignedBB boundingBoxCache;
     private Vec3d normal;
+    private Vec3d contentDirection;
     
     public double cullableXStart = 0;
     public double cullableXEnd = 0;
     public double cullableYStart = 0;
     public double cullableYEnd = 0;
+    
+    public Quaternion rotation;
+    
+    public double motionAffinity = 0;
     
     public static final SignalArged<Portal> clientPortalTickSignal = new SignalArged<>();
     public static final SignalArged<Portal> serverPortalTickSignal = new SignalArged<>();
@@ -106,6 +110,56 @@ public class Portal extends Entity {
                 initDefaultCullableRange();
             }
         }
+        if (compoundTag.contains("rotationA")) {
+            rotation = new Quaternion(
+                compoundTag.getFloat("rotationB"),
+                compoundTag.getFloat("rotationC"),
+                compoundTag.getFloat("rotationD"),
+                compoundTag.getFloat("rotationA")
+            );
+        }
+        if (compoundTag.contains("motionAffinity")) {
+            motionAffinity = compoundTag.getDouble("motionAffinity");
+        }
+        else {
+            motionAffinity = -0.3;
+        }
+    }
+    
+    @Override
+    protected void writeAdditional(CompoundNBT compoundTag) {
+        compoundTag.putDouble("width", width);
+        compoundTag.putDouble("height", height);
+        Helper.putVec3d(compoundTag, "axisW", axisW);
+        Helper.putVec3d(compoundTag, "axisH", axisH);
+        compoundTag.putInt("dimensionTo", dimensionTo.getId());
+        Helper.putVec3d(compoundTag, "destination", destination);
+        compoundTag.putBoolean("loadFewerChunks", loadFewerChunks);
+    
+        if (specificPlayer != null) {
+            compoundTag.putUniqueId("specificPlayer", specificPlayer);
+        }
+    
+        if (specialShape != null) {
+            compoundTag.put("specialShape", specialShape.writeToTag());
+        }
+    
+        compoundTag.putBoolean("teleportable", teleportable);
+    
+        if (specialShape == null) {
+            initDefaultCullableRange();
+        }
+        compoundTag.putDouble("cullableXStart", cullableXStart);
+        compoundTag.putDouble("cullableXEnd", cullableXEnd);
+        compoundTag.putDouble("cullableYStart", cullableYStart);
+        compoundTag.putDouble("cullableYEnd", cullableYEnd);
+        if (rotation != null) {
+            compoundTag.putDouble("rotationA", rotation.getW());
+            compoundTag.putDouble("rotationB", rotation.getX());
+            compoundTag.putDouble("rotationC", rotation.getY());
+            compoundTag.putDouble("rotationD", rotation.getZ());
+        }
+        compoundTag.putDouble("motionAffinity", motionAffinity);
     }
     
     public boolean isCullable() {
@@ -119,33 +173,13 @@ public class Portal extends Entity {
         return teleportable;
     }
     
-    @Override
-    protected void writeAdditional(CompoundNBT compoundTag) {
-        compoundTag.putDouble("width", width);
-        compoundTag.putDouble("height", height);
-        Helper.putVec3d(compoundTag, "axisW", axisW);
-        Helper.putVec3d(compoundTag, "axisH", axisH);
-        compoundTag.putInt("dimensionTo", dimensionTo.getId());
-        Helper.putVec3d(compoundTag, "destination", destination);
-        compoundTag.putBoolean("loadFewerChunks", loadFewerChunks);
-        
-        if (specificPlayer != null) {
-            compoundTag.putUniqueId("specificPlayer", specificPlayer);
-        }
-        
-        if (specialShape != null) {
-            compoundTag.put("specialShape", specialShape.writeToTag());
-        }
-        
-        compoundTag.putBoolean("teleportable", teleportable);
-        
-        if (specialShape == null) {
-            initDefaultCullableRange();
-        }
-        compoundTag.putDouble("cullableXStart", cullableXStart);
-        compoundTag.putDouble("cullableXEnd", cullableXEnd);
-        compoundTag.putDouble("cullableYStart", cullableYStart);
-        compoundTag.putDouble("cullableYEnd", cullableYEnd);
+    public void updateCache() {
+        boundingBoxCache = null;
+        normal = null;
+        contentDirection = null;
+        getBoundingBox();
+        getNormal();
+        getContentDirection();
     }
     
     public void initDefaultCullableRange() {
@@ -176,7 +210,7 @@ public class Portal extends Entity {
     public void tick() {
         if (world.isRemote) {
             clientPortalTickSignal.emit(this);
-            tickClient();
+            //TODO implement player-only portal
         }
         else {
             if (!isPortalValid()) {
@@ -205,17 +239,6 @@ public class Portal extends Entity {
     @Override
     public void move(MoverType type, Vec3d movement) {
         //portal cannot be moved
-    }
-    
-    @OnlyIn(Dist.CLIENT)
-    private void tickClient() {
-        ClientPlayerEntity player = Minecraft.getInstance().player;
-        if (player != null) {
-            if (!canBeSeenByPlayer(player)) {
-                //removed in client but not in server
-                remove();
-            }
-        }
     }
     
     public boolean isPortalValid() {
@@ -342,13 +365,17 @@ public class Portal extends Entity {
     //Geometry----------
     
     public Vec3d getNormal() {
-        if (normal == null)
+        if (normal == null) {
             normal = axisW.crossProduct(axisH).normalize();
+        }
         return normal;
     }
     
     public Vec3d getContentDirection() {
-        return getNormal().scale(-1);
+        if (contentDirection == null) {
+            contentDirection = transformLocalVec(getNormal().scale(-1));
+        }
+        return contentDirection;
     }
     
     public double getDistanceToPlane(
@@ -385,7 +412,7 @@ public class Portal extends Entity {
     
     //3  2
     //1  0
-    public Vec3d[] getFourVerticesRelativeToCenter(double shrinkFactor) {
+    public Vec3d[] getFourVerticesLocal(double shrinkFactor) {
         Vec3d[] vertices = new Vec3d[4];
         vertices[0] = getPointInPlaneRelativeToCenter(
             width / 2 - shrinkFactor,
@@ -403,13 +430,24 @@ public class Portal extends Entity {
             -width / 2 + shrinkFactor,
             height / 2 - shrinkFactor
         );
-    
+        
         return vertices;
     }
     
     //3  2
     //1  0
-    public Vec3d[] getFourVerticesCullableRelativeToCenter(double shrinkFactor) {
+    public Vec3d[] getFourVerticesLocalRotated(double shrinkFactor) {
+        Vec3d[] fourVerticesLocal = getFourVerticesLocal(shrinkFactor);
+        fourVerticesLocal[0] = transformLocalVec(fourVerticesLocal[0]);
+        fourVerticesLocal[1] = transformLocalVec(fourVerticesLocal[1]);
+        fourVerticesLocal[2] = transformLocalVec(fourVerticesLocal[2]);
+        fourVerticesLocal[3] = transformLocalVec(fourVerticesLocal[3]);
+        return fourVerticesLocal;
+    }
+    
+    //3  2
+    //1  0
+    public Vec3d[] getFourVerticesLocalCullable(double shrinkFactor) {
         Vec3d[] vertices = new Vec3d[4];
         vertices[0] = getPointInPlaneRelativeToCenter(
             cullableXEnd - shrinkFactor,
@@ -431,14 +469,30 @@ public class Portal extends Entity {
         return vertices;
     }
     
-    public Vec3d applyTransformationToPoint(Vec3d pos) {
+    //Server side does not have Matrix3f
+    public final Vec3d transformPointRough(Vec3d pos) {
         Vec3d offset = destination.subtract(getPositionVec());
         return pos.add(offset);
     }
     
-    public Vec3d reverseTransformPoint(Vec3d pos) {
-        Vec3d offset = destination.subtract(getPositionVec());
-        return pos.subtract(offset);
+    public Vec3d transformPoint(Vec3d pos) {
+        if (rotation == null) {
+            return transformPointRough(pos);
+        }
+    
+        Vec3d localPos = pos.subtract(getPositionVec());
+    
+        return transformLocalVec(localPos).add(destination);
+    }
+    
+    public Vec3d transformLocalVec(Vec3d localVec) {
+        if (rotation == null) {
+            return localVec;
+        }
+        
+        Vector3f temp = new Vector3f(localVec);
+        temp.transform(rotation);
+        return new Vec3d(temp);
     }
     
     public Vec3d getCullingPoint() {

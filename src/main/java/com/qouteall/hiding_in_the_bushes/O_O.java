@@ -64,4 +64,6 @@ public class O_O {
     public static boolean isObsidian(IWorld world, BlockPos obsidianPos) {
         return world.getBlockState(obsidianPos).isPortalFrame(world, obsidianPos);
     }
+    
+    public static final boolean isReachEntityAttributesPresent = false;
 }

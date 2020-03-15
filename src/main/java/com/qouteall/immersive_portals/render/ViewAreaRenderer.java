@@ -14,12 +14,10 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.math.Vec3d;
-import org.lwjgl.opengl.GL11;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-import static org.lwjgl.opengl.GL11.GL_CLIP_PLANE0;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 
 public class ViewAreaRenderer {
@@ -40,7 +38,7 @@ public class ViewAreaRenderer {
         );
     
         if (portal.specialShape == null) {
-            generateTriangleBiLayered(
+            generateTriangle(
                 vertexOutput,
                 portal,
                 layerWidth,
@@ -48,7 +46,7 @@ public class ViewAreaRenderer {
             );
         }
         else {
-            generateTriangleSpecialBiLayered(
+            generateTriangleSpecial(
                 vertexOutput,
                 portal,
                 layerWidth,
@@ -61,7 +59,7 @@ public class ViewAreaRenderer {
         }
     }
     
-    private static void generateTriangleSpecialBiLayered(
+    private static void generateTriangleSpecial(
         Consumer<Vec3d> vertexOutput,
         Portal portal,
         float layerWidth,
@@ -71,11 +69,6 @@ public class ViewAreaRenderer {
             vertexOutput, portal, posInPlayerCoordinate,
             Vec3d.ZERO
         );
-
-//        generateTriangleSpecialWithOffset(
-//            vertexOutput, portal, posInPlayerCoordinate,
-//            portal.getNormal().multiply(-layerWidth)
-//        );
     }
     
     private static void generateTriangleSpecialWithOffset(
@@ -119,7 +112,7 @@ public class ViewAreaRenderer {
         );
     }
     
-    private static void generateTriangleBiLayered(
+    private static void generateTriangle(
         Consumer<Vec3d> vertexOutput,
         Portal portal,
         float layerWidth,
@@ -127,22 +120,14 @@ public class ViewAreaRenderer {
     ) {
         Vec3d layerOffsest = portal.getNormal().scale(-layerWidth);
         
-        Vec3d[] frontFace = Arrays.stream(portal.getFourVerticesRelativeToCenter(0))
+        Vec3d[] frontFace = Arrays.stream(portal.getFourVerticesLocal(0))
             .map(pos -> pos.add(posInPlayerCoordinate))
             .toArray(Vec3d[]::new);
         
-        Vec3d[] backFace = Arrays.stream(portal.getFourVerticesRelativeToCenter(0))
+        Vec3d[] backFace = Arrays.stream(portal.getFourVerticesLocal(0))
             .map(pos -> pos.add(posInPlayerCoordinate).add(layerOffsest))
             .toArray(Vec3d[]::new);
-
-//        putIntoQuad(
-//            vertexOutput,
-//            backFace[0],
-//            backFace[2],
-//            backFace[3],
-//            backFace[1]
-//        );
-        
+    
         putIntoQuad(
             vertexOutput,
             frontFace[0],
@@ -182,32 +167,28 @@ public class ViewAreaRenderer {
     
     public static void drawPortalViewTriangle(
         Portal portal,
-        MatrixStack matrixStack
+        MatrixStack matrixStack,
+        boolean doFrontCulling,
+        boolean doFaceCulling
     ) {
+    
         Minecraft.getInstance().getProfiler().startSection("render_view_triangle");
-        
+    
         DimensionRenderHelper helper =
             CGlobal.clientWorldLoader.getDimensionRenderHelper(portal.dimensionTo);
     
-        Helper.SimpleBox<Vec3d> boxOfFogColor = new Helper.SimpleBox<>(null);
+        Vec3d fogColor = getCurrentFogColor(portal);
     
-        FogRendererContext.swappingManager.swapAndInvoke(
-            portal.dimensionTo,
-            () -> {
-                boxOfFogColor.obj = FogRendererContext.getCurrentFogColor.get();
-            }
-        );
-    
-        Vec3d fogColor = boxOfFogColor.obj;
-        
-        GlStateManager.enableCull();
-        GlStateManager.disableTexture();
-        GL11.glDisable(GL_CLIP_PLANE0);
-        
-        if (OFInterface.isShaders.getAsBoolean()) {
-            fogColor = Vec3d.ZERO;
+        if (doFaceCulling) {
+            GlStateManager.enableCull();
         }
-        
+        else {
+            GlStateManager.disableCull();
+        }
+    
+        GlStateManager.disableTexture();
+        CGlobal.myGameRenderer.endCulling();
+    
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         buildPortalViewAreaTrianglesBuffer(
@@ -219,15 +200,52 @@ public class ViewAreaRenderer {
             portal instanceof Mirror ? 0 : 0.45F
         );
     
+        boolean shouldReverseCull = MyRenderHelper.isRenderingOddNumberOfMirrors();
+        if (shouldReverseCull) {
+            MyRenderHelper.applyMirrorFaceCulling();
+        }
+        if (doFrontCulling) {
+            if (CGlobal.renderer.isRendering()) {
+                CGlobal.myGameRenderer.updateCullingPlane(matrixStack);
+                CGlobal.myGameRenderer.startCulling();
+            }
+        }
+    
         McHelper.runWithTransformation(
             matrixStack,
             () -> tessellator.draw()
         );
-        
-        GlStateManager.enableCull();
+    
+        if (shouldReverseCull) {
+            MyRenderHelper.recoverFaceCulling();
+        }
+        if (doFrontCulling) {
+            if (CGlobal.renderer.isRendering()) {
+                CGlobal.myGameRenderer.endCulling();
+            }
+        }
+    
         GlStateManager.enableTexture();
-        
+    
         Minecraft.getInstance().getProfiler().endSection();
+    }
+    
+    private static Vec3d getCurrentFogColor(Portal portal) {
+        Helper.SimpleBox<Vec3d> boxOfFogColor = new Helper.SimpleBox<>(null);
+        
+        FogRendererContext.swappingManager.swapAndInvoke(
+            portal.dimensionTo,
+            () -> {
+                boxOfFogColor.obj = FogRendererContext.getCurrentFogColor.get();
+            }
+        );
+        
+        Vec3d fogColor = boxOfFogColor.obj;
+        
+        if (OFInterface.isShaders.getAsBoolean()) {
+            fogColor = Vec3d.ZERO;
+        }
+        return fogColor;
     }
     
     
@@ -246,27 +264,26 @@ public class ViewAreaRenderer {
     ) {
         Vec3d projected = portal.getPointInPortalProjection(cameraPos).subtract(cameraPos);
         Vec3d normal = portal.getNormal();
-        
-        final double boxRadius = 1;
+    
+        final double boxRadius = 1.5;
         final double correctionFactor = 0;
-        Vec3d correction = normal.scale(correctionFactor);
-        
+    
         Vec3d dx = portal.axisW.scale(boxRadius);
         Vec3d dy = portal.axisH.scale(boxRadius);
-        
-        Vec3d a = projected.add(dx).add(dy).add(correction);
-        Vec3d b = projected.subtract(dx).add(dy).add(correction);
-        Vec3d c = projected.subtract(dx).subtract(dy).add(correction);
-        Vec3d d = projected.add(dx).subtract(dy).add(correction);
+    
+        Vec3d a = projected.add(dx).add(dy);
+        Vec3d b = projected.subtract(dx).add(dy);
+        Vec3d c = projected.subtract(dx).subtract(dy);
+        Vec3d d = projected.add(dx).subtract(dy);
     
         Vec3d mid = projected.add(normal.scale(-0.5));
-        
+    
         Consumer<Vec3d> compactVertexOutput = vertexOutput;
-        
+    
         compactVertexOutput.accept(b);
         compactVertexOutput.accept(mid);
         compactVertexOutput.accept(a);
-        
+    
         compactVertexOutput.accept(c);
         compactVertexOutput.accept(mid);
         compactVertexOutput.accept(b);

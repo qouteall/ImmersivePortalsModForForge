@@ -71,7 +71,7 @@ public class NewNetherPortalGenerator {
             firePos,
             toWorld,
             NetherPortalMatcher.findingRadius,
-            NetherPortalMatcher.findingRadius / 5,
+            NetherPortalMatcher.findingRadius,
             (fromPos1) -> NetherPortalGenerator.mapPosition(
                 fromPos1,
                 fromWorld.dimension.getType(),
@@ -96,7 +96,7 @@ public class NewNetherPortalGenerator {
                 return O_O.isObsidian(toWorld, blockPos);
             },
             (shape) -> embodyNewFrame(toWorld, shape, Blocks.OBSIDIAN.getDefaultState()),
-            info -> generatePortalEntities(info, NewNetherPortalEntity.entityType)
+            info -> generateNetherPortalEntities(info, NewNetherPortalEntity.entityType)
         );
         return thisSideShape != null;
     }
@@ -111,7 +111,7 @@ public class NewNetherPortalGenerator {
             firePos,
             fromWorld,
             NetherPortalMatcher.findingRadius,
-            NetherPortalMatcher.findingRadius / 5,
+            NetherPortalMatcher.findingRadius,
     
             //this side area
             (fromPos1) -> NetherPortalGenerator.getRandomShift().add(fromPos1),
@@ -393,7 +393,7 @@ public class NewNetherPortalGenerator {
     //create portal entity and generate obsidian blocks and placeholder blocks
     //the portal blocks will be placed on both sides because the obsidian may break while generating
     //executed on server main thread
-    public static void generatePortalEntities(
+    public static void generateNetherPortalEntities(
         Info info, EntityType<NewNetherPortalEntity> entityType
     ) {
         ServerWorld fromWorld = McHelper.getServer().getWorld(info.from);

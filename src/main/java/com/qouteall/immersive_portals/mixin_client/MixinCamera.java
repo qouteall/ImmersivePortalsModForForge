@@ -25,6 +25,13 @@ public abstract class MixinCamera implements IECamera {
     private IBlockReader world;
     @Shadow
     private Entity renderViewEntity;
+    @Shadow
+    private float height;
+    @Shadow
+    private float previousHeight;
+    
+    @Shadow
+    protected abstract void setPostion(net.minecraft.util.math.Vec3d vec3d_1);
     
     @Inject(
         method = "Lnet/minecraft/client/renderer/ActiveRenderInfo;getFluidState()Lnet/minecraft/fluid/IFluidState;",
@@ -36,15 +43,6 @@ public abstract class MixinCamera implements IECamera {
             cir.setReturnValue(Fluids.EMPTY.getDefaultState());
             cir.cancel();
         }
-    }
-    
-    @Shadow
-    protected abstract void setPostion(net.minecraft.util.math.Vec3d vec3d_1);
-    
-    @Override
-    public void resetState(Vec3d pos, ClientWorld currWorld) {
-        setPostion(pos);
-        world = currWorld;
     }
     
     @Inject(method = "Lnet/minecraft/client/renderer/ActiveRenderInfo;calcCameraDistance(D)D", at = @At("HEAD"), cancellable = true)
@@ -60,4 +58,25 @@ public abstract class MixinCamera implements IECamera {
         lastClipSpaceResult = cir.getReturnValue();
     }
     
+    @Override
+    public void resetState(Vec3d pos, ClientWorld currWorld) {
+        setPostion(pos);
+        world = currWorld;
+    }
+    
+    @Override
+    public float getCameraY() {
+        return height;
+    }
+    
+    @Override
+    public float getLastCameraY() {
+        return previousHeight;
+    }
+    
+    @Override
+    public void setCameraY(float cameraY_, float lastCameraY_) {
+        height = cameraY_;
+        previousHeight = lastCameraY_;
+    }
 }

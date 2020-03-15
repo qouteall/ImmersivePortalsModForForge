@@ -6,6 +6,7 @@
   "mixins": [
     "block_manipulation/MixinClientPlayerInteractionManager",
     "block_manipulation/MixinMinecraftClient_B",
+    "collisions/MixinClientPlayerEntity",
     "debug/MixinBuiltChunk",
     "far_scenery/MixinGameRenderer_F",
     "far_scenery/MixinWorldRenderer_F",
@@ -21,7 +22,6 @@
     "MixinCamera",
     "MixinChunkRendererRegion",
     "MixinClientConnection",
-    "MixinClientPlayerEntity",
     "MixinClientWorld",
     "MixinDebugHud",
     "MixinEntityRenderDispatcher",
@@ -33,6 +33,7 @@
     "MixinMinecraftClient",
     "MixinParticleManager",
     "MixinPlayerListEntry",
+    "MixinQuaternion",
     "MixinWorldRenderer",
     "MixinWorldRendererChunkInfo"
   ],

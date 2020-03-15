@@ -52,7 +52,7 @@ public class StcRedirected {
         catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
-    
+        
         if (dimension == null) {
             Helper.err(String.format(
                 "Invalid redirected packet %s %s \nRegistered dimensions %s",
@@ -63,6 +63,8 @@ public class StcRedirected {
             ));
         }
     }
+    
+    private static int reportedErrors = 0;
     
     private static void doProcessRedirectedPacket(
         DimensionType dimension,
@@ -91,10 +93,13 @@ public class StcRedirected {
             packet.processPacket(netHandler);
         }
         catch (Throwable e) {
-            throw new IllegalStateException(
-                "handling packet in " + dimension,
-                e
-            );
+            if (reportedErrors < 200) {
+                reportedErrors++;
+                throw new IllegalStateException(
+                    "handling packet in " + dimension,
+                    e
+                );
+            }
         }
         finally {
             mc.world = originalWorld;
@@ -119,9 +124,9 @@ public class StcRedirected {
                 "Redirected Packet without Dimension info " + packet
             );
         }
-    
+        
         context.get().enqueueWork(() -> doProcessRedirectedPacket(dimension, packet));
-    
+        
         context.get().setPacketHandled(true);
     }
 }

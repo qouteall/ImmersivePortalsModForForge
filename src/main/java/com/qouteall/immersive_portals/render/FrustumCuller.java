@@ -45,7 +45,7 @@ public class FrustumCuller {
             );
             downLeftUpRightPlaneNormals = getDownLeftUpRightPlaneNormals(
                 portalOriginInLocalCoordinate,
-                portal.getFourVerticesRelativeToCenter(0)
+                portal.getFourVerticesLocalRotated(0)
             );
         }
         else {
@@ -66,7 +66,7 @@ public class FrustumCuller {
                 );
                 downLeftUpRightPlaneNormals = getDownLeftUpRightPlaneNormals(
                     portalOriginInLocalCoordinate,
-                    portal.getFourVerticesCullableRelativeToCenter(0)
+                    portal.getFourVerticesLocalCullable(0)
                 );
                 nearPlanePosInLocalCoordinate = portalOriginInLocalCoordinate;
                 nearPlaneNormal = portal.getNormal().scale(-1);
@@ -99,11 +99,6 @@ public class FrustumCuller {
         }
         
         if (OFInterface.isShadowPass.getAsBoolean()) {
-            return false;
-        }
-        
-        //TODO implement frustum culling for mirror
-        if (MyRenderHelper.isRenderingMirror()) {
             return false;
         }
         

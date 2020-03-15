@@ -2,7 +2,6 @@ package com.qouteall.immersive_portals.chunk_loading;
 
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.ducks.IEServerWorld;
 import com.qouteall.immersive_portals.my_util.SignalBiArged;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -159,11 +158,14 @@ public class NewChunkTrackingGraph {
             LongSortedSet currentLoadedChunks = getChunkRecordMap(world.dimension.getType()).keySet();
     
             currentLoadedChunks.forEach(
-                (long longChunkPos) -> ((IEServerWorld) world).setChunkForcedWithoutImmediateLoading(
-                    ChunkPos.getX(longChunkPos),
-                    ChunkPos.getZ(longChunkPos),
-                    true
-                )
+                (long longChunkPos) -> {
+                    MyLoadingTicket.load(world, new ChunkPos(longChunkPos));
+//                    ((IEServerWorld) world).updateLoadingStatus(
+//                        ChunkPos.getPackedX(longChunkPos),
+//                        ChunkPos.getPackedZ(longChunkPos),
+//                        true
+//                    );
+                }
             );
     
             LongSortedSet additionalLoadedChunks = new LongLinkedOpenHashSet();
@@ -171,28 +173,31 @@ public class NewChunkTrackingGraph {
                 (dim, x, z, dis) -> {
                     if (world.dimension.getType() == dim) {
                         additionalLoadedChunks.add(ChunkPos.asLong(x, z));
-                        ((IEServerWorld) world).setChunkForcedWithoutImmediateLoading(
-                            x, z, true
-                        );
+                        MyLoadingTicket.load(world, new ChunkPos(x, z));
+//                        ((IEServerWorld) world).updateLoadingStatus(
+//                            x, z, true
+//                        );
                     }
                 }
             ));
     
             LongList chunksToUnload = new LongArrayList();
-            //I can't use filter here because it will box Long
-            world.getForcedChunks().forEach((long longChunkPos) -> {
+            MyLoadingTicket.getRecord(world).forEach((long longChunkPos) -> {
                 if (!currentLoadedChunks.contains(longChunkPos) &&
                     !additionalLoadedChunks.contains(longChunkPos)
                 ) {
                     chunksToUnload.add(longChunkPos);
                 }
             });
-            
-            chunksToUnload.forEach((long longChunkPos) -> world.forceChunk(
-                ChunkPos.getX(longChunkPos),
-                ChunkPos.getZ(longChunkPos),
-                false
-            ));
+    
+            chunksToUnload.forEach((long longChunkPos) -> {
+                MyLoadingTicket.unload(world, new ChunkPos(longChunkPos));
+//                world.setChunkForced(
+//                    ChunkPos.getPackedX(longChunkPos),
+//                    ChunkPos.getPackedZ(longChunkPos),
+//                    false
+//                );
+            });
         });
     }
     

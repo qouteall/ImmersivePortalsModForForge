@@ -26,6 +26,7 @@ import net.minecraft.client.network.play.NetworkPlayerInfo;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
@@ -61,6 +62,16 @@ public class MyGameRenderer {
         }
     }
     
+    private ActiveRenderInfo getNewCamera() {
+        IECamera oldCamera = (IECamera) mc.gameRenderer.getActiveRenderInfo();
+        ActiveRenderInfo newCamera = new ActiveRenderInfo();
+        ((IECamera) newCamera).setCameraY(
+            oldCamera.getCameraY(),
+            oldCamera.getLastCameraY()
+        );
+        return newCamera;
+    }
+    
     public void renderWorld(
         float partialTicks,
         WorldRenderer newWorldRenderer,
@@ -79,17 +90,18 @@ public class MyGameRenderer {
         DimensionRenderHelper helper =
             CGlobal.clientWorldLoader.getDimensionRenderHelper(newWorld.dimension.getType());
         NetworkPlayerInfo playerListEntry = CHelper.getClientPlayerListEntry();
-        ActiveRenderInfo newCamera = new ActiveRenderInfo();
+        ActiveRenderInfo newCamera = getNewCamera();
         
         //store old state
         WorldRenderer oldWorldRenderer = mc.worldRenderer;
-        LightTexture oldLightmap = ieGameRenderer.getLightmapTextureManager();
+        LightTexture oldLightmap = mc.gameRenderer.getLightTexture();
         GameType oldGameMode = playerListEntry.getGameType();
         boolean oldNoClip = mc.player.noClip;
         boolean oldDoRenderHand = ieGameRenderer.getDoRenderHand();
         OFInterface.createNewRenderInfosNormal.accept(newWorldRenderer);
         ObjectList oldVisibleChunks = ((IEWorldRenderer) oldWorldRenderer).getVisibleChunks();
         RayTraceResult oldCrosshairTarget = mc.objectMouseOver;
+        ActiveRenderInfo oldCamera = mc.gameRenderer.getActiveRenderInfo();
         
         ((IEWorldRenderer) oldWorldRenderer).setVisibleChunks(new ObjectArrayList());
         
@@ -110,6 +122,7 @@ public class MyGameRenderer {
         if (BlockManipulationClient.remotePointedDim == newWorld.dimension.getType()) {
             mc.objectMouseOver = BlockManipulationClient.remoteHitResult;
         }
+        ieGameRenderer.setCamera(newCamera);
         
         mc.getProfiler().startSection("render_portal_content");
         
@@ -135,11 +148,12 @@ public class MyGameRenderer {
         GlStateManager.popMatrix();
         ((IEParticleManager) mc.particles).mySetWorld(oldWorld);
         mc.objectMouseOver = oldCrosshairTarget;
+        ieGameRenderer.setCamera(oldCamera);
         
         FogRendererContext.swappingManager.popSwapping();
         
         ((IEWorldRenderer) oldWorldRenderer).setVisibleChunks(oldVisibleChunks);
-        ((IECamera) mc.gameRenderer.getActiveRenderInfo()).resetState(oldCameraPos, oldWorld);
+        //((IECamera) mc.gameRenderer.getCamera()).resetState(oldCameraPos, oldWorld);
     }
     
     public void endCulling() {
@@ -183,7 +197,7 @@ public class MyGameRenderer {
         Vec3d planeNormal = portal.getContentDirection();
     
         Vec3d portalPos = portal.destination
-            .subtract(portal.getNormal().scale(-0.01))//avoid z fighting
+            .subtract(portal.getContentDirection().scale(0.01))//avoid z fighting
             .subtract(mc.gameRenderer.getActiveRenderInfo().getProjectedView());
     
         //equation: planeNormal * p + c > 0
@@ -201,7 +215,6 @@ public class MyGameRenderer {
     public double[] getClipPlaneEquation() {
         return clipPlaneEquation;
     }
-    
     
     public void renderPlayerItself(Runnable doRenderEntity) {
         EntityRendererManager entityRenderDispatcher =
@@ -246,13 +259,18 @@ public class MyGameRenderer {
             MathHelper.floor(d),
             MathHelper.floor(e)
         ) || mc.ingameGUI.getBossOverlay().shouldCreateFog();
-        
+    
         FogRenderer.setupFog(
             camera,
             FogRenderer.FogType.FOG_TERRAIN,
             Math.max(g - 16.0F, 32.0F),
             bl2
         );
+        FogRenderer.applyFog();
+    }
+    
+    public void resetDiffuseLighting(MatrixStack matrixStack) {
+        RenderHelper.setupLevelDiffuseLighting(matrixStack.getLast().getMatrix());
     }
     
     //render fewer chunks when rendering portal

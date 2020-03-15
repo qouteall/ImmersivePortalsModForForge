@@ -87,10 +87,10 @@ public class BlockManipulationClient {
     ) {
         Minecraft mc = Minecraft.getInstance();
         
-        Vec3d from = portal.applyTransformationToPoint(
+        Vec3d from = portal.transformPoint(
             cameraPos.add(viewVector.scale(beginDistance))
         );
-        Vec3d to = portal.applyTransformationToPoint(
+        Vec3d to = portal.transformPoint(
             cameraPos.add(viewVector.scale(endDistance))
         );
         
@@ -151,8 +151,10 @@ public class BlockManipulationClient {
         }
     
         if (remoteHitResult != null) {
-            mc.objectMouseOver = null;
-            remotePointedDim = portal.dimensionTo;
+            if (!world.getBlockState(((BlockRayTraceResult) remoteHitResult).getPos()).isAir()) {
+                mc.objectMouseOver = null;
+                remotePointedDim = portal.dimensionTo;
+            }
         }
     }
     
