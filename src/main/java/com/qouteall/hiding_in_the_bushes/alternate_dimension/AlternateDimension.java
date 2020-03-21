@@ -249,16 +249,16 @@ public class AlternateDimension extends Dimension {
 //    }
     
     //avoid dark fog when camera is low
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public double getVoidFogYFactor() {
-        if (Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView().y > 0) {
-            return 999;
-        }
-        else {
-            return -999;
-        }
-    }
+//    @OnlyIn(Dist.CLIENT)
+//    @Override
+//    public double getVoidFogYFactor() {
+//        if (Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView().y > 0) {
+//            return 999;
+//        }
+//        else {
+//            return -999;
+//        }
+//    }
     
     @Override
     public void updateWeather(Runnable defaultLogic) {

@@ -14,6 +14,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.play.client.CPlayerPacket;
+import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.dimension.DimensionType;
@@ -30,6 +31,8 @@ public class ServerTeleportationManager {
     private Set<ServerPlayerEntity> teleportingEntities = new HashSet<>();
     private WeakHashMap<Entity, Long> lastTeleportGameTime = new WeakHashMap<>();
     public boolean isFiringMyChangeDimensionEvent = false;
+    public final WeakHashMap<ServerPlayerEntity, Tuple<DimensionType, Vec3d>> lastPosition =
+        new WeakHashMap<>();
     
     public ServerTeleportationManager() {
         ModMain.postServerTickSignal.connectWithWeakRef(this, ServerTeleportationManager::tick);
@@ -71,26 +74,19 @@ public class ServerTeleportationManager {
         Vec3d oldEyePos,
         UUID portalId
     ) {
-        ServerWorld originalWorld = McHelper.getServer().getWorld(dimensionBefore);
-        Entity portalEntity = originalWorld.getEntityByUuid(portalId);
-        if (portalEntity == null) {
-            portalEntity = GlobalPortalStorage.get(originalWorld).data
-                .stream().filter(
-                    p -> p.getUniqueID().equals(portalId)
-                ).findFirst().orElse(null);
-        }
-        lastTeleportGameTime.put(player, McHelper.getServerGameTime());
+        recordLastPosition(player);
     
-        if (canPlayerTeleport(player, dimensionBefore, oldEyePos, portalEntity)) {
+        Portal portal = findPortal(dimensionBefore, portalId);
+        lastTeleportGameTime.put(player, McHelper.getServerGameTime());
+        
+        if (canPlayerTeleport(player, dimensionBefore, oldEyePos, portal)) {
             if (isTeleporting(player)) {
                 Helper.err(player.toString() + "is teleporting frequently");
             }
-        
-            Portal portal = (Portal) portalEntity;
-        
+    
             DimensionType dimensionTo = portal.dimensionTo;
             Vec3d newEyePos = portal.transformPoint(oldEyePos);
-        
+            
             teleportPlayer(player, dimensionTo, newEyePos);
             
             portal.onEntityTeleportedOnServer(player);
@@ -101,9 +97,34 @@ public class ServerTeleportationManager {
                 player.getName().getUnformattedComponentText(),
                 player.dimension,
                 player.getPositionVec(),
-                portalEntity
+                portal
             ));
         }
+    }
+    
+    private Portal findPortal(DimensionType dimensionBefore, UUID portalId) {
+        ServerWorld originalWorld = McHelper.getServer().getWorld(dimensionBefore);
+        Entity portalEntity = originalWorld.getEntityByUuid(portalId);
+        if (portalEntity == null) {
+            portalEntity = GlobalPortalStorage.get(originalWorld).data
+                .stream().filter(
+                    p -> p.getUniqueID().equals(portalId)
+                ).findFirst().orElse(null);
+        }
+        if (portalEntity == null) {
+            return null;
+        }
+        if (portalEntity instanceof Portal) {
+            return ((Portal) portalEntity);
+        }
+        return null;
+    }
+    
+    public void recordLastPosition(ServerPlayerEntity player) {
+        lastPosition.put(
+            player,
+            new Tuple<>(player.dimension, player.getPositionVec())
+        );
     }
     
     private boolean canPlayerTeleport(
@@ -199,24 +220,24 @@ public class ServerTeleportationManager {
         if (vehicle != null) {
             ((IEServerPlayerEntity) player).stopRidingWithoutTeleportRequest();
         }
-    
+        
         BlockPos oldPos = player.getPosition();
-    
+        
         teleportingEntities.add(player);
-    
+        
         O_O.segregateServerPlayer(fromWorld, player);
-    
+        
         McHelper.setEyePos(player, newEyePos, newEyePos);
         McHelper.updateBoundingBox(player);
-    
+        
         player.world = toWorld;
         player.dimension = toWorld.dimension.getType();
         toWorld.func_217447_b(player);
-    
+        
         toWorld.chunkCheck(player);
-    
+        
         player.interactionManager.setWorld(toWorld);
-    
+        
         if (vehicle != null) {
             Vec3d vehiclePos = new Vec3d(
                 newEyePos.x,
@@ -280,6 +301,9 @@ public class ServerTeleportationManager {
                         this.lastTeleportGameTime.getOrDefault(player, 0L);
                     if (tickTimeNow - lastTeleportGameTime > 60) {
                         sendPositionConfirmMessage(player);
+                        
+                        //for vanilla nether portal cooldown to work normally
+                        player.clearInvulnerableDimensionChange();
                     }
                     else {
                         ((IEServerPlayNetworkHandler) player.connection).cancelTeleportRequest();
@@ -314,30 +338,30 @@ public class ServerTeleportationManager {
     private void teleportRegularEntity(Entity entity, Portal portal) {
         assert entity.dimension == portal.dimension;
         assert !(entity instanceof ServerPlayerEntity);
-    
+        
         long currGameTime = McHelper.getServerGameTime();
         Long lastTeleportGameTime = this.lastTeleportGameTime.getOrDefault(entity, 0L);
         if (currGameTime - lastTeleportGameTime < 2) {
             return;
         }
         this.lastTeleportGameTime.put(entity, currGameTime);
-    
+        
         if (entity.isPassenger() || doesEntityClutterContainPlayer(entity)) {
             return;
         }
-    
+        
         Vec3d newEyePos = portal.transformPoint(McHelper.getEyePos(entity));
-    
+        
         if (portal.dimensionTo != entity.dimension) {
             changeEntityDimension(entity, portal.dimensionTo, newEyePos);
         }
-    
+        
         entity.setPosition(
             newEyePos.x, newEyePos.y, newEyePos.z
         );
-    
+        
         entity.setMotion(portal.transformLocalVec(entity.getMotion()));
-    
+        
         portal.onEntityTeleportedOnServer(entity);
     }
     
@@ -352,12 +376,12 @@ public class ServerTeleportationManager {
         ServerWorld fromWorld = (ServerWorld) entity.world;
         ServerWorld toWorld = McHelper.getServer().getWorld(toDimension);
         entity.detach();
-    
+        
         O_O.segregateServerEntity(fromWorld, entity);
-    
+        
         McHelper.setEyePos(entity, newEyePos, newEyePos);
         McHelper.updateBoundingBox(entity);
-    
+        
         entity.world = toWorld;
         entity.dimension = toDimension;
         toWorld.func_217460_e(entity);
@@ -390,11 +414,16 @@ public class ServerTeleportationManager {
         double z = packet.getZ(player.getPosZ());
         Vec3d newPos = new Vec3d(x, y, z);
         if (canPlayerReachPos(player, dimension, newPos)) {
+            recordLastPosition(player);
             teleportPlayer(player, dimension, newPos);
-            Helper.log("accepted dubious move packet");
+            Helper.log(String.format("accepted dubious move packet %s %s %s %s %s %s %s",
+                player.dimension, x, y, z, player.getPosX(), player.getPosY(), player.getPosZ()
+            ));
         }
         else {
-            Helper.log("dubious move packet is dubious");
+            Helper.log(String.format("ignored dubious move packet %s %s %s %s %s %s %s",
+                player.dimension, x, y, z, player.getPosX(), player.getPosY(), player.getPosZ()
+            ));
         }
     }
 }

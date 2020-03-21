@@ -10,6 +10,7 @@ public class ConfigServer {
     public static final ForgeConfigSpec spec;
     public final ForgeConfigSpec.IntValue portalSearchingRange;
     public final ForgeConfigSpec.BooleanValue longReachInCreative;
+    public final ForgeConfigSpec.BooleanValue activeLoadRemoteChunks;
     
     public ConfigServer(ForgeConfigSpec.Builder builder) {
         portalSearchingRange = builder
@@ -18,6 +19,9 @@ public class ConfigServer {
         longReachInCreative = builder
             .comment("Longer Hand Reach In Creative")
             .define("long_reach_in_creative", true);
+        activeLoadRemoteChunks = builder
+            .comment("Load Remote Chunks Actively")
+            .define("actively_load_remote_chunks", true);
     }
     
     static {

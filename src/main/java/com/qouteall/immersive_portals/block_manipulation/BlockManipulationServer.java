@@ -137,8 +137,7 @@ public class BlockManipulationServer {
                 targetDimension = connectingPortal.dimensionTo;
             }
         }
-        
-        if (blockHitResult.getPos().getY() == 0 && blockHitResult.getFace() == Direction.DOWN) {
+        else if (blockHitResult.getPos().getY() == 0 && blockHitResult.getFace() == Direction.DOWN) {
             VerticalConnectingPortal connectingPortal = VerticalConnectingPortal.getConnectingPortal(
                 world,
                 VerticalConnectingPortal.ConnectorType.floor
@@ -150,6 +149,25 @@ public class BlockManipulationServer {
                     new BlockPos(
                         blockHitResult.getPos().getX(),
                         255,
+                        blockHitResult.getPos().getZ()
+                    ),
+                    blockHitResult.isInside()
+                );
+                targetDimension = connectingPortal.dimensionTo;
+            }
+        }
+        else if (world.getDimension().isNether() && blockHitResult.getPos().getY() == 127 && blockHitResult.getFace() == Direction.UP) {
+            VerticalConnectingPortal connectingPortal = VerticalConnectingPortal.getConnectingPortal(
+                world,
+                VerticalConnectingPortal.ConnectorType.ceil
+            );
+            if (connectingPortal != null) {
+                targetBlockHitResult = new BlockRayTraceResult(
+                    Vec3d.ZERO,
+                    Direction.DOWN,
+                    new BlockPos(
+                        blockHitResult.getPos().getX(),
+                        0,
                         blockHitResult.getPos().getZ()
                     ),
                     blockHitResult.isInside()

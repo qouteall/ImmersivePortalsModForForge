@@ -1,15 +1,29 @@
 package com.qouteall.immersive_portals.mixin_client.block_manipulation;
 
+import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.block_manipulation.BlockManipulationClient;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.RayTraceResult;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
-public class MixinMinecraftClient_B {
+public abstract class MixinMinecraftClient_B {
+    @Shadow
+    protected abstract void middleClickMouse();
+    
+    @Shadow
+    public ClientWorld world;
+    
+    @Shadow
+    public RayTraceResult objectMouseOver;
+    
     @Inject(
         method = "Lnet/minecraft/client/Minecraft;sendClickBlockToController(Z)V",
         at = @At(
@@ -53,6 +67,34 @@ public class MixinMinecraftClient_B {
             //TODO support offhand
             BlockManipulationClient.myItemUse(Hand.MAIN_HAND);
             ci.cancel();
+        }
+    }
+    
+    @Redirect(
+        method = "Lnet/minecraft/client/Minecraft;processKeyBinds()V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/Minecraft;middleClickMouse()V"
+        )
+    )
+    private void redirectDoItemPick(Minecraft minecraftClient) {
+        if (BlockManipulationClient.isPointingToRemoteBlock()) {
+            ClientWorld remoteWorld = CGlobal.clientWorldLoader.getOrCreateFakedWorld(
+                BlockManipulationClient.remotePointedDim
+            );
+            ClientWorld oldWorld = this.world;
+            RayTraceResult oldTarget = this.objectMouseOver;
+            
+            world = remoteWorld;
+            objectMouseOver = BlockManipulationClient.remoteHitResult;
+            
+            middleClickMouse();
+            
+            world = oldWorld;
+            objectMouseOver = oldTarget;
+        }
+        else {
+            middleClickMouse();
         }
     }
 }

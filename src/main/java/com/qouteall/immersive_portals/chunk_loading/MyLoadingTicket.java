@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ducks.IEServerChunkManager;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
@@ -25,7 +26,7 @@ public class MyLoadingTicket {
         boolean isNewlyAdded = getRecord(world).add(chunkPos.asLong());
         if (isNewlyAdded) {
             getTicketManager(world).register(
-                ticketType, chunkPos, 1, chunkPos
+                ticketType, chunkPos, getLoadingRadius(), chunkPos
             );
         }
     }
@@ -35,8 +36,17 @@ public class MyLoadingTicket {
         
         if (isNewlyRemoved) {
             getTicketManager(world).release(
-                ticketType, chunkPos, 1, chunkPos
+                ticketType, chunkPos, getLoadingRadius(), chunkPos
             );
+        }
+    }
+    
+    public static int getLoadingRadius() {
+        if (Global.activeLoading) {
+            return 2;
+        }
+        else {
+            return 1;
         }
     }
     

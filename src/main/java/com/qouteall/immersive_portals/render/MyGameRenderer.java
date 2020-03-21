@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Helper;
@@ -37,12 +38,13 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameType;
+import net.minecraft.world.dimension.DimensionType;
 import org.lwjgl.opengl.GL11;
 
 import java.util.function.Predicate;
 
 public class MyGameRenderer {
-    private Minecraft mc = Minecraft.getInstance();
+    private static Minecraft mc = Minecraft.getInstance();
     private double[] clipPlaneEquation;
     
     public MyGameRenderer() {
@@ -191,15 +193,15 @@ public class MyGameRenderer {
         if (FSRenderingContext.isRenderingScenery) {
             return FarSceneryRenderer.getCullingEquation();
         }
-    
+        
         Portal portal = CGlobal.renderer.getRenderingPortal();
-    
+        
         Vec3d planeNormal = portal.getContentDirection();
-    
+        
         Vec3d portalPos = portal.destination
             .subtract(portal.getContentDirection().scale(0.01))//avoid z fighting
             .subtract(mc.gameRenderer.getActiveRenderInfo().getProjectedView());
-    
+        
         //equation: planeNormal * p + c > 0
         //-planeNormal * portalCenter = c
         double c = planeNormal.scale(-1).dotProduct(portalPos);
@@ -228,14 +230,14 @@ public class MyGameRenderer {
         Vec3d oldPos = player.getPositionVec();
         Vec3d oldLastTickPos = McHelper.lastTickPosOf(player);
         GameType oldGameMode = playerListEntry.getGameType();
-    
+        
         McHelper.setPosAndLastTickPos(
             player, MyRenderHelper.originalPlayerPos, MyRenderHelper.originalPlayerLastTickPos
         );
         ((IEPlayerListEntry) playerListEntry).setGameMode(originalGameMode);
         
         doRenderEntity.run();
-    
+        
         McHelper.setPosAndLastTickPos(
             player, oldPos, oldLastTickPos
         );
@@ -246,20 +248,20 @@ public class MyGameRenderer {
         if (OFInterface.isFogDisabled.getAsBoolean()) {
             return;
         }
-    
+        
         ActiveRenderInfo camera = mc.gameRenderer.getActiveRenderInfo();
         float g = mc.gameRenderer.getFarPlaneDistance();
-    
+        
         Vec3d cameraPos = camera.getProjectedView();
         double d = cameraPos.getX();
         double e = cameraPos.getY();
         double f = cameraPos.getZ();
-    
+        
         boolean bl2 = mc.world.dimension.doesXZShowFog(
             MathHelper.floor(d),
             MathHelper.floor(e)
         ) || mc.ingameGUI.getBossOverlay().shouldCreateFog();
-    
+        
         FogRenderer.setupFog(
             camera,
             FogRenderer.FogType.FOG_TERRAIN,
@@ -310,6 +312,33 @@ public class MyGameRenderer {
             visibleChunks,
             obj -> builtChunkPredicate.test(((IEWorldRendererChunkInfo) obj).getBuiltChunk())
         );
+    }
+    
+    @Deprecated
+    public static void renderSkyFor(
+        DimensionType dimension,
+        MatrixStack matrixStack,
+        float partialTicks
+    ) {
+//        ClientWorld newWorld = CGlobal.clientWorldLoader.getOrCreateFakedWorld(dimension);
+//        WorldRenderer newWorldRenderer = CGlobal.clientWorldLoader.getWorldRenderer(dimension);
+//
+//        ClientWorld oldWorld = mc.world;
+//        WorldRenderer oldWorldRenderer = mc.worldRenderer;
+//        FogRendererContext.swappingManager.pushSwapping(dimension);
+//        CGlobal.myGameRenderer.resetFog();
+//
+//        mc.world = newWorld;
+//        ((IEMinecraftClient) mc).setWorldRenderer(newWorldRenderer);
+//
+//        newWorldRenderer.renderSky(matrixStack, partialTicks);
+//
+//        mc.world = oldWorld;
+//        ((IEMinecraftClient) mc).setWorldRenderer(oldWorldRenderer);
+//        FogRendererContext.swappingManager.popSwapping();
+//        CGlobal.myGameRenderer.resetFog();
+        
+        mc.worldRenderer.renderSky(matrixStack,partialTicks);
     }
     
 }

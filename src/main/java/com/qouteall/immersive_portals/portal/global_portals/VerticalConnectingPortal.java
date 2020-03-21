@@ -18,10 +18,10 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     private static Predicate<GlobalTrackedPortal> getPredicate(ConnectorType connectorType) {
         switch (connectorType) {
             case floor:
-                return portal -> portal.getPosY() < 128;
+                return portal -> portal.getPosY() < 100;
             default:
             case ceil:
-                return portal -> portal.getPosY() > 128;
+                return portal -> portal.getPosY() > 100;
         }
     }
     
@@ -32,11 +32,20 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         super(entityType_1, world_1);
     }
     
-    
     public static void connect(
         DimensionType from,
         ConnectorType connectorType,
         DimensionType to
+    ) {
+        connect(from, connectorType, to, 0, 256);
+    }
+    
+    public static void connect(
+        DimensionType from,
+        ConnectorType connectorType,
+        DimensionType to,
+        int downY,
+        int upY
     ) {
         removeConnectingPortal(connectorType, from);
         
@@ -45,7 +54,9 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         VerticalConnectingPortal connectingPortal = createConnectingPortal(
             fromWorld,
             connectorType,
-            McHelper.getServer().getWorld(to)
+            McHelper.getServer().getWorld(to),
+            downY,
+            upY
         );
         
         GlobalPortalStorage storage = GlobalPortalStorage.get(fromWorld);
@@ -55,10 +66,22 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         storage.onDataChanged();
     }
     
+    public static void connectMutually(
+        DimensionType up,
+        DimensionType down,
+        int downY,
+        int upY
+    ) {
+        connect(up, ConnectorType.floor, down, downY, upY);
+        connect(down, ConnectorType.ceil, up, downY, upY);
+    }
+    
     private static VerticalConnectingPortal createConnectingPortal(
         ServerWorld fromWorld,
         ConnectorType connectorType,
-        ServerWorld toWorld
+        ServerWorld toWorld,
+        int downY,
+        int upY
     ) {
         VerticalConnectingPortal verticalConnectingPortal = new VerticalConnectingPortal(
             entityType, fromWorld
@@ -66,14 +89,15 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         
         switch (connectorType) {
             case floor:
-                verticalConnectingPortal.setPosition(0, 0, 0);
-                verticalConnectingPortal.destination = new Vec3d(0, 256, 0);
+        
+                verticalConnectingPortal.setPosition(0, downY, 0);
+                verticalConnectingPortal.destination = new Vec3d(0, upY, 0);
                 verticalConnectingPortal.axisW = new Vec3d(0, 0, 1);
                 verticalConnectingPortal.axisH = new Vec3d(1, 0, 0);
                 break;
             case ceil:
-                verticalConnectingPortal.setPosition(0, 256, 0);
-                verticalConnectingPortal.destination = new Vec3d(0, 0, 0);
+                verticalConnectingPortal.setPosition(0, upY, 0);
+                verticalConnectingPortal.destination = new Vec3d(0, downY, 0);
                 verticalConnectingPortal.axisW = new Vec3d(1, 0, 0);
                 verticalConnectingPortal.axisH = new Vec3d(0, 0, 1);
                 break;

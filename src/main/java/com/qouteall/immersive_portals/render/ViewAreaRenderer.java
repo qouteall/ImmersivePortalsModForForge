@@ -9,13 +9,15 @@ import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.GeometryPortalShape;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.dimension.DimensionType;
 
-import java.util.Arrays;
 import java.util.function.Consumer;
 
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
@@ -26,72 +28,87 @@ public class ViewAreaRenderer {
         Vec3d cameraPos, float partialTicks, float layerWidth
     ) {
         bufferbuilder.begin(GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
-    
+        
         Vec3d posInPlayerCoordinate = portal.getPositionVec().subtract(cameraPos);
-    
+        
         if (portal instanceof Mirror) {
             posInPlayerCoordinate = posInPlayerCoordinate.add(portal.getNormal().scale(-0.001));
         }
-    
+        
         Consumer<Vec3d> vertexOutput = p -> putIntoVertex(
             bufferbuilder, p, fogColor
         );
-    
+        
+        boolean isClose = isCloseToPortal(portal, cameraPos);
+        
         if (portal.specialShape == null) {
-            generateTriangle(
-                vertexOutput,
-                portal,
-                layerWidth,
-                posInPlayerCoordinate
-            );
+            if (portal instanceof GlobalTrackedPortal) {
+                generateTriangleForGlobalPortal(
+                    vertexOutput,
+                    portal,
+                    layerWidth,
+                    posInPlayerCoordinate
+                );
+            }
+            else {
+                generateTriangleForNormalShape(
+                    vertexOutput,
+                    portal,
+                    layerWidth,
+                    posInPlayerCoordinate
+                );
+            }
         }
         else {
-            generateTriangleSpecial(
+            generateTriangleForSpecialShape(
                 vertexOutput,
                 portal,
                 layerWidth,
                 posInPlayerCoordinate
             );
         }
-    
-        if (shouldRenderAdditionalBox(portal, cameraPos)) {
+        
+        if (isClose) {
             renderAdditionalBox(portal, cameraPos, vertexOutput);
         }
     }
     
-    private static void generateTriangleSpecial(
+    private static void generateTriangleForSpecialShape(
         Consumer<Vec3d> vertexOutput,
         Portal portal,
         float layerWidth,
         Vec3d posInPlayerCoordinate
     ) {
-        generateTriangleSpecialWithOffset(
+        generateTriangleSpecial(
             vertexOutput, portal, posInPlayerCoordinate,
-            Vec3d.ZERO
+            portal.getNormal().scale(-0.5)
         );
     }
     
-    private static void generateTriangleSpecialWithOffset(
+    private static void generateTriangleSpecial(
         Consumer<Vec3d> vertexOutput,
         Portal portal,
         Vec3d posInPlayerCoordinate,
-        Vec3d offset
+        Vec3d innerOffset
     ) {
         GeometryPortalShape specialShape = portal.specialShape;
-    
+        
         for (GeometryPortalShape.TriangleInPlane triangle : specialShape.triangles) {
-            putIntoLocalVertex(
-                vertexOutput, portal, offset, posInPlayerCoordinate,
-                triangle.x1, triangle.y1
-            );
-            putIntoLocalVertex(
-                vertexOutput, portal, offset, posInPlayerCoordinate,
-                triangle.x3, triangle.y3
-            );
-            putIntoLocalVertex(
-                vertexOutput, portal, offset, posInPlayerCoordinate,
-                triangle.x2, triangle.y2
-            );
+            Vec3d a = posInPlayerCoordinate
+                .add(portal.axisW.scale(triangle.x1))
+                .add(portal.axisH.scale(triangle.y1));
+            
+            Vec3d b = posInPlayerCoordinate
+                .add(portal.axisW.scale(triangle.x3))
+                .add(portal.axisH.scale(triangle.y3));
+            
+            Vec3d c = posInPlayerCoordinate
+                .add(portal.axisW.scale(triangle.x2))
+                .add(portal.axisH.scale(triangle.y2));
+            
+            vertexOutput.accept(a);
+            vertexOutput.accept(b);
+            vertexOutput.accept(c);
         }
     }
     
@@ -112,28 +129,75 @@ public class ViewAreaRenderer {
         );
     }
     
-    private static void generateTriangle(
+    private static void generateTriangleForNormalShape(
         Consumer<Vec3d> vertexOutput,
         Portal portal,
         float layerWidth,
         Vec3d posInPlayerCoordinate
     ) {
-        Vec3d layerOffsest = portal.getNormal().scale(-layerWidth);
+        Vec3d v0 = portal.getPointInPlaneLocal(
+            portal.width / 2 - (double) 0,
+            -portal.height / 2 + (double) 0
+        );
+        Vec3d v1 = portal.getPointInPlaneLocal(
+            -portal.width / 2 + (double) 0,
+            -portal.height / 2 + (double) 0
+        );
+        Vec3d v2 = portal.getPointInPlaneLocal(
+            portal.width / 2 - (double) 0,
+            portal.height / 2 - (double) 0
+        );
+        Vec3d v3 = portal.getPointInPlaneLocal(
+            -portal.width / 2 + (double) 0,
+            portal.height / 2 - (double) 0
+        );
         
-        Vec3d[] frontFace = Arrays.stream(portal.getFourVerticesLocal(0))
-            .map(pos -> pos.add(posInPlayerCoordinate))
-            .toArray(Vec3d[]::new);
-        
-        Vec3d[] backFace = Arrays.stream(portal.getFourVerticesLocal(0))
-            .map(pos -> pos.add(posInPlayerCoordinate).add(layerOffsest))
-            .toArray(Vec3d[]::new);
-    
         putIntoQuad(
             vertexOutput,
-            frontFace[0],
-            frontFace[2],
-            frontFace[3],
-            frontFace[1]
+            v0.add(posInPlayerCoordinate),
+            v2.add(posInPlayerCoordinate),
+            v3.add(posInPlayerCoordinate),
+            v1.add(posInPlayerCoordinate)
+        );
+        
+    }
+    
+    private static void generateTriangleForGlobalPortal(
+        Consumer<Vec3d> vertexOutput,
+        Portal portal,
+        float layerWidth,
+        Vec3d posInPlayerCoordinate
+    ) {
+        Vec3d cameraPosLocal = posInPlayerCoordinate.scale(-1);
+        
+        double cameraLocalX = cameraPosLocal.dotProduct(portal.axisW);
+        double cameraLocalY = cameraPosLocal.dotProduct(portal.axisH);
+        
+        final double r = 1000;
+        
+        Vec3d v0 = portal.getPointInPlaneLocalClamped(
+            r + cameraLocalX,
+            -r + cameraLocalY
+        );
+        Vec3d v1 = portal.getPointInPlaneLocalClamped(
+            -r + cameraLocalX,
+            -r + cameraLocalY
+        );
+        Vec3d v2 = portal.getPointInPlaneLocalClamped(
+            r + cameraLocalX,
+            r + cameraLocalY
+        );
+        Vec3d v3 = portal.getPointInPlaneLocalClamped(
+            -r + cameraLocalX,
+            r + cameraLocalY
+        );
+        
+        putIntoQuad(
+            vertexOutput,
+            v0.add(posInPlayerCoordinate),
+            v2.add(posInPlayerCoordinate),
+            v3.add(posInPlayerCoordinate),
+            v1.add(posInPlayerCoordinate)
         );
     }
     
@@ -154,11 +218,11 @@ public class ViewAreaRenderer {
         Vec3d d
     ) {
         //counter-clockwise triangles are front-faced in default
-    
+        
         vertexOutput.accept(b);
         vertexOutput.accept(c);
         vertexOutput.accept(d);
-    
+        
         vertexOutput.accept(d);
         vertexOutput.accept(a);
         vertexOutput.accept(b);
@@ -171,24 +235,24 @@ public class ViewAreaRenderer {
         boolean doFrontCulling,
         boolean doFaceCulling
     ) {
-    
+        
         Minecraft.getInstance().getProfiler().startSection("render_view_triangle");
-    
+        
         DimensionRenderHelper helper =
             CGlobal.clientWorldLoader.getDimensionRenderHelper(portal.dimensionTo);
-    
+        
         Vec3d fogColor = getCurrentFogColor(portal);
-    
+        
         if (doFaceCulling) {
             GlStateManager.enableCull();
         }
         else {
             GlStateManager.disableCull();
         }
-    
+        
         GlStateManager.disableTexture();
         CGlobal.myGameRenderer.endCulling();
-    
+        
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         buildPortalViewAreaTrianglesBuffer(
@@ -199,7 +263,7 @@ public class ViewAreaRenderer {
             MyRenderHelper.partialTicks,
             portal instanceof Mirror ? 0 : 0.45F
         );
-    
+        
         boolean shouldReverseCull = MyRenderHelper.isRenderingOddNumberOfMirrors();
         if (shouldReverseCull) {
             MyRenderHelper.applyMirrorFaceCulling();
@@ -210,12 +274,12 @@ public class ViewAreaRenderer {
                 CGlobal.myGameRenderer.startCulling();
             }
         }
-    
+        
         McHelper.runWithTransformation(
             matrixStack,
             () -> tessellator.draw()
         );
-    
+        
         if (shouldReverseCull) {
             MyRenderHelper.recoverFaceCulling();
         }
@@ -224,17 +288,27 @@ public class ViewAreaRenderer {
                 CGlobal.myGameRenderer.endCulling();
             }
         }
-    
+        
         GlStateManager.enableTexture();
-    
+        
         Minecraft.getInstance().getProfiler().endSection();
     }
     
     private static Vec3d getCurrentFogColor(Portal portal) {
+        
+        //for Altius
+        if (portal instanceof VerticalConnectingPortal) {
+            return getFogColorOf(MyRenderHelper.originalPlayerDimension);
+        }
+        
+        return getFogColorOf(portal.dimensionTo);
+    }
+    
+    private static Vec3d getFogColorOf(DimensionType dimension) {
         Helper.SimpleBox<Vec3d> boxOfFogColor = new Helper.SimpleBox<>(null);
         
         FogRendererContext.swappingManager.swapAndInvoke(
-            portal.dimensionTo,
+            dimension,
             () -> {
                 boxOfFogColor.obj = FogRendererContext.getCurrentFogColor.get();
             }
@@ -248,8 +322,7 @@ public class ViewAreaRenderer {
         return fogColor;
     }
     
-    
-    private static boolean shouldRenderAdditionalBox(
+    private static boolean isCloseToPortal(
         Portal portal,
         Vec3d cameraPos
     ) {
@@ -264,37 +337,79 @@ public class ViewAreaRenderer {
     ) {
         Vec3d projected = portal.getPointInPortalProjection(cameraPos).subtract(cameraPos);
         Vec3d normal = portal.getNormal();
+        
+        renderHood(portal, vertexOutput, projected, normal, 0.4);
+    }
     
-        final double boxRadius = 1.5;
-        final double correctionFactor = 0;
-    
+    private static void renderHood(
+        Portal portal,
+        Consumer<Vec3d> vertexOutput,
+        Vec3d projected,
+        Vec3d normal,
+        double boxRadius
+    ) {
         Vec3d dx = portal.axisW.scale(boxRadius);
         Vec3d dy = portal.axisH.scale(boxRadius);
-    
+        
         Vec3d a = projected.add(dx).add(dy);
         Vec3d b = projected.subtract(dx).add(dy);
         Vec3d c = projected.subtract(dx).subtract(dy);
         Vec3d d = projected.add(dx).subtract(dy);
-    
+        
         Vec3d mid = projected.add(normal.scale(-0.5));
-    
-        Consumer<Vec3d> compactVertexOutput = vertexOutput;
-    
-        compactVertexOutput.accept(b);
-        compactVertexOutput.accept(mid);
-        compactVertexOutput.accept(a);
-    
-        compactVertexOutput.accept(c);
-        compactVertexOutput.accept(mid);
-        compactVertexOutput.accept(b);
         
-        compactVertexOutput.accept(d);
-        compactVertexOutput.accept(mid);
-        compactVertexOutput.accept(c);
+        vertexOutput.accept(b);
+        vertexOutput.accept(mid);
+        vertexOutput.accept(a);
         
-        compactVertexOutput.accept(a);
-        compactVertexOutput.accept(mid);
-        compactVertexOutput.accept(d);
+        vertexOutput.accept(c);
+        vertexOutput.accept(mid);
+        vertexOutput.accept(b);
         
+        vertexOutput.accept(d);
+        vertexOutput.accept(mid);
+        vertexOutput.accept(c);
+        
+        vertexOutput.accept(a);
+        vertexOutput.accept(mid);
+        vertexOutput.accept(d);
     }
+    
+    
+    @Deprecated
+    private static void renderAdditionalBoxExperimental(
+        Portal portal,
+        Consumer<Vec3d> vertexOutput,
+        Vec3d projected,
+        Vec3d normal
+    ) {
+        final double boxRadius = 1.5;
+        final double boxDepth = 0.5;
+        
+        //b  a
+        //c  d
+        
+        Vec3d dx = portal.axisW.scale(boxRadius);
+        Vec3d dy = portal.axisH.scale(boxRadius);
+        
+        Vec3d a = projected.add(dx).add(dy);
+        Vec3d b = projected.subtract(dx).add(dy);
+        Vec3d c = projected.subtract(dx).subtract(dy);
+        Vec3d d = projected.add(dx).subtract(dy);
+        
+        Vec3d dz = normal.scale(-boxDepth);
+        
+        Vec3d as = a.add(dz);
+        Vec3d bs = b.add(dz);
+        Vec3d cs = c.add(dz);
+        Vec3d ds = d.add(dz);
+        
+        putIntoQuad(vertexOutput, a, b, bs, as);
+        putIntoQuad(vertexOutput, b, c, cs, bs);
+        putIntoQuad(vertexOutput, c, d, ds, cs);
+        putIntoQuad(vertexOutput, d, a, as, ds);
+        
+        putIntoQuad(vertexOutput, a, b, c, d);
+    }
+    
 }

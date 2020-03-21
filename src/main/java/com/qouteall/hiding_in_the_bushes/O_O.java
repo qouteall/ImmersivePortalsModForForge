@@ -1,6 +1,7 @@
 package com.qouteall.hiding_in_the_bushes;
 
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.Helper;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -11,8 +12,13 @@ import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.DimensionManager;
 
 public class O_O {
+    public static boolean isForge() {
+        return true;
+    }
+    
     @OnlyIn(Dist.CLIENT)
     public static void onPlayerChangeDimensionClient(
         DimensionType from, DimensionType to
@@ -66,4 +72,14 @@ public class O_O {
     }
     
     public static final boolean isReachEntityAttributesPresent = false;
+    
+    public static void registerDimensionsForge() {
+        try {
+            DimensionManager.fireRegister();
+        }
+        catch (Throwable e) {
+            Helper.err("Exception When Registering Dimensions " + e);
+        }
+        
+    }
 }

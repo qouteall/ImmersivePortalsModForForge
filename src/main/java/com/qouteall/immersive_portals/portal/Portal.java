@@ -14,6 +14,7 @@ import net.minecraft.network.IPacket;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
@@ -391,42 +392,37 @@ public class Portal extends Entity {
     }
     
     public Vec3d getPointInPlane(double xInPlane, double yInPlane) {
-        return getPositionVec().add(getPointInPlaneRelativeToCenter(xInPlane, yInPlane));
+        return getPositionVec().add(getPointInPlaneLocal(xInPlane, yInPlane));
     }
     
-    public Vec3d getPointInPlaneRelativeToCenter(double xInPlane, double yInPlane) {
+    public Vec3d getPointInPlaneLocal(double xInPlane, double yInPlane) {
         return axisW.scale(xInPlane).add(axisH.scale(yInPlane));
     }
     
-    //3  2
-    //1  0
-    public Vec3d[] getFourVertices(double shrinkFactor) {
-        Vec3d[] vertices = new Vec3d[4];
-        vertices[0] = getPointInPlane(width / 2 - shrinkFactor, -height / 2 + shrinkFactor);
-        vertices[1] = getPointInPlane(-width / 2 + shrinkFactor, -height / 2 + shrinkFactor);
-        vertices[2] = getPointInPlane(width / 2 - shrinkFactor, height / 2 - shrinkFactor);
-        vertices[3] = getPointInPlane(-width / 2 + shrinkFactor, height / 2 - shrinkFactor);
-        
-        return vertices;
+    public Vec3d getPointInPlaneLocalClamped(double xInPlane, double yInPlane) {
+        return getPointInPlaneLocal(
+            MathHelper.clamp(xInPlane, -width / 2, width / 2),
+            MathHelper.clamp(yInPlane, -height / 2, height / 2)
+        );
     }
     
     //3  2
     //1  0
     public Vec3d[] getFourVerticesLocal(double shrinkFactor) {
         Vec3d[] vertices = new Vec3d[4];
-        vertices[0] = getPointInPlaneRelativeToCenter(
+        vertices[0] = getPointInPlaneLocal(
             width / 2 - shrinkFactor,
             -height / 2 + shrinkFactor
         );
-        vertices[1] = getPointInPlaneRelativeToCenter(
+        vertices[1] = getPointInPlaneLocal(
             -width / 2 + shrinkFactor,
             -height / 2 + shrinkFactor
         );
-        vertices[2] = getPointInPlaneRelativeToCenter(
+        vertices[2] = getPointInPlaneLocal(
             width / 2 - shrinkFactor,
             height / 2 - shrinkFactor
         );
-        vertices[3] = getPointInPlaneRelativeToCenter(
+        vertices[3] = getPointInPlaneLocal(
             -width / 2 + shrinkFactor,
             height / 2 - shrinkFactor
         );
@@ -449,19 +445,19 @@ public class Portal extends Entity {
     //1  0
     public Vec3d[] getFourVerticesLocalCullable(double shrinkFactor) {
         Vec3d[] vertices = new Vec3d[4];
-        vertices[0] = getPointInPlaneRelativeToCenter(
+        vertices[0] = getPointInPlaneLocal(
             cullableXEnd - shrinkFactor,
             cullableYStart + shrinkFactor
         );
-        vertices[1] = getPointInPlaneRelativeToCenter(
+        vertices[1] = getPointInPlaneLocal(
             cullableXStart + shrinkFactor,
             cullableYStart + shrinkFactor
         );
-        vertices[2] = getPointInPlaneRelativeToCenter(
+        vertices[2] = getPointInPlaneLocal(
             cullableXEnd - shrinkFactor,
             cullableYEnd - shrinkFactor
         );
-        vertices[3] = getPointInPlaneRelativeToCenter(
+        vertices[3] = getPointInPlaneLocal(
             cullableXStart + shrinkFactor,
             cullableYEnd - shrinkFactor
         );

@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals;
 
 import com.google.common.collect.Streams;
-import com.qouteall.immersive_portals.my_util.IntegerAABBInclusive;
+import com.qouteall.immersive_portals.my_util.IntBox;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.renderer.Quaternion;
 import net.minecraft.client.renderer.Vector3f;
@@ -247,11 +247,11 @@ public class Helper {
         return box.contract(shrinkVec.x, shrinkVec.y, shrinkVec.z);
     }
     
-    public static IntegerAABBInclusive expandRectangle(
+    public static IntBox expandRectangle(
         BlockPos startingPos,
         Predicate<BlockPos> blockPosPredicate, Direction.Axis axis
     ) {
-        IntegerAABBInclusive wallArea = new IntegerAABBInclusive(startingPos, startingPos);
+        IntBox wallArea = new IntBox(startingPos, startingPos);
         
         for (Direction direction : getAnotherFourDirections(axis)) {
             
@@ -450,14 +450,14 @@ public class Helper {
         return nano / 1000000000.0;
     }
     
-    public static IntegerAABBInclusive expandArea(
-        IntegerAABBInclusive originalArea,
+    public static IntBox expandArea(
+        IntBox originalArea,
         Predicate<BlockPos> predicate,
         Direction direction
     ) {
-        IntegerAABBInclusive currentBox = originalArea;
+        IntBox currentBox = originalArea;
         for (int i = 1; i < 42; i++) {
-            IntegerAABBInclusive expanded = currentBox.getExpanded(direction, 1);
+            IntBox expanded = currentBox.getExpanded(direction, 1);
             if (expanded.getSurfaceLayer(direction).stream().allMatch(predicate)) {
                 currentBox = expanded;
             }
@@ -633,19 +633,19 @@ public class Helper {
     ) {
         a.normalize();
         b.normalize();
-        
+    
         double dot = dotProduct4d(a, b);
 
-//        if (dot < 0.0f) {
-//            a.scale(-1);
-//            dot = -dot;
-//        }
-        
+        if (dot < 0.0f) {
+            a.multiply(-1);
+            dot = -dot;
+        }
+    
         double DOT_THRESHOLD = 0.9995;
         if (dot > DOT_THRESHOLD) {
             // If the inputs are too close for comfort, linearly interpolate
             // and normalize the result.
-            
+        
             Quaternion result = quaternionNumAdd(
                 quaternionScale(a.copy(), 1 - t),
                 quaternionScale(b.copy(), t)
@@ -653,15 +653,15 @@ public class Helper {
             result.normalize();
             return result;
         }
-        
+    
         double theta_0 = Math.acos(dot);
         double theta = theta_0 * t;
         double sin_theta = Math.sin(theta);
         double sin_theta_0 = Math.sin(theta_0);
-        
+    
         double s0 = Math.cos(theta) - dot * sin_theta / sin_theta_0;
         double s1 = sin_theta / sin_theta_0;
-        
+    
         return quaternionNumAdd(
             quaternionScale(a.copy(), (float) s0),
             quaternionScale(b.copy(), (float) s1)
@@ -692,5 +692,12 @@ public class Helper {
         Vector3f vector3f = new Vector3f(vec);
         vector3f.transform(rotation);
         return new Vec3d(vector3f);
+    }
+    
+    public static Quaternion ortholize(Quaternion quaternion) {
+        if (quaternion.getW() < 0) {
+            quaternion.multiply(-1);
+        }
+        return quaternion;
     }
 }

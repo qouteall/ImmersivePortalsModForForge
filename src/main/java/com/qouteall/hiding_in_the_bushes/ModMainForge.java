@@ -165,8 +165,9 @@ public class ModMainForge {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
-        NetherPortalMatcher.findingRadius = ConfigServer.instance.portalSearchingRange.get();
+        Global.netherPortalFindingRadius = ConfigServer.instance.portalSearchingRange.get();
         Global.longerReachInCreative = ConfigServer.instance.longReachInCreative.get();
+        Global.activeLoading = ConfigServer.instance.activeLoadRemoteChunks.get();
     }
     
     @SubscribeEvent

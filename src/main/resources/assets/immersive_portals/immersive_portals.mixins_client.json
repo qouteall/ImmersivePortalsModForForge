@@ -4,6 +4,8 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "imm_ptl.refmap.json",
   "mixins": [
+    "altius_world/MixinCreateWorldScreen",
+    "altius_world/MixinWorldRenderer_A",
     "block_manipulation/MixinClientPlayerInteractionManager",
     "block_manipulation/MixinMinecraftClient_B",
     "collisions/MixinClientPlayerEntity",

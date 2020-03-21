@@ -40,12 +40,18 @@ public class TransformationManager {
     public static Quaternion getFinalRotation(Quaternion cameraRotation) {
         double progress = (MyRenderHelper.renderStartNanoTime - interpolationStartTime) /
             ((double) interpolationEndTime - interpolationStartTime);
-        
+
         if (progress < 0 || progress >= 1) {
             return cameraRotation;
         }
 
 //        if (inertialRotation != null) {
+//
+//            if (Helper.isClose(inertialRotation, cameraRotation, 0.000001f)) {
+//                inertialRotation = null;
+//                return cameraRotation;
+//            }
+//
 //            inertialRotation = Helper.interpolateQuaternion(
 //                inertialRotation, cameraRotation, 0.04f
 //            );
@@ -56,9 +62,9 @@ public class TransformationManager {
 //        }
         
         progress = mapProgress(progress);
-        
+
         return Helper.interpolateQuaternion(
-            inertialRotation, cameraRotation.copy(), (float) progress
+            inertialRotation, Helper.ortholize(cameraRotation.copy()), (float) progress
         );
     }
     
@@ -131,15 +137,9 @@ public class TransformationManager {
             
             if (!Helper.isClose(newCameraRotation, visualRotation, 0.001f)) {
                 inertialRotation = visualRotation;
-                if (Helper.dotProduct4d(inertialRotation, newCameraRotation) < 0) {
-                    inertialRotation.multiply(-1);
-                }
                 interpolationStartTime = MyRenderHelper.renderStartNanoTime;
                 interpolationEndTime = interpolationStartTime +
                     Helper.secondToNano(1);
-            }
-            else {
-//                Helper.log("avoided");
             }
             
             updateCamera(client);
