@@ -1,18 +1,20 @@
 package com.qouteall.immersive_portals.optifine_compatibility.mixin_optifine;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
 import com.qouteall.immersive_portals.optifine_compatibility.ShaderCullingManager;
+import com.qouteall.immersive_portals.optifine_compatibility.ShaderDimensionRedirect;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
-import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.Vector4f;
+import net.minecraft.client.renderer.texture.Texture;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.dimension.DimensionType;
-import net.optifine.expr.IExpressionBool;
 import net.optifine.shaders.FlipTextures;
 import net.optifine.shaders.ICustomTexture;
 import net.optifine.shaders.IShaderPack;
@@ -22,7 +24,6 @@ import net.optifine.shaders.Programs;
 import net.optifine.shaders.Shaders;
 import net.optifine.shaders.config.PropertyDefaultFastFancyOff;
 import net.optifine.shaders.config.PropertyDefaultTrueFalse;
-import net.optifine.shaders.config.ScreenShaderOptions;
 import net.optifine.shaders.config.ShaderOption;
 import net.optifine.shaders.config.ShaderProfile;
 import net.optifine.shaders.uniform.CustomUniforms;
@@ -35,6 +36,7 @@ import net.optifine.shaders.uniform.ShaderUniform4i;
 import net.optifine.shaders.uniform.ShaderUniformM4;
 import net.optifine.shaders.uniform.ShaderUniforms;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.EXTFramebufferObject;
 import org.lwjgl.opengl.GLCapabilities;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -59,6 +61,7 @@ import java.util.regex.Pattern;
 
 @Mixin(value = Shaders.class, remap = false)
 public abstract class MOShaders {
+    
     @Shadow
     static Minecraft mc;
     @Shadow
@@ -97,6 +100,8 @@ public abstract class MOShaders {
     public static boolean isRenderingDfb;
     @Shadow
     public static boolean isShadowPass;
+    @Shadow
+    public static boolean isEntitiesGlowing;
     @Shadow
     public static boolean isSleeping;
     @Shadow
@@ -213,6 +218,8 @@ public abstract class MOShaders {
     static boolean lightmapEnabled;
     @Shadow
     static boolean fogEnabled;
+    @Shadow
+    private static int baseAttribId;
     @Shadow
     public static int entityAttrib;
     @Shadow
@@ -420,6 +427,8 @@ public abstract class MOShaders {
     @Shadow
     public static ShaderUniform4i uniform_blendFunc;
     @Shadow
+    public static ShaderUniform1i uniform_instanceId;
+    @Shadow
     static double previousCameraPositionX;
     @Shadow
     static double previousCameraPositionY;
@@ -461,26 +470,6 @@ public abstract class MOShaders {
     public static boolean shouldSkipDefaultShadow;
     @Shadow
     static boolean waterShadowEnabled;
-    @Shadow
-    static @Final
-    @Mutable
-    int MaxDrawBuffers;
-    @Shadow
-    static @Final
-    @Mutable
-    int MaxColorBuffers;
-    @Shadow
-    static @Final
-    @Mutable
-    int MaxDepthBuffers;
-    @Shadow
-    static @Final
-    @Mutable
-    int MaxShadowColorBuffers;
-    @Shadow
-    static @Final
-    @Mutable
-    int MaxShadowDepthBuffers;
     @Shadow
     static int usedColorBuffers;
     @Shadow
@@ -584,6 +573,10 @@ public abstract class MOShaders {
     @Shadow
     public static @Final
     @Mutable
+    Program ProgramEntitiesGlowing;
+    @Shadow
+    public static @Final
+    @Mutable
     Program ProgramArmorGlint;
     @Shadow
     public static @Final
@@ -658,6 +651,8 @@ public abstract class MOShaders {
     @Shadow
     public static Properties shadersConfig;
     @Shadow
+    public static Texture defaultTexture;
+    @Shadow
     public static boolean[] shadowHardwareFilteringEnabled;
     @Shadow
     public static boolean[] shadowMipmapEnabled;
@@ -704,14 +699,6 @@ public abstract class MOShaders {
     @Shadow
     public static @Final
     @Mutable
-    int texMinFilRange;
-    @Shadow
-    public static @Final
-    @Mutable
-    int texMagFilRange;
-    @Shadow
-    public static @Final
-    @Mutable
     String[] texMinFilDesc;
     @Shadow
     public static @Final
@@ -734,35 +721,19 @@ public abstract class MOShaders {
     @Shadow
     public static @Final
     @Mutable
-    String SHADER_PACK_NAME_NONE;
-    @Shadow
-    public static @Final
-    @Mutable
-    String SHADER_PACK_NAME_DEFAULT;
-    @Shadow
-    public static @Final
-    @Mutable
-    String SHADER_PACKS_DIR_NAME;
-    @Shadow
-    public static @Final
-    @Mutable
-    String OPTIONS_FILE_NAME;
-    @Shadow
-    public static @Final
-    @Mutable
     File shaderPacksDir;
     @Shadow
     static File configFile;
     @Shadow
     private static ShaderOption[] shaderPackOptions;
     @Shadow
-    private static Set<String> shaderPackOptionSliders;
+    private static Set shaderPackOptionSliders;
     @Shadow
     static ShaderProfile[] shaderPackProfiles;
     @Shadow
-    static Map<String, ScreenShaderOptions> shaderPackGuiScreens;
+    static Map shaderPackGuiScreens;
     @Shadow
-    static Map<String, IExpressionBool> shaderPackProgramConditions;
+    static Map shaderPackProgramConditions;
     @Shadow
     public static @Final
     @Mutable
@@ -802,11 +773,11 @@ public abstract class MOShaders {
     @Shadow
     public static PropertyDefaultTrueFalse shaderPackFrustumCulling;
     @Shadow
-    private static Map<String, String> shaderPackResources;
+    private static Map shaderPackResources;
     @Shadow
     private static ClientWorld currentWorld;
     @Shadow
-    private static List<Integer> shaderPackDimensions;
+    private static List shaderPackDimensions;
     @Shadow
     private static ICustomTexture[] customTexturesGbuffers;
     @Shadow
@@ -817,22 +788,6 @@ public abstract class MOShaders {
     private static String noiseTexturePath;
     @Shadow
     private static CustomUniforms customUniforms;
-    @Shadow
-    private static @Final
-    @Mutable
-    int STAGE_GBUFFERS;
-    @Shadow
-    private static @Final
-    @Mutable
-    int STAGE_COMPOSITE;
-    @Shadow
-    private static @Final
-    @Mutable
-    int STAGE_DEFERRED;
-    @Shadow
-    private static @Final
-    @Mutable
-    String[] STAGE_NAMES;
     @Shadow
     public static @Final
     @Mutable
@@ -927,7 +882,6 @@ public abstract class MOShaders {
     static @Final
     @Mutable
     FloatBuffer projection;
-    
     @Shadow
     static @Final
     @Mutable
@@ -1009,7 +963,7 @@ public abstract class MOShaders {
     @Mutable
     FlipTextures dfbColorTexturesFlip;
     @Shadow
-    static Map<Block, Integer> mapBlockToEntityData;
+    static Map mapBlockToEntityData;
     @Shadow
     private static @Final
     @Mutable
@@ -1035,6 +989,11 @@ public abstract class MOShaders {
     @Shadow
     protected static boolean checkBufferFlip(Program program) {
         return false;
+    }
+    
+    @Shadow
+    public static void init() {
+        throw new RuntimeException();
     }
     
     //avoid uninit when creating faked world
@@ -1065,22 +1024,6 @@ public abstract class MOShaders {
             ci.cancel();
         }
     }
-
-//    @Redirect(
-//        method = "loadShaderPack",
-//        at = @At(
-//            value = "INVOKE",
-//            target = "Lnet/minecraft/client/MinecraftClient;reloadResourcesConcurrently()Ljava/util/concurrent/CompletableFuture;"
-//        )
-//    )
-//    private static CompletableFuture<Void> redirectReloadResource(MinecraftClient minecraftClient) {
-//        if (!OFGlobal.shaderContextManager.isContextSwitched()) {
-//            return minecraftClient.reloadResourcesConcurrently();
-//        }
-//        else {
-//            return null;
-//        }
-//    }
     
     @Inject(method = "init", at = @At("HEAD"))
     private static void onInit(CallbackInfo ci) {
@@ -1097,6 +1040,24 @@ public abstract class MOShaders {
         Minecraft mc = Minecraft.getInstance();
         if (mc.worldRenderer != null) {
             mc.worldRenderer.loadRenderers();
+        }
+    }
+    
+    //do not eat error
+    @Redirect(
+        method = "beginRender",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/optifine/shaders/Shaders;init()V"
+        )
+    )
+    private static void redirectInitOnBeginRender() {
+        try {
+            init();
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+            throw e;
         }
     }
     
@@ -1141,7 +1102,7 @@ public abstract class MOShaders {
         String filename,
         CallbackInfoReturnable<Integer> cir
     ) {
-        shouldModifyShaderCode = ShaderCullingManager.getShouldModifyShaderCode(program);
+        shouldModifyShaderCode = ShaderCullingManager.shouldModifyShaderCode(program);
     }
     
     @ModifyVariable(
@@ -1163,7 +1124,7 @@ public abstract class MOShaders {
         at = @At("TAIL")
     )
     private static void onLoadingUniforms(Program program, CallbackInfo ci) {
-        if (ShaderCullingManager.getShouldModifyShaderCode(program)) {
+        if (ShaderCullingManager.shouldModifyShaderCode(program)) {
             ShaderCullingManager.loadUniforms();
         }
         OFGlobal.debugFunc.accept(program);
@@ -1173,6 +1134,7 @@ public abstract class MOShaders {
     //but it's illegal to set a uniform without binding program
     @Inject(method = "setCameraShadow", at = @At("HEAD"))
     private static void onSetCameraShadow(
+        MatrixStack matrixStack,
         ActiveRenderInfo activeRenderInfo,
         float partialTicks,
         CallbackInfo ci
@@ -1208,6 +1170,17 @@ public abstract class MOShaders {
         previousCameraPositionZ = cameraPositionZ - MyRenderHelper.cameraPosDelta.z;
     }
     
+    @Redirect(
+        method = "init",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/dimension/DimensionType;getRawId()I"
+        )
+    )
+    private static int redirectGetDimensionRawId(DimensionType dimensionType) {
+        return ShaderDimensionRedirect.getShaderDimension(dimensionType).getId();
+    }
+    
     static {
         OFGlobal.copyContextFromObject = context -> {
             mc = context.mc;
@@ -1229,6 +1202,7 @@ public abstract class MOShaders {
             isCompositeRendered = context.isCompositeRendered;
             isRenderingDfb = context.isRenderingDfb;
             isShadowPass = context.isShadowPass;
+            isEntitiesGlowing = context.isEntitiesGlowing;
             isSleeping = context.isSleeping;
             isRenderingFirstPersonHand = context.isRenderingFirstPersonHand;
             isHandRenderedMain = context.isHandRenderedMain;
@@ -1287,6 +1261,7 @@ public abstract class MOShaders {
             blindness = context.blindness;
             lightmapEnabled = context.lightmapEnabled;
             fogEnabled = context.fogEnabled;
+            baseAttribId = context.baseAttribId;
             entityAttrib = context.entityAttrib;
             midTexCoordAttrib = context.midTexCoordAttrib;
             tangentAttrib = context.tangentAttrib;
@@ -1390,6 +1365,7 @@ public abstract class MOShaders {
             uniform_centerDepthSmooth = context.uniform_centerDepthSmooth;
             uniform_atlasSize = context.uniform_atlasSize;
             uniform_blendFunc = context.uniform_blendFunc;
+            uniform_instanceId = context.uniform_instanceId;
             previousCameraPositionX = context.previousCameraPositionX;
             previousCameraPositionY = context.previousCameraPositionY;
             previousCameraPositionZ = context.previousCameraPositionZ;
@@ -1411,11 +1387,6 @@ public abstract class MOShaders {
             shadowPassCounter = context.shadowPassCounter;
             shouldSkipDefaultShadow = context.shouldSkipDefaultShadow;
             waterShadowEnabled = context.waterShadowEnabled;
-            MaxDrawBuffers = context.MaxDrawBuffers;
-            MaxColorBuffers = context.MaxColorBuffers;
-            MaxDepthBuffers = context.MaxDepthBuffers;
-            MaxShadowColorBuffers = context.MaxShadowColorBuffers;
-            MaxShadowDepthBuffers = context.MaxShadowDepthBuffers;
             usedColorBuffers = context.usedColorBuffers;
             usedDepthBuffers = context.usedDepthBuffers;
             usedShadowColorBuffers = context.usedShadowColorBuffers;
@@ -1447,6 +1418,7 @@ public abstract class MOShaders {
             ProgramBeaconBeam = context.ProgramBeaconBeam;
             ProgramItem = context.ProgramItem;
             ProgramEntities = context.ProgramEntities;
+            ProgramEntitiesGlowing = context.ProgramEntitiesGlowing;
             ProgramArmorGlint = context.ProgramArmorGlint;
             ProgramSpiderEyes = context.ProgramSpiderEyes;
             ProgramHand = context.ProgramHand;
@@ -1470,8 +1442,7 @@ public abstract class MOShaders {
             activeCompositeMipmapSetting = context.activeCompositeMipmapSetting;
             loadedShaders = context.loadedShaders;
             shadersConfig = context.shadersConfig;
-//            defaultTexture = context.defaultTexture;
-            assert false;
+            defaultTexture = context.defaultTexture;
             shadowHardwareFilteringEnabled = context.shadowHardwareFilteringEnabled;
             shadowMipmapEnabled = context.shadowMipmapEnabled;
             shadowFilterNearest = context.shadowFilterNearest;
@@ -1494,8 +1465,6 @@ public abstract class MOShaders {
             configOldLighting = context.configOldLighting;
             configOldHandLight = context.configOldHandLight;
             configAntialiasingLevel = context.configAntialiasingLevel;
-            texMinFilRange = context.texMinFilRange;
-            texMagFilRange = context.texMagFilRange;
             texMinFilDesc = context.texMinFilDesc;
             texMagFilDesc = context.texMagFilDesc;
             texMinFilValue = context.texMinFilValue;
@@ -1503,10 +1472,6 @@ public abstract class MOShaders {
             shaderPack = context.shaderPack;
             shaderPackLoaded = context.shaderPackLoaded;
             currentShaderName = context.currentShaderName;
-            SHADER_PACK_NAME_NONE = context.SHADER_PACK_NAME_NONE;
-            SHADER_PACK_NAME_DEFAULT = context.SHADER_PACK_NAME_DEFAULT;
-            SHADER_PACKS_DIR_NAME = context.SHADER_PACKS_DIR_NAME;
-            OPTIONS_FILE_NAME = context.OPTIONS_FILE_NAME;
             shaderPacksDir = context.shaderPacksDir;
             configFile = context.configFile;
             shaderPackOptions = context.shaderPackOptions;
@@ -1533,18 +1498,13 @@ public abstract class MOShaders {
             shaderPackSeparateAo = context.shaderPackSeparateAo;
             shaderPackFrustumCulling = context.shaderPackFrustumCulling;
             shaderPackResources = context.shaderPackResources;
-//            currentWorld = context.currentWorld;
-            assert false;
+            currentWorld = context.currentWorld;
             shaderPackDimensions = context.shaderPackDimensions;
             customTexturesGbuffers = context.customTexturesGbuffers;
             customTexturesComposite = context.customTexturesComposite;
             customTexturesDeferred = context.customTexturesDeferred;
             noiseTexturePath = context.noiseTexturePath;
             customUniforms = context.customUniforms;
-            STAGE_GBUFFERS = context.STAGE_GBUFFERS;
-            STAGE_COMPOSITE = context.STAGE_COMPOSITE;
-            STAGE_DEFERRED = context.STAGE_DEFERRED;
-            STAGE_NAMES = context.STAGE_NAMES;
             enableShadersOption = context.enableShadersOption;
             enableShadersDebug = context.enableShadersDebug;
             saveFinalShaders = context.saveFinalShaders;
@@ -1603,6 +1563,8 @@ public abstract class MOShaders {
             patternLoadEntityDataMap = context.patternLoadEntityDataMap;
             entityData = context.entityData;
             entityDataIndex = context.entityDataIndex;
+            
+            
         };
         
         OFGlobal.copyContextToObject = context -> {
@@ -1625,6 +1587,7 @@ public abstract class MOShaders {
             context.isCompositeRendered = isCompositeRendered;
             context.isRenderingDfb = isRenderingDfb;
             context.isShadowPass = isShadowPass;
+            context.isEntitiesGlowing = isEntitiesGlowing;
             context.isSleeping = isSleeping;
             context.isRenderingFirstPersonHand = isRenderingFirstPersonHand;
             context.isHandRenderedMain = isHandRenderedMain;
@@ -1683,6 +1646,7 @@ public abstract class MOShaders {
             context.blindness = blindness;
             context.lightmapEnabled = lightmapEnabled;
             context.fogEnabled = fogEnabled;
+            context.baseAttribId = baseAttribId;
             context.entityAttrib = entityAttrib;
             context.midTexCoordAttrib = midTexCoordAttrib;
             context.tangentAttrib = tangentAttrib;
@@ -1786,6 +1750,7 @@ public abstract class MOShaders {
             context.uniform_centerDepthSmooth = uniform_centerDepthSmooth;
             context.uniform_atlasSize = uniform_atlasSize;
             context.uniform_blendFunc = uniform_blendFunc;
+            context.uniform_instanceId = uniform_instanceId;
             context.previousCameraPositionX = previousCameraPositionX;
             context.previousCameraPositionY = previousCameraPositionY;
             context.previousCameraPositionZ = previousCameraPositionZ;
@@ -1807,11 +1772,6 @@ public abstract class MOShaders {
             context.shadowPassCounter = shadowPassCounter;
             context.shouldSkipDefaultShadow = shouldSkipDefaultShadow;
             context.waterShadowEnabled = waterShadowEnabled;
-            context.MaxDrawBuffers = MaxDrawBuffers;
-            context.MaxColorBuffers = MaxColorBuffers;
-            context.MaxDepthBuffers = MaxDepthBuffers;
-            context.MaxShadowColorBuffers = MaxShadowColorBuffers;
-            context.MaxShadowDepthBuffers = MaxShadowDepthBuffers;
             context.usedColorBuffers = usedColorBuffers;
             context.usedDepthBuffers = usedDepthBuffers;
             context.usedShadowColorBuffers = usedShadowColorBuffers;
@@ -1843,6 +1803,7 @@ public abstract class MOShaders {
             context.ProgramBeaconBeam = ProgramBeaconBeam;
             context.ProgramItem = ProgramItem;
             context.ProgramEntities = ProgramEntities;
+            context.ProgramEntitiesGlowing = ProgramEntitiesGlowing;
             context.ProgramArmorGlint = ProgramArmorGlint;
             context.ProgramSpiderEyes = ProgramSpiderEyes;
             context.ProgramHand = ProgramHand;
@@ -1866,8 +1827,7 @@ public abstract class MOShaders {
             context.activeCompositeMipmapSetting = activeCompositeMipmapSetting;
             context.loadedShaders = loadedShaders;
             context.shadersConfig = shadersConfig;
-//            context.defaultTexture = defaultTexture;
-            assert false;
+            context.defaultTexture = defaultTexture;
             context.shadowHardwareFilteringEnabled = shadowHardwareFilteringEnabled;
             context.shadowMipmapEnabled = shadowMipmapEnabled;
             context.shadowFilterNearest = shadowFilterNearest;
@@ -1890,8 +1850,6 @@ public abstract class MOShaders {
             context.configOldLighting = configOldLighting;
             context.configOldHandLight = configOldHandLight;
             context.configAntialiasingLevel = configAntialiasingLevel;
-            context.texMinFilRange = texMinFilRange;
-            context.texMagFilRange = texMagFilRange;
             context.texMinFilDesc = texMinFilDesc;
             context.texMagFilDesc = texMagFilDesc;
             context.texMinFilValue = texMinFilValue;
@@ -1899,10 +1857,6 @@ public abstract class MOShaders {
             context.shaderPack = shaderPack;
             context.shaderPackLoaded = shaderPackLoaded;
             context.currentShaderName = currentShaderName;
-            context.SHADER_PACK_NAME_NONE = SHADER_PACK_NAME_NONE;
-            context.SHADER_PACK_NAME_DEFAULT = SHADER_PACK_NAME_DEFAULT;
-            context.SHADER_PACKS_DIR_NAME = SHADER_PACKS_DIR_NAME;
-            context.OPTIONS_FILE_NAME = OPTIONS_FILE_NAME;
             context.shaderPacksDir = shaderPacksDir;
             context.configFile = configFile;
             context.shaderPackOptions = shaderPackOptions;
@@ -1936,10 +1890,6 @@ public abstract class MOShaders {
             context.customTexturesDeferred = customTexturesDeferred;
             context.noiseTexturePath = noiseTexturePath;
             context.customUniforms = customUniforms;
-            context.STAGE_GBUFFERS = STAGE_GBUFFERS;
-            context.STAGE_COMPOSITE = STAGE_COMPOSITE;
-            context.STAGE_DEFERRED = STAGE_DEFERRED;
-            context.STAGE_NAMES = STAGE_NAMES;
             context.enableShadersOption = enableShadersOption;
             context.enableShadersDebug = enableShadersDebug;
             context.saveFinalShaders = saveFinalShaders;
@@ -1998,17 +1948,20 @@ public abstract class MOShaders {
             context.patternLoadEntityDataMap = patternLoadEntityDataMap;
             context.entityData = entityData;
             context.entityDataIndex = entityDataIndex;
+            
+            
         };
         
         OFGlobal.getDfb = () -> dfb;
         OFGlobal.bindGbuffersTextures = () -> bindGbuffersTextures();
         
-        OFGlobal.flipShaderFb = () -> {
-            checkBufferFlip(ProgramCompositePre);
-        };
-        
         OFGlobal.getShaderUniforms = () -> shaderUniforms;
         
         OFGlobal.getCurrentWorld = () -> currentWorld;
+        
+        OFGlobal.bindToShaderFrameBuffer = () -> {
+            EXTFramebufferObject.glBindFramebufferEXT(36160, OFGlobal.getDfb.get());
+            GlStateManager.viewport(0, 0, Shaders.renderWidth, Shaders.renderHeight);
+        };
     }
 }

@@ -1,13 +1,17 @@
 package com.qouteall.immersive_portals.mixin.collision;
 
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import org.spongepowered.asm.mixin.Mixin;
@@ -47,31 +51,24 @@ public abstract class MixinEntity implements IEEntity {
     @Shadow
     protected abstract Vec3d getAllowedMovement(Vec3d vec3d_1);
     
+    @Shadow
+    private double posX;
+    
+    @Shadow
+    private double posY;
+    
+    @Shadow
+    private double posZ;
+    
+    @Shadow
+    public abstract ITextComponent getName();
+    
     //maintain collidingPortal field
     @Inject(method = "Lnet/minecraft/entity/Entity;tick()V", at = @At("HEAD"))
     private void onTicking(CallbackInfo ci) {
-        if (collidingPortal != null) {
-            if (collidingPortal.dimension != dimension) {
-                collidingPortal = null;
-            }
-        }
-        
-        Portal nowCollidingPortal =
-            CollisionHelper.getCollidingPortalUnreliable((Entity) (Object) this);
-        if (nowCollidingPortal == null) {
-            if (stopCollidingPortalCounter > 0) {
-                stopCollidingPortalCounter--;
-            }
-            else {
-                collidingPortal = null;
-            }
-        }
-        else {
-            collidingPortal = nowCollidingPortal;
-            stopCollidingPortalCounter = 1;
-        }
+        tickCollidingPortal();
     }
-
+    
     @Redirect(
         method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/Vec3d;)V",
         at = @At(
@@ -174,7 +171,7 @@ public abstract class MixinEntity implements IEEntity {
         }
         return entity.isInWaterRainOrBubbleColumn();
     }
-
+    
     @Redirect(
         method = "Lnet/minecraft/entity/Entity;doBlockCollisions()V",
         at = @At(
@@ -203,8 +200,68 @@ public abstract class MixinEntity implements IEEntity {
         }
     }
     
+    //for teleportation debug
+    @Inject(
+        method = "Lnet/minecraft/entity/Entity;setRawPosition(DDD)V",
+        at = @At("HEAD")
+    )
+    private void onSetPos(double nx, double ny, double nz, CallbackInfo ci) {
+        if (((Object) this) instanceof ServerPlayerEntity) {
+            if (Global.teleportationDebugEnabled) {
+                if (Math.abs(posX - nx) > 10 ||
+                    Math.abs(posY - ny) > 10 ||
+                    Math.abs(posZ - nz) > 10
+                ) {
+                    Helper.log(String.format(
+                        "%s %s teleported from %s %s %s to %s %s %s",
+                        getName().getUnformattedComponentText(),
+                        dimension,
+                        (int) posX, (int) posY, (int) posZ,
+                        (int) nx, (int) ny, (int) nz
+                    ));
+                    new Throwable().printStackTrace();
+                }
+            }
+        }
+    }
+    
     @Override
     public Portal getCollidingPortal() {
         return collidingPortal;
+    }
+    
+    @Override
+    public void tickCollidingPortal() {
+        Entity this_ = (Entity) (Object) this;
+        
+        if (collidingPortal != null) {
+            if (collidingPortal.dimension != dimension) {
+                collidingPortal = null;
+            }
+        }
+        
+        //TODO change to portals discovering nearby entities instead
+        // of entities discovering nearby portals
+        world.getProfiler().startSection("getCollidingPortal");
+        Portal nowCollidingPortal =
+            CollisionHelper.getCollidingPortalUnreliable(this_);
+        world.getProfiler().endSection();
+        
+        if (nowCollidingPortal == null) {
+            if (stopCollidingPortalCounter > 0) {
+                stopCollidingPortalCounter--;
+            }
+            else {
+                collidingPortal = null;
+            }
+        }
+        else {
+            collidingPortal = nowCollidingPortal;
+            stopCollidingPortalCounter = 1;
+        }
+        
+        if (world.isRemote) {
+            McHelper.onClientEntityTick(this_);
+        }
     }
 }

@@ -33,7 +33,6 @@ public class Portal extends Entity {
     public Vec3d destination;
     
     //additional properteis
-    public boolean loadFewerChunks = true;
     public boolean teleportable = true;
     public UUID specificPlayer;
     public GeometryPortalShape specialShape;
@@ -74,12 +73,6 @@ public class Portal extends Entity {
         axisH = Helper.getVec3d(compoundTag, "axisH").normalize();
         dimensionTo = DimensionType.getById(compoundTag.getInt("dimensionTo"));
         destination = Helper.getVec3d(compoundTag, "destination");
-        if (compoundTag.contains("loadFewerChunks")) {
-            loadFewerChunks = compoundTag.getBoolean("loadFewerChunks");
-        }
-        else {
-            loadFewerChunks = true;
-        }
         if (compoundTag.contains("specificPlayer")) {
             specificPlayer = compoundTag.getUniqueId("specificPlayer");
         }
@@ -135,7 +128,6 @@ public class Portal extends Entity {
         Helper.putVec3d(compoundTag, "axisH", axisH);
         compoundTag.putInt("dimensionTo", dimensionTo.getId());
         Helper.putVec3d(compoundTag, "destination", destination);
-        compoundTag.putBoolean("loadFewerChunks", loadFewerChunks);
     
         if (specificPlayer != null) {
             compoundTag.putUniqueId("specificPlayer", specificPlayer);
@@ -235,6 +227,11 @@ public class Portal extends Entity {
             boundingBoxCache = getPortalCollisionBox();
         }
         return boundingBoxCache;
+    }
+    
+    @Override
+    public void setBoundingBox(AxisAlignedBB boundingBox) {
+        boundingBoxCache = null;
     }
     
     @Override

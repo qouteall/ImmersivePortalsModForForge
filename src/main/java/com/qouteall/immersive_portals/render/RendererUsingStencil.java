@@ -42,7 +42,7 @@ public class RendererUsingStencil extends PortalRenderer {
     }
     
     private void doPortalRendering(MatrixStack matrixStack) {
-        mc.getProfiler().endStartSection("render_portal_total");
+        client.getProfiler().endStartSection("render_portal_total");
         renderPortals(matrixStack);
         if (isRendering()) {
             setStencilStateForWorldRendering();
@@ -73,7 +73,7 @@ public class RendererUsingStencil extends PortalRenderer {
         GlStateManager.enableDepthTest();
         GL11.glEnable(GL_STENCIL_TEST);
     
-        ((IEFrameBuffer) mc.getFramebuffer())
+        ((IEFrameBuffer) client.getFramebuffer())
             .setIsStencilBufferEnabledAndReload(true);
     }
     
@@ -97,11 +97,11 @@ public class RendererUsingStencil extends PortalRenderer {
     ) {
         int outerPortalStencilValue = getPortalLayer();
         
-        mc.getProfiler().startSection("render_view_area");
+        client.getProfiler().startSection("render_view_area");
         boolean anySamplePassed = QueryManager.renderAndGetDoesAnySamplePassed(() -> {
             renderPortalViewAreaToStencil(portal, matrixStack);
         });
-        mc.getProfiler().endSection();
+        client.getProfiler().endSection();
         
         if (!anySamplePassed) {
             setStencilStateForWorldRendering();
@@ -113,9 +113,9 @@ public class RendererUsingStencil extends PortalRenderer {
         
         int thisPortalStencilValue = outerPortalStencilValue + 1;
     
-        mc.getProfiler().startSection("clear_depth_of_view_area");
+        client.getProfiler().startSection("clear_depth_of_view_area");
         clearDepthOfThePortalViewArea(portal);
-        mc.getProfiler().endSection();
+        client.getProfiler().endSection();
     
         manageCameraAndRenderPortalContent(portal);
     

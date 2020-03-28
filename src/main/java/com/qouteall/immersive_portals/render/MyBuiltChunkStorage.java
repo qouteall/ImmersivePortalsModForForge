@@ -32,7 +32,6 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     public static class Preset {
         public ChunkRenderDispatcher.ChunkRender[] data;
         public long lastActiveTime;
-        public boolean isMainPreset;
         public boolean isNeighborUpdated;
         
         public Preset(ChunkRenderDispatcher.ChunkRender[] data, boolean isNeighborUpdated) {
@@ -123,8 +122,8 @@ public class MyBuiltChunkStorage extends ViewFrustum {
         }
         
         if (!preset.isNeighborUpdated) {
-            preset.isNeighborUpdated = true;
             OFBuiltChunkNeighborFix.updateNeighbor(this, preset.data);
+            preset.isNeighborUpdated = true;
             if (isRenderingPortal) {
                 shouldUpdateMainPresetNeighbor = true;
             }

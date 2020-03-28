@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
 import com.qouteall.immersive_portals.CGlobal;
@@ -10,9 +9,11 @@ import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.alternate_dimension.AlternateSky;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.far_scenery.FarSceneryRenderer;
+import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
 import com.qouteall.immersive_portals.render.MyBuiltChunkStorage;
 import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
+import com.qouteall.immersive_portals.render.PixelCuller;
 import com.qouteall.immersive_portals.render.TransformationManager;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
@@ -132,26 +133,29 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     )
     private void onRenderBeforeRenderLayer(
         WorldRenderer worldRenderer,
-        RenderType renderLayer_1,
+        RenderType renderLayer,
         MatrixStack matrices,
-        double double_1,
-        double double_2,
-        double double_3
+        double cameraX,
+        double cameraY,
+        double cameraZ
     ) {
-        boolean isTranslucent = renderLayer_1 == RenderType.getTranslucent();
+        boolean isTranslucent = renderLayer == RenderType.getTranslucent();
         if (isTranslucent) {
+            CrossPortalEntityRenderer.onEndRenderingEntities(matrices);
             CGlobal.renderer.onBeforeTranslucentRendering(matrices);
             FarSceneryRenderer.onBeforeTranslucentRendering(matrices);
         }
         renderBlockLayer(
-            renderLayer_1, matrices,
-            double_1, double_2, double_3
+            renderLayer, matrices,
+            cameraX, cameraY, cameraZ
         );
         if (isTranslucent) {
             CGlobal.renderer.onAfterTranslucentRendering(matrices);
-    
         }
         
+        if (renderLayer == RenderType.getCutout()) {
+            CrossPortalEntityRenderer.onBeginRenderingEnties(matrices);
+        }
     }
     
     @Redirect(
@@ -209,10 +213,10 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         if (renderLayer_1 == RenderType.getSolid()) {
             MyGameRenderer.doPruneVisibleChunks(visibleChunks);
         }
-    
+        
         if (CGlobal.renderer.isRendering()) {
-            CGlobal.myGameRenderer.updateCullingPlane(matrixStack_1);
-            CGlobal.myGameRenderer.startCulling();
+            PixelCuller.updateCullingPlaneInner(matrixStack_1, CGlobal.renderer.getRenderingPortal());
+            PixelCuller.startCulling();
             if (MyRenderHelper.isRenderingOddNumberOfMirrors()) {
                 MyRenderHelper.applyMirrorFaceCulling();
             }
@@ -232,7 +236,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         CallbackInfo ci
     ) {
         if (CGlobal.renderer.isRendering()) {
-            CGlobal.myGameRenderer.endCulling();
+            PixelCuller.endCulling();
             MyRenderHelper.recoverFaceCulling();
         }
     }
@@ -262,36 +266,39 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     )
     private void redirectRenderEntity(
         WorldRenderer worldRenderer,
-        Entity entity_1,
-        double double_1,
-        double double_2,
-        double double_3,
-        float float_1,
-        MatrixStack matrixStack_1,
-        IRenderTypeBuffer vertexConsumerProvider_1
+        Entity entity,
+        double cameraX,
+        double cameraY,
+        double cameraZ,
+        float tickDelta,
+        MatrixStack matrixStack,
+        IRenderTypeBuffer vertexConsumerProvider
     ) {
         ActiveRenderInfo camera = Minecraft.getInstance().gameRenderer.getActiveRenderInfo();
-        if (entity_1 == camera.getRenderViewEntity()) {
+        if (entity == camera.getRenderViewEntity()) {
             if (CGlobal.renderer.shouldRenderPlayerItself()) {
                 CGlobal.myGameRenderer.renderPlayerItself(() -> {
+                    CrossPortalEntityRenderer.beforeRenderingEntity(entity, matrixStack);
                     renderEntity(
-                        entity_1,
-                        double_1, double_2, double_3,
-                        float_1,
-                        matrixStack_1, vertexConsumerProvider_1
+                        entity,
+                        cameraX, cameraY, cameraZ,
+                        tickDelta,
+                        matrixStack, vertexConsumerProvider
                     );
+                    CrossPortalEntityRenderer.afterRenderingEntity(entity);
                 });
                 return;
             }
         }
         
+        CrossPortalEntityRenderer.beforeRenderingEntity(entity, matrixStack);
         renderEntity(
-            entity_1,
-            double_1, double_2, double_3,
-            float_1,
-            matrixStack_1, vertexConsumerProvider_1
+            entity,
+            cameraX, cameraY, cameraZ,
+            tickDelta,
+            matrixStack, vertexConsumerProvider
         );
-    
+        CrossPortalEntityRenderer.afterRenderingEntity(entity);
     }
     
     @Inject(
@@ -313,8 +320,8 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         CallbackInfo ci
     ) {
         if (CGlobal.renderer.isRendering()) {
-            CGlobal.myGameRenderer.updateCullingPlane(matrices);
-            CGlobal.myGameRenderer.startCulling();
+            PixelCuller.updateCullingPlaneInner(matrices, CGlobal.renderer.getRenderingPortal());
+            PixelCuller.startCulling();
         }
     }
     
@@ -338,7 +345,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         CallbackInfo ci
     ) {
         if (CGlobal.renderer.isRendering()) {
-            CGlobal.myGameRenderer.endCulling();
+            PixelCuller.endCulling();
         }
     }
     
@@ -408,13 +415,13 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             //reset gl states
             RenderType.getBlockRenderTypes().get(0).setupRenderState();
             RenderType.getBlockRenderTypes().get(0).clearRenderState();
-    
+            
             //fix sky abnormal with optifine and fog disabled
             if (OFInterface.isFogDisabled.getAsBoolean()) {
                 GL11.glEnable(GL11.GL_FOG);
             }
         }
-    
+        
         if (MyRenderHelper.isRenderingOddNumberOfMirrors()) {
             MyRenderHelper.applyMirrorFaceCulling();
         }
@@ -466,31 +473,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         TransformationManager.processTransformation(camera, matrices);
     }
     
-    @Override
-    public EntityRendererManager getEntityRenderDispatcher() {
-        return renderManager;
-    }
-    
-    @Override
-    public ViewFrustum getBuiltChunkStorage() {
-        return viewFrustum;
-    }
-    
-    @Override
-    public ObjectList getVisibleChunks() {
-        return renderInfos;
-    }
-    
-    @Override
-    public void setVisibleChunks(ObjectList l) {
-        renderInfos = l;
-    }
-    
-    @Override
-    public ChunkRenderDispatcher getChunkBuilder() {
-        return renderDispatcher;
-    }
-    
     //update builtChunkStorage every frame
     //update terrain when rendering portal
     @Inject(
@@ -511,7 +493,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         if (CGlobal.useHackedChunkRenderDispatcher) {
             this.viewFrustum.updateChunkPositions(this.mc.player.getPosX(), this.mc.player.getPosZ());
         }
-    
+        
         if (CGlobal.renderer.isRendering()) {
             displayListEntitiesDirty = true;
         }
@@ -549,6 +531,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         }
     }
     
+    //disable cull when rendering mirror
     @Redirect(
         method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
         at = @At(
@@ -561,21 +544,45 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         immediate.finish(layer);
         MyRenderHelper.shouldForceDisableCull = false;
     }
-
-//    //test
-//    @Redirect(
-//        method = "renderClouds(Lnet/minecraft/client/util/math/MatrixStack;FDDD)V",
-//        at = @At(
-//            value = "INVOKE",
-//            target = "Lcom/mojang/blaze3d/systems/RenderSystem;enableDepthTest()V"
-//        )
-//    )
-//    private void onCloudEnableDepthTest() {
-//        if (CGlobal.renderer.isRendering()) {
-//            McHelper.test();
-//        }
-//        else {
-//            RenderSystem.enableDepthTest();
-//        }
-//    }
+    
+    
+    @Override
+    public EntityRendererManager getEntityRenderDispatcher() {
+        return renderManager;
+    }
+    
+    @Override
+    public ViewFrustum getBuiltChunkStorage() {
+        return viewFrustum;
+    }
+    
+    @Override
+    public ObjectList getVisibleChunks() {
+        return renderInfos;
+    }
+    
+    @Override
+    public void setVisibleChunks(ObjectList l) {
+        renderInfos = l;
+    }
+    
+    @Override
+    public ChunkRenderDispatcher getChunkBuilder() {
+        return renderDispatcher;
+    }
+    
+    @Override
+    public void myRenderEntity(
+        Entity entity,
+        double cameraX,
+        double cameraY,
+        double cameraZ,
+        float tickDelta,
+        MatrixStack matrixStack,
+        IRenderTypeBuffer vertexConsumerProvider
+    ) {
+        renderEntity(
+            entity, cameraX, cameraY, cameraZ, tickDelta, matrixStack, vertexConsumerProvider
+        );
+    }
 }

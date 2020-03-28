@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.mixin_client.altius_world;
 
 import com.google.gson.JsonElement;
-import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.altius_world.AltiusInfo;
 import com.qouteall.immersive_portals.altius_world.AltiusScreen;
 import com.qouteall.immersive_portals.ducks.IELevelProperties;

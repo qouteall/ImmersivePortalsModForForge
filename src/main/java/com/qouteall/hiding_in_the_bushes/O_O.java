@@ -82,4 +82,8 @@ public class O_O {
         }
         
     }
+    
+    public static boolean detectOptiFine(){
+        return MyMixinConnector.getIsOptifinePresent();
+    }
 }

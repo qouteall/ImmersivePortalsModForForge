@@ -15,6 +15,7 @@ import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
 import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.Matrix4f;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.shader.Framebuffer;
@@ -67,6 +68,9 @@ public class MyRenderHelper {
     public static long renderStartNanoTime;
     public static double viewBobFactor;
     
+    //null indicates not gathered
+    public static Matrix4f projectionMatrix;
+    
     public static void updatePreRenderInfo(
         float partialTicks_
     ) {
@@ -92,6 +96,8 @@ public class MyRenderHelper {
         renderStartNanoTime = System.nanoTime();
     
         updateViewBobbingFactor(cameraEntity);
+    
+        projectionMatrix = null;
     
     }
     
@@ -188,8 +194,8 @@ public class MyRenderHelper {
                     GlStateManager.viewport(
                         0,
                         0,
-                        PortalRenderer.mc.getFramebuffer().framebufferWidth,
-                        PortalRenderer.mc.getFramebuffer().framebufferHeight
+                        PortalRenderer.client.getFramebuffer().framebufferWidth,
+                        PortalRenderer.client.getFramebuffer().framebufferHeight
                     );
                 }
     
@@ -281,10 +287,12 @@ public class MyRenderHelper {
         }
         GlStateManager.disableDepthTest();
         GlStateManager.depthMask(false);
-        GlStateManager.matrixMode(5889);
+        GlStateManager.matrixMode(GL_PROJECTION);
+        GlStateManager.pushMatrix();
         GlStateManager.loadIdentity();
         GlStateManager.ortho(0.0D, (double) int_1, (double) int_2, 0.0D, 1000.0D, 3000.0D);
-        GlStateManager.matrixMode(5888);
+        GlStateManager.matrixMode(GL_MODELVIEW);
+        GlStateManager.pushMatrix();
         GlStateManager.loadIdentity();
         GlStateManager.translatef(0.0F, 0.0F, -2000.0F);
         GlStateManager.viewport(0, 0, int_1, int_2);
@@ -335,6 +343,11 @@ public class MyRenderHelper {
         textureProvider.unbindFramebufferTexture();
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
+    
+        GlStateManager.matrixMode(GL_PROJECTION);
+        GlStateManager.popMatrix();
+        GlStateManager.matrixMode(GL_MODELVIEW);
+        GlStateManager.popMatrix();
     
         CHelper.checkGlError();
     }

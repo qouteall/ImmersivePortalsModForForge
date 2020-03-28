@@ -16,15 +16,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ServerPlayerEntity.class)
 public class MixinServerPlayerEntity_MA {
+    
     @Inject(method = "changeDimension", at = @At("HEAD"), remap = false)
     private void onChangeDimensionByVanilla(
         DimensionType p_changeDimension_1_,
         ITeleporter p_changeDimension_2_,
         CallbackInfoReturnable<Entity> cir
     ) {
-        Global.chunkDataSyncManager.onPlayerRespawn((ServerPlayerEntity) (Object) this);
+        ServerPlayerEntity oldPlayer = (ServerPlayerEntity) (Object) this;
+        Global.chunkDataSyncManager.onPlayerRespawn(oldPlayer);
+        
     }
     
+    //NOTE this does not create a new player entity
     @Inject(
         method = "teleport",
         at = @At(

@@ -335,9 +335,9 @@ public class MyCommandClient {
             .literal("erase_chunk")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
-    
+                
                 eraseChunk(new ChunkPos(player.getPosition()), player.world, 0, 256);
-    
+                
                 return 0;
             })
         );
@@ -345,9 +345,9 @@ public class MyCommandClient {
             .literal("erase_chunk_large")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
-    
+                
                 ChunkPos center = new ChunkPos(player.getPosition());
-    
+                
                 for (int dx = -4; dx <= 4; dx++) {
                     for (int dz = -4; dz <= 4; dz++) {
                         eraseChunk(
@@ -359,7 +359,7 @@ public class MyCommandClient {
                         );
                     }
                 }
-    
+                
                 return 0;
             })
         );
@@ -367,9 +367,9 @@ public class MyCommandClient {
             .literal("erase_chunk_large_middle")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
-            
+                
                 ChunkPos center = new ChunkPos(player.getPosition());
-            
+                
                 for (int dx = -4; dx <= 4; dx++) {
                     for (int dz = -4; dz <= 4; dz++) {
                         eraseChunk(
@@ -381,7 +381,7 @@ public class MyCommandClient {
                         );
                     }
                 }
-            
+                
                 return 0;
             })
         );
@@ -420,7 +420,17 @@ public class MyCommandClient {
             "super_advanced_frustum_culling",
             cond -> CGlobal.useSuperAdvancedFrustumCulling = cond
         );
-    
+        registerSwitchCommand(
+            builder,
+            "teleportation_debug",
+            cond -> Global.teleportationDebugEnabled = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "cross_portal_entity_rendering",
+            cond -> Global.correctCrossPortalEntityRendering = cond
+        );
+        
         builder.then(Commands
             .literal("print_class_path")
             .executes(context -> {
@@ -428,9 +438,9 @@ public class MyCommandClient {
                 return 0;
             })
         );
-    
+        
         dispatcher.register(builder);
-    
+        
         Helper.log("Successfully initialized command /immersive_portals_debug");
     }
     
@@ -488,7 +498,7 @@ public class MyCommandClient {
             str.append(String.format(
                 "%s %s\n",
                 world.dimension.getType(),
-                ((MyClientChunkManager) world.getChunkProvider()).getChunkNum()
+                ((MyClientChunkManager) world.getChunkProvider()).getLoadedChunksCount()
             ));
         });
         

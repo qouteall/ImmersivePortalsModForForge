@@ -142,15 +142,6 @@ public class ModMainForge {
         });
         
         initPortalRenderers();
-    
-        OFInterface.isOptifinePresent = MyMixinConnector.getIsOptifinePresent();
-        
-        if (OFInterface.isOptifinePresent) {
-            OFBuiltChunkNeighborFix.init();
-            OFInterfaceInitializer.init();
-        }
-        
-        Helper.log(OFInterface.isOptifinePresent ? "Optifine is present" : "Optifine is not present");
     }
     
     private void enqueueIMC(final InterModEnqueueEvent event) {
@@ -161,13 +152,12 @@ public class ModMainForge {
     
     }
     
-    
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
         Global.netherPortalFindingRadius = ConfigServer.instance.portalSearchingRange.get();
         Global.longerReachInCreative = ConfigServer.instance.longReachInCreative.get();
         Global.activeLoading = ConfigServer.instance.activeLoadRemoteChunks.get();
+        Global.teleportationDebugEnabled = ConfigServer.instance.teleportationDebug.get();
     }
     
     @SubscribeEvent

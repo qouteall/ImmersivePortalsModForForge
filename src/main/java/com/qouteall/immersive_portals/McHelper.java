@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -8,14 +9,17 @@ import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.AbstractChunkProvider;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ChunkHolder;
@@ -208,8 +212,8 @@ public class McHelper {
         Vec3d pos,
         Vec3d lastTickPos
     ) {
-    
-    
+        
+        
         //NOTE do not call entity.setPosition() because it may tick the entity
         entity.setRawPosition(pos.x, pos.y, pos.z);
         entity.lastTickPosX = lastTickPos.x;
@@ -297,5 +301,35 @@ public class McHelper {
         player.setPosition(player.getPosX(), player.getPosY(), player.getPosZ());
     }
     
+    public static <T extends Entity> List<T> getEntitiesRegardingLargeEntities(
+        World world,
+        AxisAlignedBB box,
+        double maxEntitySizeHalf,
+        Class<T> entityClass,
+        Predicate<T> predicate
+    ) {
+        world.getProfiler().func_230035_c_("getEntitiesPortal");
+        int i = MathHelper.floor((box.minX - maxEntitySizeHalf) / 16.0D);
+        int j = MathHelper.ceil((box.maxX + maxEntitySizeHalf) / 16.0D);
+        int k = MathHelper.floor((box.minZ - maxEntitySizeHalf) / 16.0D);
+        int l = MathHelper.ceil((box.maxZ + maxEntitySizeHalf) / 16.0D);
+        List<T> list = Lists.newArrayList();
+        AbstractChunkProvider chunkManager = world.getChunkProvider();
+        
+        for (int m = i; m < j; ++m) {
+            for (int n = k; n < l; ++n) {
+                Chunk worldChunk = chunkManager.getChunk(m, n, false);
+                if (worldChunk != null) {
+                    worldChunk.getEntitiesOfTypeWithinAABB(entityClass, box, list, predicate);
+                }
+            }
+        }
+        
+        return list;
+    }
     
+    //avoid dedicated server crash
+    public static void onClientEntityTick(Entity entity) {
+        CrossPortalEntityRenderer.onEntityTickClient(entity);
+    }
 }

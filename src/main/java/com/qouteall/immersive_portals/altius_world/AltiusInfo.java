@@ -11,6 +11,7 @@ import net.minecraft.nbt.StringNBT;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.dimension.DimensionType;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

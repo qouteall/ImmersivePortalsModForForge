@@ -41,7 +41,6 @@ public class PortalManipulation {
         newPortal.dimensionTo = portal.dimension;
         newPortal.setPosition(portal.destination.x, portal.destination.y, portal.destination.z);
         newPortal.destination = portal.getPositionVec();
-        newPortal.loadFewerChunks = portal.loadFewerChunks;
         newPortal.specificPlayer = portal.specificPlayer;
         
         newPortal.width = portal.width;
@@ -86,7 +85,6 @@ public class PortalManipulation {
         newPortal.dimensionTo = portal.dimensionTo;
         newPortal.setPosition(portal.getPosX(), portal.getPosY(), portal.getPosZ());
         newPortal.destination = portal.destination;
-        newPortal.loadFewerChunks = portal.loadFewerChunks;
         newPortal.specificPlayer = portal.specificPlayer;
         
         newPortal.width = portal.width;

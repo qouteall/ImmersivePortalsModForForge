@@ -3,7 +3,7 @@ buildscript {
         maven { url = 'https://files.minecraftforge.net/maven' }
         jcenter()
         mavenCentral()
-        maven {url='https://dist.creeper.host/Sponge/maven'}
+        maven { url = 'https://dist.creeper.host/Sponge/maven' }
     }
     dependencies {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
@@ -16,7 +16,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '0.7'
+version = '0.8'
 group = 'com.qouteall.immersive_portals' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'immersive-portals'
 
@@ -113,25 +113,27 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-
     //Mixin
     compile 'org.spongepowered:mixin:0.8.1-SNAPSHOT'
 
     compile files('ofstuff2.jar')
+
+    compile fg.deobf("ignored:curios-FORGE-1.15.2:2.0.2")
+    compile fg.deobf("ignored:Mine+and+Slash-1.15.2:3.4.1")
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..
 jar {
     manifest {
         attributes([
-                "Specification-Title": "imm_ptl",
-                "Specification-Vendor": "",
-                "Specification-Version": "1", // We are version 1 of ourselves
-                "Implementation-Title": project.name,
-                "Implementation-Version": "${version}",
-                "Implementation-Vendor" :"",
+                "Specification-Title"     : "imm_ptl",
+                "Specification-Vendor"    : "",
+                "Specification-Version"   : "1", // We are version 1 of ourselves
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : "${version}",
+                "Implementation-Vendor"   : "",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                "MixinConnector": "com.qouteall.hiding_in_the_bushes.MyMixinConnector"
+                "MixinConnector"          : "com.qouteall.hiding_in_the_bushes.MyMixinConnector"
         ])
     }
 }
@@ -163,13 +165,12 @@ repositories {
     jcenter()
     mavenCentral()
 
-    maven {url='https://dist.creeper.host/Sponge/maven'}
+    maven { url = 'https://dist.creeper.host/Sponge/maven' }
     //maven{url="https://minecraft.curseforge.com/api/maven/"}
 
-    //maven{url='file://C:/games/mc_modding/imm_ptl_forge/OptiFine_1.14.4_HD_U_F5.jar'}
-//    flatDir {
-//        dirs 'myof'
-//    }
+    flatDir {
+        dirs 'deps'
+    }
 
 }
 

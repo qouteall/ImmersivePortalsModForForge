@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals;
 
 import it.unimi.dsi.fastutil.floats.FloatConsumer;
+import net.minecraft.entity.Entity;
 import net.minecraft.world.dimension.DimensionType;
 
 import java.util.function.BiConsumer;
@@ -18,8 +19,6 @@ public class OFInterface {
     public static BooleanSupplier isShaders = returnFalse;
     
     public static BooleanSupplier isShadowPass = returnFalse;
-    
-    public static Runnable bindToShaderFrameBuffer = invokeNothing;
     
     public static FloatConsumer beforeRenderCenter = f -> {
     };
@@ -39,4 +38,7 @@ public class OFInterface {
     public static Runnable initShaderCullingManager = invokeNothing;
     
     public static BooleanSupplier isFogDisabled = returnFalse;
+    
+    public static Consumer<Entity> updateEntityTypeForShader = (a) -> {
+    };
 }

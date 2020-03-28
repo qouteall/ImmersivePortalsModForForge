@@ -251,7 +251,7 @@ public class ViewAreaRenderer {
         }
         
         GlStateManager.disableTexture();
-        CGlobal.myGameRenderer.endCulling();
+        PixelCuller.endCulling();
         
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
@@ -259,7 +259,7 @@ public class ViewAreaRenderer {
             fogColor,
             portal,
             bufferbuilder,
-            PortalRenderer.mc.gameRenderer.getActiveRenderInfo().getProjectedView(),
+            PortalRenderer.client.gameRenderer.getActiveRenderInfo().getProjectedView(),
             MyRenderHelper.partialTicks,
             portal instanceof Mirror ? 0 : 0.45F
         );
@@ -270,22 +270,25 @@ public class ViewAreaRenderer {
         }
         if (doFrontCulling) {
             if (CGlobal.renderer.isRendering()) {
-                CGlobal.myGameRenderer.updateCullingPlane(matrixStack);
-                CGlobal.myGameRenderer.startCulling();
+                PixelCuller.updateCullingPlaneInner(matrixStack, CGlobal.renderer.getRenderingPortal());
+                PixelCuller.loadCullingPlaneClassical(matrixStack);
+                PixelCuller.startClassicalCulling();
             }
         }
         
+        Minecraft.getInstance().getProfiler().startSection("draw");
         McHelper.runWithTransformation(
             matrixStack,
             () -> tessellator.draw()
         );
+        Minecraft.getInstance().getProfiler().endSection();
         
         if (shouldReverseCull) {
             MyRenderHelper.recoverFaceCulling();
         }
         if (doFrontCulling) {
             if (CGlobal.renderer.isRendering()) {
-                CGlobal.myGameRenderer.endCulling();
+                PixelCuller.endCulling();
             }
         }
         

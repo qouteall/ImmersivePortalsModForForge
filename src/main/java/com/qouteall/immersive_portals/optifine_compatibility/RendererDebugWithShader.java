@@ -3,7 +3,6 @@ package com.qouteall.immersive_portals.optifine_compatibility;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.PortalRenderer;
@@ -53,7 +52,7 @@ public class RendererDebugWithShader extends PortalRenderer {
         deferredBuffer.fb.setFramebufferColor(1, 0, 0, 0);
         deferredBuffer.fb.framebufferClear(Minecraft.IS_RUNNING_ON_MAC);
         
-        OFInterface.bindToShaderFrameBuffer.run();
+        OFGlobal.bindToShaderFrameBuffer.run();
         
     }
     
@@ -78,12 +77,12 @@ public class RendererDebugWithShader extends PortalRenderer {
         deferredBuffer.fb.bindFramebuffer(true);
         
         GlStateManager.activeTexture(GL13.GL_TEXTURE0);
-        mc.getFramebuffer().framebufferRender(
+        client.getFramebuffer().framebufferRender(
             deferredBuffer.fb.framebufferWidth,
             deferredBuffer.fb.framebufferHeight
         );
         
-        OFInterface.bindToShaderFrameBuffer.run();
+        OFGlobal.bindToShaderFrameBuffer.run();
     }
     
     @Override
@@ -92,7 +91,7 @@ public class RendererDebugWithShader extends PortalRenderer {
     ) {
         OFGlobal.shaderContextManager.switchContextAndRun(
             () -> {
-                OFInterface.bindToShaderFrameBuffer.run();
+                OFGlobal.bindToShaderFrameBuffer.run();
                 super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
             }
         );
@@ -109,7 +108,7 @@ public class RendererDebugWithShader extends PortalRenderer {
         }
         
         GlStateManager.enableAlphaTest();
-        Framebuffer mainFrameBuffer = mc.getFramebuffer();
+        Framebuffer mainFrameBuffer = client.getFramebuffer();
         mainFrameBuffer.bindFramebuffer(true);
         
         deferredBuffer.fb.framebufferRender(mainFrameBuffer.framebufferWidth, mainFrameBuffer.framebufferHeight);
