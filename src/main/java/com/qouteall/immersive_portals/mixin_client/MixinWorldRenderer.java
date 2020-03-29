@@ -15,6 +15,7 @@ import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.PixelCuller;
 import com.qouteall.immersive_portals.render.TransformationManager;
+import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -545,6 +546,23 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         MyRenderHelper.shouldForceDisableCull = false;
     }
     
+    //redirect sky rendering dimension
+    @Redirect(
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V"
+        )
+    )
+    private void redirectRenderSky(WorldRenderer worldRenderer, MatrixStack matrixStack, float f) {
+        MyGameRenderer.renderSkyFor(
+            RenderDimensionRedirect.getRedirectedDimension(
+                Minecraft.getInstance().world.dimension.getType()
+            ),
+            matrixStack,
+            f
+        );
+    }
     
     @Override
     public EntityRendererManager getEntityRenderDispatcher() {

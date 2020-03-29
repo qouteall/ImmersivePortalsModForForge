@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.world.ClientWorld;
@@ -37,17 +38,16 @@ public class MyClientChunkManager extends ClientChunkProvider {
     
     private final Long2ObjectLinkedOpenHashMap<Chunk> chunkMapNew = new Long2ObjectLinkedOpenHashMap<>();
     
-    public MyClientChunkManager(ClientWorld clientWorld_1, int int_1) {
-        super(clientWorld_1, int_1);
-        this.world = clientWorld_1;
-        this.emptyChunk = new EmptyChunk(clientWorld_1, new ChunkPos(0, 0));
+    public MyClientChunkManager(ClientWorld clientWorld, int int_1) {
+        super(clientWorld, int_1);
+        this.world = clientWorld;
+        this.emptyChunk = new EmptyChunk(clientWorld, new ChunkPos(0, 0));
         this.lightingProvider = new WorldLightManager(
             this,
             true,
-            clientWorld_1.getDimension().hasSkyLight()
+            RenderDimensionRedirect.hasSkylight(clientWorld.dimension.getType())
         );
-    
-    
+        
     }
     
     @Override
@@ -58,7 +58,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
     @Override
     public void unloadChunk(int int_1, int int_2) {
         synchronized (chunkMapNew) {
-    
+            
             ChunkPos chunkPos = new ChunkPos(int_1, int_2);
             Chunk worldChunk_1 = chunkMapNew.get(chunkPos.asLong());
             if (positionEquals(worldChunk_1, int_1, int_2)) {
@@ -74,7 +74,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
             if (positionEquals(worldChunk_1, int_1, int_2)) {
                 return worldChunk_1;
             }
-    
+            
             return boolean_1 ? this.emptyChunk : null;
         }
     }
@@ -95,7 +95,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
     ) {
         ChunkPos chunkPos = new ChunkPos(int_1, int_2);
         Chunk worldChunk_1;
-    
+        
         synchronized (chunkMapNew) {
             worldChunk_1 = (Chunk) chunkMapNew.get(chunkPos.asLong());
             if (!positionEquals(worldChunk_1, int_1, int_2)) {
@@ -107,7 +107,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
                     );
                     return null;
                 }
-        
+                
                 worldChunk_1 = new Chunk(this.world, chunkPos, biomeArray_1);
                 worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
                 chunkMapNew.put(chunkPos.asLong(), worldChunk_1);

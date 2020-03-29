@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
-import com.qouteall.immersive_portals.render.FogRendererContext;
+import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.FogRenderer;
