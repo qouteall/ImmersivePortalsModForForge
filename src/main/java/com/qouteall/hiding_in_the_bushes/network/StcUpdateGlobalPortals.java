@@ -47,7 +47,7 @@ public class StcUpdateGlobalPortals {
     private void clientOnlyHandle() {
         Minecraft.getInstance().execute(() -> {
             ClientWorld world =
-                CGlobal.clientWorldLoader.getOrCreateFakedWorld(dimensionType);
+                CGlobal.clientWorldLoader.getWorld(dimensionType);
             
             List<GlobalTrackedPortal> portals =
                 GlobalPortalStorage.getPortalsFromTag(data, world);

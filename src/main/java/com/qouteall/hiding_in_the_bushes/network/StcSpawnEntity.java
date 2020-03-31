@@ -71,7 +71,7 @@ public class StcSpawnEntity {
             return;
         }
         
-        ClientWorld world = CGlobal.clientWorldLoader.getOrCreateFakedWorld(dimension);
+        ClientWorld world = CGlobal.clientWorldLoader.getWorld(dimension);
         
         if (world.getEntityByID(entityId) != null) {
             Helper.err(String.format(
@@ -91,7 +91,7 @@ public class StcSpawnEntity {
     
         if (entity instanceof Portal) {
             //do not create client world while rendering or gl states will be disturbed
-            CGlobal.clientWorldLoader.getOrCreateFakedWorld(((Portal) entity).dimensionTo);
+            CGlobal.clientWorldLoader.getWorld(((Portal) entity).dimensionTo);
         }
     }
 }

@@ -6,10 +6,7 @@ import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
-import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.block_manipulation.HandReachTweak;
-import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkNeighborFix;
-import com.qouteall.immersive_portals.optifine_compatibility.OFInterfaceInitializer;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
 import com.qouteall.immersive_portals.portal.EndPortalEntity;
 import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
@@ -20,10 +17,10 @@ import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
-import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalMatcher;
 import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
 import com.qouteall.immersive_portals.render.LoadingIndicatorRenderer;
 import com.qouteall.immersive_portals.render.PortalEntityRenderer;
+import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
@@ -90,7 +87,7 @@ public class ModMainForge {
         
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
-    
+        
         ConfigClient.init();
         ConfigServer.init();
     }
@@ -139,6 +136,15 @@ public class ModMainForge {
             Helper.log("Do Check Gl Error: " + Global.doCheckGlError);
             Global.renderYourselfInPortal = ConfigClient.instance.renderYourselfInPortal.get();
             Global.maxPortalLayer = ConfigClient.instance.maxPortalLayer.get();
+            Global.correctCrossPortalEntityRendering =
+                ConfigClient.instance.correctCrossPortalEntityRendering.get();
+            RenderDimensionRedirect.updateIdMap(
+                ConfigClient.listToMap(
+                    Arrays.asList(
+                        ConfigClient.instance.renderDimensionRedirect.get().split("\n")
+                    )
+                )
+            );
         });
         
         initPortalRenderers();
@@ -158,6 +164,7 @@ public class ModMainForge {
         Global.longerReachInCreative = ConfigServer.instance.longReachInCreative.get();
         Global.activeLoading = ConfigServer.instance.activeLoadRemoteChunks.get();
         Global.teleportationDebugEnabled = ConfigServer.instance.teleportationDebug.get();
+        Global.loadFewerChunks = ConfigServer.instance.loadFewerChunks.get();
     }
     
     @SubscribeEvent
@@ -211,7 +218,7 @@ public class ModMainForge {
             );
         }
         ModMain.alternate1 = DimensionType.byName(resourceLocation);
-    
+        
         resourceLocation = new ResourceLocation("immersive_portals:alternate2");
         if (DimensionType.byName(resourceLocation) == null) {
             DimensionManager.registerDimension(
@@ -222,7 +229,7 @@ public class ModMainForge {
             );
         }
         ModMain.alternate2 = DimensionType.byName(resourceLocation);
-    
+        
         resourceLocation = new ResourceLocation("immersive_portals:alternate3");
         if (DimensionType.byName(resourceLocation) == null) {
             DimensionManager.registerDimension(
@@ -233,7 +240,7 @@ public class ModMainForge {
             );
         }
         ModMain.alternate3 = DimensionType.byName(resourceLocation);
-    
+        
         resourceLocation = new ResourceLocation("immersive_portals:alternate4");
         if (DimensionType.byName(resourceLocation) == null) {
             DimensionManager.registerDimension(
@@ -244,7 +251,7 @@ public class ModMainForge {
             );
         }
         ModMain.alternate4 = DimensionType.byName(resourceLocation);
-    
+        
         resourceLocation = new ResourceLocation("immersive_portals:alternate5");
         if (DimensionType.byName(resourceLocation) == null) {
             DimensionManager.registerDimension(
@@ -274,7 +281,7 @@ public class ModMainForge {
         @SubscribeEvent
         public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
             IForgeRegistry<Block> registry = blockRegistryEvent.getRegistry();
-    
+            
             PortalPlaceholderBlock.instance = new PortalPlaceholderBlock(
                 Block.Properties.create(Material.PORTAL)
                     .doesNotBlockMovement()
@@ -288,7 +295,7 @@ public class ModMainForge {
             registry.register(
                 PortalPlaceholderBlock.instance
             );
-    
+            
             ModMain.portalHelperBlock = new Block(Block.Properties.create(Material.IRON));
             ModMain.portalHelperBlock.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_helper")
@@ -297,11 +304,11 @@ public class ModMainForge {
                 ModMain.portalHelperBlock
             );
         }
-    
+        
         @SubscribeEvent
         public static void onItemRegistry(final RegistryEvent.Register<Item> event) {
             IForgeRegistry<Item> registry = event.getRegistry();
-        
+            
             ModMain.portalHelperBlockItem = new BlockItem(
                 ModMain.portalHelperBlock,
                 new Item.Properties().group(ItemGroup.MISC)
@@ -313,7 +320,7 @@ public class ModMainForge {
                 ModMain.portalHelperBlockItem
             );
         }
-    
+        
         @SubscribeEvent
         public static void onEntityRegistry(RegistryEvent.Register<EntityType<?>> event) {
             Portal.entityType = EntityType.Builder.create(
@@ -332,8 +339,8 @@ public class ModMainForge {
                     "immersive_portals:portal"
                 )
             );
-        
-        
+            
+            
             NewNetherPortalEntity.entityType = EntityType.Builder.create(
                 NewNetherPortalEntity::new, EntityClassification.MISC
             ).size(
@@ -347,7 +354,7 @@ public class ModMainForge {
                 NewNetherPortalEntity.entityType.setRegistryName(
                     "immersive_portals:nether_portal_new")
             );
-        
+            
             EndPortalEntity.entityType = EntityType.Builder.create(
                 EndPortalEntity::new, EntityClassification.MISC
             ).size(
@@ -360,7 +367,7 @@ public class ModMainForge {
             event.getRegistry().register(
                 EndPortalEntity.entityType.setRegistryName("immersive_portals:end_portal")
             );
-        
+            
             Mirror.entityType = EntityType.Builder.create(
                 Mirror::new, EntityClassification.MISC
             ).size(
@@ -373,7 +380,7 @@ public class ModMainForge {
             event.getRegistry().register(
                 Mirror.entityType.setRegistryName("immersive_portals:mirror")
             );
-        
+            
             BreakableMirror.entityType = EntityType.Builder.create(
                 BreakableMirror::new, EntityClassification.MISC
             ).size(
@@ -386,7 +393,7 @@ public class ModMainForge {
             event.getRegistry().register(
                 BreakableMirror.entityType.setRegistryName("immersive_portals:breakable_mirror")
             );
-        
+            
             GlobalTrackedPortal.entityType = EntityType.Builder.create(
                 GlobalTrackedPortal::new, EntityClassification.MISC
             ).size(
@@ -400,7 +407,7 @@ public class ModMainForge {
                 GlobalTrackedPortal.entityType.setRegistryName(
                     "immersive_portals:global_tracked_portal")
             );
-        
+            
             BorderPortal.entityType = EntityType.Builder.create(
                 BorderPortal::new, EntityClassification.MISC
             ).size(
@@ -413,7 +420,7 @@ public class ModMainForge {
             event.getRegistry().register(
                 BorderPortal.entityType.setRegistryName("immersive_portals:border_portal")
             );
-        
+            
             VerticalConnectingPortal.entityType = EntityType.Builder.create(
                 VerticalConnectingPortal::new, EntityClassification.MISC
             ).size(
@@ -427,7 +434,7 @@ public class ModMainForge {
                 VerticalConnectingPortal.entityType.setRegistryName(
                     "immersive_portals:end_floor_portal")
             );
-        
+            
             LoadingIndicatorEntity.entityType = EntityType.Builder.create(
                 LoadingIndicatorEntity::new, EntityClassification.MISC
             ).size(
@@ -450,32 +457,32 @@ public class ModMainForge {
             );
             AlternateDimensionEntry.instance1.setRegistryName("immersive_portals:alternate1");
             event.getRegistry().register(AlternateDimensionEntry.instance1);
-    
+            
             AlternateDimensionEntry.instance2 = new AlternateDimensionEntry(
                 AlternateDimension::getChunkGenerator2
             );
             AlternateDimensionEntry.instance2.setRegistryName("immersive_portals:alternate2");
             event.getRegistry().register(AlternateDimensionEntry.instance2);
-    
+            
             AlternateDimensionEntry.instance3 = new AlternateDimensionEntry(
                 AlternateDimension::getChunkGenerator3
             );
             AlternateDimensionEntry.instance3.setRegistryName("immersive_portals:alternate3");
             event.getRegistry().register(AlternateDimensionEntry.instance3);
-    
+            
             AlternateDimensionEntry.instance4 = new AlternateDimensionEntry(
                 AlternateDimension::getChunkGenerator4
             );
             AlternateDimensionEntry.instance4.setRegistryName("immersive_portals:alternate4");
             event.getRegistry().register(AlternateDimensionEntry.instance4);
-    
+            
             AlternateDimensionEntry.instance5 = new AlternateDimensionEntry(
                 AlternateDimension::getChunkGenerator5
             );
             AlternateDimensionEntry.instance5.setRegistryName("immersive_portals:alternate5");
             event.getRegistry().register(AlternateDimensionEntry.instance5);
         }
-    
+        
         @SubscribeEvent
         public static void onEffectRegistry(RegistryEvent.Register<Effect> event) {
             Effect.class.hashCode();
@@ -493,7 +500,7 @@ public class ModMainForge {
                 HandReachTweak.longerReachEffect
             );
         }
-    
+        
         @SubscribeEvent
         public static void onPotionRegistry(RegistryEvent.Register<Potion> event) {
             HandReachTweak.longerReachPotion = new Potion(
@@ -508,4 +515,5 @@ public class ModMainForge {
             );
         }
     }
+    
 }

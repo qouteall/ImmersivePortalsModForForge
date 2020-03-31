@@ -72,7 +72,7 @@ public class StcRedirected {
     ) {
         Minecraft mc = Minecraft.getInstance();
         
-        ClientWorld packetWorld = CGlobal.clientWorldLoader.getOrCreateFakedWorld(dimension);
+        ClientWorld packetWorld = CGlobal.clientWorldLoader.getWorld(dimension);
         
         assert packetWorld != null;
         

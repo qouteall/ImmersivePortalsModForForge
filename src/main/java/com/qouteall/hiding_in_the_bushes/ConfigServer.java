@@ -12,6 +12,7 @@ public class ConfigServer {
     public final ForgeConfigSpec.BooleanValue longReachInCreative;
     public final ForgeConfigSpec.BooleanValue activeLoadRemoteChunks;
     public final ForgeConfigSpec.BooleanValue teleportationDebug;
+    public final ForgeConfigSpec.BooleanValue loadFewerChunks;
     
     public ConfigServer(ForgeConfigSpec.Builder builder) {
         portalSearchingRange = builder
@@ -26,6 +27,9 @@ public class ConfigServer {
         teleportationDebug = builder
             .comment("Teleportation Debug")
             .define("teleportation_debug", false);
+        loadFewerChunks = builder
+            .comment("Load Fewer Chunks")
+            .define("load_fewer_chunks", false);
     }
     
     static {
