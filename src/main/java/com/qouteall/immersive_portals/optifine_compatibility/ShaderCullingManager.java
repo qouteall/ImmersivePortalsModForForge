@@ -10,7 +10,6 @@ import net.optifine.shaders.uniform.ShaderUniform3f;
 import net.optifine.shaders.uniform.ShaderUniforms;
 import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.regex.Matcher;
@@ -34,7 +33,7 @@ public class ShaderCullingManager {
     
     public static boolean cullingEnabled = true;
     
-    public static void init() {
+    private static void init() {
         try {
             InputStream inputStream =
                 Minecraft.getInstance().getResourceManager().getResource(
@@ -42,8 +41,9 @@ public class ShaderCullingManager {
                 ).getInputStream();
             
             toReplace = IOUtils.toString(inputStream, Charset.defaultCharset());
+            Helper.log("Loaded Shader Code Replacement");
         }
-        catch (IOException e) {
+        catch (Throwable e) {
             throw new IllegalArgumentException(e);
         }
         
@@ -55,6 +55,10 @@ public class ShaderCullingManager {
     public static StringBuilder modifyFragShaderCode(StringBuilder rawCode) {
         if (!cullingEnabled) {
             return rawCode;
+        }
+        
+        if (toReplace == null) {
+            init();
         }
         
         if (toReplace == null) {

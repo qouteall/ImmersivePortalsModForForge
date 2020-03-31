@@ -39,7 +39,7 @@ public class O_O {
         ServerWorld fromWorld,
         Entity entity
     ) {
-        fromWorld.removeEntity(entity, false);
+        fromWorld.removeEntity(entity, true);
         entity.revive();
     }
     
@@ -47,7 +47,7 @@ public class O_O {
         ServerWorld fromWorld,
         ServerPlayerEntity player
     ) {
-        fromWorld.removePlayer(player, false);
+        fromWorld.removePlayer(player, true);
         player.revive();
     }
     

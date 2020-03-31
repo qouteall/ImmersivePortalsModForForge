@@ -2,10 +2,13 @@
   "required": true,
   "package": "com.qouteall.immersive_portals.optifine_compatibility.mixin_optifine",
   "compatibilityLevel": "JAVA_8",
+  "refmap": "imm_ptl.refmap.json",
   "mixins": [
-    "MOConfig",
-    "MOShaders",
-    "MOShadersRender"
+    "MixinConfig",
+    "MixinShaders",
+    "MixinShaders_DimensionRedirect",
+    "MixinShaders_Swap",
+    "MixinShadersRender"
   ],
   "injectors": {
     "defaultRequire": 1

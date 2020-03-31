@@ -4,7 +4,6 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
-import com.qouteall.immersive_portals.block_manipulation.BlockManipulationClient;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
@@ -44,6 +43,9 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     @Shadow
     private boolean debugView;
     
+    @Shadow
+    public abstract void resetProjectionMatrix(Matrix4f matrix4f);
+    
     @Inject(method = "Lnet/minecraft/client/renderer/GameRenderer;updateCameraAndRender(FJZ)V", at = @At("HEAD"))
     private void onFarBeforeRendering(
         float partialTicks,
@@ -73,7 +75,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         CallbackInfo ci
     ) {
         ModMainClient.switchToCorrectRenderer();
-    
+        
         CGlobal.renderer.prepareRendering();
     }
     
@@ -93,7 +95,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         CallbackInfo ci
     ) {
         CGlobal.renderer.finishRendering();
-    
+        
         MyRenderHelper.onTotalRenderEnd();
     }
     
@@ -121,21 +123,6 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         }
     }
     
-    //do not update target when rendering portal
-    @Redirect(
-        method = "Lnet/minecraft/client/renderer/GameRenderer;renderWorld(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/GameRenderer;getMouseOver(F)V"
-        )
-    )
-    private void redirectUpdateTargetedEntity(GameRenderer gameRenderer, float tickDelta) {
-        if (!CGlobal.renderer.isRendering()) {
-            gameRenderer.getMouseOver(tickDelta);
-            BlockManipulationClient.onPointedBlockUpdated(tickDelta);
-        }
-    }
-    
     //View bobbing will make the camera pos offset to actuall camera pos
     //Teleportation is based on camera pos. If the teleportation is incorrect
     //then rendering will have problem
@@ -152,14 +139,45 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         matrixStack.translate(x * viewBobFactor, y * viewBobFactor, z * viewBobFactor);
     }
     
-    //gather world rendering projection matrix
-    @Inject(
-        method = "Lnet/minecraft/client/renderer/GameRenderer;resetProjectionMatrix(Lnet/minecraft/client/renderer/Matrix4f;)V",
-        at = @At("HEAD")
+    @Redirect(
+        method = "Lnet/minecraft/client/renderer/GameRenderer;renderWorld(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;resetProjectionMatrix(Lnet/minecraft/client/renderer/Matrix4f;)V"
+        )
     )
-    private void onLoadProjectionMatrix(Matrix4f matrix4f, CallbackInfo ci) {
-        if (MyRenderHelper.projectionMatrix == null) {
-            MyRenderHelper.projectionMatrix = matrix4f;
+    private void redirectLoadProjectionMatrix(GameRenderer gameRenderer, Matrix4f matrix4f) {
+        if (CGlobal.renderer.isRendering()) {
+            //load recorded projection matrix
+            resetProjectionMatrix(MyRenderHelper.projectionMatrix);
+        }
+        else {
+            //load projection matrix normally
+            resetProjectionMatrix(matrix4f);
+            
+            //record projection matrix
+            if (MyRenderHelper.projectionMatrix == null) {
+                MyRenderHelper.projectionMatrix = matrix4f;
+            }
+        }
+    }
+    
+    @Inject(
+        method = "Lnet/minecraft/client/renderer/GameRenderer;renderWorld(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/ActiveRenderInfo;update(Lnet/minecraft/world/IBlockReader;Lnet/minecraft/entity/Entity;ZZF)V",
+            shift = At.Shift.AFTER
+        )
+    )
+    private void onCameraUpdated(
+        float tickDelta,
+        long limitTime,
+        MatrixStack matrix,
+        CallbackInfo ci
+    ) {
+        if (CGlobal.renderer.isRendering()) {
+            MyRenderHelper.adjustCameraPos(activeRender);
         }
     }
     

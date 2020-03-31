@@ -45,15 +45,16 @@ public class ServerTeleportationManager {
     }
     
     public void tryToTeleportRegularEntity(Portal portal, Entity entity) {
-        if (!(entity instanceof ServerPlayerEntity)) {
-            if (entity.getRidingEntity() != null || doesEntityClutterContainPlayer(entity)) {
-                return;
-            }
-            ModMain.serverTaskList.addTask(() -> {
-                teleportRegularEntity(entity, portal);
-                return true;
-            });
+        if (entity instanceof ServerPlayerEntity) {
+            return;
         }
+        if (entity.getRidingEntity() != null || doesEntityClutterContainPlayer(entity)) {
+            return;
+        }
+        ModMain.serverTaskList.addTask(() -> {
+            teleportRegularEntity(entity, portal);
+            return true;
+        });
     }
     
     private static Stream<Entity> getEntitiesToTeleport(Portal portal) {
@@ -350,18 +351,28 @@ public class ServerTeleportationManager {
         if (entity.isPassenger() || doesEntityClutterContainPlayer(entity)) {
             return;
         }
+    
+        Vec3d velocity = entity.getMotion();
+        
+        List<Entity> passengerList = entity.getPassengers();
         
         Vec3d newEyePos = portal.transformPoint(McHelper.getEyePos(entity));
         
         if (portal.dimensionTo != entity.dimension) {
             changeEntityDimension(entity, portal.dimensionTo, newEyePos);
+            for (Entity passenger : passengerList) {
+                changeEntityDimension(passenger, portal.dimensionTo, newEyePos);
+            }
+            for (Entity passenger : passengerList) {
+                passenger.startRiding(entity, true);
+            }
         }
         
         McHelper.setEyePos(
             entity, newEyePos, newEyePos
         );
         
-        entity.setMotion(portal.transformLocalVec(entity.getMotion()));
+        entity.setMotion(portal.transformLocalVec(velocity));
         
         portal.onEntityTeleportedOnServer(entity);
     }

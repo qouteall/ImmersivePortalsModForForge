@@ -278,7 +278,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         ActiveRenderInfo camera = Minecraft.getInstance().gameRenderer.getActiveRenderInfo();
         if (entity == camera.getRenderViewEntity()) {
             if (CGlobal.renderer.shouldRenderPlayerItself()) {
-                CGlobal.myGameRenderer.renderPlayerItself(() -> {
+                MyGameRenderer.renderPlayerItself(() -> {
                     CrossPortalEntityRenderer.beforeRenderingEntity(entity, matrixStack);
                     renderEntity(
                         entity,

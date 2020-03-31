@@ -79,4 +79,9 @@ public abstract class MixinCamera implements IECamera {
         height = cameraY_;
         previousHeight = lastCameraY_;
     }
+    
+    @Override
+    public void mySetPos(Vec3d pos) {
+        setPostion(pos);
+    }
 }

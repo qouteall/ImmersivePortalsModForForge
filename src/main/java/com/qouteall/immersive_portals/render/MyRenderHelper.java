@@ -8,6 +8,7 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
+import com.qouteall.immersive_portals.ducks.IECamera;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.portal.Mirror;
@@ -15,6 +16,7 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
+import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Matrix4f;
 import net.minecraft.client.renderer.Tessellator;
@@ -71,6 +73,7 @@ public class MyRenderHelper {
     
     //null indicates not gathered
     public static Matrix4f projectionMatrix;
+    public static ActiveRenderInfo originalCamera;
     
     public static void updatePreRenderInfo(
         float partialTicks_
@@ -87,19 +90,20 @@ public class MyRenderHelper {
         NetworkPlayerInfo entry = CHelper.getClientPlayerListEntry();
         MyRenderHelper.originalGameMode = entry != null ? entry.getGameType() : GameType.CREATIVE;
         partialTicks = partialTicks_;
-    
+        
         renderedDimensions.clear();
         lastPortalRenderInfos = portalRenderInfos;
         portalRenderInfos = new ArrayList<>();
-    
+        
         FogRendererContext.update();
-    
+        
         renderStartNanoTime = System.nanoTime();
-    
+        
         updateViewBobbingFactor(cameraEntity);
-    
+        
         projectionMatrix = null;
-    
+        originalCamera = Minecraft.getInstance().gameRenderer.getActiveRenderInfo();
+        
     }
     
     private static void updateViewBobbingFactor(Entity cameraEntity) {
@@ -165,7 +169,7 @@ public class MyRenderHelper {
         ).collect(Collectors.toList());
         portalRenderInfos.add(currRenderInfo);
         renderedDimensions.add(portalLayers.peek().dimensionTo);
-    
+        
         CHelper.checkGlError();
     }
     
@@ -190,7 +194,7 @@ public class MyRenderHelper {
             matrixStack,
             () -> {
                 shaderManager.loadContentShaderAndShaderVars(0);
-    
+                
                 if (OFInterface.isShaders.getAsBoolean()) {
                     GlStateManager.viewport(
                         0,
@@ -199,20 +203,20 @@ public class MyRenderHelper {
                         PortalRenderer.client.getFramebuffer().framebufferHeight
                     );
                 }
-    
+                
                 GlStateManager.enableTexture();
                 GlStateManager.activeTexture(GL13.GL_TEXTURE0);
-    
+                
                 GlStateManager.bindTexture(textureProvider.framebufferTexture);
                 GlStateManager.texParameter(3553, 10241, 9729);
                 GlStateManager.texParameter(3553, 10240, 9729);
                 GlStateManager.texParameter(3553, 10242, 10496);
                 GlStateManager.texParameter(3553, 10243, 10496);
-    
+                
                 ViewAreaRenderer.drawPortalViewTriangle(portal, matrixStack, false, false);
-    
+                
                 shaderManager.unloadShader();
-    
+                
                 OFInterface.resetViewport.run();
             }
         );
@@ -275,10 +279,10 @@ public class MyRenderHelper {
         boolean doEnableModifyAlpha
     ) {
         CHelper.checkGlError();
-    
+        
         int int_1 = textureProvider.framebufferWidth;
         int int_2 = textureProvider.framebufferHeight;
-    
+        
         RenderSystem.assertThread(RenderSystem::isOnRenderThread);
         if (doEnableModifyAlpha) {
             GlStateManager.colorMask(true, true, true, true);
@@ -344,12 +348,12 @@ public class MyRenderHelper {
         textureProvider.unbindFramebufferTexture();
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
-    
+        
         GlStateManager.matrixMode(GL_PROJECTION);
         GlStateManager.popMatrix();
         GlStateManager.matrixMode(GL_MODELVIEW);
         GlStateManager.popMatrix();
-    
+        
         CHelper.checkGlError();
     }
     
@@ -403,5 +407,13 @@ public class MyRenderHelper {
             }
         }
         return number % 2 == 1;
+    }
+    
+    public static void adjustCameraPos(ActiveRenderInfo camera) {
+        Vec3d pos = originalCamera.getProjectedView();
+        for (Portal portal : CGlobal.renderer.portalLayers) {
+            pos = portal.transformPoint(pos);
+        }
+        ((IECamera) camera).mySetPos(pos);
     }
 }

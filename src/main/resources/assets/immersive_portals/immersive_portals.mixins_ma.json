@@ -8,6 +8,7 @@
     "block_manipulation/MixinItem",
     "block_manipulation/MixinServerPlayerInteractionManager",
     "block_manipulation/MixinServerPlayNetworkHandler_B",
+    "MixinContainerMinecartEntity",
     "MixinDimensionType",
     "MixinForgeDimensionManager",
     "MixinForgeNetworkHooks",

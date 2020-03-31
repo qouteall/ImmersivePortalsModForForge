@@ -16,7 +16,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '0.9'
+version = '0.10'
 group = 'com.qouteall.immersive_portals' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'immersive-portals'
 
@@ -118,8 +118,9 @@ dependencies {
 
     compileOnly files('ofstuff2.jar')
 
-    compile fg.deobf("ignored:curios-FORGE-1.15.2:2.0.2")
-    compile fg.deobf("ignored:Mine+and+Slash-1.15.2:3.4.1")
+    //compile fg.deobf("ignored:curios-FORGE-1.15.2:2.0.2")
+    //compile fg.deobf("ignored:Mine+and+Slash-1.15.2:3.4.1")
+//    compile fg.deobf("ignored:OptiForge:MC1.15.2-0.1.6")
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..
