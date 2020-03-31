@@ -116,7 +116,7 @@ dependencies {
     //Mixin
     compile 'org.spongepowered:mixin:0.8.1-SNAPSHOT'
 
-    compile files('ofstuff2.jar')
+    compileOnly files('ofstuff2.jar')
 
     compile fg.deobf("ignored:curios-FORGE-1.15.2:2.0.2")
     compile fg.deobf("ignored:Mine+and+Slash-1.15.2:3.4.1")
