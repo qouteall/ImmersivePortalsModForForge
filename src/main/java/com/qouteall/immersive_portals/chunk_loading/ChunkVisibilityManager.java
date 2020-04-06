@@ -9,8 +9,12 @@ import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.dimension.DimensionType;
-
+import net.minecraft.world.gen.WorldGenRegion;
+import net.minecraft.world.server.ServerWorld;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -43,6 +47,23 @@ public class ChunkVisibilityManager {
                     );
                 }
             }
+        }
+        
+        public WorldGenRegion createChunkRegion() {
+            ServerWorld world = McHelper.getServer().getWorld(center.dimension);
+            
+            int width = radius * 2 + 1;
+            List<IChunk> chunks = new ArrayList<>();
+            
+            for (int z = center.z - radius; z <= center.z + radius; z++) {
+                for (int x = center.x - radius; x <= center.x + radius; x++) {
+                    chunks.add(world.getChunk(x, z));
+                }
+            }
+            
+            return new WorldGenRegion(
+                world, chunks
+            );
         }
         
         @Override

@@ -8,6 +8,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
@@ -83,7 +84,19 @@ public class O_O {
         
     }
     
-    public static boolean detectOptiFine(){
+    public static boolean detectOptiFine() {
         return MyMixinConnector.getIsOptifinePresent();
+    }
+    
+    public static void postChunkUnloadEventForge(Chunk chunk) {
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+            new net.minecraftforge.event.world.ChunkEvent.Unload(chunk)
+        );
+    }
+    
+    public static void postChunkLoadEventForge(Chunk chunk) {
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+            new net.minecraftforge.event.world.ChunkEvent.Load(chunk)
+        );
     }
 }

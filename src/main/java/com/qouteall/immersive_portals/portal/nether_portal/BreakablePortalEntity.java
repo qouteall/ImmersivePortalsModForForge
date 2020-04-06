@@ -1,36 +1,26 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
-import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.portal.IBreakablePortal;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.particles.ParticleTypes;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.SoundEvents;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import java.util.Random;
 import java.util.UUID;
 
-public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
-    public static EntityType<NewNetherPortalEntity> entityType;
-    
+public abstract class BreakablePortalEntity extends Portal {
     public BlockPortalShape blockPortalShape;
     public UUID reversePortalId;
     public boolean unbreakable = false;
-    
     private boolean isNotified = true;
-    private boolean shouldBreakNetherPortal = false;
+    private boolean shouldBreakPortal = false;
     
-    public NewNetherPortalEntity(
+    public BreakablePortalEntity(
         EntityType<?> entityType_1,
         World world_1
     ) {
@@ -65,11 +55,10 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
         compoundTag.putBoolean("unbreakable", unbreakable);
     }
     
-    
     private void breakPortalOnThisSide() {
-        assert shouldBreakNetherPortal;
+        assert shouldBreakPortal;
         assert !removed;
-    
+        
         blockPortalShape.area.forEach(
             blockPos -> {
                 if (world.getBlockState(blockPos).getBlock() == PortalPlaceholderBlock.instance) {
@@ -84,16 +73,21 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
         Helper.log("Broke " + this);
     }
     
-    @Override
     public void notifyPlaceholderUpdate() {
         isNotified = true;
     }
     
-    private NewNetherPortalEntity getReversePortal() {
+    private BreakablePortalEntity getReversePortal() {
         assert !world.isRemote;
         
         ServerWorld world = getServer().getWorld(dimensionTo);
-        return (NewNetherPortalEntity) world.getEntityByUuid(reversePortalId);
+        Entity entity = world.getEntityByUuid(reversePortalId);
+        if (entity instanceof BreakablePortalEntity) {
+            return (BreakablePortalEntity) entity;
+        }
+        else {
+            return null;
+        }
     }
     
     @Override
@@ -109,7 +103,7 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
                     isNotified = false;
                     checkPortalIntegrity();
                 }
-                if (shouldBreakNetherPortal) {
+                if (shouldBreakPortal) {
                     breakPortalOnThisSide();
                 }
             }
@@ -126,64 +120,16 @@ public class NewNetherPortalEntity extends Portal implements IBreakablePortal {
         }
         
         if (!isPortalIntactOnThisSide()) {
-            shouldBreakNetherPortal = true;
-            NewNetherPortalEntity reversePortal = getReversePortal();
+            shouldBreakPortal = true;
+            BreakablePortalEntity reversePortal = getReversePortal();
             if (reversePortal != null) {
-                reversePortal.shouldBreakNetherPortal = true;
+                reversePortal.shouldBreakPortal = true;
             }
         }
     }
     
-    protected boolean isPortalIntactOnThisSide() {
-        assert McHelper.getServer() != null;
-    
-        return blockPortalShape.area.stream()
-            .allMatch(blockPos ->
-                world.getBlockState(blockPos).getBlock() == PortalPlaceholderBlock.instance
-            ) &&
-            blockPortalShape.frameAreaWithoutCorner.stream()
-                .allMatch(blockPos ->
-                    O_O.isObsidian(world, blockPos)
-                );
-    }
+    protected abstract boolean isPortalIntactOnThisSide();
     
     @OnlyIn(Dist.CLIENT)
-    protected void addSoundAndParticle() {
-        Random random = world.getRandom();
-        
-        for (int i = 0; i < (int) Math.ceil(width * height / 20); i++) {
-            if (random.nextInt(8) == 0) {
-                double px = (random.nextDouble() * 2 - 1) * (width / 2);
-                double py = (random.nextDouble() * 2 - 1) * (height / 2);
-                
-                Vec3d pos = getPointInPlane(px, py);
-                
-                double speedMultiplier = 20;
-                
-                double vx = speedMultiplier * ((double) random.nextFloat() - 0.5D) * 0.5D;
-                double vy = speedMultiplier * ((double) random.nextFloat() - 0.5D) * 0.5D;
-                double vz = speedMultiplier * ((double) random.nextFloat() - 0.5D) * 0.5D;
-                
-                world.addParticle(
-                    ParticleTypes.PORTAL,
-                    pos.x, pos.y, pos.z,
-                    vx, vy, vz
-                );
-            }
-        }
-        
-        if (random.nextInt(400) == 0) {
-            world.playSound(
-                getPosX(),
-                getPosY(),
-                getPosZ(),
-                SoundEvents.BLOCK_PORTAL_AMBIENT,
-                SoundCategory.BLOCKS,
-                0.5F,
-                random.nextFloat() * 0.4F + 0.8F,
-                false
-            );
-        }
-    }
-    
+    protected abstract void addSoundAndParticle();
 }

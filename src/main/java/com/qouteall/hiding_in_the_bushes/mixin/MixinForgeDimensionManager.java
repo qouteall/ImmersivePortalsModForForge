@@ -1,7 +1,9 @@
 package com.qouteall.hiding_in_the_bushes.mixin;
 
 import com.qouteall.hiding_in_the_bushes.DimensionSyncManager;
+import com.qouteall.hiding_in_the_bushes.ModMainForge;
 import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimensionEntry;
+import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
@@ -18,8 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = DimensionManager.class, remap = false)
 public class
 MixinForgeDimensionManager {
-    //Forge is trying to unload my alternate dimension again and again
-    //avoid log spam
     @Inject(
         method = "canUnloadWorld",
         at = @At("HEAD"),
@@ -28,7 +28,10 @@ MixinForgeDimensionManager {
     private static void onCanUnloadWorld(ServerWorld world, CallbackInfoReturnable<Boolean> cir) {
         
         DimensionType type = world.dimension.getType();
-        if (type.isVanilla() || type.getModType() instanceof AlternateDimensionEntry) {
+        if (ModMainForge.disableDimensionUnload ||
+            type.isVanilla() ||
+            NewChunkTrackingGraph.shouldLoadDimension(type)
+        ) {
             cir.setReturnValue(false);
             cir.cancel();
         }

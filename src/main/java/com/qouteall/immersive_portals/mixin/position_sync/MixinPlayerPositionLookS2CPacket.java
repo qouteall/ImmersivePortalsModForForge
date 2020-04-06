@@ -23,18 +23,17 @@ public class MixinPlayerPositionLookS2CPacket implements IEPlayerPositionLookS2C
         playerDimension = dimension;
     }
     
-    @Inject(
-        method = "Lnet/minecraft/network/play/server/SPlayerPositionLookPacket;readPacketData(Lnet/minecraft/network/PacketBuffer;)V",
-        at = @At("HEAD")
-    )
+    @Inject(method = "Lnet/minecraft/network/play/server/SPlayerPositionLookPacket;readPacketData(Lnet/minecraft/network/PacketBuffer;)V", at = @At("HEAD"))
     private void onRead(PacketBuffer packetByteBuf_1, CallbackInfo ci) {
-        playerDimension = DimensionType.getById(packetByteBuf_1.readInt());
+        try {
+            playerDimension = DimensionType.getById(packetByteBuf_1.readInt());
+        }
+        catch (IndexOutOfBoundsException e) {
+            throw new RuntimeException("The server doesn't install Immmersive Portals Mod");
+        }
     }
     
-    @Inject(
-        method = "Lnet/minecraft/network/play/server/SPlayerPositionLookPacket;writePacketData(Lnet/minecraft/network/PacketBuffer;)V",
-        at = @At("HEAD")
-    )
+    @Inject(method = "Lnet/minecraft/network/play/server/SPlayerPositionLookPacket;writePacketData(Lnet/minecraft/network/PacketBuffer;)V", at = @At("HEAD"))
     private void onWrite(PacketBuffer packetByteBuf_1, CallbackInfo ci) {
         packetByteBuf_1.writeInt(playerDimension.getId());
     }

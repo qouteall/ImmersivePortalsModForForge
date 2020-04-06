@@ -13,6 +13,7 @@ public class ConfigServer {
     public final ForgeConfigSpec.BooleanValue activeLoadRemoteChunks;
     public final ForgeConfigSpec.BooleanValue teleportationDebug;
     public final ForgeConfigSpec.BooleanValue loadFewerChunks;
+    public final ForgeConfigSpec.BooleanValue multiThreadedNetherPortalSearching;
     
     public ConfigServer(ForgeConfigSpec.Builder builder) {
         portalSearchingRange = builder
@@ -30,6 +31,9 @@ public class ConfigServer {
         loadFewerChunks = builder
             .comment("Load Fewer Chunks")
             .define("load_fewer_chunks", false);
+        multiThreadedNetherPortalSearching = builder
+            .comment("Multi Threaded Nether Portal Searching")
+            .define("multi_threaded_nether_portal_searching", true);
     }
     
     static {

@@ -3,7 +3,6 @@ package com.qouteall.immersive_portals.render;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Global;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.OFInterface;
@@ -80,7 +79,7 @@ public class CrossPortalEntityRenderer {
             if (collidedEntities.containsKey(entity)) {
                 Portal collidingPortal = ((IEEntity) entity).getCollidingPortal();
                 if (collidingPortal == null) {
-                    Helper.err("Colliding Portal Record Invalid " + entity);
+                    //Helper.err("Colliding Portal Record Invalid " + entity);
                     return;
                 }
                 
@@ -121,7 +120,7 @@ public class CrossPortalEntityRenderer {
         collidedEntities.keySet().forEach(entity -> {
             Portal collidingPortal = ((IEEntity) entity).getCollidingPortal();
             if (collidingPortal == null) {
-                Helper.err("Colliding Portal Record Invalid " + entity);
+                //Helper.err("Colliding Portal Record Invalid " + entity);
                 return;
             }
             if (collidingPortal instanceof Mirror) {
@@ -188,8 +187,11 @@ public class CrossPortalEntityRenderer {
         
         Vec3d newEyePos = transformingPortal.transformPoint(oldEyePos);
         
-        if (newEyePos.squareDistanceTo(cameraPos) < 1) {
-            return;
+        if (entity instanceof ClientPlayerEntity) {
+            //avoid rendering player too near and block view
+            if (newEyePos.squareDistanceTo(cameraPos) < 0.5 + entity.getMotion().lengthSquared()) {
+                return;
+            }
         }
         
         McHelper.setEyePos(

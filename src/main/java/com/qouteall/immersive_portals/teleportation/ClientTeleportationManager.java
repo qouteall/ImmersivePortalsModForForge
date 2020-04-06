@@ -152,12 +152,12 @@ public class ClientTeleportationManager {
         if (player.getRidingEntity() != null) {
             disableTeleportFor(40);
         }
-    
+        
         //update colliding portal
 //        ((IEEntity) player).tickCollidingPortal();
     }
     
-    private boolean isTeleportingFrequently() {
+    public boolean isTeleportingFrequently() {
         if (tickTimeForTeleportation - lastTeleportGameTime <= 20) {
             return true;
         }

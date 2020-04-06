@@ -3,7 +3,8 @@ package com.qouteall.hiding_in_the_bushes.alternate_dimension;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.alternate_dimension.ChaosBiomeSource;
 import com.qouteall.immersive_portals.alternate_dimension.ErrorTerrainGenerator;
-import com.qouteall.immersive_portals.alternate_dimension.MyFloatingIslandChunkGenerator;
+import com.qouteall.immersive_portals.alternate_dimension.NormalSkylandGenerator;
+import com.qouteall.immersive_portals.alternate_dimension.StretchedSkylandGenerator;
 import com.qouteall.immersive_portals.alternate_dimension.VoidChunkGenerator;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
@@ -70,7 +71,7 @@ public class AlternateDimension extends Dimension {
         generationSettings.setDefaultBlock(Blocks.STONE.getDefaultState());
         generationSettings.setDefaultFluid(Blocks.AIR.getDefaultState());
         generationSettings.setSpawnPos(this.getSpawnCoordinate());
-        return ChunkGeneratorType.FLOATING_ISLANDS.create(
+        return new NormalSkylandGenerator(
             this.world,
             newBiomeSource,
             generationSettings
@@ -101,7 +102,7 @@ public class AlternateDimension extends Dimension {
         generationSettings.setSpawnPos(this.getSpawnCoordinate());
         
         
-        return new MyFloatingIslandChunkGenerator(
+        return new StretchedSkylandGenerator(
             world,
             new ChaosBiomeSource(world.getSeed()),
             generationSettings

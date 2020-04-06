@@ -1,11 +1,9 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
-import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.my_util.IntBox;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.Direction;
-import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.IWorld;
@@ -43,9 +41,6 @@ public class NetherPortalMatcher {
             );
     }
     
-    //------------------------------------------------------------
-    //detect frame from inner pos
-    
     public static final int maxFrameSize = 40;
     public static final IntBox heightLimitOverworld = new IntBox(
         new BlockPos(Integer.MIN_VALUE, 2, Integer.MIN_VALUE),
@@ -60,104 +55,6 @@ public class NetherPortalMatcher {
         DimensionType dimension
     ) {
         return dimension == DimensionType.THE_NETHER ? heightLimitNether : heightLimitOverworld;
-    }
-    
-    @Deprecated
-    //return null for no legal obsidian frame
-    public static ObsidianFrame detectFrameFromInnerPos(
-        IWorld world,
-        BlockPos innerPos,
-        Direction.Axis normalAxis,
-        Predicate<IntBox> innerAreaFilter
-    ) {
-        if (!isAirOrFire(world, innerPos)) {
-            return null;
-        }
-        
-        Tuple<Direction.Axis, Direction.Axis> anotherTwoAxis = Helper.getAnotherTwoAxis(normalAxis);
-        
-        IntBox innerArea = detectInnerArea(
-            world,
-            innerPos,
-            normalAxis,
-            anotherTwoAxis
-        );
-        
-        if (innerArea == null) {
-            return null;
-        }
-        
-        if (!innerAreaFilter.test(innerArea)) {
-            return null;
-        }
-        
-        if (!isObsidianFrameIntact(world, normalAxis, innerArea)) {
-            return null;
-        }
-        
-        return new ObsidianFrame(normalAxis, innerArea);
-    }
-    
-    @Deprecated
-    public static ObsidianFrame detectFrameFromInnerPos(
-        IWorld world,
-        BlockPos innerPos,
-        Direction.Axis normalAxis
-    ) {
-        return detectFrameFromInnerPos(
-            world, innerPos, normalAxis, (innerArea) -> true
-        );
-    }
-    
-    public static boolean isObsidianFrameIntact(
-        IWorld world,
-        Direction.Axis normalAxis,
-        IntBox innerArea
-    ) {
-        Tuple<Direction.Axis, Direction.Axis> anotherTwoAxis = Helper.getAnotherTwoAxis(normalAxis);
-        
-        return Arrays.stream(Helper.getAnotherFourDirections(normalAxis))
-            .map(
-                facing -> innerArea.getSurfaceLayer(
-                    facing
-                ).getMoved(
-                    facing.getDirectionVec()
-                )
-            ).allMatch(
-                box -> box.stream().allMatch(
-                    blockPos -> O_O.isObsidian(world, blockPos)
-                )
-            );
-    }
-    
-    private static IntBox detectInnerArea(
-        IWorld world,
-        BlockPos innerPos,
-        Direction.Axis normalAxis,
-        Tuple<Direction.Axis, Direction.Axis> anotherTwoAxis
-    ) {
-        IntBox stick1 = detectStick(
-            world, innerPos, anotherTwoAxis.getA(),
-            blockPos -> isAirOrFire(world, blockPos), 1
-        );
-        if (stick1 == null) return null;
-        
-        IntBox stick2 = detectStick(
-            world, innerPos, anotherTwoAxis.getB(),
-            blockPos -> isAirOrFire(world, blockPos), 1
-        );
-        if (stick2 == null) return null;
-        
-        IntBox innerArea = IntBox.getContainingBox(stick1, stick2);
-        
-        assert Math.abs(Helper.getCoordinate(innerArea.getSize(), normalAxis)) == 1;
-        
-        //check inner air
-        if (!innerArea.stream().allMatch(blockPos -> isAirOrFire(world, blockPos))) {
-            return null;
-        }
-        
-        return innerArea;
     }
     
     public static Stream<BlockPos> forOneDirection(
@@ -256,15 +153,17 @@ public class NetherPortalMatcher {
             return aboveLavaLake.getSubBoxInCenter(areaSize);
         }
         
-        Helper.log("Generated Portal On Ground");
-        
         IntBox biggerArea = getAirCubeOnSolidGround(
             areaSize.add(5, 0, 5), world, searchingCenter,
             heightLimit, findingRadius / 8
         );
         if (biggerArea == null) {
+            Helper.log("Cannot Find Portal Placement on Ground");
             return null;
         }
+    
+        Helper.log("Generated Portal On Ground");
+        
         return pushDownBox(world, biggerArea.getSubBoxInCenter(areaSize));
     }
     
@@ -284,7 +183,7 @@ public class NetherPortalMatcher {
         int findingRadius,
         Predicate<BlockPos> groundBlockLimit
     ) {
-        return NewNetherPortalGenerator.fromNearToFarColumned(
+        return NetherPortalGeneration.fromNearToFarColumned(
             ((ServerWorld) world),
             searchingCenter.getX(), searchingCenter.getZ(),
             findingRadius
@@ -309,7 +208,7 @@ public class NetherPortalMatcher {
         IntBox heightLimit,
         int findingRadius
     ) {
-        return NewNetherPortalGenerator.fromNearToFarColumned(
+        return NetherPortalGeneration.fromNearToFarColumned(
             ((ServerWorld) world),
             searchingCenter.getX(), searchingCenter.getZ(),
             findingRadius
@@ -395,7 +294,7 @@ public class NetherPortalMatcher {
         IntBox heightLimit,
         int findingRadius
     ) {
-        return NewNetherPortalGenerator.fromNearToFarColumned(
+        return NetherPortalGeneration.fromNearToFarColumned(
             ((ServerWorld) world),
             searchingCenter.getX(), searchingCenter.getZ(),
             findingRadius

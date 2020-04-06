@@ -3,8 +3,8 @@ package com.qouteall.immersive_portals.portal;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.portal.nether_portal.BlockPortalShape;
-import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
-import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalGenerator;
+import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
+import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.block.Block;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -65,7 +65,7 @@ public class ClassicalPortalConverter {
         Block portalBlock,
         Function<ServerWorld, Predicate<BlockPos>> portalBody,
         Function<ServerWorld, Predicate<BlockPos>> portalFrame,
-        EntityType<NewNetherPortalEntity> entityType
+        EntityType<NetherPortalEntity> entityType
     ) {
         converterMap.put(
             portalBlock,
@@ -117,7 +117,7 @@ public class ClassicalPortalConverter {
         BlockPortalShape oldPortalShape,
         Function<ServerWorld, Predicate<BlockPos>> portalBody,
         Function<ServerWorld, Predicate<BlockPos>> portalFrame,
-        EntityType<NewNetherPortalEntity> entityType
+        EntityType<NetherPortalEntity> entityType
     ) {
         BlockPos playerPos = player.getPosition();
         BlockPos.Mutable temp = new BlockPos.Mutable();
@@ -139,8 +139,8 @@ public class ClassicalPortalConverter {
             player.sendMessage(new TranslationTextComponent("imm_ptl.auto_portal_generation_failed"));
         }
         else {
-            NewNetherPortalGenerator.generateNetherPortalEntities(
-                new NewNetherPortalGenerator.Info(
+            NetherPortalGeneration.generateBreakablePortalEntities(
+                new NetherPortalGeneration.Info(
                     oldWorld.dimension.getType(),
                     player.dimension,
                     oldPortalShape,

@@ -7,7 +7,7 @@ import net.minecraft.world.biome.provider.BiomeProvider;
 import net.minecraft.world.gen.EndChunkGenerator;
 import net.minecraft.world.gen.EndGenerationSettings;
 
-public class MyFloatingIslandChunkGenerator extends EndChunkGenerator {
+public class StretchedSkylandGenerator extends EndChunkGenerator {
     private final BlockState AIR;
     
     private double wxx;
@@ -15,7 +15,7 @@ public class MyFloatingIslandChunkGenerator extends EndChunkGenerator {
     private double wxz;
     private double wzz;
     
-    public MyFloatingIslandChunkGenerator(
+    public StretchedSkylandGenerator(
         IWorld iWorld,
         BiomeProvider biomeSource,
         EndGenerationSettings floatingIslandsChunkGeneratorConfig

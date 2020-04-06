@@ -54,6 +54,8 @@ import static org.lwjgl.opengl.GL11.glCullFace;
 
 public class MyRenderHelper {
     
+    public static final Minecraft client = Minecraft.getInstance();
+    
     public static DimensionType originalPlayerDimension;
     public static Vec3d originalPlayerPos;
     public static Vec3d originalPlayerLastTickPos;
@@ -73,12 +75,16 @@ public class MyRenderHelper {
     
     //null indicates not gathered
     public static Matrix4f projectionMatrix;
+    
     public static ActiveRenderInfo originalCamera;
+    public static int originalCameraLightPacked;
+    
     
     public static void updatePreRenderInfo(
         float partialTicks_
     ) {
-        Entity cameraEntity = Minecraft.getInstance().renderViewEntity;
+        
+        Entity cameraEntity = client.renderViewEntity;
         
         if (cameraEntity == null) {
             return;
@@ -102,8 +108,10 @@ public class MyRenderHelper {
         updateViewBobbingFactor(cameraEntity);
         
         projectionMatrix = null;
-        originalCamera = Minecraft.getInstance().gameRenderer.getActiveRenderInfo();
-        
+        originalCamera = client.gameRenderer.getActiveRenderInfo();
+    
+        originalCameraLightPacked = client.getRenderManager()
+            .getPackedLight(client.renderViewEntity, partialTicks);
     }
     
     private static void updateViewBobbingFactor(Entity cameraEntity) {

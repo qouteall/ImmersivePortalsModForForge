@@ -17,7 +17,7 @@ import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
-import com.qouteall.immersive_portals.portal.nether_portal.NewNetherPortalEntity;
+import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.render.LoadingIndicatorRenderer;
 import com.qouteall.immersive_portals.render.PortalEntityRenderer;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
@@ -75,6 +75,8 @@ public class ModMainForge {
     
     public static boolean isServerMixinApplied = false;
     
+    public static boolean disableDimensionUnload = false;
+    
     public ModMainForge() {
         // Register the setup method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
@@ -98,7 +100,7 @@ public class ModMainForge {
         
         Arrays.stream(new EntityType<?>[]{
             Portal.entityType,
-            NewNetherPortalEntity.entityType,
+            NetherPortalEntity.entityType,
             EndPortalEntity.entityType,
             Mirror.entityType,
             BreakableMirror.entityType,
@@ -165,6 +167,7 @@ public class ModMainForge {
         Global.activeLoading = ConfigServer.instance.activeLoadRemoteChunks.get();
         Global.teleportationDebugEnabled = ConfigServer.instance.teleportationDebug.get();
         Global.loadFewerChunks = ConfigServer.instance.loadFewerChunks.get();
+        Global.multiThreadedNetherPortalSearching = ConfigServer.instance.multiThreadedNetherPortalSearching.get();
     }
     
     @SubscribeEvent
@@ -341,17 +344,17 @@ public class ModMainForge {
             );
             
             
-            NewNetherPortalEntity.entityType = EntityType.Builder.create(
-                NewNetherPortalEntity::new, EntityClassification.MISC
+            NetherPortalEntity.entityType = EntityType.Builder.create(
+                NetherPortalEntity::new, EntityClassification.MISC
             ).size(
                 1, 1
             ).immuneToFire().setCustomClientFactory((a, world) ->
-                new NewNetherPortalEntity(NewNetherPortalEntity.entityType, world)
+                new NetherPortalEntity(NetherPortalEntity.entityType, world)
             ).build(
                 "immersive_portals:nether_portal_new"
             );
             event.getRegistry().register(
-                NewNetherPortalEntity.entityType.setRegistryName(
+                NetherPortalEntity.entityType.setRegistryName(
                     "immersive_portals:nether_portal_new")
             );
             
@@ -486,6 +489,11 @@ public class ModMainForge {
         @SubscribeEvent
         public static void onEffectRegistry(RegistryEvent.Register<Effect> event) {
             Effect.class.hashCode();
+    
+            if (HandReachTweak.statusEffectConstructor == null) {
+                throw new RuntimeException("Mixin is NOT loaded. Install MixinBootstrap!!!");
+            }
+
             HandReachTweak.longerReachEffect = HandReachTweak.statusEffectConstructor
                 .apply(EffectType.BENEFICIAL, 0)
                 .addAttributesModifier(

@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
+import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
@@ -63,6 +64,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
             Chunk worldChunk_1 = chunkMapNew.get(chunkPos.asLong());
             if (positionEquals(worldChunk_1, int_1, int_2)) {
                 chunkMapNew.remove(chunkPos.asLong());
+                O_O.postChunkUnloadEventForge(worldChunk_1);
             }
         }
     }
@@ -86,50 +88,53 @@ public class MyClientChunkManager extends ClientChunkProvider {
     
     @Override
     public Chunk loadChunk(
-        int int_1,
-        int int_2,
+        int x,
+        int z,
         BiomeContainer biomeArray_1,
         PacketBuffer packetByteBuf_1,
         CompoundNBT compoundTag_1,
-        int int_3
+        int sections
     ) {
-        ChunkPos chunkPos = new ChunkPos(int_1, int_2);
+        ChunkPos chunkPos = new ChunkPos(x, z);
         Chunk worldChunk_1;
         
         synchronized (chunkMapNew) {
             worldChunk_1 = (Chunk) chunkMapNew.get(chunkPos.asLong());
-            if (!positionEquals(worldChunk_1, int_1, int_2)) {
+            if (!positionEquals(worldChunk_1, x, z)) {
                 if (biomeArray_1 == null) {
                     LOGGER.warn(
                         "Ignoring chunk since we don't have complete data: {}, {}",
-                        int_1,
-                        int_2
+                        x,
+                        z
                     );
                     return null;
                 }
                 
                 worldChunk_1 = new Chunk(this.world, chunkPos, biomeArray_1);
-                worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
+                worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, sections);
                 chunkMapNew.put(chunkPos.asLong(), worldChunk_1);
             }
             else {
-                worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, int_3);
+                worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, sections);
             }
         }
         
-        ChunkSection[] chunkSections_1 = worldChunk_1.getSections();
-        WorldLightManager lightingProvider_1 = this.getLightManager();
-        lightingProvider_1.enableLightSources(chunkPos, true);
+        ChunkSection[] chunkSections = worldChunk_1.getSections();
+        WorldLightManager lightingProvider = this.getLightManager();
+        lightingProvider.enableLightSources(chunkPos, true);
         
-        for (int int_5 = 0; int_5 < chunkSections_1.length; ++int_5) {
-            ChunkSection chunkSection_1 = chunkSections_1[int_5];
-            lightingProvider_1.updateSectionStatus(
-                SectionPos.of(int_1, int_5, int_2),
+        for (int i = 0; i < chunkSections.length; ++i) {
+            ChunkSection chunkSection_1 = chunkSections[i];
+            lightingProvider.updateSectionStatus(
+                SectionPos.of(x, i, z),
                 ChunkSection.isEmpty(chunkSection_1)
             );
         }
         
-        this.world.onChunkLoaded(int_1, int_2);
+        this.world.onChunkLoaded(x, z);
+        
+        O_O.postChunkLoadEventForge(worldChunk_1);
+        
         return worldChunk_1;
     }
     
