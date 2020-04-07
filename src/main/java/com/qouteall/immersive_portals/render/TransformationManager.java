@@ -142,6 +142,12 @@ public class TransformationManager {
             player.rotationPitch = getPitchFromViewVector(newViewVector);
             player.prevRotationPitch = player.rotationPitch;
             
+            player.renderArmYaw = player.rotationYaw;
+            player.renderArmPitch = player.rotationPitch;
+            
+            player.prevRenderArmYaw = player.renderArmYaw;
+            player.prevRenderArmPitch = player.renderArmPitch;
+            
             Quaternion newCameraRotation = getCameraRotation(player.rotationPitch, player.rotationYaw);
             
             if (!Helper.isClose(newCameraRotation, visualRotation, 0.001f)) {

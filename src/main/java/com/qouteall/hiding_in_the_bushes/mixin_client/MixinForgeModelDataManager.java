@@ -1,6 +1,8 @@
 package com.qouteall.hiding_in_the_bushes.mixin_client;
 
 import com.google.common.base.Preconditions;
+import com.qouteall.immersive_portals.CGlobal;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
@@ -10,6 +12,9 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.lang.ref.WeakReference;
 import java.util.Map;
@@ -28,18 +33,13 @@ public class MixinForgeModelDataManager {
     @Final
     private static Map<ChunkPos, Map<BlockPos, IModelData>> modelDataCache;
     
-    /**
-     * @author qouteall
-     * @reason avoid crash (this may cause the model system to not work)
-     */
-    @Overwrite
-    private static void cleanCaches(World world) {
-        Preconditions.checkNotNull(world, "World must not be null");
-        
-        if (world != currentWorld.get()) {
-            currentWorld = new WeakReference<>(world);
-            needModelDataRefresh.clear();
-            modelDataCache.clear();
+    @Inject(method = "cleanCaches", at = @At("HEAD"), cancellable = true)
+    private static void onCleanCaches(World world, CallbackInfo ci) {
+        if (CGlobal.renderer.isRendering()) {
+            ci.cancel();
+        }
+        if (world != Minecraft.getInstance().world) {
+            ci.cancel();
         }
     }
 }

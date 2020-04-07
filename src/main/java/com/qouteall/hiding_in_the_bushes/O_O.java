@@ -2,7 +2,10 @@ package com.qouteall.hiding_in_the_bushes;
 
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -13,7 +16,11 @@ import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.model.ModelDataManager;
 import net.minecraftforge.common.DimensionManager;
+
+import java.util.Iterator;
+import java.util.List;
 
 public class O_O {
     public static boolean isForge() {
@@ -24,7 +31,7 @@ public class O_O {
     public static void onPlayerChangeDimensionClient(
         DimensionType from, DimensionType to
     ) {
-        //nothing
+        updateForgeModelData();
     }
     
     @OnlyIn(Dist.CLIENT)
@@ -98,5 +105,36 @@ public class O_O {
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
             new net.minecraftforge.event.world.ChunkEvent.Load(chunk)
         );
+    }
+    
+    private static void updateForgeModelData() {
+        
+        ClientWorld world = Minecraft.getInstance().world;
+        
+        MyClientChunkManager chunkProvider = (MyClientChunkManager) world.getChunkProvider();
+        
+        List<Chunk> chunkList = chunkProvider.getCopiedChunkList();
+        Iterator<Chunk> chunkIterator = chunkList.iterator();
+        int batchSize = chunkList.size() / 10;
+        
+        ModMain.clientTaskList.addTask(() -> {
+            //if the player teleports, stop task
+            if (Minecraft.getInstance().world != world) {
+                return true;
+            }
+            
+            for (int i = 0; i < batchSize; i++) {
+                if (chunkIterator.hasNext()) {
+                    Chunk chunk = chunkIterator.next();
+                    chunk.getTileEntityMap().values().forEach(tileEntity -> {
+                        ModelDataManager.requestModelDataRefresh(tileEntity);
+                    });
+                }
+                else {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 }

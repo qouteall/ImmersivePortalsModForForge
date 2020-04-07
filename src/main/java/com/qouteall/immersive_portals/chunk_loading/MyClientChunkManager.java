@@ -26,6 +26,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 
 //this class is modified based on ClientChunkManager
@@ -147,6 +149,12 @@ public class MyClientChunkManager extends ClientChunkProvider {
                 SectionPos.of(chunk.getPos().x, int_5, chunk.getPos().z),
                 ChunkSection.isEmpty(chunkSection_1)
             );
+        }
+    }
+    
+    public List<Chunk> getCopiedChunkList() {
+        synchronized (chunkMapNew) {
+            return Arrays.asList(chunkMapNew.values().toArray(new Chunk[0]));
         }
     }
     
