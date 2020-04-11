@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals.mixin.altius_world;
 
-import com.qouteall.immersive_portals.altius_world.AltiusGeneratorType;
 import com.qouteall.immersive_portals.altius_world.AltiusInfo;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -83,4 +82,5 @@ public abstract class MixinSurfaceChunkGenerator<T extends GenerationSettings> e
             }
         }
     }
+    
 }

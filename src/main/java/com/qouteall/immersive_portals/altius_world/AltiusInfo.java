@@ -77,7 +77,7 @@ public class AltiusInfo {
                 (top, down) -> {
                     VerticalConnectingPortal.connectMutually(
                         DimensionType.byName(top), DimensionType.byName(down),
-                        0, getHeight(DimensionType.byName(down))
+                        0, VerticalConnectingPortal.getHeight(DimensionType.byName(down))
                     );
                     return null;
                 }
@@ -87,10 +87,4 @@ public class AltiusInfo {
         }
     }
     
-    public static int getHeight(DimensionType dimensionType) {
-        if (dimensionType == DimensionType.THE_NETHER) {
-            return 128;
-        }
-        return 256;
-    }
 }

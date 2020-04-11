@@ -77,9 +77,9 @@ public abstract class PortalRenderer {
             return false;
         }
         if (client.renderViewEntity.dimension == MyRenderHelper.originalPlayerDimension) {
-            if (TransformationManager.isAnimationRunning()) {
-                return false;
-            }
+//            if (TransformationManager.isAnimationRunning()) {
+//                return false;
+//            }
             return true;
         }
         return false;
@@ -229,7 +229,8 @@ public abstract class PortalRenderer {
         GlStateManager.disableBlend();
         MyRenderHelper.restoreViewPort();
         
-        MyGameRenderer.resetFog();
+        MyGameRenderer.updateFogColor();
+        MyGameRenderer.resetFogState();
     }
     
     private boolean isOutOfDistance(Portal portal) {
@@ -259,7 +260,7 @@ public abstract class PortalRenderer {
         CHelper.checkGlError();
         
         MyGameRenderer.renderWorld(
-            MyRenderHelper.partialTicks, worldRenderer, destClientWorld, oldCameraPos, oldWorld
+            MyRenderHelper.tickDelta, worldRenderer, destClientWorld, oldCameraPos, oldWorld
         );
         
         CHelper.checkGlError();

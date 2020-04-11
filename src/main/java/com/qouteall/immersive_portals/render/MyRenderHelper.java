@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
@@ -22,7 +21,6 @@ import net.minecraft.client.renderer.Matrix4f;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.shader.Framebuffer;
-import net.minecraft.client.util.LWJGLMemoryUntracker;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -31,10 +29,8 @@ import net.minecraft.world.dimension.DimensionType;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.system.MemoryUtil;
 
 import java.lang.ref.WeakReference;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +41,7 @@ import java.util.stream.Collectors;
 
 import static org.lwjgl.opengl.GL11.GL_BACK;
 import static org.lwjgl.opengl.GL11.GL_CLIP_PLANE0;
+import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_FRONT;
 import static org.lwjgl.opengl.GL11.GL_MODELVIEW;
 import static org.lwjgl.opengl.GL11.GL_PROJECTION;
@@ -60,7 +57,7 @@ public class MyRenderHelper {
     public static Vec3d originalPlayerPos;
     public static Vec3d originalPlayerLastTickPos;
     public static GameType originalGameMode;
-    public static float partialTicks = 0;
+    public static float tickDelta = 0;
     
     private static Set<DimensionType> renderedDimensions = new HashSet<>();
     public static List<List<WeakReference<Portal>>> lastPortalRenderInfos = new ArrayList<>();
@@ -79,9 +76,10 @@ public class MyRenderHelper {
     public static ActiveRenderInfo originalCamera;
     public static int originalCameraLightPacked;
     
+    public static String debugText;
     
     public static void updatePreRenderInfo(
-        float partialTicks_
+        float tickDelta_
     ) {
         
         Entity cameraEntity = client.renderViewEntity;
@@ -95,7 +93,7 @@ public class MyRenderHelper {
         MyRenderHelper.originalPlayerLastTickPos = McHelper.lastTickPosOf(cameraEntity);
         NetworkPlayerInfo entry = CHelper.getClientPlayerListEntry();
         MyRenderHelper.originalGameMode = entry != null ? entry.getGameType() : GameType.CREATIVE;
-        partialTicks = partialTicks_;
+        tickDelta = tickDelta_;
         
         renderedDimensions.clear();
         lastPortalRenderInfos = portalRenderInfos;
@@ -111,11 +109,13 @@ public class MyRenderHelper {
         originalCamera = client.gameRenderer.getActiveRenderInfo();
     
         originalCameraLightPacked = client.getRenderManager()
-            .getPackedLight(client.renderViewEntity, partialTicks);
+            .getPackedLight(client.renderViewEntity, tickDelta);
+    
+        debugText = "";
     }
     
     private static void updateViewBobbingFactor(Entity cameraEntity) {
-        Vec3d cameraPosVec = cameraEntity.getEyePosition(partialTicks);
+        Vec3d cameraPosVec = cameraEntity.getEyePosition(tickDelta);
         double minPortalDistance = CHelper.getClientNearbyPortals(10)
             .map(portal -> portal.getDistanceToNearestPointInPortal(cameraPosVec))
             .min(Double::compareTo).orElse(1.0);
@@ -311,13 +311,14 @@ public class MyRenderHelper {
         GlStateManager.viewport(0, 0, int_1, int_2);
         GlStateManager.enableTexture();
         GlStateManager.disableLighting();
+        GlStateManager.disableFog();
         if (doEnableAlphaTest) {
             RenderSystem.enableAlphaTest();
         }
         else {
             GlStateManager.disableAlphaTest();
         }
-        GlStateManager.enableBlend();
+        GlStateManager.disableBlend();
         GlStateManager.disableColorMaterial();
         
         
@@ -363,18 +364,6 @@ public class MyRenderHelper {
         GlStateManager.popMatrix();
         
         CHelper.checkGlError();
-    }
-    
-    //If I don't do so JVM will crash
-    private static final FloatBuffer matrixBuffer = (FloatBuffer) GLX.make(MemoryUtil.memAllocFloat(
-        16), (p_209238_0_) -> {
-        LWJGLMemoryUntracker.untrack(MemoryUtil.memAddress(p_209238_0_));
-    });
-    
-    public static void multMatrix(float[] arr) {
-        matrixBuffer.put(arr);
-        matrixBuffer.rewind();
-        GlStateManager.multMatrix(matrixBuffer);
     }
     
     public static boolean isRenderingMirror() {
@@ -423,5 +412,13 @@ public class MyRenderHelper {
             pos = portal.transformPoint(pos);
         }
         ((IECamera) camera).mySetPos(pos);
+    }
+    
+    public static void clearAlphaTo1(Framebuffer mcFrameBuffer) {
+        mcFrameBuffer.bindFramebuffer(true);
+        RenderSystem.colorMask(false, false, false, true);
+        RenderSystem.clearColor(0, 0, 0, 1.0f);
+        RenderSystem.clear(GL_COLOR_BUFFER_BIT, true);
+        RenderSystem.colorMask(true, true, true, true);
     }
 }

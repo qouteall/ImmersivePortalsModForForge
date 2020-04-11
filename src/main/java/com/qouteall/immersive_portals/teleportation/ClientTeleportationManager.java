@@ -77,7 +77,7 @@ public class ClientTeleportationManager {
             lastPlayerHeadPos = null;
         }
         else {
-            Vec3d currentHeadPos = client.player.getEyePosition(MyRenderHelper.partialTicks);
+            Vec3d currentHeadPos = client.player.getEyePosition(MyRenderHelper.tickDelta);
             if (lastPlayerHeadPos != null) {
                 if (lastPlayerHeadPos.squareDistanceTo(currentHeadPos) > 100) {
                     Helper.err("The Player is Moving Too Fast!");
@@ -96,7 +96,7 @@ public class ClientTeleportationManager {
                 );
             }
             
-            lastPlayerHeadPos = client.player.getEyePosition(MyRenderHelper.partialTicks);
+            lastPlayerHeadPos = client.player.getEyePosition(MyRenderHelper.tickDelta);
         }
     }
     
@@ -256,7 +256,7 @@ public class ClientTeleportationManager {
         
         //because the teleportation may happen before rendering
         //but after pre render info being updated
-        MyRenderHelper.updatePreRenderInfo(MyRenderHelper.partialTicks);
+        MyRenderHelper.updatePreRenderInfo(MyRenderHelper.tickDelta);
         
         OFInterface.onPlayerTraveled.accept(fromDimension, toDimension);
         

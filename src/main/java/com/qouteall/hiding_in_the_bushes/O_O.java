@@ -137,4 +137,8 @@ public class O_O {
             return false;
         });
     }
+    
+    public static boolean isNetherHigherModPresent() {
+        return false;
+    }
 }

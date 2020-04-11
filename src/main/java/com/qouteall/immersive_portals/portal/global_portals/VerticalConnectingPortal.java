@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.portal.global_portals;
 
+import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.McHelper;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.math.Vec3d;
@@ -37,7 +38,8 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         ConnectorType connectorType,
         DimensionType to
     ) {
-        connect(from, connectorType, to, 0, 256);
+        int upY = connectorType == ConnectorType.ceil ? getHeight(from) : getHeight(to);
+        connect(from, connectorType, to, 0, upY);
     }
     
     public static void connect(
@@ -135,5 +137,15 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         return (VerticalConnectingPortal) McHelper.getGlobalPortals(world).stream()
             .filter(getPredicate(type))
             .findFirst().orElse(null);
+    }
+    
+    public static int getHeight(DimensionType dimensionType) {
+        if (dimensionType == DimensionType.THE_NETHER) {
+            if (O_O.isNetherHigherModPresent()) {
+                return 256;
+            }
+            return 128;
+        }
+        return 256;
     }
 }

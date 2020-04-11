@@ -158,7 +158,15 @@ public class MyGameRenderer {
         );
         ((IEPlayerListEntry) playerListEntry).setGameMode(originalGameMode);
         
-        doRenderEntity.run();
+        double distanceToCamera =
+            player.getEyePosition(MyRenderHelper.tickDelta).distanceTo(client.gameRenderer.getActiveRenderInfo().getProjectedView());
+        //avoid rendering player too near and block view
+        if (distanceToCamera > 1) {
+            doRenderEntity.run();
+        }
+        else {
+//            Helper.log("ignored " + distanceToCamera);
+        }
         
         McHelper.setPosAndLastTickPos(
             player, oldPos, oldLastTickPos
@@ -166,15 +174,19 @@ public class MyGameRenderer {
         ((IEPlayerListEntry) playerListEntry).setGameMode(oldGameMode);
     }
     
-    public static void resetFog() {
+    public static void resetFogState() {
         if (OFInterface.isFogDisabled.getAsBoolean()) {
             return;
         }
-    
-        forceResetFog();
+        
+        if (OFInterface.isShaders.getAsBoolean()) {
+            return;
+        }
+        
+        forceResetFogState();
     }
     
-    public static void forceResetFog() {
+    public static void forceResetFogState() {
         ActiveRenderInfo camera = client.gameRenderer.getActiveRenderInfo();
         float g = client.gameRenderer.getFarPlaneDistance();
         
@@ -195,6 +207,16 @@ public class MyGameRenderer {
             bl2
         );
         FogRenderer.applyFog();
+    }
+    
+    public static void updateFogColor() {
+        FogRenderer.updateFogColor(
+            client.gameRenderer.getActiveRenderInfo(),
+            MyRenderHelper.tickDelta,
+            client.world,
+            client.gameSettings.renderDistanceChunks,
+            client.gameRenderer.getBossColorModifier(MyRenderHelper.tickDelta)
+        );
     }
     
     public static void resetDiffuseLighting(MatrixStack matrixStack) {
@@ -236,27 +258,25 @@ public class MyGameRenderer {
     public static void renderSkyFor(
         DimensionType dimension,
         MatrixStack matrixStack,
-        float partialTicks
+        float tickDelta
     ) {
         ClientWorld newWorld = CGlobal.clientWorldLoader.getWorld(dimension);
         WorldRenderer newWorldRenderer = CGlobal.clientWorldLoader.getWorldRenderer(dimension);
-    
+        
         ClientWorld oldWorld = client.world;
         WorldRenderer oldWorldRenderer = client.worldRenderer;
         FogRendererContext.swappingManager.pushSwapping(dimension);
-        MyGameRenderer.forceResetFog();
-
+        MyGameRenderer.forceResetFogState();
+        
         client.world = newWorld;
-        ((IEMinecraftClient)client).setWorldRenderer(newWorldRenderer);
-
-        newWorldRenderer.renderSky(matrixStack, partialTicks);
-
+        ((IEMinecraftClient) client).setWorldRenderer(newWorldRenderer);
+        
+        newWorldRenderer.renderSky(matrixStack, tickDelta);
+        
         client.world = oldWorld;
         ((IEMinecraftClient) client).setWorldRenderer(oldWorldRenderer);
         FogRendererContext.swappingManager.popSwapping();
-        MyGameRenderer.forceResetFog();
-        
-//        client.worldRenderer.renderSky(matrixStack,partialTicks);
+        MyGameRenderer.forceResetFogState();
     }
     
 }

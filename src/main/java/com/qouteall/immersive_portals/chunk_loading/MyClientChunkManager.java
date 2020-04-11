@@ -92,18 +92,18 @@ public class MyClientChunkManager extends ClientChunkProvider {
     public Chunk loadChunk(
         int x,
         int z,
-        BiomeContainer biomeArray_1,
-        PacketBuffer packetByteBuf_1,
-        CompoundNBT compoundTag_1,
+        BiomeContainer biomeArray,
+        PacketBuffer packetByteBuf,
+        CompoundNBT compoundTag,
         int sections
     ) {
         ChunkPos chunkPos = new ChunkPos(x, z);
-        Chunk worldChunk_1;
+        Chunk worldChunk;
         
         synchronized (chunkMapNew) {
-            worldChunk_1 = (Chunk) chunkMapNew.get(chunkPos.asLong());
-            if (!positionEquals(worldChunk_1, x, z)) {
-                if (biomeArray_1 == null) {
+            worldChunk = (Chunk) chunkMapNew.get(chunkPos.asLong());
+            if (!positionEquals(worldChunk, x, z)) {
+                if (biomeArray == null) {
                     LOGGER.warn(
                         "Ignoring chunk since we don't have complete data: {}, {}",
                         x,
@@ -112,16 +112,16 @@ public class MyClientChunkManager extends ClientChunkProvider {
                     return null;
                 }
                 
-                worldChunk_1 = new Chunk(this.world, chunkPos, biomeArray_1);
-                worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, sections);
-                chunkMapNew.put(chunkPos.asLong(), worldChunk_1);
+                worldChunk = new Chunk(this.world, chunkPos, biomeArray);
+                worldChunk.read(biomeArray, packetByteBuf, compoundTag, sections);
+                chunkMapNew.put(chunkPos.asLong(), worldChunk);
             }
             else {
-                worldChunk_1.read(biomeArray_1, packetByteBuf_1, compoundTag_1, sections);
+                worldChunk.read(biomeArray, packetByteBuf, compoundTag, sections);
             }
         }
         
-        ChunkSection[] chunkSections = worldChunk_1.getSections();
+        ChunkSection[] chunkSections = worldChunk.getSections();
         WorldLightManager lightingProvider = this.getLightManager();
         lightingProvider.enableLightSources(chunkPos, true);
         
@@ -135,9 +135,9 @@ public class MyClientChunkManager extends ClientChunkProvider {
         
         this.world.onChunkLoaded(x, z);
         
-        O_O.postChunkLoadEventForge(worldChunk_1);
+        O_O.postChunkLoadEventForge(worldChunk);
         
-        return worldChunk_1;
+        return worldChunk;
     }
     
     public static void updateLightStatus(Chunk chunk) {

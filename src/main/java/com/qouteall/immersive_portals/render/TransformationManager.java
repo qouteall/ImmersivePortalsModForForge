@@ -134,7 +134,7 @@ public class TransformationManager {
             b.conjugate();
             visualRotation.multiply(b);
             
-            Vec3d oldViewVector = player.getLook(MyRenderHelper.partialTicks);
+            Vec3d oldViewVector = player.getLook(MyRenderHelper.tickDelta);
             Vec3d newViewVector = portal.transformLocalVec(oldViewVector);
             
             player.rotationYaw = getYawFromViewVector(newViewVector);
@@ -168,7 +168,7 @@ public class TransformationManager {
             client.player,
             client.gameSettings.thirdPersonView > 0,
             client.gameSettings.thirdPersonView == 2,
-            MyRenderHelper.partialTicks
+            MyRenderHelper.tickDelta
         );
     }
     

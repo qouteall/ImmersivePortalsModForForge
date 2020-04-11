@@ -189,8 +189,13 @@ public class CrossPortalEntityRenderer {
         
         if (entity instanceof ClientPlayerEntity) {
             //avoid rendering player too near and block view
-            if (newEyePos.squareDistanceTo(cameraPos) < 0.5 + entity.getMotion().lengthSquared()) {
+            double dis = newEyePos.squareDistanceTo(cameraPos);
+            double valve = 0.5 + McHelper.lastTickPosOf(entity).squareDistanceTo(entity.getPositionVec());
+            if (dis < valve) {
                 return;
+            }
+            else {
+                //Helper.log("wow " + dis + " " + valve);
             }
         }
         
@@ -208,7 +213,7 @@ public class CrossPortalEntityRenderer {
         ((IEWorldRenderer) client.worldRenderer).myRenderEntity(
             entity,
             cameraPos.x, cameraPos.y, cameraPos.z,
-            MyRenderHelper.partialTicks, matrixStack,
+            MyRenderHelper.tickDelta, matrixStack,
             consumers
         );
         //immediately invoke draw call
