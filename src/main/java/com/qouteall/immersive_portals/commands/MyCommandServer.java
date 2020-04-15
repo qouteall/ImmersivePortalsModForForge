@@ -24,8 +24,10 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.ComponentArgument;
 import net.minecraft.command.arguments.DimensionArgument;
+import net.minecraft.command.arguments.EntityArgument;
 import net.minecraft.command.arguments.NBTCompoundTagArgument;
 import net.minecraft.command.arguments.Vec3Argument;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
@@ -35,6 +37,7 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -539,6 +542,60 @@ public class MyCommandServer {
                 }
                 return 0;
             })
+        );
+        
+        builder.then(Commands
+            .literal("cb_set_portal_destination")
+            .then(
+                Commands.argument(
+                    "portal_entity",
+                    EntityArgument.entities()
+                ).then(
+                    Commands.argument(
+                        "dim",
+                        DimensionArgument.getDimension()
+                    ).then(
+                        Commands.argument(
+                            "dest",
+                            Vec3Argument.vec3(false)
+                        ).executes(
+                            context -> {
+                                
+                                Collection<? extends Entity> entities = EntityArgument.getEntities(
+                                    context, "portal_entity"
+                                );
+                                
+                                for (Entity portalEntity : entities) {
+                                    if (portalEntity instanceof Portal) {
+                                        Portal portal = (Portal) portalEntity;
+                                        
+                                        try {
+                                            portal.dimensionTo = DimensionArgument.getDimensionArgument(
+                                                context, "dim"
+                                            );
+                                            portal.destination = Vec3Argument.getVec3(
+                                                context, "dest"
+                                            );
+                                            
+                                            reloadPortal(portal);
+                                            
+                                            sendMessage(context, portal.toString());
+                                        }
+                                        catch (CommandSyntaxException ignored) {
+                                            ignored.printStackTrace();
+                                        }
+                                    }
+                                    else {
+                                        sendMessage(context, "The target should be portal");
+                                    }
+                                }
+                                
+                                return 0;
+                            }
+                        )
+                    )
+                )
+            )
         );
         
         dispatcher.register(builder);

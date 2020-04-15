@@ -164,11 +164,11 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
         int z = centerChunkZ * 16;
         BlockPos blockPos = new BlockPos(x, 0, z);
     
-        for (int pass = 0; pass < 2; pass++) {
+        for (int pass = 1; pass < 4; pass++) {
             Biome biome = this.getBiome(region.getBiomeManager(), blockPos.add(8, 8, 8));
             SharedSeedRandom chunkRandom = new SharedSeedRandom();
             long currSeed = chunkRandom.setDecorationSeed(region.getSeed() + pass, x, z);
-        
+
             generateFeatureForStep(
                 region, centerChunkX, centerChunkZ,
                 blockPos, biome, chunkRandom, currSeed,
