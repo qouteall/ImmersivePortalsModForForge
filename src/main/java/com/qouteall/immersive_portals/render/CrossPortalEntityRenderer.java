@@ -60,7 +60,9 @@ public class CrossPortalEntityRenderer {
     
     public static void onBeginRenderingEnties(MatrixStack matrixStack) {
         if (CGlobal.renderer.isRendering()) {
-            PixelCuller.updateCullingPlaneInner(matrixStack, CGlobal.renderer.getRenderingPortal());
+            PixelCuller.updateCullingPlaneInner(
+                matrixStack, CGlobal.renderer.getRenderingPortal(),false
+            );
             PixelCuller.startCulling();
         }
     }
@@ -148,7 +150,7 @@ public class CrossPortalEntityRenderer {
             }
         }
         else {
-            PixelCuller.updateCullingPlaneInner(matrixStack, collidingPortal);
+            PixelCuller.updateCullingPlaneInner(matrixStack, collidingPortal,false);
             PixelCuller.startCulling();
             renderEntityRegardingPlayer(entity, collidingPortal, matrixStack);
             PixelCuller.endCulling();

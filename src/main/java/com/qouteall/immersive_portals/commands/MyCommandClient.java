@@ -214,7 +214,10 @@ public class MyCommandClient {
             .executes(context -> {
                 Portal collidingPortal =
                     ((IEEntity) Minecraft.getInstance().player).getCollidingPortal();
-                McHelper.serverLog(context.getSource().asPlayer(), collidingPortal.toString());
+                McHelper.serverLog(
+                    context.getSource().asPlayer(),
+                    collidingPortal != null ? collidingPortal.toString() : "null"
+                );
                 return 0;
             })
         );
@@ -443,6 +446,11 @@ public class MyCommandClient {
             builder,
             "cross_portal_entity_rendering",
             cond -> Global.correctCrossPortalEntityRendering = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "loose_visible_chunk_iteration",
+            cond -> Global.looseVisibleChunkIteration = cond
         );
         
         builder.then(Commands

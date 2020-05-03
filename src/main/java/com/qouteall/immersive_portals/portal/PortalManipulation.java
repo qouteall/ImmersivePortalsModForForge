@@ -2,14 +2,16 @@ package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.client.renderer.Quaternion;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class PortalManipulation {
@@ -18,6 +20,7 @@ public class PortalManipulation {
             portal.world,
             portal.getPositionVec(),
             portal.getNormal().scale(-1),
+            p -> Objects.equals(p.specificPlayerId, portal.specificPlayerId),
             removalInformer
         );
         ServerWorld toWorld = McHelper.getServer().getWorld(portal.dimensionTo);
@@ -25,12 +28,14 @@ public class PortalManipulation {
             toWorld,
             portal.destination,
             portal.transformLocalVec(portal.getNormal().scale(-1)),
+            p -> Objects.equals(p.specificPlayerId, portal.specificPlayerId),
             removalInformer
         );
         removeOverlappedPortals(
             toWorld,
             portal.destination,
             portal.transformLocalVec(portal.getNormal()),
+            p -> Objects.equals(p.specificPlayerId, portal.specificPlayerId),
             removalInformer
         );
     }
@@ -42,7 +47,7 @@ public class PortalManipulation {
         newPortal.dimensionTo = portal.dimension;
         newPortal.setPosition(portal.destination.x, portal.destination.y, portal.destination.z);
         newPortal.destination = portal.getPositionVec();
-        newPortal.specificPlayer = portal.specificPlayer;
+        newPortal.specificPlayerId = portal.specificPlayerId;
         
         newPortal.width = portal.width;
         newPortal.height = portal.height;
@@ -63,15 +68,17 @@ public class PortalManipulation {
         
         if (portal.rotation != null) {
             rotatePortalBody(newPortal, portal.rotation);
-    
+            
             newPortal.rotation = new Quaternion(portal.rotation);
             newPortal.rotation.conjugate();
         }
-    
+        
         newPortal.motionAffinity = portal.motionAffinity;
-    
+        
+        newPortal.specificPlayerId = portal.specificPlayerId;
+        
         world.addEntity(newPortal);
-    
+        
         return newPortal;
     }
     
@@ -86,7 +93,7 @@ public class PortalManipulation {
         newPortal.dimensionTo = portal.dimensionTo;
         newPortal.setPosition(portal.getPosX(), portal.getPosY(), portal.getPosZ());
         newPortal.destination = portal.destination;
-        newPortal.specificPlayer = portal.specificPlayer;
+        newPortal.specificPlayerId = portal.specificPlayerId;
         
         newPortal.width = portal.width;
         newPortal.height = portal.height;
@@ -108,9 +115,43 @@ public class PortalManipulation {
         newPortal.rotation = portal.rotation;
         
         newPortal.motionAffinity = portal.motionAffinity;
+    
+        newPortal.specificPlayerId = portal.specificPlayerId;
         
         world.addEntity(newPortal);
         
+        return newPortal;
+    }
+    
+    //the new portal will not be added into world
+    public static Portal copyPortal(Portal portal, EntityType<Portal> entityType) {
+        ServerWorld world = (ServerWorld) portal.world;
+        Portal newPortal = entityType.create(world);
+        newPortal.dimensionTo = portal.dimensionTo;
+        newPortal.setPosition(portal.getPosX(), portal.getPosY(), portal.getPosZ());
+        newPortal.destination = portal.destination;
+        newPortal.specificPlayerId = portal.specificPlayerId;
+    
+        newPortal.width = portal.width;
+        newPortal.height = portal.height;
+        newPortal.axisW = portal.axisW;
+        newPortal.axisH = portal.axisH;
+    
+        newPortal.specialShape = portal.specialShape;
+    
+        newPortal.initCullableRange(
+            portal.cullableXStart,
+            portal.cullableXEnd,
+            portal.cullableYStart,
+            portal.cullableYEnd
+        );
+    
+        newPortal.rotation = portal.rotation;
+    
+        newPortal.motionAffinity = portal.motionAffinity;
+    
+        newPortal.specificPlayerId = portal.specificPlayerId;
+    
         return newPortal;
     }
     
@@ -134,6 +175,7 @@ public class PortalManipulation {
             ((ServerWorld) portal.world),
             portal.getPositionVec(),
             portal.getNormal().scale(-1),
+            p -> Objects.equals(p.specificPlayerId, portal.specificPlayerId),
             removalInformer
         );
         
@@ -142,6 +184,7 @@ public class PortalManipulation {
             McHelper.getServer().getWorld(portal.dimensionTo),
             portal.destination,
             portal.transformLocalVec(portal.getNormal().scale(-1)),
+            p -> Objects.equals(p.specificPlayerId, portal.specificPlayerId),
             removalInformer
         );
         
@@ -150,6 +193,7 @@ public class PortalManipulation {
             McHelper.getServer().getWorld(oppositeFacedPortal.dimensionTo),
             oppositeFacedPortal.destination,
             oppositeFacedPortal.transformLocalVec(oppositeFacedPortal.getNormal().scale(-1)),
+            p -> Objects.equals(p.specificPlayerId, portal.specificPlayerId),
             removalInformer
         );
         
@@ -163,24 +207,29 @@ public class PortalManipulation {
         World world,
         Vec3d pos,
         Vec3d normal,
+        Predicate<Portal> predicate,
         Consumer<Portal> informer
     ) {
-        world.getEntitiesWithinAABB(
-            Portal.class,
-            new AxisAlignedBB(
-                pos.add(0.5, 0.5, 0.5),
-                pos.subtract(0.5, 0.5, 0.5)
-            ),
-            p -> p.getNormal().dotProduct(normal) > 0.5
-        ).forEach(e -> {
+        getPortalClutter(world, pos, normal, predicate).forEach(e -> {
             e.remove();
             informer.accept(e);
         });
     }
     
-    public static void generateBreakablePortalOneFaced(
-        NetherPortalGeneration.Info info
+    public static List<Portal> getPortalClutter(
+        World world,
+        Vec3d pos,
+        Vec3d normal,
+        Predicate<Portal> predicate
     ) {
-    
+        return world.getEntitiesWithinAABB(
+            Portal.class,
+            new AxisAlignedBB(
+                pos.add(0.5, 0.5, 0.5),
+                pos.subtract(0.5, 0.5, 0.5)
+            ),
+            p -> p.getNormal().dotProduct(normal) > 0.5 && predicate.test(p)
+        );
     }
+    
 }

@@ -33,6 +33,7 @@ import java.util.Random;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -61,11 +62,11 @@ public class NetherPortalGeneration {
             axis == Direction.Axis.Y ?
                 NetherPortalMatcher.findHorizontalPortalPlacement(
                     neededAreaSize, toWorld, mappedPosInOtherDimension,
-                    heightLimit, findingRadius
+                    findingRadius
                 ) :
                 NetherPortalMatcher.findVerticalPortalPlacement(
                     neededAreaSize, toWorld, mappedPosInOtherDimension,
-                    heightLimit, findingRadius
+                    findingRadius
                 );
         
         if (foundAirCube == null) {
@@ -73,7 +74,8 @@ public class NetherPortalGeneration {
             foundAirCube = NetherPortalMatcher.findCubeAirAreaAtAnywhere(
                 neededAreaSize,
                 toWorld,
-                mappedPosInOtherDimension, heightLimit, findingRadius
+                mappedPosInOtherDimension,
+                findingRadius
             );
         }
         
@@ -236,12 +238,20 @@ public class NetherPortalGeneration {
         
         ServerWorld toWorld = McHelper.getServer().getWorld(toDimension);
         
+        int searchingRadius = Global.netherPortalFindingRadius;
+        
+        if (Global.reversibleNetherPortalLinking) {
+            if (fromDimension == DimensionType.OVERWORLD) {
+                searchingRadius /= 8;
+            }
+        }
+        
         BlockPortalShape thisSideShape = startGeneratingPortal(
             fromWorld,
             firePos,
             toWorld,
-            Global.netherPortalFindingRadius,
-            Global.netherPortalFindingRadius,
+            searchingRadius,
+            searchingRadius,
             (fromPos1) -> mapPosition(
                 fromPos1,
                 fromWorld.dimension.getType(),
@@ -443,6 +453,7 @@ public class NetherPortalGeneration {
             toPos.getX(), toPos.getZ(),
             existingFrameSearchingRadius
         );
+        
         Stream<BlockPortalShape> stream =
             blockPosStream.map(
                 blockPos -> {
@@ -459,71 +470,96 @@ public class NetherPortalGeneration {
                 }
             );
         
-        McHelper.performFindingTaskOnServer(
-            Global.multiThreadedNetherPortalSearching,
-            stream,
-            shape -> shape != null && (fromWorld != toWorld || !shape.anchor.equals(foundShape.anchor)),
-            (i) -> {
-                boolean isIntact = foundShape.isPortalIntact(
-                    thisSideAreaPredicate,
-                    thisSideFramePredicate
+        Predicate<BlockPortalShape> shapePredicate =
+            shape -> shape != null &&
+                (fromWorld != toWorld || !shape.anchor.equals(foundShape.anchor));
+        IntPredicate taskWatcher = (i) -> {
+            boolean isIntact = foundShape.isPortalIntact(
+                thisSideAreaPredicate,
+                thisSideFramePredicate
+            );
+            
+            if (!isIntact) {
+                Helper.log("Nether Portal Generation Aborted");
+                return false;
+            }
+            
+            indicatorEntity.setText(
+                new TranslationTextComponent(
+                    "imm_ptl.searching_for_frame",
+                    toWorld.dimension.getType().toString(),
+                    String.format("%s %s %s", fromPos.getX(), fromPos.getY(), fromPos.getZ()),
+                    new StringTextComponent(Integer.toString(i / 1000) + "k")
+                )
+            );
+            
+            return true;
+        };
+        Consumer<BlockPortalShape> onFound = toShape -> {
+            Info info = new Info(
+                fromDimension, toDimension, foundShape, toShape
+            );
+            
+            portalEntityGeneratingFunc.accept(info);
+        };
+        Runnable onNotFound = () -> {
+            indicatorEntity.setText(new TranslationTextComponent(
+                "imm_ptl.generating_new_frame"
+            ));
+            
+            ModMain.serverTaskList.addTask(() -> {
+                
+                IntBox airCubePlacement =
+                    findAirCubePlacement(
+                        toWorld, toPos, toWorldHeightLimit,
+                        foundShape.axis, foundShape.totalAreaBox.getSize(),
+                        airCubeSearchingRadius
+                    );
+                
+                BlockPortalShape toShape = foundShape.getShapeWithMovedAnchor(
+                    airCubePlacement.l.subtract(
+                        foundShape.totalAreaBox.l
+                    ).add(foundShape.anchor)
                 );
                 
-                if (!isIntact) {
-                    Helper.log("Nether Portal Generation Aborted");
-                    return false;
-                }
+                newFrameGeneratedFunc.accept(toShape);
                 
-                indicatorEntity.setText(
-                    new TranslationTextComponent(
-                        "imm_ptl.searching_for_frame",
-                        toWorld.dimension.getType().toString(),
-                        String.format("%s %s %s", fromPos.getX(), fromPos.getY(), fromPos.getZ()),
-                        new StringTextComponent(Integer.toString(i / 1000) + "k")
-                    )
-                );
-                
-                return true;
-            },
-            toShape -> {
                 Info info = new Info(
                     fromDimension, toDimension, foundShape, toShape
                 );
-                
                 portalEntityGeneratingFunc.accept(info);
-            },
-            () -> {
-                indicatorEntity.setText(new TranslationTextComponent(
-                    "imm_ptl.generating_new_frame"
-                ));
                 
-                ModMain.serverTaskList.addTask(() -> {
-                    
-                    IntBox airCubePlacement =
-                        findAirCubePlacement(
-                            toWorld, toPos, toWorldHeightLimit,
-                            foundShape.axis, foundShape.totalAreaBox.getSize(),
-                            airCubeSearchingRadius
-                        );
-                    
-                    BlockPortalShape toShape = foundShape.getShapeWithMovedAnchor(
-                        airCubePlacement.l.subtract(
-                            foundShape.totalAreaBox.l
-                        ).add(foundShape.anchor)
-                    );
-                    
-                    newFrameGeneratedFunc.accept(toShape);
-                    
-                    Info info = new Info(
-                        fromDimension, toDimension, foundShape, toShape
-                    );
-                    portalEntityGeneratingFunc.accept(info);
-                    
-                    return true;
-                });
-            },
+                return true;
+            });
+        };
+        McHelper.performFindingTaskOnServer(
+            Global.multiThreadedNetherPortalSearching,
+            stream,
+            shapePredicate,
+            taskWatcher,
+            onFound,
+            onNotFound,
             finishBehavior
         );
+    }
+    
+    public static Stream<BlockPos> blockPosStreamNaive(
+        ServerWorld toWorld,
+        int x, int z, int raidus
+    ) {
+        Stream<BlockPos> blockPosStream = BlockPos.getAllInBox(
+            new BlockPos(
+                x - raidus,
+                3,
+                z - raidus
+            ),
+            new BlockPos(
+                x + raidus,
+                toWorld.getActualHeight() - 3,
+                z + raidus
+            )
+        );
+        return blockPosStream;
     }
     
     private static void embodyNewFrame(
@@ -595,6 +631,12 @@ public class NetherPortalGeneration {
         int z,
         int range
     ) {
+        if (Global.blameOpenJdk) {
+            return blockPosStreamNaive(
+                world, x, z, range
+            );
+        }
+        
         int height = world.getActualHeight();
         
         BlockPos.Mutable temp0 = new BlockPos.Mutable();
@@ -605,20 +647,21 @@ public class NetherPortalGeneration {
             .flatMap(layer ->
                 Streams.concat(
                     IntStream.range(0, layer * 2 + 1)
-                        .mapToObj(i -> temp0.setPos(layer, 0, i - layer)),
+                        .mapToObj(i -> new BlockPos(layer, 0, i - layer)),
                     IntStream.range(0, layer * 2 + 1)
-                        .mapToObj(i -> temp0.setPos(-layer, 0, i - layer)),
+                        .mapToObj(i -> new BlockPos(-layer, 0, i - layer)),
                     IntStream.range(0, layer * 2 - 1)
-                        .mapToObj(i -> temp0.setPos(i - layer + 1, 0, layer)),
+                        .mapToObj(i -> new BlockPos(i - layer + 1, 0, layer)),
                     IntStream.range(0, layer * 2 - 1)
-                        .mapToObj(i -> temp0.setPos(i - layer + 1, 0, -layer))
+                        .mapToObj(i -> new BlockPos(i - layer + 1, 0, -layer))
                 ).map(
-                    columnPos_ -> temp1.setPos(columnPos_.getX() + x, 0, columnPos_.getZ() + z)
+                    columnPos_ -> new BlockPos(columnPos_.getX() + x, 0, columnPos_.getZ() + z)
                 ).flatMap(
                     columnPos_ ->
                         IntStream.range(3, height - 3)
-                            .mapToObj(y -> temp2.setPos(columnPos_.getX(), y, columnPos_.getZ()))
+                            .mapToObj(y -> new BlockPos(columnPos_.getX(), y, columnPos_.getZ()))
                 )
             );
     }
+    
 }

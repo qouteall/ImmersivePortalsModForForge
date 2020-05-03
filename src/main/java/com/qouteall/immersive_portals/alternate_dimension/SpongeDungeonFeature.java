@@ -47,38 +47,35 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
+public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
     //no need to register it
     public static final Feature<NoFeatureConfig> instance =
-        new SimpleSpawnerFeature(NoFeatureConfig::deserialize);
+        new SpongeDungeonFeature(NoFeatureConfig::deserialize);
     
     private static RandomSelector<BlockState> spawnerShieldSelector =
         new RandomSelector.Builder<BlockState>()
-            .add(30, Blocks.OBSIDIAN.getDefaultState())
-            .add(5, Blocks.SPONGE.getDefaultState())
+            .add(20, Blocks.OBSIDIAN.getDefaultState())
+            .add(10, Blocks.SPONGE.getDefaultState())
             .add(5, Blocks.CLAY.getDefaultState())
             .build();
     
     private static RandomSelector<Function<Random, Integer>> heightSelector =
         new RandomSelector.Builder<Function<Random, Integer>>()
-            .add(30, random -> (int) (random.nextDouble() * 50))
-            .add(10, random -> random.nextInt(140) + 1)
+            .add(20, random -> (int) (random.nextDouble() * 50 + 1))
+            .add(10, random -> random.nextInt(150) + 1)
             .build();
     
     private static RandomSelector<BiFunction<World, Random, Entity>> entitySelector =
         new RandomSelector.Builder<BiFunction<World, Random, Entity>>()
-            .add(10, SimpleSpawnerFeature::randomMonster)
-            .add(60, SimpleSpawnerFeature::randomRidingMonster)
+            .add(10, SpongeDungeonFeature::randomMonster)
+            .add(60, SpongeDungeonFeature::randomRidingMonster)
             .build();
     
     private static RandomSelector<EntityType<?>> monsterTypeSelector =
         new RandomSelector.Builder<EntityType<?>>()
-            .add(10, EntityType.ZOMBIE)
             .add(10, EntityType.ZOMBIE_PIGMAN)
-            .add(10, EntityType.ZOMBIE_VILLAGER)
             .add(10, EntityType.HUSK)
-            .add(10, EntityType.DROWNED)
-            .add(20, EntityType.SKELETON)
+            .add(30, EntityType.SKELETON)
             .add(10, EntityType.WITHER_SKELETON)
             .add(20, EntityType.SHULKER)
             .add(10, EntityType.SILVERFISH)
@@ -89,6 +86,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             .add(10, EntityType.GIANT)
             .add(10, EntityType.MAGMA_CUBE)
             .add(10, EntityType.GUARDIAN)
+            .add(1, EntityType.WITHER)
             .build();
     
     private static RandomSelector<EntityType<?>> vehicleTypeSelector =
@@ -108,7 +106,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             .add(10, vehicleTypeSelector)
             .build();
     
-    public SimpleSpawnerFeature(Function<Dynamic<?>, ? extends NoFeatureConfig> configDeserializer) {
+    public SpongeDungeonFeature(Function<Dynamic<?>, ? extends NoFeatureConfig> configDeserializer) {
         super(configDeserializer);
     }
     
@@ -121,9 +119,9 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
         NoFeatureConfig config
     ) {
         ChunkPos chunkPos = new ChunkPos(pos);
-    
+        
         random.setSeed(chunkPos.asLong() + random.nextInt(2333));
-    
+        
         if (random.nextDouble() < 0.03) {
             generateOnce(world, random, chunkPos);
         }
@@ -156,7 +154,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             height,
             random.nextInt(16)
         );
-    
+        
         for (int dx = -7; dx <= 7; dx++) {
             for (int dz = -7; dz <= 7; dz++) {
                 world.setBlockState(
@@ -166,7 +164,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
                 );
             }
         }
-    
+        
         BlockState spawnerShieldBlock = spawnerShieldSelector.select(random);
         for (BlockPos shieldPos : shieldPoses) {
             world.setBlockState(
@@ -178,7 +176,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
         
         world.setBlockState(spawnerPos, Blocks.SPAWNER.getDefaultState(), 2);
         initSpawnerBlockEntity(world, random, spawnerPos);
-    
+        
         BlockPos shulkerBoxPos = spawnerPos.down();
         initShulkerBoxTreasure(world, random, shulkerBoxPos);
     }
@@ -206,20 +204,20 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             //Helper.err("No Spawner Block Entity???");
             return;
         }
-    
+        
         MobSpawnerTileEntity mobSpawner = (MobSpawnerTileEntity) blockEntity;
         Entity spawnedEntity = entitySelector.select(random).apply(world.getWorld(), random);
         Validate.isTrue(!spawnedEntity.isPassenger());
         CompoundNBT tag = new CompoundNBT();
         spawnedEntity.writeUnlessPassenger(tag);
-    
+        
         removeUnnecessaryTag(tag);
-    
+        
         mobSpawner.getSpawnerBaseLogic().setNextSpawnData(
             new WeightedSpawnerEntity(100, tag)
         );
         mobSpawner.getSpawnerBaseLogic().setEntityType(spawnedEntity.getType());
-    
+        
         CompoundNBT logicTag = mobSpawner.getSpawnerBaseLogic().write(new CompoundNBT());
         logicTag.putShort("RequiredPlayerRange", (short) 64);
         //logicTag.putShort("MinSpawnDelay",(short) 10);
@@ -291,14 +289,14 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             .add(10, (random, entity) -> {
                 //nothing
             })
-            .add(10, (random, entity) ->
+            .add(15, (random, entity) ->
                 entity.addPotionEffect(new EffectInstance(
-                    Effects.SPEED, 60, 2
+                    Effects.SPEED, 120, 2
                 ))
             )
-            .add(10, (random, entity) ->
+            .add(20, (random, entity) ->
                 entity.addPotionEffect(new EffectInstance(
-                    Effects.JUMP_BOOST, 60, 3
+                    Effects.JUMP_BOOST, 120, 3
                 ))
             )
             .add(5, (random, entity) -> {
@@ -340,11 +338,12 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
     
     private static RandomSelector<ItemStack> filledTreasureSelector =
         new RandomSelector.Builder<ItemStack>()
-            .add(20, new ItemStack(() -> Items.DIRT, 64))
-            .add(20, new ItemStack(() -> Items.SAND, 64))
-            .add(20, new ItemStack(() -> Items.TERRACOTTA, 64))
-            .add(10, new ItemStack(() -> Items.GRAVEL, 64))
-            .add(10, new ItemStack(() -> Items.GLASS, 64))
+            .add(40, new ItemStack(() -> Items.DIRT, 64))
+            .add(40, new ItemStack(() -> Items.SAND, 64))
+            .add(40, new ItemStack(() -> Items.TERRACOTTA, 64))
+            .add(40, new ItemStack(() -> Items.GRAVEL, 64))
+            .add(40, new ItemStack(() -> Items.PACKED_ICE, 64))
+            .add(40, new ItemStack(() -> Items.GLASS, 64))
             .add(10, new ItemStack(() -> Items.COBBLESTONE, 64))
             .add(10, new ItemStack(() -> Items.FEATHER, 64))
             .add(10, new ItemStack(() -> Items.INK_SAC, 64))
@@ -374,12 +373,14 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             .add(10, new ItemStack(() -> Items.STRIPPED_OAK_WOOD, 64))
             .add(10, new ItemStack(() -> Items.ENCHANTING_TABLE, 64))
             .add(10, new ItemStack(() -> Items.ENDER_CHEST, 64))
-            .add(10, new ItemStack(() -> Items.PACKED_ICE, 64))
             .add(10, new ItemStack(() -> Items.FERN, 64))
             .add(10, new ItemStack(() -> Items.DEAD_BUSH, 64))
             .add(10, new ItemStack(() -> Items.SEAGRASS, 64))
             .add(10, new ItemStack(() -> Items.CACTUS, 64))
             .add(10, new ItemStack(() -> Items.VINE, 64))
+            .add(10, new ItemStack(() -> Items.OBSERVER, 64))
+            .add(10, new ItemStack(() -> Items.COMPARATOR, 64))
+            .add(10, new ItemStack(() -> Items.REPEATER, 64))
             .add(10, new ItemStack(() -> Items.DIAMOND_HOE, 1))
             .add(10, new ItemStack(() -> Items.FLINT_AND_STEEL, 1))
             .add(10, new ItemStack(() -> Items.COMPASS, 1))
@@ -389,6 +390,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
             .add(10, new ItemStack(() -> Items.MILK_BUCKET, 1))
             .add(10, new ItemStack(() -> Items.LEATHER_HORSE_ARMOR, 1))
             .add(10, new ItemStack(() -> Items.LEATHER_BOOTS, 1))
+            .add(10, new ItemStack(() -> Items.SLIME_BLOCK, 1))
             .add(10, Helper.makeIntoExpression(
                 new ItemStack(() -> Items.ENCHANTED_BOOK, 1),
                 itemStack -> itemStack.addEnchantment(Enchantments.BINDING_CURSE, 1)
@@ -402,10 +404,14 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
                 itemStack -> itemStack.addEnchantment(Enchantments.EFFICIENCY, 10)
             ))
             .add(10, Helper.makeIntoExpression(
+                new ItemStack(() -> Items.GOLDEN_PICKAXE, 1),
+                itemStack -> itemStack.addEnchantment(Enchantments.EFFICIENCY, 10)
+            ))
+            .add(10, Helper.makeIntoExpression(
                 new ItemStack(() -> Items.POTION, 1),
                 itemStack -> PotionUtils.addPotionToItemStack(itemStack, Potions.MUNDANE)
             ))
-            .add(50, Helper.makeIntoExpression(
+            .add(100, Helper.makeIntoExpression(
                 new ItemStack(() -> Items.POTION, 1),
                 itemStack -> PotionUtils.addPotionToItemStack(itemStack, HandReachTweak.longerReachPotion)
             ))
@@ -437,7 +443,7 @@ public class SimpleSpawnerFeature extends Feature<NoFeatureConfig> {
     
     private static RandomSelector<BiConsumer<Random, IInventory>> treasureSelector =
         new RandomSelector.Builder<BiConsumer<Random, IInventory>>()
-            .add(10, (random, shulker) -> {
+            .add(20, (random, shulker) -> {
                 ItemStack toFill = filledTreasureSelector.select(random);
                 IntStream.range(
                     0, shulker.getSizeInventory()

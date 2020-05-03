@@ -39,9 +39,7 @@ public class FrustumCuller {
             currentState = State.cullingInPortal;
     
             Vec3d portalOriginInLocalCoordinate = portal.destination.add(
-                -cameraX,
-                -cameraY,
-                -cameraZ
+                -cameraX, -cameraY, -cameraZ
             );
             downLeftUpRightPlaneNormals = getDownLeftUpRightPlaneNormals(
                 portalOriginInLocalCoordinate,
@@ -197,7 +195,7 @@ public class FrustumCuller {
     }
     
     private static boolean isInFrontOf(double x, double y, double z, Vec3d planeNormal) {
-        return x * planeNormal.x + y * planeNormal.y + z * planeNormal.z > 0;
+        return x * planeNormal.x + y * planeNormal.y + z * planeNormal.z >= 0;
     }
     
     private static boolean isFullyOutsideFrustum(

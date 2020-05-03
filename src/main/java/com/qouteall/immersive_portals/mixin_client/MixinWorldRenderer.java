@@ -4,6 +4,7 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ClientWorldLoader;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.far_scenery.FarSceneryRenderer;
@@ -131,7 +132,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             target = "Lnet/minecraft/client/renderer/WorldRenderer;renderBlockLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V"
         )
     )
-    private void onRenderBeforeRenderLayer(
+    private void redirectRenderLayer(
         WorldRenderer worldRenderer,
         RenderType renderLayer,
         MatrixStack matrices,
@@ -217,7 +218,8 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         if (CGlobal.renderer.isRendering()) {
             PixelCuller.updateCullingPlaneInner(
                 matrixStack_1,
-                CGlobal.renderer.getRenderingPortal()
+                CGlobal.renderer.getRenderingPortal(),
+                true
             );
             PixelCuller.startCulling();
             if (MyRenderHelper.isRenderingOddNumberOfMirrors()) {
@@ -323,7 +325,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         CallbackInfo ci
     ) {
         if (CGlobal.renderer.isRendering()) {
-            PixelCuller.updateCullingPlaneInner(matrices, CGlobal.renderer.getRenderingPortal());
+            PixelCuller.updateCullingPlaneInner(matrices, CGlobal.renderer.getRenderingPortal(),true);
             PixelCuller.startCulling();
         }
     }
@@ -446,7 +448,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("RETURN"))
     private void onRenderSkyEnd(MatrixStack matrixStack_1, float float_1, CallbackInfo ci) {
-        
+
 //        if (client.world.dimension instanceof AlternateDimension) {
 //            AlternateSkyRenderer.renderAlternateSky(matrixStack_1, float_1);
 //        }
@@ -557,23 +559,25 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         )
     )
     private void redirectRenderSky(WorldRenderer worldRenderer, MatrixStack matrixStack, float f) {
+        if (Global.edgelessSky) {
+            if (CGlobal.renderer.isRendering()) {
+                MyGameRenderer.renderSkyFor(
+                    RenderDimensionRedirect.getRedirectedDimension(MyRenderHelper.originalPlayerDimension),
+                    matrixStack, f
+                );
+                return;
+            }
+        }
+
         if (OFInterface.isShaders.getAsBoolean()) {
             DimensionType dim = Minecraft.getInstance().world.dimension.getType();
-//            if (CGlobal.renderer.isRendering()) {
-//                Portal renderingPortal = CGlobal.renderer.getRenderingPortal();
-//                if (renderingPortal instanceof VerticalConnectingPortal) {
-//                    dim = renderingPortal.dimension;
-//                }
-//            }
-            MyGameRenderer.renderSkyFor(
-                RenderDimensionRedirect.getRedirectedDimension(dim),
-                matrixStack,
-                f
-            );
+            DimensionType redirectedDimension = RenderDimensionRedirect.getRedirectedDimension(dim);
+
+            MyGameRenderer.renderSkyFor(redirectedDimension, matrixStack, f);
+            return;
         }
-        else {
-            worldRenderer.renderSky(matrixStack, f);
-        }
+
+        worldRenderer.renderSky(matrixStack, f);
     }
     
     //fix cloud fog abnormal with OptiFine and fog disabled

@@ -222,14 +222,14 @@ public class ServerTeleportationManager {
         ServerWorld toWorld,
         Vec3d newEyePos
     ) {
+        teleportingEntities.add(player);
+        
         Entity vehicle = player.getRidingEntity();
         if (vehicle != null) {
             ((IEServerPlayerEntity) player).stopRidingWithoutTeleportRequest();
         }
         
         BlockPos oldPos = player.getPosition();
-        
-        teleportingEntities.add(player);
         
         O_O.segregateServerPlayer(fromWorld, player);
         
@@ -348,7 +348,7 @@ public class ServerTeleportationManager {
         
         long currGameTime = McHelper.getServerGameTime();
         Long lastTeleportGameTime = this.lastTeleportGameTime.getOrDefault(entity, 0L);
-        if (currGameTime - lastTeleportGameTime < 2) {
+        if (currGameTime - lastTeleportGameTime < 3) {
             return;
         }
         this.lastTeleportGameTime.put(entity, currGameTime);
@@ -376,6 +376,7 @@ public class ServerTeleportationManager {
         McHelper.setEyePos(
             entity, newEyePos, newEyePos
         );
+        McHelper.updateBoundingBox(entity);
         
         entity.setMotion(portal.transformLocalVec(velocity));
         

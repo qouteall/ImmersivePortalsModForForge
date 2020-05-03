@@ -5,6 +5,7 @@
   "refmap": "imm_ptl.refmap.json",
   "mixins": [
     "alternate_dimension/MixinMobSpawnerLogic",
+    "alternate_dimension/MixinServerPlayNetworkHandler_A",
     "altius_world/MixinChunkStatus",
     "block_manipulation/MixinItem",
     "block_manipulation/MixinServerPlayerInteractionManager",

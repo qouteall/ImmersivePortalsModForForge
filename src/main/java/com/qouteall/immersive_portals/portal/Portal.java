@@ -8,7 +8,7 @@ import net.minecraft.client.renderer.Vector3f;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MoverType;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.Direction;
@@ -34,7 +34,7 @@ public class Portal extends Entity {
     
     //additional properteis
     public boolean teleportable = true;
-    public UUID specificPlayer;
+    public UUID specificPlayerId;
     public GeometryPortalShape specialShape;
     
     private AxisAlignedBB boundingBoxCache;
@@ -49,7 +49,9 @@ public class Portal extends Entity {
     public Quaternion rotation;
     
     public double motionAffinity = 0;
-    
+
+    private boolean interactable = true;
+
     public static final SignalArged<Portal> clientPortalTickSignal = new SignalArged<>();
     public static final SignalArged<Portal> serverPortalTickSignal = new SignalArged<>();
     
@@ -74,7 +76,7 @@ public class Portal extends Entity {
         dimensionTo = DimensionType.getById(compoundTag.getInt("dimensionTo"));
         destination = Helper.getVec3d(compoundTag, "destination");
         if (compoundTag.contains("specificPlayer")) {
-            specificPlayer = compoundTag.getUniqueId("specificPlayer");
+            specificPlayerId = compoundTag.getUniqueId("specificPlayer");
         }
         if (compoundTag.contains("specialShape")) {
             specialShape = new GeometryPortalShape(
@@ -116,7 +118,10 @@ public class Portal extends Entity {
             motionAffinity = compoundTag.getDouble("motionAffinity");
         }
         else {
-            motionAffinity = -0.3;
+            motionAffinity = 0;
+        }
+        if(compoundTag.contains("interactable")) {
+            interactable = compoundTag.getBoolean("interactable");
         }
     }
     
@@ -128,17 +133,17 @@ public class Portal extends Entity {
         Helper.putVec3d(compoundTag, "axisH", axisH);
         compoundTag.putInt("dimensionTo", dimensionTo.getId());
         Helper.putVec3d(compoundTag, "destination", destination);
-    
-        if (specificPlayer != null) {
-            compoundTag.putUniqueId("specificPlayer", specificPlayer);
+        
+        if (specificPlayerId != null) {
+            compoundTag.putUniqueId("specificPlayer", specificPlayerId);
         }
-    
+        
         if (specialShape != null) {
             compoundTag.put("specialShape", specialShape.writeToTag());
         }
-    
+        
         compoundTag.putBoolean("teleportable", teleportable);
-    
+        
         if (specialShape == null) {
             initDefaultCullableRange();
         }
@@ -153,6 +158,7 @@ public class Portal extends Entity {
             compoundTag.putDouble("rotationD", rotation.getZ());
         }
         compoundTag.putDouble("motionAffinity", motionAffinity);
+        compoundTag.putBoolean("interactable", interactable);
     }
     
     public boolean isCullable() {
@@ -165,7 +171,25 @@ public class Portal extends Entity {
     public boolean isTeleportable() {
         return teleportable;
     }
-    
+
+
+    /**
+     * Determines whether the player should be able to reach through the portal or not.
+     * Can be overridden by a sub class.
+     * @return the interactability of the portal
+     */
+    public boolean isInteractable() {
+        return interactable;
+    }
+
+    /**
+     * Changes the reach-through behavior of the portal.
+     * @param interactable the interactability of the portal
+     */
+    public void setInteractable(boolean interactable) {
+        this.interactable = interactable;
+    }
+
     public void updateCache() {
         boundingBoxCache = null;
         normal = null;
@@ -197,6 +221,14 @@ public class Portal extends Entity {
     @Override
     public IPacket<?> createSpawnPacket() {
         return MyNetwork.createStcSpawnEntity(this);
+    }
+    
+    @Override
+    public boolean isSpectatedByPlayer(ServerPlayerEntity spectator) {
+        if (specificPlayerId == null) {
+            return true;
+        }
+        return spectator.getUniqueID().equals(specificPlayerId);
     }
     
     @Override
@@ -276,23 +308,23 @@ public class Portal extends Entity {
         Tuple<Direction.Axis, Direction.Axis> anotherTwoAxis = Helper.getAnotherTwoAxis(normalAxis);
         Direction.Axis wAxis = anotherTwoAxis.getA();
         Direction.Axis hAxis = anotherTwoAxis.getB();
-    
+        
         float width = (float) Helper.getCoordinate(portalSize, wAxis);
         float height = (float) Helper.getCoordinate(portalSize, hAxis);
-    
+        
         Vec3d wAxisVec = new Vec3d(Helper.getUnitFromAxis(wAxis));
         Vec3d hAxisVec = new Vec3d(Helper.getUnitFromAxis(hAxis));
-    
+        
         portals[0].setPosition(center1.x, center1.y, center1.z);
         portals[1].setPosition(center1.x, center1.y, center1.z);
         portals[2].setPosition(center2.x, center2.y, center2.z);
         portals[3].setPosition(center2.x, center2.y, center2.z);
-    
+        
         portals[0].destination = center2;
         portals[1].destination = center2;
         portals[2].destination = center1;
         portals[3].destination = center1;
-    
+        
         assert portals[0].dimension == dimension1;
         assert portals[1].dimension == dimension1;
         assert portals[2].dimension == dimension2;
@@ -337,26 +369,18 @@ public class Portal extends Entity {
         //nothing
     }
     
-    public boolean canBeSeenByPlayer(PlayerEntity player) {
-        if (specificPlayer == null) {
-            return true;
-        }
-        else {
-            return specificPlayer.equals(player.getUniqueID());
-        }
-    }
-    
     @Override
     public String toString() {
         return String.format(
-            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)}",
+            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)%s}",
             getClass().getSimpleName(),
             getEntityId(),
             Direction.getFacingFromVector(
                 getNormal().x, getNormal().y, getNormal().z
             ),
             dimension, (int) getPosX(), (int) getPosY(), (int) getPosZ(),
-            dimensionTo, (int) destination.x, (int) destination.y, (int) destination.z
+            dimensionTo, (int) destination.x, (int) destination.y, (int) destination.z,
+            specificPlayerId != null ? (",specificAccessor:" + specificPlayerId.toString()) : ""
         );
     }
     
@@ -472,9 +496,9 @@ public class Portal extends Entity {
         if (rotation == null) {
             return transformPointRough(pos);
         }
-    
+        
         Vec3d localPos = pos.subtract(getPositionVec());
-    
+        
         return transformLocalVec(localPos).add(destination);
     }
     
@@ -503,20 +527,20 @@ public class Portal extends Entity {
     
     public boolean isPointInPortalProjection(Vec3d pos) {
         Vec3d offset = pos.subtract(getPositionVec());
-    
+        
         double yInPlane = offset.dotProduct(axisH);
         double xInPlane = offset.dotProduct(axisW);
-    
+        
         boolean roughResult = Math.abs(xInPlane) < (width / 2 + 0.1) &&
             Math.abs(yInPlane) < (height / 2 + 0.1);
-    
+        
         if (roughResult && specialShape != null) {
             return specialShape.triangles.stream()
                 .anyMatch(triangle ->
                     triangle.isPointInTriangle(xInPlane, yInPlane)
                 );
         }
-    
+        
         return roughResult;
     }
     

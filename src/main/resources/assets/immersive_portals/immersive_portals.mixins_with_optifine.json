@@ -5,6 +5,8 @@
   "refmap": "imm_ptl.refmap.json",
   "mixins": [
     "MixinConfig",
+    "MixinDynamicLights",
+    "MixinLightmapTextureManager",
     "MixinShaders",
     "MixinShaders_DimensionRedirect",
     "MixinShaders_Swap",

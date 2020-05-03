@@ -4,12 +4,14 @@ import com.qouteall.hiding_in_the_bushes.MyNetworkClient;
 import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
+import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.portal.Mirror;
@@ -43,9 +45,9 @@ public class ClientTeleportationManager {
     private long teleportTickTimeLimit = 0;
     
     public ClientTeleportationManager() {
-        ModMain.preRenderSignal.connectWithWeakRef(
-            this, ClientTeleportationManager::manageTeleportation
-        );
+//        ModMain.preRenderSignal.connectWithWeakRef(
+//            this, ClientTeleportationManager::manageTeleportation
+//        );
         ModMain.postClientTickSignal.connectWithWeakRef(
             this, ClientTeleportationManager::tick
         );
@@ -54,6 +56,7 @@ public class ClientTeleportationManager {
     private void tick() {
         tickTimeForTeleportation++;
         changePlayerMotionIfCollidingWithPortal();
+        
     }
     
     public void acceptSynchronizationDataFromServer(
@@ -72,12 +75,20 @@ public class ClientTeleportationManager {
         getOutOfLoadingScreen(dimension, pos);
     }
     
-    private void manageTeleportation() {
+    public void manageTeleportation(float tickDelta) {
+        if (Global.disableTeleportation) {
+            return;
+        }
+        
         if (client.world == null || client.player == null) {
             lastPlayerHeadPos = null;
         }
         else {
-            Vec3d currentHeadPos = client.player.getEyePosition(MyRenderHelper.tickDelta);
+            if (client.player.prevPosX == 0 && client.player.prevPosY == 0 && client.player.prevPosZ == 0) {
+                return;
+            }
+            
+            Vec3d currentHeadPos = client.player.getEyePosition(tickDelta);
             if (lastPlayerHeadPos != null) {
                 if (lastPlayerHeadPos.squareDistanceTo(currentHeadPos) > 100) {
                     Helper.err("The Player is Moving Too Fast!");
@@ -96,7 +107,7 @@ public class ClientTeleportationManager {
                 );
             }
             
-            lastPlayerHeadPos = client.player.getEyePosition(MyRenderHelper.tickDelta);
+            lastPlayerHeadPos = client.player.getEyePosition(tickDelta);
         }
     }
     
@@ -154,7 +165,7 @@ public class ClientTeleportationManager {
         }
         
         //update colliding portal
-//        ((IEEntity) player).tickCollidingPortal();
+        ((IEEntity) player).tickCollidingPortal();
     }
     
     public boolean isTeleportingFrequently() {

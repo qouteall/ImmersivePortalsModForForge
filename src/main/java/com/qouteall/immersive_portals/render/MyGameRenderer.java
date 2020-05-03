@@ -2,8 +2,10 @@ package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
@@ -36,6 +38,7 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameType;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.dimension.OverworldDimension;
 import org.lwjgl.opengl.GL11;
 
 import java.util.function.Predicate;
@@ -65,6 +68,10 @@ public class MyGameRenderer {
                 client.renderViewEntity.getPosX(),
                 client.renderViewEntity.getPosZ()
             );
+        }
+        
+        if (Global.looseVisibleChunkIteration) {
+            client.renderChunksMany = false;
         }
         
         IEGameRenderer ieGameRenderer = (IEGameRenderer) client.gameRenderer;
@@ -112,12 +119,10 @@ public class MyGameRenderer {
         client.getProfiler().startSection("render_portal_content");
         
         //invoke it!
-//        OFInterface.beforeRenderCenter.accept(partialTicks);
         client.gameRenderer.renderWorld(
             partialTicks, 0,
             new MatrixStack()
         );
-//        OFInterface.afterRenderCenter.run();
         
         client.getProfiler().endSection();
         
@@ -138,6 +143,13 @@ public class MyGameRenderer {
         FogRendererContext.swappingManager.popSwapping();
         
         ((IEWorldRenderer) oldWorldRenderer).setVisibleChunks(oldVisibleChunks);
+        
+        if (Global.looseVisibleChunkIteration) {
+            client.renderChunksMany = true;
+        }
+        
+        client.getRenderManager()
+            .cacheActiveRenderInfo(client.world, oldCamera, client.pointedEntity);
     }
     
     public static void renderPlayerItself(Runnable doRenderEntity) {
@@ -260,7 +272,18 @@ public class MyGameRenderer {
         MatrixStack matrixStack,
         float tickDelta
     ) {
+        
         ClientWorld newWorld = CGlobal.clientWorldLoader.getWorld(dimension);
+        
+        if (client.world.dimension instanceof AlternateDimension &&
+            newWorld.dimension instanceof OverworldDimension
+        ) {
+            //avoid redirecting alternate to overworld
+            //or sky will be dark when camera pos is low
+            client.worldRenderer.renderSky(matrixStack, tickDelta);
+            return;
+        }
+        
         WorldRenderer newWorldRenderer = CGlobal.clientWorldLoader.getWorldRenderer(dimension);
         
         ClientWorld oldWorld = client.world;

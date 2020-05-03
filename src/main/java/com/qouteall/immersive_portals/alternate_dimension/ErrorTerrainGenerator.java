@@ -93,11 +93,11 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
                         int worldX = pos.x * 16 + localX;
                         int worldY = sectionY * 16 + localY;
                         int worldZ = pos.z * 16 + localZ;
-    
+                        
                         BlockState currBlockState = generator.getBlockComposition(
                             worldX, worldY, worldZ
                         );
-    
+                        
                         if (currBlockState != AIR) {
                             section.setBlockState(localX, localY, localZ, currBlockState, false);
                             oceanFloorHeightMap.update(localX, worldY, localZ, currBlockState);
@@ -106,11 +106,11 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
                     }
                 }
             }
-    
+            
             section.unlock();
         }
-    
-    
+        
+        
     }
     
     //carve more
@@ -152,31 +152,31 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
     public void decorate(WorldGenRegion region) {
         try {
             super.decorate(region);
-    
+            
         }
         catch (Throwable throwable) {
             Helper.err("Force ignore exception while generating feature " + throwable);
         }
-    
+        
         int centerChunkX = region.getMainChunkX();
         int centerChunkZ = region.getMainChunkZ();
         int x = centerChunkX * 16;
         int z = centerChunkZ * 16;
         BlockPos blockPos = new BlockPos(x, 0, z);
-    
+        
         for (int pass = 1; pass < 4; pass++) {
             Biome biome = this.getBiome(region.getBiomeManager(), blockPos.add(8, 8, 8));
             SharedSeedRandom chunkRandom = new SharedSeedRandom();
             long currSeed = chunkRandom.setDecorationSeed(region.getSeed() + pass, x, z);
-
+            
             generateFeatureForStep(
                 region, centerChunkX, centerChunkZ,
                 blockPos, biome, chunkRandom, currSeed,
                 GenerationStage.Decoration.UNDERGROUND_ORES
             );
         }
-    
-        SimpleSpawnerFeature.instance.place(
+        
+        SpongeDungeonFeature.instance.place(
             region,
             this,
             randomSeed,
@@ -220,9 +220,9 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
         TemplateManager structureManager
     ) {
         randomSeed.setBaseChunkSeed(chunk.getPos().x, chunk.getPos().z);
-    
+        
         Iterator var5 = Feature.STRUCTURES.values().iterator();
-    
+        
         while (var5.hasNext()) {
             Structure<?> structureFeature = (Structure) var5.next();
             if (chunkGenerator.getBiomeProvider().hasStructure(structureFeature)) {
@@ -267,7 +267,7 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
     
     private static double getProbability(Structure<?> structureFeature) {
         if (structureFeature instanceof StrongholdStructure) {
-            return 0.015;
+            return 0.0008;
         }
         if (structureFeature instanceof MineshaftStructure) {
             return 0.015;
@@ -327,4 +327,14 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
         return 64;
     }
     
+    @Override
+    public void generateStructureStarts(IWorld world, IChunk chunk) {
+        try {
+            super.generateStructureStarts(world, chunk);
+        }
+        catch (Throwable throwable) {
+            Helper.err("Error Generating " + world.getDimension().getType() + chunk.getPos());
+            throwable.printStackTrace();
+        }
+    }
 }

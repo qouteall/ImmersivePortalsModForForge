@@ -24,58 +24,76 @@ import net.minecraft.world.IBlockReader;
 import net.minecraft.world.dimension.DimensionType;
 
 public class BlockManipulationClient {
+    private static final Minecraft client = Minecraft.getInstance();
+    
     public static DimensionType remotePointedDim;
     public static RayTraceResult remoteHitResult;
     public static boolean isContextSwitched = false;
     
-    public static boolean isPointingToRemoteBlock() {
+    public static boolean isPointingToPortal() {
         return remotePointedDim != null;
     }
-    
-    public static void onPointedBlockUpdated(float partialTicks) {
+
+    private static BlockRayTraceResult createMissedHitResult(Vec3d from, Vec3d to) {
+        Vec3d dir = to.subtract(from).normalize();
+
+        return BlockRayTraceResult.createMiss(to, Direction.getFacingFromVector(dir.x, dir.y, dir.z), new BlockPos(to));
+    }
+
+    private static boolean hitResultIsMissedOrNull(RayTraceResult bhr) {
+        return bhr == null || bhr.getType() == RayTraceResult.Type.MISS;
+    }
+
+    public static void updatePointedBlock(float partialTicks) {
+        if (client.playerController == null || client.world == null) {
+            return;
+        }
+        
         remotePointedDim = null;
         remoteHitResult = null;
         
-        Minecraft mc = Minecraft.getInstance();
-        Vec3d cameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
         
-        float reachDistance = mc.playerController.getBlockReachDistance();
-        
+        float reachDistance = client.playerController.getBlockReachDistance();
+
         MyCommandServer.getPlayerPointingPortalRaw(
-            mc.player, partialTicks, reachDistance, true
+            client.player, partialTicks, reachDistance, true
         ).ifPresent(pair -> {
-            double distanceToPortalPointing = pair.getSecond().distanceTo(cameraPos);
-            if (distanceToPortalPointing < getCurrentTargetDistance() + 0.2) {
-                updateTargetedBlockThroughPortal(
-                    cameraPos,
-                    mc.player.getLook(partialTicks),
-                    mc.player.dimension,
-                    distanceToPortalPointing,
-                    reachDistance,
-                    pair.getFirst()
-                );
+            if(pair.getFirst().isInteractable()) {
+                double distanceToPortalPointing = pair.getSecond().distanceTo(cameraPos);
+                if(distanceToPortalPointing < getCurrentTargetDistance() + 0.2) {
+                    client.objectMouseOver = createMissedHitResult(cameraPos, pair.getSecond());
+
+                    updateTargetedBlockThroughPortal(
+                            cameraPos,
+                            client.player.getLook(partialTicks),
+                            client.player.dimension,
+                            distanceToPortalPointing,
+                            reachDistance,
+                            pair.getFirst()
+                    );
+                }
             }
         });
     }
-    
+
     private static double getCurrentTargetDistance() {
-        Minecraft mc = Minecraft.getInstance();
-        Vec3d cameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
-        
-        if (mc.objectMouseOver == null) {
+        Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+
+        if (hitResultIsMissedOrNull(client.objectMouseOver)) {
             return 23333;
         }
-        
+
         //pointing to placeholder block does not count
-        if (mc.objectMouseOver instanceof BlockRayTraceResult) {
-            BlockRayTraceResult hitResult = (BlockRayTraceResult) mc.objectMouseOver;
+        if (client.objectMouseOver instanceof BlockRayTraceResult) {
+            BlockRayTraceResult hitResult = (BlockRayTraceResult) client.objectMouseOver;
             BlockPos hitPos = hitResult.getPos();
-            if (mc.world.getBlockState(hitPos).getBlock() == PortalPlaceholderBlock.instance) {
+            if (client.world.getBlockState(hitPos).getBlock() == PortalPlaceholderBlock.instance) {
                 return 23333;
             }
         }
         
-        return cameraPos.distanceTo(mc.objectMouseOver.getHitVec());
+        return cameraPos.distanceTo(client.objectMouseOver.getHitVec());
     }
     
     private static void updateTargetedBlockThroughPortal(
@@ -86,7 +104,6 @@ public class BlockManipulationClient {
         double endDistance,
         Portal portal
     ) {
-        Minecraft mc = Minecraft.getInstance();
         
         Vec3d from = portal.transformPoint(
             cameraPos.add(viewVector.scale(beginDistance))
@@ -100,7 +117,7 @@ public class BlockManipulationClient {
             to,
             RayTraceContext.BlockMode.OUTLINE,
             RayTraceContext.FluidMode.NONE,
-            mc.player
+            client.player
         );
         
         ClientWorld world = CGlobal.clientWorldLoader.getWorld(
@@ -116,10 +133,14 @@ public class BlockManipulationClient {
                 if (blockState.getBlock() == PortalPlaceholderBlock.instance) {
                     return null;
                 }
-    
+                
                 //when seeing through mirror don't stop at the glass block
                 if (portal instanceof Mirror) {
-                    if (portal.getDistanceToNearestPointInPortal(new Vec3d(blockPos).add(0.5,0.5,0.5)) < 0.6) {
+                    if (portal.getDistanceToNearestPointInPortal(new Vec3d(blockPos).add(
+                        0.5,
+                        0.5,
+                        0.5
+                    )) < 0.6) {
                         return null;
                     }
                 }
@@ -163,58 +184,68 @@ public class BlockManipulationClient {
         
         if (remoteHitResult != null) {
             if (!world.getBlockState(((BlockRayTraceResult) remoteHitResult).getPos()).isAir()) {
-                mc.objectMouseOver = null;
+                client.objectMouseOver = createMissedHitResult(from, to);
                 remotePointedDim = portal.dimensionTo;
             }
         }
-    }
-    
-    public static void myHandleBlockBreaking(boolean isKeyPressed) {
-        Minecraft mc = Minecraft.getInstance();
         
-        if (!mc.player.isHandActive()) {
-            if (isKeyPressed && isPointingToRemoteBlock()) {
+    }
+
+    public static void myHandleBlockBreaking(boolean isKeyPressed) {
+//        if (remoteHitResult == null) {
+//            return;
+//        }
+        
+        
+        if (!client.player.isHandActive()) {
+            if (isKeyPressed && isPointingToPortal()) {
                 BlockRayTraceResult blockHitResult = (BlockRayTraceResult) remoteHitResult;
                 BlockPos blockPos = blockHitResult.getPos();
                 ClientWorld remoteWorld =
                     CGlobal.clientWorldLoader.getWorld(remotePointedDim);
                 if (!remoteWorld.getBlockState(blockPos).isAir()) {
                     Direction direction = blockHitResult.getFace();
-                    if (myUpdateBlockBreakingProgress(mc, blockPos, direction)) {
-                        mc.particles.addBlockHitEffects(blockPos, direction);
-                        mc.player.swingArm(Hand.MAIN_HAND);
+                    if (myUpdateBlockBreakingProgress(blockPos, direction)) {
+                        client.particles.addBlockHitEffects(blockPos, direction);
+                        client.player.swingArm(Hand.MAIN_HAND);
                     }
                 }
                 
             }
             else {
-                mc.playerController.resetBlockRemoving();
+                client.playerController.resetBlockRemoving();
             }
         }
     }
     
     //hacky switch
     public static boolean myUpdateBlockBreakingProgress(
-        Minecraft mc,
         BlockPos blockPos,
         Direction direction
     ) {
-        ClientWorld oldWorld = mc.world;
-        mc.world = CGlobal.clientWorldLoader.getWorld(remotePointedDim);
+//        if (remoteHitResult == null) {
+//            return false;
+//        }
+        
+        ClientWorld oldWorld = client.world;
+        client.world = CGlobal.clientWorldLoader.getWorld(remotePointedDim);
         isContextSwitched = true;
         
         try {
-            return mc.playerController.onPlayerDamageBlock(blockPos, direction);
+            return client.playerController.onPlayerDamageBlock(blockPos, direction);
         }
         finally {
-            mc.world = oldWorld;
+            client.world = oldWorld;
             isContextSwitched = false;
         }
         
     }
     
     public static void myAttackBlock() {
-        Minecraft mc = Minecraft.getInstance();
+//        if (remoteHitResult == null) {
+//            return;
+//        }
+        
         
         ClientWorld targetWorld =
             CGlobal.clientWorldLoader.getWorld(remotePointedDim);
@@ -224,32 +255,35 @@ public class BlockManipulationClient {
             return;
         }
         
-        ClientWorld oldWorld = mc.world;
+        ClientWorld oldWorld = client.world;
         
-        mc.world = targetWorld;
+        client.world = targetWorld;
         isContextSwitched = true;
         
         try {
-            mc.playerController.clickBlock(
+            client.playerController.clickBlock(
                 blockPos,
                 ((BlockRayTraceResult) remoteHitResult).getFace()
             );
         }
         finally {
-            mc.world = oldWorld;
+            client.world = oldWorld;
             isContextSwitched = false;
         }
         
-        mc.player.swingArm(Hand.MAIN_HAND);
+        client.player.swingArm(Hand.MAIN_HAND);
     }
     
     //too lazy to rewrite the whole interaction system so hack there and here
     public static void myItemUse(Hand hand) {
-        Minecraft mc = Minecraft.getInstance();
+//        if (remoteHitResult == null) {
+//            return;
+//        }
+        
         ClientWorld targetWorld =
             CGlobal.clientWorldLoader.getWorld(remotePointedDim);
         
-        ItemStack itemStack = mc.player.getHeldItem(hand);
+        ItemStack itemStack = client.player.getHeldItem(hand);
         BlockRayTraceResult blockHitResult = (BlockRayTraceResult) remoteHitResult;
         
         Tuple<BlockRayTraceResult, DimensionType> result =
@@ -260,12 +294,12 @@ public class BlockManipulationClient {
         remotePointedDim = result.getB();
         
         int i = itemStack.getCount();
-        ActionResultType actionResult2 = myInteractBlock(hand, mc, targetWorld, blockHitResult);
+        ActionResultType actionResult2 = myInteractBlock(hand, targetWorld, blockHitResult);
         if (actionResult2.isSuccessOrConsume()) {
             if (actionResult2.isSuccess()) {
-                mc.player.swingArm(hand);
-                if (!itemStack.isEmpty() && (itemStack.getCount() != i || mc.playerController.isInCreativeMode())) {
-                    mc.gameRenderer.itemRenderer.resetEquippedProgress(hand);
+                client.player.swingArm(hand);
+                if (!itemStack.isEmpty() && (itemStack.getCount() != i || client.playerController.isInCreativeMode())) {
+                    client.gameRenderer.itemRenderer.resetEquippedProgress(hand);
                 }
             }
             
@@ -277,17 +311,17 @@ public class BlockManipulationClient {
         }
         
         if (!itemStack.isEmpty()) {
-            ActionResultType actionResult3 = mc.playerController.processRightClick(
-                mc.player,
+            ActionResultType actionResult3 = client.playerController.processRightClick(
+                client.player,
                 targetWorld,
                 hand
             );
             if (actionResult3.isSuccessOrConsume()) {
                 if (actionResult3.isSuccess()) {
-                    mc.player.swingArm(hand);
+                    client.player.swingArm(hand);
                 }
                 
-                mc.gameRenderer.itemRenderer.resetEquippedProgress(hand);
+                client.gameRenderer.itemRenderer.resetEquippedProgress(hand);
                 return;
             }
         }
@@ -295,24 +329,27 @@ public class BlockManipulationClient {
     
     private static ActionResultType myInteractBlock(
         Hand hand,
-        Minecraft mc,
         ClientWorld targetWorld,
         BlockRayTraceResult blockHitResult
     ) {
-        ClientWorld oldWorld = mc.world;
+//        if (remoteHitResult == null) {
+//            return null;
+//        }
+        
+        ClientWorld oldWorld = client.world;
         
         try {
-            mc.player.world = targetWorld;
-            mc.world = targetWorld;
+            client.player.world = targetWorld;
+            client.world = targetWorld;
             isContextSwitched = true;
             
-            return mc.playerController.func_217292_a(
-                mc.player, targetWorld, hand, blockHitResult
+            return client.playerController.func_217292_a(
+                client.player, targetWorld, hand, blockHitResult
             );
         }
         finally {
-            mc.player.world = oldWorld;
-            mc.world = oldWorld;
+            client.player.world = oldWorld;
+            client.world = oldWorld;
             isContextSwitched = false;
         }
     }

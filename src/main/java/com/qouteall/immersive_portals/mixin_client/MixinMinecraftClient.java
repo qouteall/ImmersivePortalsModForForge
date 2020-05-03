@@ -32,22 +32,31 @@ public class MixinMinecraftClient implements IEMinecraftClient {
     @Final
     public WorldRenderer worldRenderer;
     
-//    @Inject(at = @At("TAIL"), method = "<init>")
-//    private void onInitEnded(CallbackInfo info) {
-//        OFInterface.initShaderCullingManager.run();
-//    }
-    
     @Inject(
+        method = "Lnet/minecraft/client/Minecraft;runTick()V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/world/ClientWorld;tick(Ljava/util/function/BooleanSupplier;)V",
             shift = At.Shift.AFTER
-        ),
-        method = "Lnet/minecraft/client/Minecraft;runTick()V"
+        )
     )
-    private void onClientTick(CallbackInfo ci) {
+    private void onAfterClientTick(CallbackInfo ci) {
         ModMain.postClientTickSignal.emit();
+//        MyRenderHelper.updatePreRenderInfo(0);
+        CGlobal.clientTeleportationManager.manageTeleportation(0);
     }
+    
+//    @Inject(
+//        method = "tick",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/client/world/ClientWorld;tick(Ljava/util/function/BooleanSupplier;)V"
+//        )
+//    )
+//    private void onBeforeClientTick(CallbackInfo ci) {
+//        MyRenderHelper.updatePreRenderInfo(1);
+//        CGlobal.clientTeleportationManager.manageTeleportation(1);
+//    }
     
     @Inject(
         method = "Lnet/minecraft/client/Minecraft;updateWorldRenderer(Lnet/minecraft/client/world/ClientWorld;)V",

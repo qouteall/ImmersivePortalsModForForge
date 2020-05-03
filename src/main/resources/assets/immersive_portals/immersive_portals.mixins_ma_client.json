@@ -5,6 +5,7 @@
   "refmap": "imm_ptl.refmap.json",
   "mixins": [
     "MixinClientWorld_MA",
+    "MixinForgeBlockModelRenderer",
     "MixinForgeModelDataManager"
   ],
   "injectors": {

@@ -24,6 +24,9 @@ public abstract class MixinMinecraftClient_B {
     @Shadow
     public RayTraceResult objectMouseOver;
     
+    @Shadow
+    protected int leftClickCounter;
+    
     @Inject(
         method = "Lnet/minecraft/client/Minecraft;sendClickBlockToController(Z)V",
         at = @At(
@@ -33,7 +36,7 @@ public abstract class MixinMinecraftClient_B {
         cancellable = true
     )
     private void onHandleBlockBreaking(boolean isKeyPressed, CallbackInfo ci) {
-        if (BlockManipulationClient.isPointingToRemoteBlock()) {
+        if (BlockManipulationClient.isPointingToPortal()) {
             BlockManipulationClient.myHandleBlockBreaking(isKeyPressed);
             ci.cancel();
         }
@@ -41,16 +44,15 @@ public abstract class MixinMinecraftClient_B {
     
     @Inject(
         method = "Lnet/minecraft/client/Minecraft;clickMouse()V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/util/math/RayTraceResult;getType()Lnet/minecraft/util/math/RayTraceResult$Type;"
-        ),
+        at = @At("HEAD"),
         cancellable = true
     )
     private void onDoAttack(CallbackInfo ci) {
-        if (BlockManipulationClient.isPointingToRemoteBlock()) {
-            BlockManipulationClient.myAttackBlock();
-            ci.cancel();
+        if (leftClickCounter <= 0) {
+            if (BlockManipulationClient.isPointingToPortal()) {
+                BlockManipulationClient.myAttackBlock();
+                ci.cancel();
+            }
         }
     }
     
@@ -58,12 +60,12 @@ public abstract class MixinMinecraftClient_B {
         method = "Lnet/minecraft/client/Minecraft;rightClickMouse()V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/util/math/RayTraceResult;getType()Lnet/minecraft/util/math/RayTraceResult$Type;"
+            target = "Lnet/minecraft/client/entity/player/ClientPlayerEntity;getHeldItem(Lnet/minecraft/util/Hand;)Lnet/minecraft/item/ItemStack;"
         ),
         cancellable = true
     )
     private void onDoItemUse(CallbackInfo ci) {
-        if (BlockManipulationClient.isPointingToRemoteBlock()) {
+        if (BlockManipulationClient.isPointingToPortal()) {
             //TODO support offhand
             BlockManipulationClient.myItemUse(Hand.MAIN_HAND);
             ci.cancel();
@@ -78,7 +80,7 @@ public abstract class MixinMinecraftClient_B {
         )
     )
     private void redirectDoItemPick(Minecraft minecraftClient) {
-        if (BlockManipulationClient.isPointingToRemoteBlock()) {
+        if (BlockManipulationClient.isPointingToPortal()) {
             ClientWorld remoteWorld = CGlobal.clientWorldLoader.getWorld(
                 BlockManipulationClient.remotePointedDim
             );

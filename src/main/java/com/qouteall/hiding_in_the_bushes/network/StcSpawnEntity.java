@@ -73,15 +73,15 @@ public class StcSpawnEntity {
         
         ClientWorld world = CGlobal.clientWorldLoader.getWorld(dimension);
         
-        if (world.getEntityByID(entityId) != null) {
-            Helper.err(String.format(
-                "duplicate entity %s %s %s",
-                ((Integer) entityId).toString(),
-                entityType.get().getTranslationKey(),
-                tag
-            ));
-            return;
-        }
+//        if (world.getEntityByID(entityId) != null) {
+//            Helper.err(String.format(
+//                "duplicate entity %s %s %s",
+//                ((Integer) entityId).toString(),
+//                entityType.get().getTranslationKey(),
+//                tag
+//            ));
+//            return;
+//        }
     
         Entity entity = entityType.get().create(world);
         entity.read(tag);

@@ -215,7 +215,7 @@ public class ChunkVisibilityManager {
                 Portal.class,
                 Global.loadFewerChunks ? portalLoadingRange / 2 : portalLoadingRange
             ).filter(
-                portal -> portal.canBeSeenByPlayer(player)
+                portal -> portal.isSpectatedByPlayer(player)
             ).flatMap(
                 portal -> Stream.concat(
                     Stream.of(portalDirectLoader(portal, player)),
@@ -228,7 +228,7 @@ public class ChunkVisibilityManager {
                             Portal.class,
                             secondaryPortalLoadingRange
                         ).filter(
-                            remotePortal -> remotePortal.canBeSeenByPlayer(player)
+                            remotePortal -> remotePortal.isSpectatedByPlayer(player)
                         ).map(
                             remotePortal -> portalIndirectLoader(remotePortal)
                         )
