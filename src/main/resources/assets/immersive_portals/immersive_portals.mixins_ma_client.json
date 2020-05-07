@@ -4,9 +4,13 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "imm_ptl.refmap.json",
   "mixins": [
+    "MixinChunkRender",
+    "MixinChunkRenderDispatcher",
+    "MixinChunkRenderTask",
     "MixinClientWorld_MA",
     "MixinForgeBlockModelRenderer",
-    "MixinForgeModelDataManager"
+    "MixinForgeModelDataManager",
+    "MixinRebuildTask"
   ],
   "injectors": {
     "defaultRequire": 1

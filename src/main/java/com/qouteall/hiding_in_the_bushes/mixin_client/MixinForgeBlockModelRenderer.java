@@ -1,7 +1,7 @@
 package com.qouteall.hiding_in_the_bushes.mixin_client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.qouteall.hiding_in_the_bushes.ModelDataHacker;
+import com.qouteall.hiding_in_the_bushes.fix_model_data.ModelDataHacker;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.renderer.model.IBakedModel;
 import net.minecraft.util.math.BlockPos;

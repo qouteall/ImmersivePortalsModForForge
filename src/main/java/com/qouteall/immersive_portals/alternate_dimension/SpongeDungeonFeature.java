@@ -19,6 +19,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.potion.PotionUtils;
@@ -61,8 +62,8 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
     
     private static RandomSelector<Function<Random, Integer>> heightSelector =
         new RandomSelector.Builder<Function<Random, Integer>>()
-            .add(20, random -> (int) (random.nextDouble() * 50 + 1))
-            .add(10, random -> random.nextInt(150) + 1)
+            .add(20, random -> (int) (random.nextDouble() * 50 + 3))
+            .add(10, random -> random.nextInt(150) + 3)
             .build();
     
     private static RandomSelector<BiFunction<World, Random, Entity>> entitySelector =
@@ -85,18 +86,24 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
             .add(10, EntityType.CAVE_SPIDER)
             .add(10, EntityType.GIANT)
             .add(10, EntityType.MAGMA_CUBE)
-            .add(10, EntityType.GUARDIAN)
+//            .add(10, EntityType.GUARDIAN)
+            .add(10, EntityType.ENDERMAN)
+            .add(10, EntityType.SNOW_GOLEM)
+            .add(10, EntityType.ARMOR_STAND)
+            .add(10, EntityType.PILLAGER)
+            .add(10, EntityType.PUFFERFISH)
+            .add(10, EntityType.RAVAGER)
             .add(1, EntityType.WITHER)
             .build();
     
     private static RandomSelector<EntityType<?>> vehicleTypeSelector =
         new RandomSelector.Builder<EntityType<?>>()
             .add(20, EntityType.BAT)
-            .add(30, EntityType.PHANTOM)
+            .add(20, EntityType.PHANTOM)
             .add(20, EntityType.GHAST)
             .add(10, EntityType.SLIME)
-            .add(10, EntityType.SPIDER)
-            .add(10, EntityType.PARROT)
+            .add(20, EntityType.SPIDER)
+            .add(20, EntityType.PARROT)
             .add(10, EntityType.SHULKER)
             .build();
     
@@ -219,23 +226,27 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
         mobSpawner.getSpawnerBaseLogic().setEntityType(spawnedEntity.getType());
         
         CompoundNBT logicTag = mobSpawner.getSpawnerBaseLogic().write(new CompoundNBT());
-        logicTag.putShort("RequiredPlayerRange", (short) 64);
+        logicTag.putShort("RequiredPlayerRange", (short) 32);
         //logicTag.putShort("MinSpawnDelay",(short) 10);
         //logicTag.putShort("MaxSpawnDelay",(short) 100);
         //logicTag.putShort("MaxNearbyEntities",(short) 200);
         mobSpawner.getSpawnerBaseLogic().read(logicTag);
     }
     
-    private static void removeUnnecessaryTag(CompoundNBT tag) {
-        tag.remove("Pos");
-        tag.remove("UUIDMost");
-        tag.remove("UUIDLeast");
-        tag.keySet().forEach(key -> {
-            INBT currTag = tag.get(key);
-            if (currTag instanceof CompoundNBT) {
-                removeUnnecessaryTag(((CompoundNBT) currTag));
-            }
-        });
+    private static void removeUnnecessaryTag(INBT tag) {
+        if (tag instanceof CompoundNBT) {
+            ((CompoundNBT) tag).remove("Pos");
+            ((CompoundNBT) tag).remove("UUIDMost");
+            ((CompoundNBT) tag).remove("UUIDLeast");
+            ((CompoundNBT) tag).keySet().forEach(key -> {
+                INBT currTag = ((CompoundNBT) tag).get(key);
+                removeUnnecessaryTag((currTag));
+                
+            });
+        }
+        if (tag instanceof ListNBT) {
+            ((ListNBT) tag).stream().forEach(SpongeDungeonFeature::removeUnnecessaryTag);
+        }
     }
     
     private static Entity randomMonster(World world, Random random) {
@@ -257,6 +268,8 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
             ItemStack stack = new ItemStack(() -> Items.BOW);
             entity.setItemStackToSlot(EquipmentSlotType.MAINHAND, stack);
             entity.setItemStackToSlot(EquipmentSlotType.OFFHAND, stack.copy());
+            ItemStack pumpkin = new ItemStack(() -> Items.PUMPKIN);
+            entity.setItemStackToSlot(EquipmentSlotType.HEAD, pumpkin);
         }
         return entity;
     }
@@ -338,13 +351,13 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
     
     private static RandomSelector<ItemStack> filledTreasureSelector =
         new RandomSelector.Builder<ItemStack>()
-            .add(40, new ItemStack(() -> Items.DIRT, 64))
-            .add(40, new ItemStack(() -> Items.SAND, 64))
-            .add(40, new ItemStack(() -> Items.TERRACOTTA, 64))
-            .add(40, new ItemStack(() -> Items.GRAVEL, 64))
+            .add(60, new ItemStack(() -> Items.DIRT, 64))
+            .add(60, new ItemStack(() -> Items.SAND, 64))
+            .add(60, new ItemStack(() -> Items.TERRACOTTA, 64))
+            .add(60, new ItemStack(() -> Items.GRAVEL, 64))
             .add(40, new ItemStack(() -> Items.PACKED_ICE, 64))
-            .add(40, new ItemStack(() -> Items.GLASS, 64))
-            .add(10, new ItemStack(() -> Items.COBBLESTONE, 64))
+            .add(60, new ItemStack(() -> Items.GLASS, 64))
+            .add(60, new ItemStack(() -> Items.COBBLESTONE, 64))
             .add(10, new ItemStack(() -> Items.FEATHER, 64))
             .add(10, new ItemStack(() -> Items.INK_SAC, 64))
             .add(10, new ItemStack(() -> Items.LADDER, 64))
@@ -411,7 +424,7 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
                 new ItemStack(() -> Items.POTION, 1),
                 itemStack -> PotionUtils.addPotionToItemStack(itemStack, Potions.MUNDANE)
             ))
-            .add(100, Helper.makeIntoExpression(
+            .add(80, Helper.makeIntoExpression(
                 new ItemStack(() -> Items.POTION, 1),
                 itemStack -> PotionUtils.addPotionToItemStack(itemStack, HandReachTweak.longerReachPotion)
             ))

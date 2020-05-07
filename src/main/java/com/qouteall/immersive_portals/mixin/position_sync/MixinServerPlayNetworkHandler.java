@@ -91,9 +91,9 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         double destX,
         double destY,
         double destZ,
-        float float_1,
-        float float_2,
-        Set<SPlayerPositionLookPacket.Flags> set_1
+        float destYaw,
+        float destPitch,
+        Set<SPlayerPositionLookPacket.Flags> updates
     ) {
         Helper.log(String.format("request teleport %s %s (%d %d %d)->(%d %d %d)",
             player.getName().getUnformattedComponentText(),
@@ -102,11 +102,11 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
             (int) destX, (int) destY, (int) destZ
         ));
         
-        double double_4 = set_1.contains(SPlayerPositionLookPacket.Flags.X) ? this.player.getPosX() : 0.0D;
-        double double_5 = set_1.contains(SPlayerPositionLookPacket.Flags.Y) ? this.player.getPosY() : 0.0D;
-        double double_6 = set_1.contains(SPlayerPositionLookPacket.Flags.Z) ? this.player.getPosZ() : 0.0D;
-        float float_3 = set_1.contains(SPlayerPositionLookPacket.Flags.Y_ROT) ? this.player.rotationYaw : 0.0F;
-        float float_4 = set_1.contains(SPlayerPositionLookPacket.Flags.X_ROT) ? this.player.rotationPitch : 0.0F;
+        double currX = updates.contains(SPlayerPositionLookPacket.Flags.X) ? this.player.getPosX() : 0.0D;
+        double currY = updates.contains(SPlayerPositionLookPacket.Flags.Y) ? this.player.getPosY() : 0.0D;
+        double currZ = updates.contains(SPlayerPositionLookPacket.Flags.Z) ? this.player.getPosZ() : 0.0D;
+        float currYaw = updates.contains(SPlayerPositionLookPacket.Flags.Y_ROT) ? this.player.rotationYaw : 0.0F;
+        float currPitch = updates.contains(SPlayerPositionLookPacket.Flags.X_ROT) ? this.player.rotationPitch : 0.0F;
         
         if (!Global.serverTeleportationManager.isJustTeleported(player, 100)) {
             this.targetPos = new Vec3d(destX, destY, destZ);
@@ -117,18 +117,19 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         }
         
         this.lastPositionUpdate = this.networkTickCount;
-        this.player.setPositionAndRotation(destX, destY, destZ, float_1, float_2);
-        SPlayerPositionLookPacket packet_1 = new SPlayerPositionLookPacket(
-            destX - double_4,
-            destY - double_5,
-            destZ - double_6,
-            float_1 - float_3,
-            float_2 - float_4,
-            set_1,
+        this.player.setPositionAndRotation(destX, destY, destZ, destYaw, destPitch);
+        SPlayerPositionLookPacket lookPacket = new SPlayerPositionLookPacket(
+            destX - currX,
+            destY - currY,
+            destZ - currZ,
+            destYaw - currYaw,
+            destPitch - currPitch,
+            updates,
             this.teleportId
         );
-        ((IEPlayerPositionLookS2CPacket) packet_1).setPlayerDimension(player.dimension);
-        this.player.connection.sendPacket(packet_1);
+        //noinspection ConstantConditions
+        ((IEPlayerPositionLookS2CPacket) lookPacket).setPlayerDimension(player.dimension);
+        this.player.connection.sendPacket(lookPacket);
         
         if (Global.teleportationDebugEnabled) {
             new Throwable().printStackTrace();

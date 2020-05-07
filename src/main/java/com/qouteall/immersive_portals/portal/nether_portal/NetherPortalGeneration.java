@@ -302,6 +302,10 @@ public class NetherPortalGeneration {
         return thisSideShape.obj != null;
     }
     
+    private static boolean isLapis(IWorld world, BlockPos blockPos) {
+        return world.getBlockState(blockPos).getBlock() == Blocks.LAPIS_BLOCK;
+    }
+    
     //return this side shape if the generation starts
     public static BlockPortalShape startGeneratingPortal(
         ServerWorld fromWorld,
@@ -317,8 +321,17 @@ public class NetherPortalGeneration {
         Consumer<BlockPortalShape> newFrameGeneratedFunc,
         Consumer<Info> portalEntityGeneratingFunc
     ) {
+        if (!fromWorld.isBlockLoaded(startingPos)) {
+            Helper.log("Cancel Nether Portal Generation Because Chunk Not Loaded");
+            return null;
+        }
+        
         DimensionType fromDimension = fromWorld.dimension.getType();
         DimensionType toDimension = toWorld.dimension.getType();
+        
+        Helper.log(String.format("Portal Generation Attempted %s %s %s %s",
+            fromDimension, startingPos.getX(), startingPos.getY(), startingPos.getZ()
+        ));
         
         BlockPortalShape foundShape = Arrays.stream(Direction.Axis.values())
             .map(
@@ -562,9 +575,10 @@ public class NetherPortalGeneration {
         return blockPosStream;
     }
     
-    private static void embodyNewFrame(
+    public static void embodyNewFrame(
         ServerWorld toWorld,
-        BlockPortalShape toShape, BlockState frameBlockState
+        BlockPortalShape toShape,
+        BlockState frameBlockState
     ) {
         toShape.frameAreaWithCorner.forEach(blockPos ->
             toWorld.setBlockState(blockPos, frameBlockState)

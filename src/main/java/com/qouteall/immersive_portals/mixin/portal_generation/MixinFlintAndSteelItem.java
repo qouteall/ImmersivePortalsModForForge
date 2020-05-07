@@ -3,8 +3,10 @@ package com.qouteall.immersive_portals.mixin.portal_generation;
 import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
+import com.qouteall.immersive_portals.portal.CustomizablePortalGeneration;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.FlintAndSteelItem;
 import net.minecraft.item.ItemUseContext;
@@ -20,6 +22,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(FlintAndSteelItem.class)
 public class MixinFlintAndSteelItem {
+    @Inject(
+        method = "Lnet/minecraft/item/FlintAndSteelItem;canSetFire(Lnet/minecraft/block/BlockState;Lnet/minecraft/world/IWorld;Lnet/minecraft/util/math/BlockPos;)Z",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private static void onCanIgnite(
+        BlockState block,
+        IWorld world,
+        BlockPos pos,
+        CallbackInfoReturnable<Boolean> cir
+    ) {
+        for (Direction direction : Direction.values()) {
+            if (O_O.isObsidian(world, pos.offset(direction))) {
+                if (block.isAir()) {
+                    cir.setReturnValue(true);
+                    cir.cancel();
+                }
+            }
+        }
+    }
+    
     @Inject(method = "Lnet/minecraft/item/FlintAndSteelItem;onItemUse(Lnet/minecraft/item/ItemUseContext;)Lnet/minecraft/util/ActionResultType;", at = @At("HEAD"))
     private void onUseFlintAndSteel(
         ItemUseContext context,
@@ -31,10 +54,7 @@ public class MixinFlintAndSteelItem {
             Direction side = context.getFace();
             BlockPos firePos = targetPos.offset(side);
             Block targetBlock = world.getBlockState(targetPos).getBlock();
-            if (O_O.isObsidian(world, targetPos)) {
-                NetherPortalGeneration.onFireLitOnObsidian(((ServerWorld) world), firePos);
-            }
-            else if (targetBlock == Blocks.GLASS) {
+            if (targetBlock == Blocks.GLASS) {
                 BreakableMirror mirror = BreakableMirror.createMirror(
                     ((ServerWorld) world), targetPos, side
                 );
@@ -44,11 +64,12 @@ public class MixinFlintAndSteelItem {
                     ((ServerWorld) world),
                     firePos
                 );
-        
             }
             else {
-                context.getItem().damageItem(1, context.getPlayer(),
-                    playerEntity_1x -> playerEntity_1x.sendBreakAnimation(context.getHand())
+                CustomizablePortalGeneration.onFireLit(
+                    ((ServerWorld) world),
+                    firePos,
+                    targetBlock
                 );
             }
         }

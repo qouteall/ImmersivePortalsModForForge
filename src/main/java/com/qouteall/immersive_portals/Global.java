@@ -43,8 +43,12 @@ public class Global {
     public static boolean looseVisibleChunkIteration = true;
     
     public static boolean blameOpenJdk = true;
-
+    
+    public static boolean portalPlaceholderPassthrough = true;
+    
     public static boolean mirrorInteractableThroughPortal = true;
+    
+    public static boolean enableLapizPortal = true;
 
     public static enum RenderMode {
         normal,

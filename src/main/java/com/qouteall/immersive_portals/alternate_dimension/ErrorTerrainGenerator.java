@@ -267,7 +267,7 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
     
     private static double getProbability(Structure<?> structureFeature) {
         if (structureFeature instanceof StrongholdStructure) {
-            return 0.0008;
+            return 0.0007;
         }
         if (structureFeature instanceof MineshaftStructure) {
             return 0.015;
@@ -279,7 +279,7 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
             return 0.08;
         }
         if (structureFeature instanceof EndCityStructure) {
-            return 0.1;
+            return 0.2;
         }
         return 0.15;
     }

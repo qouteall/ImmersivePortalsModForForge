@@ -17,6 +17,7 @@ import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
+import com.qouteall.immersive_portals.portal.nether_portal.GeneralBreakablePortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.render.LoadingIndicatorRenderer;
 import com.qouteall.immersive_portals.render.PortalEntityRenderer;
@@ -75,8 +76,6 @@ public class ModMainForge {
     
     public static boolean isServerMixinApplied = false;
     
-    public static boolean disableDimensionUnload = false;
-    
     public ModMainForge() {
         // Register the setup method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
@@ -106,7 +105,8 @@ public class ModMainForge {
             BreakableMirror.entityType,
             GlobalTrackedPortal.entityType,
             BorderPortal.entityType,
-            VerticalConnectingPortal.entityType
+            VerticalConnectingPortal.entityType,
+            GeneralBreakablePortal.entityType
         }).peek(
             Validate::notNull
         ).forEach(
@@ -437,6 +437,20 @@ public class ModMainForge {
                 VerticalConnectingPortal.entityType.setRegistryName(
                     "immersive_portals:end_floor_portal")
             );
+    
+            GeneralBreakablePortal.entityType = EntityType.Builder.create(
+                GeneralBreakablePortal::new, EntityClassification.MISC
+            ).size(
+                1, 1
+            ).immuneToFire().setCustomClientFactory((a, world) ->
+                new GeneralBreakablePortal(GeneralBreakablePortal.entityType, world)
+            ).build(
+                "immersive_portals:general_breakable_portal"
+            );
+            event.getRegistry().register(
+                VerticalConnectingPortal.entityType.setRegistryName(
+                    "immersive_portals:general_breakable_portal")
+            );
             
             LoadingIndicatorEntity.entityType = EntityType.Builder.create(
                 LoadingIndicatorEntity::new, EntityClassification.MISC
@@ -513,7 +527,7 @@ public class ModMainForge {
         public static void onPotionRegistry(RegistryEvent.Register<Potion> event) {
             HandReachTweak.longerReachPotion = new Potion(
                 new EffectInstance(
-                    HandReachTweak.longerReachEffect, 3600, 1
+                    HandReachTweak.longerReachEffect, 7200, 1
                 )
             );
             Registry.register(

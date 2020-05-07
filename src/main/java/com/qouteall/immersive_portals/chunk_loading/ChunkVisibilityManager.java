@@ -192,9 +192,13 @@ public class ChunkVisibilityManager {
     private static Stream<GlobalTrackedPortal> getGlobalPortals(
         DimensionType dimension
     ) {
-        return GlobalPortalStorage.get(
+        List<GlobalTrackedPortal> data = GlobalPortalStorage.get(
             McHelper.getServer().getWorld(dimension)
-        ).data.stream();
+        ).data;
+        if (data == null) {
+            return Stream.empty();
+        }
+        return data.stream();
     }
     
     //includes:

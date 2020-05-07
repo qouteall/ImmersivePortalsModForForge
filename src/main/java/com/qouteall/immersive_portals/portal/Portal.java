@@ -1,7 +1,9 @@
 package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.SignalArged;
 import net.minecraft.client.renderer.Quaternion;
 import net.minecraft.client.renderer.Vector3f;
@@ -623,5 +625,16 @@ public class Portal extends Entity {
         ).add(
             axisH.scale(yInPlane)
         );
+    }
+
+    /**
+     * @return The {@link World} of this portal's {@link #dimensionTo}.
+     */
+    public World getDestinationWorld(boolean isClient) {
+        if (isClient) {
+            return CHelper.getClientWorld(dimensionTo);
+        } else {
+            return McHelper.getServer().getWorld(dimensionTo);
+        }
     }
 }
