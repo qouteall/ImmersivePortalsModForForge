@@ -448,7 +448,7 @@ public class ModMainForge {
                 "immersive_portals:general_breakable_portal"
             );
             event.getRegistry().register(
-                VerticalConnectingPortal.entityType.setRegistryName(
+                GeneralBreakablePortal.entityType.setRegistryName(
                     "immersive_portals:general_breakable_portal")
             );
             

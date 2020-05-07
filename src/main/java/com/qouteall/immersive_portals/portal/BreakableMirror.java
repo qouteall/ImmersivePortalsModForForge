@@ -3,7 +3,8 @@ package com.qouteall.immersive_portals.portal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.IntBox;
-import net.minecraft.block.Blocks;
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
@@ -11,6 +12,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 
@@ -86,8 +88,13 @@ public class BreakableMirror extends Mirror {
     }
     
     private static boolean isGlass(World world, BlockPos blockPos) {
-        return world.getBlockState(blockPos).getBlock() == Blocks.GLASS;
-        //return world.getBlockState(blockPos).getMaterial() == Material.GLASS;
+//        return world.getBlockState(blockPos).getBlock() == Blocks.GLASS;
+        return world.getBlockState(blockPos).getMaterial() == Material.GLASS;
+    }
+    
+    private static boolean isGlassPane(World world, BlockPos blockPos) {
+        Block block = world.getBlockState(blockPos).getBlock();
+        return Registry.BLOCK.getKey(block).toString().contains("pane");
     }
     
     public static BreakableMirror createMirror(
@@ -99,6 +106,12 @@ public class BreakableMirror extends Mirror {
             return null;
         }
         
+        boolean isGlassPane = isGlassPane(world, glassPos);
+    
+        if (facing.getAxis() == Direction.Axis.Y && isGlassPane) {
+            return null;
+        }
+        
         IntBox wallArea = Helper.expandRectangle(
             glassPos,
             blockPos -> isGlass(world, blockPos),
@@ -106,6 +119,7 @@ public class BreakableMirror extends Mirror {
         );
         
         BreakableMirror breakableMirror = BreakableMirror.entityType.create(world);
+        double distanceToCenter = isGlassPane ? (1.0/16) : 0.5;
         Vec3d pos = new Vec3d(
             (double) (wallArea.l.getX() + wallArea.h.getX()) / 2,
             (double) (wallArea.l.getY() + wallArea.h.getY()) / 2,
@@ -113,7 +127,7 @@ public class BreakableMirror extends Mirror {
         ).add(
             0.5, 0.5, 0.5
         ).add(
-            new Vec3d(facing.getDirectionVec()).scale(0.5)
+            new Vec3d(facing.getDirectionVec()).scale(distanceToCenter)
         );
         breakableMirror.setPosition(
             pos.x, pos.y, pos.z
@@ -127,6 +141,13 @@ public class BreakableMirror extends Mirror {
         Direction.Axis hAxis = axises.getB();
         float width = Helper.getCoordinate(wallArea.getSize(), wAxis);
         int height = Helper.getCoordinate(wallArea.getSize(), hAxis);
+        
+        if (isGlassPane) {
+            if (height < 1) {
+                return null;
+            }
+            height -= (6.0 / 8);
+        }
         
         breakableMirror.axisW = new Vec3d(
             Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, wAxis).getDirectionVec()

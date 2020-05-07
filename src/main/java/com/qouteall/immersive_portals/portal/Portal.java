@@ -34,7 +34,7 @@ public class Portal extends Entity {
     public DimensionType dimensionTo;
     public Vec3d destination;
     
-    //additional properteis
+    //additional properties
     public boolean teleportable = true;
     public UUID specificPlayerId;
     public GeometryPortalShape specialShape;

@@ -325,7 +325,11 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         CallbackInfo ci
     ) {
         if (CGlobal.renderer.isRendering()) {
-            PixelCuller.updateCullingPlaneInner(matrices, CGlobal.renderer.getRenderingPortal(),true);
+            PixelCuller.updateCullingPlaneInner(
+                matrices,
+                CGlobal.renderer.getRenderingPortal(),
+                true
+            );
             PixelCuller.startCulling();
         }
     }
@@ -550,6 +554,19 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         MyRenderHelper.shouldForceDisableCull = false;
     }
     
+    @Redirect(
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/IRenderTypeBuffer$Impl;finish()V"
+        )
+    )
+    private void redirectVertexDraw1(IRenderTypeBuffer.Impl immediate) {
+        MyRenderHelper.shouldForceDisableCull = MyRenderHelper.isRenderingOddNumberOfMirrors();
+        immediate.finish();
+        MyRenderHelper.shouldForceDisableCull = false;
+    }
+    
     //redirect sky rendering dimension
     @Redirect(
         method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/Matrix4f;)V",
@@ -568,15 +585,15 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
                 return;
             }
         }
-
+        
         if (OFInterface.isShaders.getAsBoolean()) {
             DimensionType dim = Minecraft.getInstance().world.dimension.getType();
             DimensionType redirectedDimension = RenderDimensionRedirect.getRedirectedDimension(dim);
-
+            
             MyGameRenderer.renderSkyFor(redirectedDimension, matrixStack, f);
             return;
         }
-
+        
         worldRenderer.renderSky(matrixStack, f);
     }
     

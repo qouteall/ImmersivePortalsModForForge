@@ -27,36 +27,43 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ModelDataHacker {
     private static int loggedNum = 0;
     
+    public static void log(Runnable runnable) {
+        if (loggedNum < 200) {
+            loggedNum++;
+            runnable.run();
+        }
+    }
+    
     @OnlyIn(Dist.CLIENT)
     public static void updateForgeModelData() {
-        
-        ClientWorld world = Minecraft.getInstance().world;
-        
-        MyClientChunkManager chunkProvider = (MyClientChunkManager) world.getChunkProvider();
-        
-        List<Chunk> chunkList = chunkProvider.getCopiedChunkList();
-        Iterator<Chunk> chunkIterator = chunkList.iterator();
-        int batchSize = chunkList.size() / 10;
-        
-        ModMain.clientTaskList.addTask(() -> {
-            //if the player teleports, stop task
-            if (Minecraft.getInstance().world != world) {
-                return true;
-            }
-            
-            for (int i = 0; i < batchSize; i++) {
-                if (chunkIterator.hasNext()) {
-                    Chunk chunk = chunkIterator.next();
-                    chunk.getTileEntityMap().values().forEach(tileEntity -> {
-                        ModelDataManager.requestModelDataRefresh(tileEntity);
-                    });
-                }
-                else {
-                    return true;
-                }
-            }
-            return false;
-        });
+
+//        ClientWorld world = Minecraft.getInstance().world;
+//
+//        MyClientChunkManager chunkProvider = (MyClientChunkManager) world.getChunkProvider();
+//
+//        List<Chunk> chunkList = chunkProvider.getCopiedChunkList();
+//        Iterator<Chunk> chunkIterator = chunkList.iterator();
+//        int batchSize = chunkList.size() / 10;
+//
+//        ModMain.clientTaskList.addTask(() -> {
+//            //if the player teleports, stop task
+//            if (Minecraft.getInstance().world != world) {
+//                return true;
+//            }
+//
+//            for (int i = 0; i < batchSize; i++) {
+//                if (chunkIterator.hasNext()) {
+//                    Chunk chunk = chunkIterator.next();
+//                    chunk.getTileEntityMap().values().forEach(tileEntity -> {
+//                        ModelDataManager.requestModelDataRefresh(tileEntity);
+//                    });
+//                }
+//                else {
+//                    return true;
+//                }
+//            }
+//            return false;
+//        });
     }
     
     @OnlyIn(Dist.CLIENT)
@@ -64,8 +71,7 @@ public class ModelDataHacker {
         ILightReader world,
         BlockPos pos
     ) {
-        if (loggedNum < 200) {
-            loggedNum++;
+        log(() -> {
             if (world instanceof IWorld) {
                 DimensionType type = ((IWorld) world).getDimension().getType();
                 Helper.err("Fetching Missing Model Data " + type + pos);
@@ -73,22 +79,22 @@ public class ModelDataHacker {
             else {
                 Helper.err("Fetching Missing Model Data " + world + pos);
             }
-        }
+        });
         
         TileEntity tileEntity = world.getTileEntity(pos);
         
         if (tileEntity == null) {
-            if (loggedNum < 200) {
+            log(() -> {
                 Helper.err("Cannot find block entity for model data");
-            }
+            });
             return net.minecraftforge.client.model.data.EmptyModelData.INSTANCE;
         }
         
         IModelData modelData = tileEntity.getModelData();
         if (modelData == null) {
-            if (loggedNum < 200) {
+            log(() -> {
                 Helper.err("Block entity has null model data? " + tileEntity);
-            }
+            });
             return net.minecraftforge.client.model.data.EmptyModelData.INSTANCE;
         }
         

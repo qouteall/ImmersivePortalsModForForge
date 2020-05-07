@@ -118,7 +118,7 @@ dependencies {
 
     compileOnly files('ofstuff2.jar')
 
-//    compile fg.deobf("ignored:Mekanism:1.15.2-9.9.20.412")
+//    compile fg.deobf("ignored:Mekanism:1.15.2-9.10.2.415")
 
     //compile fg.deobf("ignored:curios-FORGE-1.15.2:2.0.2")
     //compile fg.deobf("ignored:Mine+and+Slash-1.15.2:3.4.1")

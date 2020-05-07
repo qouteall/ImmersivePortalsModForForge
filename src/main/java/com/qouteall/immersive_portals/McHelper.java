@@ -1,11 +1,10 @@
 package com.qouteall.immersive_portals;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.qouteall.immersive_portals.ducks.IEServerWorld;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
+import com.qouteall.immersive_portals.ducks.IEWorldChunk;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
@@ -13,13 +12,15 @@ import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ClassInheritanceMultiMap;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.AbstractChunkProvider;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ChunkHolder;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
@@ -369,7 +371,20 @@ public class McHelper {
         DimensionType dimension,
         int x, int z
     ) {
+        //TODO cleanup
         ChunkHolder chunkHolder_ = getIEStorage(dimension).getChunkHolder_(ChunkPos.asLong(x, z));
+        if (chunkHolder_ == null) {
+            return null;
+        }
+        return chunkHolder_.getChunkIfComplete();
+    }
+    
+    public static Chunk getServerChunkIfPresent(
+        ServerWorld world, int x, int z
+    ) {
+        ChunkHolder chunkHolder_ = ((IEThreadedAnvilChunkStorage) (
+            (ServerChunkProvider) world.getChunkProvider()
+        ).chunkManager).getChunkHolder_(ChunkPos.asLong(x, z));
         if (chunkHolder_ == null) {
             return null;
         }
@@ -382,19 +397,26 @@ public class McHelper {
         Class<ENTITY> entityClass,
         double range
     ) {
-        AxisAlignedBB box = new AxisAlignedBB(center, center).grow(range);
-        return (Stream) ((IEServerWorld) world).getEntitiesWithoutImmediateChunkLoading(
+        return McHelper.findEntitiesRough(
             entityClass,
-            box,
+            world,
+            center,
+            (int) (range / 16),
             e -> true
         ).stream();
+
+//        Box box = new Box(center, center).expand(range);
+//        return (Stream) ((IEServerWorld) world).getEntitiesWithoutImmediateChunkLoading(
+//            entityClass,
+//            box,
+//            e -> true
+//        ).stream();
     }
     
     public static void updateBoundingBox(Entity player) {
         player.setPosition(player.getPosX(), player.getPosY(), player.getPosZ());
     }
     
-    //TODO merge with getServerEntitiesNearbyWithoutLoadingChunk
     public static <T extends Entity> List<T> getEntitiesRegardingLargeEntities(
         World world,
         AxisAlignedBB box,
@@ -402,28 +424,133 @@ public class McHelper {
         Class<T> entityClass,
         Predicate<T> predicate
     ) {
-        world.getProfiler().func_230035_c_("getEntitiesPortal");
-        int i = MathHelper.floor((box.minX - maxEntitySizeHalf) / 16.0D);
-        int j = MathHelper.ceil((box.maxX + maxEntitySizeHalf) / 16.0D);
-        int k = MathHelper.floor((box.minZ - maxEntitySizeHalf) / 16.0D);
-        int l = MathHelper.ceil((box.maxZ + maxEntitySizeHalf) / 16.0D);
-        List<T> list = Lists.newArrayList();
-        AbstractChunkProvider chunkManager = world.getChunkProvider();
-        
-        for (int m = i; m < j; ++m) {
-            for (int n = k; n < l; ++n) {
-                Chunk worldChunk = chunkManager.getChunk(m, n, false);
-                if (worldChunk != null) {
-                    worldChunk.getEntitiesOfTypeWithinAABB(entityClass, box, list, predicate);
-                }
-            }
-        }
-        
-        return list;
+        return findEntitiesByBox(
+            entityClass,
+            world,
+            box,
+            maxEntitySizeHalf,
+            predicate
+        );
+//        world.getProfiler().visit("getEntitiesPortal");
+//        int i = MathHelper.floor((box.x1 - maxEntitySizeHalf) / 16.0D);
+//        int j = MathHelper.ceil((box.x2 + maxEntitySizeHalf) / 16.0D);
+//        int k = MathHelper.floor((box.z1 - maxEntitySizeHalf) / 16.0D);
+//        int l = MathHelper.ceil((box.z2 + maxEntitySizeHalf) / 16.0D);
+//        List<T> list = Lists.newArrayList();
+//        ChunkManager chunkManager = world.getChunkManager();
+//
+//        for (int m = i; m < j; ++m) {
+//            for (int n = k; n < l; ++n) {
+//                WorldChunk worldChunk = chunkManager.getWorldChunk(m, n, false);
+//                if (worldChunk != null) {
+//                    worldChunk.getEntities(entityClass, box, list, predicate);
+//                }
+//            }
+//        }
+
+//        return list;
     }
     
     //avoid dedicated server crash
     public static void onClientEntityTick(Entity entity) {
         CrossPortalEntityRenderer.onEntityTickClient(entity);
+    }
+    
+    public static interface ChunkAccessor {
+        Chunk getChunk(int x, int z);
+    }
+    
+    public static ChunkAccessor getChunkAccessor(World world) {
+        if (world.isRemote()) {
+            return world::getChunk;
+        }
+        else {
+            return (x, z) -> getServerChunkIfPresent(((ServerWorld) world), x, z);
+        }
+    }
+    
+    public static <T extends Entity> List<T> findEntities(
+        Class<T> entityClass,
+        ChunkAccessor chunkAccessor,
+        int chunkXStart,
+        int chunkXEnd,
+        int chunkYStart,
+        int chunkYEnd,
+        int chunkZStart,
+        int chunkZEnd,
+        Predicate<T> predicate
+    ) {
+        ArrayList<T> result = new ArrayList<>();
+        for (int x = chunkXStart; x <= chunkXEnd; x++) {
+            for (int z = chunkZStart; z <= chunkZEnd; z++) {
+                Chunk chunk = chunkAccessor.getChunk(x, z);
+                if (chunk != null) {
+                    ClassInheritanceMultiMap<Entity>[] entitySections =
+                        ((IEWorldChunk) chunk).getEntitySections();
+                    for (int i = chunkYStart; i <= chunkYEnd; i++) {
+                        ClassInheritanceMultiMap<Entity> entitySection = entitySections[i];
+                        for (T entity : entitySection.getByClass(entityClass)) {
+                            if (predicate.test(entity)) {
+                                result.add(entity);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    
+    //faster
+    public static <T extends Entity> List<T> findEntitiesRough(
+        Class<T> entityClass,
+        World world,
+        Vec3d center,
+        int radiusChunks,
+        Predicate<T> predicate
+    ) {
+        ChunkPos chunkPos = new ChunkPos(new BlockPos(center));
+        return findEntities(
+            entityClass,
+            getChunkAccessor(world),
+            chunkPos.x - radiusChunks,
+            chunkPos.x + radiusChunks,
+            0, 15,
+            chunkPos.z - radiusChunks,
+            chunkPos.z + radiusChunks,
+            predicate
+        );
+    }
+    
+    //does not load chunk on server and works with large entities
+    public static <T extends Entity> List<T> findEntitiesByBox(
+        Class<T> entityClass,
+        World world,
+        AxisAlignedBB box,
+        double maxEntityRadius,
+        Predicate<T> predicate
+    ) {
+        int xMin = (int) Math.floor(box.minX - maxEntityRadius);
+        int yMin = (int) Math.floor(box.minY - maxEntityRadius);
+        int zMin = (int) Math.floor(box.minZ - maxEntityRadius);
+        int xMax = (int) Math.ceil(box.maxX + maxEntityRadius);
+        int yMax = (int) Math.ceil(box.maxY + maxEntityRadius);
+        int zMax = (int) Math.ceil(box.maxZ + maxEntityRadius);
+        
+        return findEntities(
+            entityClass,
+            getChunkAccessor(world),
+            xMin >> 4,
+            xMax >> 4,
+            Math.max(0, yMin >> 4),
+            Math.min(15, yMax >> 4),
+            zMin >> 4,
+            zMax >> 4,
+            e -> e.getBoundingBox().intersects(box) && predicate.test(e)
+        );
+    }
+
+    public static ResourceLocation dimensionTypeId(DimensionType dimType) {
+        return Objects.requireNonNull(Registry.DIMENSION_TYPE.getKey(dimType));
     }
 }

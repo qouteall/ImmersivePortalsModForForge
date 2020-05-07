@@ -15,28 +15,28 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 import java.util.Random;
 
-@Mixin(ForgeBlockModelRenderer.class)
+@Mixin(value = ForgeBlockModelRenderer.class,remap = false)
 public class MixinForgeBlockModelRenderer {
-    @ModifyArg(
-        method = "render",
-        at = @At("HEAD")
-    )
-    private static IModelData modifyModelData(
-        VertexLighterFlat lighter,
-        ILightReader world,
-        IBakedModel model,
-        BlockState state,
-        BlockPos pos,
-        MatrixStack matrixStack,
-        boolean checkSides,
-        Random rand,
-        long seed,
-        IModelData modelData
-    ) {
-        if (modelData != null) {
-            return modelData;
-        }
-        
-        return ModelDataHacker.fetchMissingModelData(world, pos);
-    }
+//    @ModifyArg(
+//        method = "render",
+//        at = @At("HEAD")
+//    )
+//    private static IModelData modifyModelData(
+//        VertexLighterFlat lighter,
+//        ILightReader world,
+//        IBakedModel model,
+//        BlockState state,
+//        BlockPos pos,
+//        MatrixStack matrixStack,
+//        boolean checkSides,
+//        Random rand,
+//        long seed,
+//        IModelData modelData
+//    ) {
+//        if (modelData != null) {
+//            return modelData;
+//        }
+//
+//        return ModelDataHacker.fetchMissingModelData(world, pos);
+//    }
 }
