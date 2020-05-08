@@ -18,6 +18,7 @@ public class ConfigClient {
     public final ForgeConfigSpec.IntValue maxPortalLayer;
     public final ForgeConfigSpec.BooleanValue renderYourselfInPortal;
     public final ForgeConfigSpec.BooleanValue correctCrossPortalEntityRendering;
+    public final ForgeConfigSpec.BooleanValue edgelessSky;
     public final ForgeConfigSpec.ConfigValue<String> renderDimensionRedirect;
     
     public final String defaultDimRedirect = "immersive_portals:alternate1->minecraft:overworld\n" +
@@ -42,6 +43,9 @@ public class ConfigClient {
         correctCrossPortalEntityRendering = builder
             .comment("This May Decrease FPS")
             .define("correct_cross_portal_entity_rendering", true);
+        edgelessSky = builder
+            .comment("Remove Sky Edge in Dimension Stack")
+            .define("edgeless_sky", false);
         renderDimensionRedirect = builder.comment(
             "See the Wiki to Know How to Configure it"
         ).define(

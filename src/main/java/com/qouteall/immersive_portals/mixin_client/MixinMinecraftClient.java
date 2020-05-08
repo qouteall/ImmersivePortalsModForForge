@@ -4,6 +4,7 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
+import com.qouteall.immersive_portals.render.FPSMonitor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.renderer.WorldRenderer;
@@ -32,6 +33,8 @@ public class MixinMinecraftClient implements IEMinecraftClient {
     @Final
     public WorldRenderer worldRenderer;
     
+    @Shadow private static int debugFPS;
+    
     @Inject(
         method = "Lnet/minecraft/client/Minecraft;runTick()V",
         at = @At(
@@ -42,7 +45,6 @@ public class MixinMinecraftClient implements IEMinecraftClient {
     )
     private void onAfterClientTick(CallbackInfo ci) {
         ModMain.postClientTickSignal.emit();
-//        MyRenderHelper.updatePreRenderInfo(0);
         CGlobal.clientTeleportationManager.manageTeleportation(0);
     }
     
@@ -57,6 +59,17 @@ public class MixinMinecraftClient implements IEMinecraftClient {
 //        MyRenderHelper.updatePreRenderInfo(1);
 //        CGlobal.clientTeleportationManager.manageTeleportation(1);
 //    }
+    
+    @Inject(
+        method = "Lnet/minecraft/client/Minecraft;runGameLoop(Z)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/profiler/Snooper;addMemoryStatsToSnooper()V"
+        )
+    )
+    private void onSnooperUpdate(boolean tick, CallbackInfo ci) {
+        FPSMonitor.updateEverySecond(debugFPS);
+    }
     
     @Inject(
         method = "Lnet/minecraft/client/Minecraft;updateWorldRenderer(Lnet/minecraft/client/world/ClientWorld;)V",

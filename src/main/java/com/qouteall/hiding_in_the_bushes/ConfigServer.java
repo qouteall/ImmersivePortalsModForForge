@@ -14,6 +14,7 @@ public class ConfigServer {
     public final ForgeConfigSpec.BooleanValue teleportationDebug;
     public final ForgeConfigSpec.BooleanValue loadFewerChunks;
     public final ForgeConfigSpec.BooleanValue multiThreadedNetherPortalSearching;
+    public final ForgeConfigSpec.BooleanValue looseMovementCheck;
     
     public ConfigServer(ForgeConfigSpec.Builder builder) {
         portalSearchingRange = builder
@@ -34,6 +35,9 @@ public class ConfigServer {
         multiThreadedNetherPortalSearching = builder
             .comment("Multi Threaded Nether Portal Searching")
             .define("multi_threaded_nether_portal_searching", true);
+        looseMovementCheck = builder
+            .comment("Loose Serve Side Anti Hack Movement Check")
+            .define("loose_movement_check", false);
     }
     
     static {

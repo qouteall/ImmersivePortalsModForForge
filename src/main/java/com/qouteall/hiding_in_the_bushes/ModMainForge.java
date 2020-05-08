@@ -140,6 +140,7 @@ public class ModMainForge {
             Global.maxPortalLayer = ConfigClient.instance.maxPortalLayer.get();
             Global.correctCrossPortalEntityRendering =
                 ConfigClient.instance.correctCrossPortalEntityRendering.get();
+            Global.edgelessSky = ConfigClient.instance.edgelessSky.get();
             RenderDimensionRedirect.updateIdMap(
                 ConfigClient.listToMap(
                     Arrays.asList(
@@ -168,6 +169,7 @@ public class ModMainForge {
         Global.teleportationDebugEnabled = ConfigServer.instance.teleportationDebug.get();
         Global.loadFewerChunks = ConfigServer.instance.loadFewerChunks.get();
         Global.multiThreadedNetherPortalSearching = ConfigServer.instance.multiThreadedNetherPortalSearching.get();
+        Global.looseMovementCheck = ConfigServer.instance.looseMovementCheck.get();
     }
     
     @SubscribeEvent

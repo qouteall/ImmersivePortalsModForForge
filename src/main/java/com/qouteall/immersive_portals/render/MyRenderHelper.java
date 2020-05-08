@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IECamera;
@@ -24,6 +25,7 @@ import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameType;
 import net.minecraft.world.dimension.DimensionType;
 import org.lwjgl.opengl.GL11;
@@ -78,6 +80,8 @@ public class MyRenderHelper {
     
     public static String debugText;
     
+    public static boolean isLaggy = false;
+    
     public static void updatePreRenderInfo(
         float tickDelta_
     ) {
@@ -111,8 +115,29 @@ public class MyRenderHelper {
         originalCameraLightPacked = client.getRenderManager()
             .getPackedLight(client.renderViewEntity, tickDelta);
         
+        updateIsLaggy();
+        
         debugText = "";
 //        MyRenderHelper.debugText = String.valueOf(((IEEntity) client.player).getCollidingPortal());
+    }
+    
+    //protect the player from mirror room lag attack
+    private static void updateIsLaggy() {
+        if (!Global.lagAttackProof) {
+            isLaggy = false;
+            return;
+        }
+        if (isLaggy) {
+            if (FPSMonitor.getMinimumFps() > 15) {
+                isLaggy = false;
+            }
+        }
+        else {
+            if (FPSMonitor.getAverageFps() < 8 || FPSMonitor.getMinimumFps() < 5) {
+                client.ingameGUI.setOverlayMessage(new TranslationTextComponent("imm_ptl.laggy"), false);
+                isLaggy = true;
+            }
+        }
     }
     
     private static void updateViewBobbingFactor(Entity cameraEntity) {
