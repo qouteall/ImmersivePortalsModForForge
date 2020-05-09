@@ -8,6 +8,7 @@ import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.block_manipulation.HandReachTweak;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
+import com.qouteall.immersive_portals.portal.CustomizablePortalGeneration;
 import com.qouteall.immersive_portals.portal.EndPortalEntity;
 import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
 import com.qouteall.immersive_portals.portal.Mirror;
@@ -26,6 +27,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.MainMenuScreen;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.entity.EntityClassification;
@@ -45,6 +47,7 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -75,6 +78,8 @@ public class ModMainForge {
     private static final Logger LOGGER = LogManager.getLogger();
     
     public static boolean isServerMixinApplied = false;
+    
+    public static boolean isClientMixinPresent = false;
     
     public ModMainForge() {
         // Register the setup method for modloading
@@ -170,11 +175,27 @@ public class ModMainForge {
         Global.loadFewerChunks = ConfigServer.instance.loadFewerChunks.get();
         Global.multiThreadedNetherPortalSearching = ConfigServer.instance.multiThreadedNetherPortalSearching.get();
         Global.looseMovementCheck = ConfigServer.instance.looseMovementCheck.get();
+        
+        CustomizablePortalGeneration.onConfigChanged(
+            Arrays.asList(
+                ConfigServer.instance.customPortalFrame.get().split("\n")
+            )
+        );
     }
     
     @SubscribeEvent
     public void onModelRegistry(ModelRegistryEvent event) {
     
+    }
+    
+    @SubscribeEvent
+    public void onGuiOpen(GuiOpenEvent event) {
+        if (event.getGui() instanceof MainMenuScreen) {
+            if (!isMixinInClasspath()) {
+                Minecraft.getInstance().displayGuiScreen(new MissingMixinScreen());
+                event.setCanceled(true);
+            }
+        }
     }
     
     public static void checkMixinState() {
@@ -439,7 +460,7 @@ public class ModMainForge {
                 VerticalConnectingPortal.entityType.setRegistryName(
                     "immersive_portals:end_floor_portal")
             );
-    
+            
             GeneralBreakablePortal.entityType = EntityType.Builder.create(
                 GeneralBreakablePortal::new, EntityClassification.MISC
             ).size(
@@ -505,11 +526,14 @@ public class ModMainForge {
         @SubscribeEvent
         public static void onEffectRegistry(RegistryEvent.Register<Effect> event) {
             Effect.class.hashCode();
-    
+            
             if (HandReachTweak.statusEffectConstructor == null) {
-                throw new RuntimeException("Mixin is NOT loaded. Install MixinBootstrap!!!");
+                Helper.err("Status Effect Constructor is null");
+                return;
             }
-
+            
+            isClientMixinPresent = true;
+            
             HandReachTweak.longerReachEffect = HandReachTweak.statusEffectConstructor
                 .apply(EffectType.BENEFICIAL, 0)
                 .addAttributesModifier(
@@ -523,10 +547,16 @@ public class ModMainForge {
                 new ResourceLocation("immersive_portals", "longer_reach"),
                 HandReachTweak.longerReachEffect
             );
+            
+            new Throwable().printStackTrace();
         }
         
         @SubscribeEvent
         public static void onPotionRegistry(RegistryEvent.Register<Potion> event) {
+            if (HandReachTweak.longerReachEffect == null) {
+                return;
+            }
+            
             HandReachTweak.longerReachPotion = new Potion(
                 new EffectInstance(
                     HandReachTweak.longerReachEffect, 7200, 1

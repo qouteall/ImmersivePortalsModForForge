@@ -2,24 +2,11 @@ package com.qouteall.hiding_in_the_bushes;
 
 import com.qouteall.immersive_portals.Helper;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.connect.IMixinConnector;
 
 public class MyMixinConnector implements IMixinConnector {
-    @OnlyIn(Dist.CLIENT)
-    public static boolean getIsOptifinePresent() {
-        try {
-            //do not load other optifine classes that loads vanilla classes
-            //that would load the class before mixin
-            Class.forName("optifine.ZipResourceProvider");
-            return true;
-        }
-        catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
     
     @Override
     public void connect() {
@@ -37,7 +24,17 @@ public class MyMixinConnector implements IMixinConnector {
             Mixins.addConfiguration(
                 "assets/immersive_portals/immersive_portals.mixins_ma_client.json"
             );
-            if (getIsOptifinePresent()) {
+            boolean result;
+            try {
+                //do not load other optifine classes that loads vanilla classes
+                //that would load the class before mixin
+                Class.forName("optifine.ZipResourceProvider");
+                result = true;
+            }
+            catch (ClassNotFoundException e) {
+                result = false;
+            }
+            if (result) {
                 Mixins.addConfiguration(
                     "assets/immersive_portals/immersive_portals.mixins_with_optifine.json"
                 );

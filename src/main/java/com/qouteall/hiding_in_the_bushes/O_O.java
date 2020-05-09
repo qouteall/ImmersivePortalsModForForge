@@ -85,7 +85,15 @@ public class O_O {
     }
     
     public static boolean detectOptiFine() {
-        return MyMixinConnector.getIsOptifinePresent();
+        try {
+            //do not load other optifine classes that loads vanilla classes
+            //that would load the class before mixin
+            Class.forName("optifine.ZipResourceProvider");
+            return true;
+        }
+        catch (ClassNotFoundException e) {
+            return false;
+        }
     }
     
     public static void postChunkUnloadEventForge(Chunk chunk) {
