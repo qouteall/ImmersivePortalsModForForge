@@ -14,6 +14,11 @@ import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLEnvironment;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 
 public class O_O {
     public static boolean isForge() {
@@ -108,7 +113,24 @@ public class O_O {
         );
     }
     
-    public static boolean isNetherHigherModPresent() {
-        return false;
+    @Deprecated
+    public static FileInputStream getLanguageFileStream(String modid) {
+        try {
+            return new FileInputStream(
+                ModList.get().getModFileById(modid).getFile().findResource(
+                    "assets/" + modid + "/lang/en_us.json"
+                ).toFile()
+            );
+            
+        }
+        catch (FileNotFoundException ugh) {
+            throw new RuntimeException(ugh);
+        }
     }
+    
+    public static boolean isDedicatedServer() {
+        return FMLEnvironment.dist == Dist.DEDICATED_SERVER;
+    }
+    
+    
 }

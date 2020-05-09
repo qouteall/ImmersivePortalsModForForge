@@ -43,7 +43,7 @@ public class MixinFlintAndSteelItem {
         }
     }
     
-    @Inject(method = "Lnet/minecraft/item/FlintAndSteelItem;onItemUse(Lnet/minecraft/item/ItemUseContext;)Lnet/minecraft/util/ActionResultType;", at = @At("HEAD"))
+    @Inject(method = "Lnet/minecraft/item/FlintAndSteelItem;onItemUse(Lnet/minecraft/item/ItemUseContext;)Lnet/minecraft/util/ActionResultType;", at = @At("HEAD"), cancellable = true)
     private void onUseFlintAndSteel(
         ItemUseContext context,
         CallbackInfoReturnable<ActionResultType> cir
@@ -59,6 +59,7 @@ public class MixinFlintAndSteelItem {
                 BreakableMirror mirror = BreakableMirror.createMirror(
                     ((ServerWorld) world), targetPos, side
                 );
+                cir.setReturnValue(ActionResultType.SUCCESS);
             }
             else if (targetBlock == ModMain.portalHelperBlock) {
                 boolean result = NetherPortalGeneration.activatePortalHelper(

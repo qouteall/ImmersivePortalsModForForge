@@ -123,6 +123,18 @@ public class Helper {
             (direction.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1 : -1);
     }
     
+    public static Vec3d putCoordinate(Vec3d v, Direction.Axis axis, double value) {
+        if (axis == Direction.Axis.X) {
+            return new Vec3d(value, v.y, v.z);
+        }
+        else if (axis == Direction.Axis.Y) {
+            return new Vec3d(v.x, value, v.z);
+        }
+        else {
+            return new Vec3d(v.x, v.y, value);
+        }
+    }
+    
     public static <A, B> Tuple<B, A> swaped(Tuple<A, B> p) {
         return new Tuple<>(p.getB(), p.getA());
     }
@@ -675,7 +687,7 @@ public class Helper {
             Quaternion::normalize
         );
     }
-
+    
     /**
      * Searches nearby chunks to look for a certain sub/class of entity. In the specified {@code world}, the chunk that
      * {@code pos} is in will be used as the center of search. That chunk will be expanded by {@code chunkRadius} chunks
@@ -694,30 +706,38 @@ public class Helper {
      * @author LoganDark
      */
     @SuppressWarnings("WeakerAccess")
-    public static <T extends Entity> List<T> getNearbyEntities(World world, Vec3d pos, int chunkRadius, Class<T> entityClass) {
+    public static <T extends Entity> List<T> getNearbyEntities(
+        World world,
+        Vec3d pos,
+        int chunkRadius,
+        Class<T> entityClass
+    ) {
         ArrayList<T> entities = new ArrayList<>();
         int chunkX = (int) pos.x / 16;
         int chunkZ = (int) pos.z / 16;
-
+        
         for (int z = -chunkRadius + 1; z < chunkRadius; z++) {
             for (int x = -chunkRadius + 1; x < chunkRadius; x++) {
                 int aX = chunkX + x;
                 int aZ = chunkZ + z;
-
+                
                 // WorldChunk contains a private variable called entitySections that groups all entities in the chunk by
                 // their Y level. Here we are using a Mixin duck typing interface thing to get that private variable and
                 // then manually search it. This is faster than using the built-in WorldChunk methods that do not do
                 // what we want.
-                ClassInheritanceMultiMap<Entity>[] entitySections = ((IEWorldChunk) world.getChunk(aX, aZ)).getEntitySections();
+                ClassInheritanceMultiMap<Entity>[] entitySections = ((IEWorldChunk) world.getChunk(
+                    aX,
+                    aZ
+                )).getEntitySections();
                 for (ClassInheritanceMultiMap<Entity> entitySection : entitySections) {
                     entities.addAll(entitySection.getByClass(entityClass));
                 }
             }
         }
-
+        
         return entities;
     }
-
+    
     /**
      * Returns all portals intersecting the line from start->end.
      *
@@ -730,67 +750,75 @@ public class Helper {
      * @author LoganDark
      */
     @SuppressWarnings("WeakerAccess")
-    public static List<Tuple<Portal, Vec3d>> rayTracePortals(World world, Vec3d start, Vec3d end, boolean includeGlobalPortals, Predicate<Portal> filter) {
+    public static List<Tuple<Portal, Vec3d>> rayTracePortals(
+        World world,
+        Vec3d start,
+        Vec3d end,
+        boolean includeGlobalPortals,
+        Predicate<Portal> filter
+    ) {
         // This will be the center of the chunk search, rather than using start or end. This will allow the radius to be
         // smaller, and as a result, the search to be faster and slightly less inefficient.
         //
         // The searching method employed by getNearbyEntities is still not ideal, but it's the best idea I have.
         Vec3d middle = start.scale(0.5).add(end.scale(0.5));
-
+        
         // This could result in searching more chunks than necessary, but it always expands to completely cover any
         // chunks the line from start->end passes through.
         int chunkRadius = (int) Math.ceil(Math.abs(start.distanceTo(end) / 2) / 16);
         List<Portal> nearby = getNearbyEntities(world, middle, chunkRadius, Portal.class);
-
+        
         if (includeGlobalPortals) {
             nearby.addAll(McHelper.getGlobalPortals(world));
         }
-
+        
         // Make a list of all portals actually intersecting with this line, and then sort them by the distance from the
         // start position. Nearest portals first.
         List<Tuple<Portal, Vec3d>> hits = new ArrayList<>();
-
+        
         nearby.forEach(portal -> {
             if (filter == null || filter.test(portal)) {
                 Vec3d intersection = portal.pick(start, end);
-
+                
                 if (intersection != null) {
                     hits.add(new Tuple<>(portal, intersection));
                 }
             }
         });
-
+        
         hits.sort((pair1, pair2) -> {
             Vec3d intersection1 = pair1.getB();
             Vec3d intersection2 = pair2.getB();
-
+            
             // Return a negative number if intersection1 is smaller (should come first)
-            return (int) Math.signum(intersection1.squareDistanceTo(start) - intersection2.squareDistanceTo(start));
+            return (int) Math.signum(intersection1.squareDistanceTo(start) - intersection2.squareDistanceTo(
+                start));
         });
-
+        
         return hits;
     }
-
+    
     /**
-     * @see #withSwitchedContext(World, Supplier) 
+     * @see #withSwitchedContext(World, Supplier)
      */
     @OnlyIn(Dist.CLIENT)
     private static <T> T withSwitchedContextClient(ClientWorld world, Supplier<T> func) {
         boolean wasContextSwitched = BlockManipulationClient.isContextSwitched;
         Minecraft mc = Minecraft.getInstance();
         ClientWorld lastWorld = mc.world;
-
+        
         try {
             BlockManipulationClient.isContextSwitched = true;
             mc.world = world;
-
+            
             return func.get();
-        } finally {
+        }
+        finally {
             mc.world = lastWorld;
             BlockManipulationClient.isContextSwitched = wasContextSwitched;
         }
     }
-
+    
     /**
      * @see #withSwitchedContext(World, Supplier)
      */
@@ -799,7 +827,7 @@ public class Helper {
         // lol
         return func.get();
     }
-
+    
     /**
      * Execute {@code func} with the world being set to {@code world}, hopefully bypassing any issues that may be
      * related to mutating a world that is not currently set as the current world.
@@ -814,14 +842,15 @@ public class Helper {
     private static <T> T withSwitchedContext(World world, Supplier<T> func) {
         if (world.isRemote) {
             return withSwitchedContextClient((ClientWorld) world, func);
-        } else {
+        }
+        else {
             return withSwitchedContextServer((ServerWorld) world, func);
         }
     }
-
+    
     /**
-     * @see Helper#rayTrace(World, RayTraceContext, boolean)
      * @author LoganDark
+     * @see Helper#rayTrace(World, RayTraceContext, boolean)
      */
     private static Tuple<BlockRayTraceResult, List<Portal>> rayTrace(
         World world,
@@ -831,11 +860,11 @@ public class Helper {
     ) {
         Vec3d start = context.func_222253_b();
         Vec3d end = context.func_222250_a();
-
+        
         // If we're past the max portal layer, don't let the player target behind this portal, create a missed result
         if (portals.size() > Global.maxPortalLayer) {
             Vec3d diff = end.subtract(start);
-
+            
             return new Tuple<>(
                 BlockRayTraceResult.createMiss(
                     end,
@@ -845,48 +874,50 @@ public class Helper {
                 portals
             );
         }
-
+        
         // First ray trace normally
         BlockRayTraceResult hitResult = world.rayTraceBlocks(context);
-
-        List<Tuple<Portal, Vec3d>> rayTracedPortals = withSwitchedContext(world,
+        
+        List<Tuple<Portal, Vec3d>> rayTracedPortals = withSwitchedContext(
+            world,
             () -> rayTracePortals(world, start, end, includeGlobalPortals, Portal::isInteractable)
         );
-
+        
         if (rayTracedPortals.isEmpty()) {
             return new Tuple<>(hitResult, portals);
         }
-
+        
         Tuple<Portal, Vec3d> portalHit = rayTracedPortals.get(0);
         Portal portal = portalHit.getA();
         Vec3d intersection = portalHit.getB();
-
+        
         // If the portal is not closer, return the hit result we just got
         if (hitResult.getHitVec().squareDistanceTo(start) < intersection.squareDistanceTo(start)) {
             return new Tuple<>(hitResult, portals);
         }
-
+        
         // If the portal is closer, recurse
-
+        
         IERayTraceContext betterContext = (IERayTraceContext) context;
-
+        
         betterContext
             .setStart(portal.transformPoint(intersection))
             .setEnd(portal.transformPoint(end));
-
+        
         portals.add(portal);
         World destWorld = portal.getDestinationWorld(world.isRemote);
-        Tuple<BlockRayTraceResult, List<Portal>> recursion = withSwitchedContext(destWorld,
+        Tuple<BlockRayTraceResult, List<Portal>> recursion = withSwitchedContext(
+            destWorld,
             () -> rayTrace(destWorld, context, includeGlobalPortals, portals)
         );
-
+        
         betterContext
             .setStart(start)
             .setEnd(end);
-
+        
         return recursion;
     }
-
+    
     /**
      * Ray traces for blocks or whatever the {@code context} dictates.
      *
@@ -908,7 +939,7 @@ public class Helper {
     ) {
         return rayTrace(world, context, includeGlobalPortals, new ArrayList<>());
     }
-
+    
     /**
      * @param hitResult The HitResult to check.
      * @return If the HitResult passed is either {@code null}, or of type {@link HitResult.Type#MISS}.
@@ -917,7 +948,7 @@ public class Helper {
     public static boolean hitResultIsMissedOrNull(RayTraceResult hitResult) {
         return hitResult == null || hitResult.getType() == RayTraceResult.Type.MISS;
     }
-
+    
     /**
      * @param vec  The {@link Vec3d} to get the {@link Direction} of.
      * @param axis The {@link Direction.Axis} of directions to exclude.
@@ -932,7 +963,7 @@ public class Helper {
             ))
             .orElse(null);
     }
-
+    
     /**
      * Places a portal based on {@code entity}'s looking direction. Does not set the portal destination or add it to the
      * world, you will have to do that yourself.
@@ -945,7 +976,7 @@ public class Helper {
      */
     public static Portal placePortal(double width, double height, Entity entity) {
         Vec3d playerLook = entity.getLookVec();
-
+        
         Tuple<BlockRayTraceResult, List<Portal>> rayTrace =
             rayTrace(
                 entity.world,
@@ -958,44 +989,47 @@ public class Helper {
                 ),
                 true
             );
-
+        
         BlockRayTraceResult hitResult = rayTrace.getA();
         List<Portal> hitPortals = rayTrace.getB();
-
+        
         if (hitResultIsMissedOrNull(hitResult)) {
             return null;
         }
-
+        
         for (Portal hitPortal : hitPortals) {
             playerLook = hitPortal.transformLocalVec(playerLook);
         }
-
-        Direction lookingDirection = getFacingExcludingAxis(playerLook, hitResult.getFace().getAxis());
-
+        
+        Direction lookingDirection = getFacingExcludingAxis(
+            playerLook,
+            hitResult.getFace().getAxis()
+        );
+        
         // this should never happen...
         if (lookingDirection == null) {
             return null;
         }
-
+        
         Vec3d axisH = new Vec3d(hitResult.getFace().getDirectionVec());
         Vec3d axisW = axisH.crossProduct(new Vec3d(lookingDirection.getOpposite().getDirectionVec()));
         Vec3d pos = new Vec3d(hitResult.getPos()).add(.5, .5, .5)
             .add(axisH.scale(0.5 + height / 2));
-
+        
         World world = hitPortals.isEmpty()
             ? entity.world
             : hitPortals.get(hitPortals.size() - 1).getDestinationWorld(false);
-
+        
         Portal portal = new Portal(Portal.entityType, world);
-
+        
         portal.setRawPosition(pos.x, pos.y, pos.z);
-
+        
         portal.axisW = axisW;
         portal.axisH = axisH;
-
+        
         portal.width = width;
         portal.height = height;
-
+        
         return portal;
     }
 }

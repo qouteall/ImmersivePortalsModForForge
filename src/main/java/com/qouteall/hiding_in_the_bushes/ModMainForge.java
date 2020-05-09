@@ -79,8 +79,6 @@ public class ModMainForge {
     
     public static boolean isServerMixinApplied = false;
     
-    public static boolean isClientMixinPresent = false;
-    
     public ModMainForge() {
         // Register the setup method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
@@ -531,8 +529,6 @@ public class ModMainForge {
                 Helper.err("Status Effect Constructor is null");
                 return;
             }
-            
-            isClientMixinPresent = true;
             
             HandReachTweak.longerReachEffect = HandReachTweak.statusEffectConstructor
                 .apply(EffectType.BENEFICIAL, 0)

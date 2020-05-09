@@ -48,9 +48,11 @@ public class Global {
     
     public static boolean portalPlaceholderPassthrough = true;
     
-    public static boolean mirrorInteractableThroughPortal = true;
+    public static boolean mirrorInteractableThroughPortal = false;
     
     public static boolean looseMovementCheck = false;
+    
+    public static int portalRenderLimit = 200;
     
 
     public static enum RenderMode {

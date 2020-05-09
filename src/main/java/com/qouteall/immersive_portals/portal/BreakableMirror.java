@@ -10,6 +10,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
@@ -106,63 +107,55 @@ public class BreakableMirror extends Mirror {
             return null;
         }
         
-        boolean isGlassPane = isGlassPane(world, glassPos);
-    
-        if (facing.getAxis() == Direction.Axis.Y && isGlassPane) {
+        boolean isPane = isGlassPane(world, glassPos);
+
+        if (facing.getAxis() == Direction.Axis.Y && isPane) {
             return null;
         }
         
         IntBox wallArea = Helper.expandRectangle(
             glassPos,
-            blockPos -> isGlass(world, blockPos),
+            blockPos -> isGlass(world, blockPos) && (isPane == isGlassPane(world, blockPos)),
             facing.getAxis()
         );
         
         BreakableMirror breakableMirror = BreakableMirror.entityType.create(world);
-        double distanceToCenter = isGlassPane ? (1.0/16) : 0.5;
-        Vec3d pos = new Vec3d(
-            (double) (wallArea.l.getX() + wallArea.h.getX()) / 2,
-            (double) (wallArea.l.getY() + wallArea.h.getY()) / 2,
-            (double) (wallArea.l.getZ() + wallArea.h.getZ()) / 2
-        ).add(
-            0.5, 0.5, 0.5
-        ).add(
-            new Vec3d(facing.getDirectionVec()).scale(distanceToCenter)
+        double distanceToCenter = isPane ? (1.0 / 16) : 0.5;
+        
+        AxisAlignedBB wallBox = getWallBox(world, wallArea);
+        
+        Vec3d pos = Helper.getBoxSurface(wallBox, facing.getOpposite()).getCenter();
+        pos = Helper.putCoordinate(
+            //getWallBox is incorrect with corner glass pane so correct the coordinate on the normal axis
+            pos, facing.getAxis(),
+            Helper.getCoordinate(
+                wallArea.getCenterVec().add(
+                    new Vec3d(facing.getDirectionVec()).scale(distanceToCenter)
+                ),
+                facing.getAxis()
+            )
         );
-        breakableMirror.setPosition(
-            pos.x, pos.y, pos.z
-        );
+        breakableMirror.setPosition(pos.x, pos.y, pos.z);
         breakableMirror.destination = pos;
         breakableMirror.dimensionTo = world.dimension.getType();
         
-        Tuple<Direction.Axis, Direction.Axis> axises = Helper.getPerpendicularAxis(facing);
+        Tuple<Direction, Direction> dirs =
+            Helper.getPerpendicularDirections(facing);
         
-        Direction.Axis wAxis = axises.getA();
-        Direction.Axis hAxis = axises.getB();
-        float width = Helper.getCoordinate(wallArea.getSize(), wAxis);
-        int height = Helper.getCoordinate(wallArea.getSize(), hAxis);
+        Vec3d boxSize = Helper.getBoxSize(wallBox);
+        double width = Helper.getCoordinate(boxSize, dirs.getA().getAxis());
+        double height = Helper.getCoordinate(boxSize, dirs.getB().getAxis());
         
-        if (isGlassPane) {
-            if (height < 1) {
-                return null;
-            }
-            height -= (6.0 / 8);
-        }
-        
-        breakableMirror.axisW = new Vec3d(
-            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, wAxis).getDirectionVec()
-        );
-        breakableMirror.axisH = new Vec3d(
-            Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, hAxis).getDirectionVec()
-        );
+        breakableMirror.axisW = new Vec3d(dirs.getA().getDirectionVec());
+        breakableMirror.axisH = new Vec3d(dirs.getB().getDirectionVec());
         breakableMirror.width = width;
         breakableMirror.height = height;
         
         breakableMirror.wallArea = wallArea;
         
-        world.addEntity(breakableMirror);
-        
         breakIntersectedMirror(breakableMirror);
+        
+        world.addEntity(breakableMirror);
         
         return breakableMirror;
     }
@@ -183,5 +176,13 @@ public class BreakableMirror extends Mirror {
         ).forEach(
             Entity::remove
         );
+    }
+    
+    //it's a little bit incorrect with corner glass pane
+    private static AxisAlignedBB getWallBox(ServerWorld world, IntBox glassArea) {
+        return glassArea.stream().map(blockPos ->
+            world.getBlockState(blockPos).getCollisionShape(world, blockPos).getBoundingBox()
+                .offset(new Vec3d(blockPos))
+        ).reduce(AxisAlignedBB::union).orElse(null);
     }
 }

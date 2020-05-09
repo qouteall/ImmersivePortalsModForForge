@@ -7,9 +7,9 @@
     "MixinChunkRender",
     "MixinChunkRenderDispatcher",
     "MixinChunkRenderTask",
+    "MixinClientWorld_MA",
     "MixinForgeBlockModelRenderer",
     "MixinForgeModelDataManager",
-    "MixinMinecraft_MA",
     "MixinRebuildTask"
   ],
   "injectors": {

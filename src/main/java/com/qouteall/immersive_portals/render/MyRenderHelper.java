@@ -133,9 +133,14 @@ public class MyRenderHelper {
             }
         }
         else {
-            if (FPSMonitor.getAverageFps() < 8 || FPSMonitor.getMinimumFps() < 5) {
-                client.ingameGUI.setOverlayMessage(new TranslationTextComponent("imm_ptl.laggy"), false);
-                isLaggy = true;
+            if (lastPortalRenderInfos.size() > 10) {
+                if (FPSMonitor.getAverageFps() < 8 || FPSMonitor.getMinimumFps() < 6) {
+                    client.ingameGUI.setOverlayMessage(
+                        new TranslationTextComponent("imm_ptl.laggy"),
+                        false
+                    );
+                    isLaggy = true;
+                }
             }
         }
     }

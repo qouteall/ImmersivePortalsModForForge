@@ -33,6 +33,7 @@ import net.minecraft.client.renderer.vertex.VertexBuffer;
 import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import org.lwjgl.opengl.GL11;
@@ -103,7 +104,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     @Shadow
     private boolean displayListEntitiesDirty;
-    
     
     @Shadow
     private VertexBuffer skyVBO;
@@ -618,6 +618,24 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             MyGameRenderer.forceResetFogState();
             GL11.glEnable(GL11.GL_FOG);
         }
+    }
+    
+    //the camera position is used for translucent sort
+    //avoid messing it
+    @Redirect(
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;setupTerrain(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;ZIZ)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher;setRenderPosition(Lnet/minecraft/util/math/Vec3d;)V"
+        )
+    )
+    private void onSetChunkBuilderCameraPosition(ChunkRenderDispatcher chunkBuilder, Vec3d cameraPosition) {
+        if (CGlobal.renderer.isRendering()) {
+            if (mc.world.getDimension().getType() == MyRenderHelper.originalPlayerDimension) {
+                return;
+            }
+        }
+        chunkBuilder.setRenderPosition(cameraPosition);
     }
     
     @Override
