@@ -187,6 +187,7 @@ public class ModMainForge {
     }
     
     @SubscribeEvent
+    @OnlyIn(Dist.CLIENT)
     public void onGuiOpen(GuiOpenEvent event) {
         if (event.getGui() instanceof MainMenuScreen) {
             if (!isMixinInClasspath()) {

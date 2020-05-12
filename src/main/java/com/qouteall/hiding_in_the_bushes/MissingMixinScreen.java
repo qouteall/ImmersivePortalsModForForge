@@ -7,10 +7,13 @@ import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
+@OnlyIn(Dist.CLIENT)
 public class MissingMixinScreen extends Screen {
     private Button downloadLinkButton;
     private Button quitGameButton;

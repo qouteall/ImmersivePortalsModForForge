@@ -183,9 +183,13 @@ public class ClientTeleportationManager {
         if (player.getRidingEntity() != null) {
             disableTeleportFor(40);
         }
+
+//        Helper.log("Client Teleported " + portal);
         
         //update colliding portal
-        ((IEEntity) player).tickCollidingPortal();
+        ((IEEntity) player).tickCollidingPortal(MyRenderHelper.tickDelta);
+        
+        
     }
     
     public boolean isTeleportingFrequently() {

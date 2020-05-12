@@ -281,14 +281,7 @@ public class Portal extends Entity {
             destination != null;
     }
     
-    public boolean canRenderPortalInsideMe(Portal anotherPortal) {
-        if (anotherPortal.dimension != dimensionTo) {
-            return false;
-        }
-        return canRenderEntityInsideMe(anotherPortal.getPositionVec(), 0.5);
-    }
-    
-    public boolean canRenderEntityInsideMe(Vec3d entityPos, double valve) {
+    public boolean isInside(Vec3d entityPos, double valve) {
         double v = entityPos.subtract(destination).dotProduct(getContentDirection());
         return v > valve;
     }

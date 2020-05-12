@@ -113,21 +113,6 @@ public class O_O {
         );
     }
     
-    @Deprecated
-    public static FileInputStream getLanguageFileStream(String modid) {
-        try {
-            return new FileInputStream(
-                ModList.get().getModFileById(modid).getFile().findResource(
-                    "assets/" + modid + "/lang/en_us.json"
-                ).toFile()
-            );
-            
-        }
-        catch (FileNotFoundException ugh) {
-            throw new RuntimeException(ugh);
-        }
-    }
-    
     public static boolean isDedicatedServer() {
         return FMLEnvironment.dist == Dist.DEDICATED_SERVER;
     }
