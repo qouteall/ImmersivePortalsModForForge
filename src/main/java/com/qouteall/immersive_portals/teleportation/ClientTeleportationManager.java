@@ -38,11 +38,13 @@ import java.util.List;
 @OnlyIn(Dist.CLIENT)
 public class ClientTeleportationManager {
     Minecraft client = Minecraft.getInstance();
-    private long tickTimeForTeleportation = 0;
+    public long tickTimeForTeleportation = 0;
     private long lastTeleportGameTime = 0;
     private Vec3d lastPlayerHeadPos = null;
     private long teleportWhileRidingTime = 0;
     private long teleportTickTimeLimit = 0;
+    
+    public static boolean isTeleportingTick = false;
     
     public ClientTeleportationManager() {
 //        ModMain.preRenderSignal.connectWithWeakRef(
@@ -56,7 +58,8 @@ public class ClientTeleportationManager {
     private void tick() {
         tickTimeForTeleportation++;
         changePlayerMotionIfCollidingWithPortal();
-        
+    
+        isTeleportingTick = false;
     }
     
     public void acceptSynchronizationDataFromServer(
@@ -184,12 +187,12 @@ public class ClientTeleportationManager {
             disableTeleportFor(40);
         }
 
-//        Helper.log("Client Teleported " + portal);
+        Helper.log("Client Teleported " + portal);
         
         //update colliding portal
         ((IEEntity) player).tickCollidingPortal(MyRenderHelper.tickDelta);
-        
-        
+    
+        isTeleportingTick = true;
     }
     
     public boolean isTeleportingFrequently() {

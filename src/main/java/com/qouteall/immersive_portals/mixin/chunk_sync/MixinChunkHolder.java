@@ -4,6 +4,7 @@ import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEChunkHolder;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.dimension.DimensionType;
@@ -12,6 +13,8 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+
+import java.util.function.Consumer;
 
 @Mixin(ChunkHolder.class)
 public class MixinChunkHolder implements IEChunkHolder {
@@ -28,20 +31,28 @@ public class MixinChunkHolder implements IEChunkHolder {
      * @author qouteall
      */
     @Overwrite
-    private void sendToTracking(IPacket<?> packet_1, boolean boolean_1) {
+    private void sendToTracking(IPacket<?> packet_1, boolean onlyOnRenderDistanceEdge) {
         DimensionType dimension =
             ((IEThreadedAnvilChunkStorage) playerProvider).getWorld().dimension.getType();
-    
-        NewChunkTrackingGraph.getPlayersViewingChunk(
-            dimension, pos.x, pos.z
-        ).forEach(player ->
+        
+        Consumer<ServerPlayerEntity> func = player ->
             player.connection.sendPacket(
                 MyNetwork.createRedirectedMessage(
                     dimension, packet_1
                 )
-            )
-        );
-    
+            );
+        
+        if (onlyOnRenderDistanceEdge) {
+            NewChunkTrackingGraph.getFarWatchers(
+                dimension, pos.x, pos.z
+            ).forEach(func);
+        }
+        else {
+            NewChunkTrackingGraph.getPlayersViewingChunk(
+                dimension, pos.x, pos.z
+            ).forEach(func);
+        }
+        
     }
     
 }

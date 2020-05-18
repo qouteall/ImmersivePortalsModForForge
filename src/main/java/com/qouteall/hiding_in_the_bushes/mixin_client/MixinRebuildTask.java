@@ -21,33 +21,5 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(targets = "net.minecraft.client.renderer.chunk.ChunkRenderDispatcher$ChunkRender$RebuildTask")
 public class MixinRebuildTask {
-//    @Shadow(remap = false, aliases = "this$1")
-//    private ChunkRenderDispatcher.ChunkRender this$1;
-//
-//    @Inject(
-//        method = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$ChunkRender$RebuildTask;<init>(Lnet/minecraft/util/math/ChunkPos;DLnet/minecraft/client/renderer/chunk/ChunkRenderCache;)V",
-//        at = @At("RETURN")
-//    )
-//    private void onInitEnded(
-//        ChunkPos pos,
-//        double distanceSqIn,
-//        ChunkRenderCache renderCacheIn,
-//        CallbackInfo ci
-//    ) {
-//        World world = ((IEChunkRenderDispatcher) ((IEChunkRender) this$1).getParent()).myGetWorld();
-//
-//        ((IEChunkRenderTask) this).portal_setDimension(world.dimension.getType());
-//
-////        ClientWorld playerWorld = Minecraft.getInstance().world;
-////        if (CGlobal.renderer.isRendering()) {
-////            playerWorld = CGlobal.clientWorldLoader.getWorld(MyRenderHelper.originalPlayerDimension);
-////        }
-////
-////        if (world != playerWorld) {
-////            Helper.log("Use new model data");
-////            ((IEChunkRenderTask) this).setModelData(
-////                ModelDataHacker.getChunkModelData(world, pos)
-////            );
-////        }
-//    }
+
 }

@@ -544,8 +544,6 @@ public class ModMainForge {
                 new ResourceLocation("immersive_portals", "longer_reach"),
                 HandReachTweak.longerReachEffect
             );
-            
-            new Throwable().printStackTrace();
         }
         
         @SubscribeEvent

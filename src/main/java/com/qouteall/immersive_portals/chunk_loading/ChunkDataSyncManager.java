@@ -124,8 +124,6 @@ public class ChunkDataSyncManager {
     }
     
     public void onPlayerRespawn(ServerPlayerEntity oldPlayer) {
-        NewChunkTrackingGraph.forceRemovePlayer(oldPlayer);
-        
         McHelper.getServer().getWorlds()
             .forEach(world -> {
                 ServerChunkProvider chunkManager = (ServerChunkProvider) world.getChunkProvider();
@@ -133,6 +131,8 @@ public class ChunkDataSyncManager {
                     (IEThreadedAnvilChunkStorage) chunkManager.chunkManager;
                 storage.onPlayerRespawn(oldPlayer);
             });
+    
+        NewChunkTrackingGraph.forceRemovePlayer(oldPlayer);
     }
     
 }

@@ -131,12 +131,12 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     }
     
     @Override
-    public void markForRerender(int int_1, int int_2, int int_3, boolean boolean_1) {
-        //this method may get called by another thread?
+    public void markForRerender(int cx, int cy, int cz, boolean isImportant) {
+        //TODO change it
         ChunkRenderDispatcher.ChunkRender builtChunk = provideBuiltChunk(
-            new BlockPos(int_1 * 16, int_2 * 16, int_3 * 16)
+            new BlockPos(cx * 16, cy * 16, cz * 16)
         );
-        builtChunk.setNeedsUpdate(boolean_1);
+        builtChunk.setNeedsUpdate(isImportant);
     }
     
     private Preset myCreatePreset(double playerXCoord, double playerZCoord) {
@@ -206,7 +206,7 @@ public class MyBuiltChunkStorage extends ViewFrustum {
                 builtChunk.setPosition(
                     basePos.getX(), basePos.getY(), basePos.getZ()
                 );
-                //MinecraftClient.getInstance().getProfiler().pop();
+                
                 return builtChunk;
             }
         );

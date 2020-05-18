@@ -121,6 +121,10 @@ public class MyRenderHelper {
         
         debugText = "";
 //        MyRenderHelper.debugText = String.valueOf(((IEEntity) client.player).getCollidingPortal());
+    
+//        if (ClientTeleportationManager.isTeleportingTick) {
+//            Helper.log("frame "+tickDelta_);
+//        }
     }
     
     //protect the player from mirror room lag attack
@@ -397,11 +401,6 @@ public class MyRenderHelper {
         GlStateManager.popMatrix();
         
         CHelper.checkGlError();
-    }
-    
-    public static boolean isRenderingMirror() {
-        return CGlobal.renderer.isRendering() &&
-            CGlobal.renderer.getRenderingPortal() instanceof Mirror;
     }
     
     public static void earlyUpdateLight() {

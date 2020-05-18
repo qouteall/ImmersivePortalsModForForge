@@ -136,24 +136,6 @@ public class CrossPortalEntityRenderer {
         });
     }
     
-    public static boolean isReversePortal(Portal a, Portal b) {
-        return a.dimensionTo == b.dimension &&
-            a.dimension == b.dimensionTo &&
-            a.getPositionVec().distanceTo(b.destination) < 1 &&
-            a.destination.distanceTo(b.getPositionVec()) < 1;
-    }
-    
-    public static boolean isFlippedPortal(Portal a, Portal b) {
-        if (a == b) {
-            return false;
-        }
-        return a.dimension == b.dimension &&
-            a.dimensionTo == b.dimensionTo &&
-            a.getPositionVec().distanceTo(b.getPositionVec()) < 1 &&
-            a.destination.distanceTo(b.destination) < 1 &&
-            a.getNormal().dotProduct(b.getNormal()) < -0.5;
-    }
-    
     private static void renderProjectedEntity(
         Entity entity,
         Portal collidingPortal,
@@ -164,7 +146,7 @@ public class CrossPortalEntityRenderer {
             //correctly rendering it needs two culling planes
             //use some rough check to work around
             
-            if (!isFlippedPortal(renderingPortal, collidingPortal)) {
+            if (!Portal.isFlippedPortal(renderingPortal, collidingPortal)) {
                 renderEntityRegardingPlayer(entity, collidingPortal, matrixStack);
             }
         }

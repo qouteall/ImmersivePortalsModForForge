@@ -66,8 +66,9 @@ public class ModelDataHacker {
 //        });
     }
     
+    @Deprecated
     @OnlyIn(Dist.CLIENT)
-    public static IModelData fetchMissingModelData(
+    public static IModelData fetchMissingModelDataFromWorld(
         ILightReader world,
         BlockPos pos
     ) {
@@ -98,6 +99,31 @@ public class ModelDataHacker {
             return net.minecraftforge.client.model.data.EmptyModelData.INSTANCE;
         }
         
+        return modelData;
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    public static IModelData fetchMissingModelDataFromChunk(
+        Chunk chunk,
+        BlockPos pos
+    ) {
+        TileEntity tileEntity = chunk.getTileEntity(pos);
+    
+        if (tileEntity == null) {
+            log(() -> {
+                Helper.err("Cannot find block entity for model data");
+            });
+            return net.minecraftforge.client.model.data.EmptyModelData.INSTANCE;
+        }
+    
+        IModelData modelData = tileEntity.getModelData();
+        if (modelData == null) {
+            log(() -> {
+                Helper.err("Block entity has null model data? " + tileEntity);
+            });
+            return net.minecraftforge.client.model.data.EmptyModelData.INSTANCE;
+        }
+    
         return modelData;
     }
     

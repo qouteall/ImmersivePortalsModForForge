@@ -106,6 +106,10 @@ public abstract class BreakablePortalEntity extends Portal {
                 if (shouldBreakPortal) {
                     breakPortalOnThisSide();
                 }
+    
+                if (world.getGameTime() % 233 == getEntityId() % 233) {
+                    checkPortalIntegrity();
+                }
             }
         }
         

@@ -33,13 +33,4 @@ public class MixinForgeModelDataManager {
     @Final
     private static Map<ChunkPos, Map<BlockPos, IModelData>> modelDataCache;
     
-    @Inject(method = "cleanCaches", at = @At("HEAD"), cancellable = true)
-    private static void onCleanCaches(World world, CallbackInfo ci) {
-        if (CGlobal.renderer.isRendering()) {
-            ci.cancel();
-        }
-        if (world != Minecraft.getInstance().world) {
-            ci.cancel();
-        }
-    }
 }

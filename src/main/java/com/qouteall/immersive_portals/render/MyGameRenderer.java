@@ -152,7 +152,6 @@ public class MyGameRenderer {
             .cacheActiveRenderInfo(client.world, oldCamera, client.pointedEntity);
     }
     
-    //TODO remove doOuterCheck
     public static void renderPlayerItself(Runnable doRenderEntity) {
         EntityRendererManager entityRenderDispatcher =
             ((IEWorldRenderer) client.worldRenderer).getEntityRenderDispatcher();
@@ -170,8 +169,16 @@ public class MyGameRenderer {
             player, MyRenderHelper.originalPlayerPos, MyRenderHelper.originalPlayerLastTickPos
         );
         ((IEPlayerListEntry) playerListEntry).setGameMode(originalGameMode);
-    
+        
         doRenderEntity.run();
+        
+//        if (ClientTeleportationManager.isTeleportingTick&&(CGlobal.renderer.getPortalLayer()==1)) {
+//            Helper.log(String.format(
+//                "r%d %s",
+//                CGlobal.clientTeleportationManager.tickTimeForTeleportation,
+//                MyRenderHelper.tickDelta
+//            ));
+//        }
         
         McHelper.setPosAndLastTickPos(
             player, oldPos, oldLastTickPos

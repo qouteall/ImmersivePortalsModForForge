@@ -1,5 +1,7 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
+import com.qouteall.hiding_in_the_bushes.MyNetwork;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.my_util.SignalBiArged;
@@ -11,6 +13,7 @@ import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.network.play.server.SUnloadChunkPacket;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
@@ -84,7 +87,7 @@ public class NewChunkTrackingGraph {
                 }
             }
         }
-    
+        
         public boolean isBeingWatchedByAnyPlayer() {
             return !watchingPlayers.isEmpty();
         }
@@ -154,33 +157,25 @@ public class NewChunkTrackingGraph {
         });
         
         McHelper.getServer().getWorlds().forEach(world -> {
-    
+            
             LongSortedSet currentLoadedChunks = getChunkRecordMap(world.dimension.getType()).keySet();
-    
+            
             currentLoadedChunks.forEach(
                 (long longChunkPos) -> {
                     MyLoadingTicket.load(world, new ChunkPos(longChunkPos));
-//                    ((IEServerWorld) world).updateLoadingStatus(
-//                        ChunkPos.getPackedX(longChunkPos),
-//                        ChunkPos.getPackedZ(longChunkPos),
-//                        true
-//                    );
                 }
             );
-    
+            
             LongSortedSet additionalLoadedChunks = new LongLinkedOpenHashSet();
             additionalChunkLoaders.forEach(chunkLoader -> chunkLoader.foreachChunkPos(
                 (dim, x, z, dis) -> {
                     if (world.dimension.getType() == dim) {
                         additionalLoadedChunks.add(ChunkPos.asLong(x, z));
                         MyLoadingTicket.load(world, new ChunkPos(x, z));
-//                        ((IEServerWorld) world).updateLoadingStatus(
-//                            x, z, true
-//                        );
                     }
                 }
             ));
-    
+            
             LongList chunksToUnload = new LongArrayList();
             MyLoadingTicket.getRecord(world).forEach((long longChunkPos) -> {
                 if (!currentLoadedChunks.contains(longChunkPos) &&
@@ -189,14 +184,9 @@ public class NewChunkTrackingGraph {
                     chunksToUnload.add(longChunkPos);
                 }
             });
-    
+            
             chunksToUnload.forEach((long longChunkPos) -> {
                 MyLoadingTicket.unload(world, new ChunkPos(longChunkPos));
-//                world.setChunkForced(
-//                    ChunkPos.getPackedX(longChunkPos),
-//                    ChunkPos.getPackedZ(longChunkPos),
-//                    false
-//                );
             });
         });
     }
@@ -223,7 +213,7 @@ public class NewChunkTrackingGraph {
         boolean isLoadedNow
     ) {
         ServerWorld world = McHelper.getServer().getWorld(dimension);
-    
+        
         world.forceChunk(chunkPos.x, chunkPos.z, isLoadedNow);
     }
     
@@ -280,11 +270,35 @@ public class NewChunkTrackingGraph {
         return record.watchingPlayers.stream();
     }
     
+    /**
+     * {@link net.minecraft.server.world.ThreadedAnvilChunkStorage#getPlayersWatchingChunk(ChunkPos, boolean)}
+     * The "onlyOnWatchDistanceEdge" is so weird!!!!!!
+     * If it does not send only to edge players, placing a block will
+     * send light updates and cause client to rebuild the chunk multiple times
+     */
+    public static Stream<ServerPlayerEntity> getFarWatchers(
+        DimensionType dimension,
+        int x, int z
+    ) {
+        return getPlayersViewingChunk(dimension, x, z)
+            .filter(player -> player.dimension != dimension ||
+                Helper.getChebyshevDistance(x, z, player.chunkCoordX, player.chunkCoordZ) > 4);
+    }
+    
     public static void forceRemovePlayer(ServerPlayerEntity player) {
-        data.values().forEach(map -> map.values().forEach(
-            chunkRecord -> chunkRecord.removeInactiveWatcher(
+        data.forEach((dim, map) -> map.forEach(
+            (chunkPos, chunkRecord) -> chunkRecord.removeInactiveWatcher(
                 (player1, l, d) -> player1 == player,
                 p -> {
+                    //it solves issue but making respawn laggier
+                    p.connection.sendPacket(
+                        MyNetwork.createRedirectedMessage(
+                            dim, new SUnloadChunkPacket(
+                                ChunkPos.getX(chunkPos),
+                                ChunkPos.getZ(chunkPos)
+                            )
+                        )
+                    );
                 }
             )
         ));
