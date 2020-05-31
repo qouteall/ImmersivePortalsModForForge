@@ -1,11 +1,11 @@
 package com.qouteall.immersive_portals.render;
 
 import com.google.common.collect.Streams;
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.my_util.ObjectBuffer;
 import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkNeighborFix;
+import com.qouteall.immersive_portals.render.context_management.PortalLayers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.WorldRenderer;
@@ -112,7 +112,7 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     }
     
     private void manageNeighbor(Preset preset) {
-        boolean isRenderingPortal = CGlobal.renderer.isRendering();
+        boolean isRenderingPortal = PortalLayers.isRendering();
         if (!isRenderingPortal) {
             if (shouldUpdateMainPresetNeighbor) {
                 shouldUpdateMainPresetNeighbor = false;
@@ -291,5 +291,16 @@ public class MyBuiltChunkStorage extends ViewFrustum {
         else {
             return null;
         }
+    }
+    
+    public String getDebugString() {
+        return String.format(
+            "All:%s Needs Rebuild:%s",
+            builtChunkMap.size(),
+            builtChunkMap.values().stream()
+                .filter(
+                    builtChunk -> builtChunk.needsUpdate()
+                ).count()
+        );
     }
 }

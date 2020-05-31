@@ -1,9 +1,9 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.render.context_management.PortalLayers;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.tileentity.TileEntity;
@@ -30,8 +30,8 @@ public class MixinBlockEntityRenderDispatcher {
         if (OFInterface.isShadowPass.getAsBoolean()) {
             return;
         }
-        if (CGlobal.renderer.isRendering()) {
-            Portal renderingPortal = CGlobal.renderer.getRenderingPortal();
+        if (PortalLayers.isRendering()) {
+            Portal renderingPortal = PortalLayers.getRenderingPortal();
             boolean canRender = renderingPortal.isInside(
                 new Vec3d(blockEntity.getPos()),
                 -0.1

@@ -13,7 +13,9 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.render.context_management.DimensionRenderHelper;
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
+import com.qouteall.immersive_portals.render.context_management.PortalLayers;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
+import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
@@ -272,18 +274,18 @@ public class ViewAreaRenderer {
             portal,
             bufferbuilder,
             PortalRenderer.client.gameRenderer.getActiveRenderInfo().getProjectedView(),
-            MyRenderHelper.tickDelta,
+            RenderStates.tickDelta,
             portal instanceof Mirror ? 0 : 0.45F
         );
         
-        boolean shouldReverseCull = MyRenderHelper.isRenderingOddNumberOfMirrors();
+        boolean shouldReverseCull = PortalLayers.isRenderingOddNumberOfMirrors();
         if (shouldReverseCull) {
             MyRenderHelper.applyMirrorFaceCulling();
         }
         if (doFrontCulling) {
-            if (CGlobal.renderer.isRendering()) {
+            if (PortalLayers.isRendering()) {
                 PixelCuller.updateCullingPlaneInner(
-                    matrixStack, CGlobal.renderer.getRenderingPortal(), false
+                    matrixStack, PortalLayers.getRenderingPortal(), false
                 );
                 PixelCuller.loadCullingPlaneClassical(matrixStack);
                 PixelCuller.startClassicalCulling();
@@ -301,7 +303,7 @@ public class ViewAreaRenderer {
             MyRenderHelper.recoverFaceCulling();
         }
         if (doFrontCulling) {
-            if (CGlobal.renderer.isRendering()) {
+            if (PortalLayers.isRendering()) {
                 PixelCuller.endCulling();
             }
         }
@@ -314,7 +316,7 @@ public class ViewAreaRenderer {
     private static Vec3d getCurrentFogColor(Portal portal) {
         
         if (Global.edgelessSky) {
-            return getFogColorOf(MyRenderHelper.originalPlayerDimension);
+            return getFogColorOf(RenderStates.originalPlayerDimension);
         }
         
         return getFogColorOf(portal.dimensionTo);

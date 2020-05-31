@@ -4,7 +4,8 @@ import com.google.common.collect.Streams;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
-import com.qouteall.immersive_portals.render.MyRenderHelper;
+import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.Screen;
@@ -36,8 +37,8 @@ public class CHelper {
     
     //NOTE this may not be reliable
     public static DimensionType getOriginalDimension() {
-        if (CGlobal.renderer.isRendering()) {
-            return MyRenderHelper.originalPlayerDimension;
+        if (PortalLayers.isRendering()) {
+            return RenderStates.originalPlayerDimension;
         }
         else {
             return Minecraft.getInstance().player.dimension;

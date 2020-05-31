@@ -6,12 +6,14 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.PortalRenderer;
 import com.qouteall.immersive_portals.render.QueryManager;
 import com.qouteall.immersive_portals.render.SecondaryFrameBuffer;
 import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.render.ViewAreaRenderer;
+import com.qouteall.immersive_portals.render.context_management.PortalLayers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.world.ClientWorld;
@@ -40,7 +42,7 @@ public class RendererDeferred extends PortalRenderer {
     
     @Override
     public void onAfterTranslucentRendering(MatrixStack matrixStack) {
-        if (isRendering()) {
+        if (PortalLayers.isRendering()) {
             return;
         }
 //        OFHelper.copyFromShaderFbTo(deferredBuffer.fb, GL11.GL_DEPTH_BUFFER_BIT);
@@ -71,7 +73,7 @@ public class RendererDeferred extends PortalRenderer {
     
     @Override
     protected void doRenderPortal(Portal portal, MatrixStack matrixStack) {
-        if (isRendering()) {
+        if (PortalLayers.isRendering()) {
             //currently only support one-layer portal
             return;
         }
@@ -81,13 +83,13 @@ public class RendererDeferred extends PortalRenderer {
         if (!testShouldRenderPortal(portal, matrixStack)) {
             return;
         }
+    
+        PortalLayers.pushPortalLayer(portal);
         
-        portalLayers.push(portal);
-        
-        manageCameraAndRenderPortalContent(portal);
+        mustRenderPortalHere(portal);
         //it will bind the gbuffer of rendered dimension
-        
-        portalLayers.pop();
+    
+        PortalLayers.popPortalLayer();
         
         deferredBuffer.fb.bindFramebuffer(true);
     
@@ -106,16 +108,32 @@ public class RendererDeferred extends PortalRenderer {
     }
     
     @Override
-    protected void renderPortalContentWithContextSwitched(
-        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
+    protected void invokeWorldRendering(
+        Vec3d newEyePos, Vec3d newLastTickEyePos, ClientWorld newWorld
     ) {
-        OFGlobal.shaderContextManager.switchContextAndRun(
-            () -> {
-                OFGlobal.bindToShaderFrameBuffer.run();
-                super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
+        MyGameRenderer.depictTheFascinatingWorld(
+            newWorld, newEyePos,
+            newLastTickEyePos,
+            runnable -> {
+                OFGlobal.shaderContextManager.switchContextAndRun(()->{
+                    OFGlobal.bindToShaderFrameBuffer.run();
+                    runnable.run();
+                });
             }
         );
     }
+    
+//    @Override
+//    protected void renderPortalContentWithContextSwitched(
+//        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
+//    ) {
+//        OFGlobal.shaderContextManager.switchContextAndRun(
+//            () -> {
+//                OFGlobal.bindToShaderFrameBuffer.run();
+//                super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
+//            }
+//        );
+//    }
     
     @Override
     public void renderPortalInEntityRenderer(Portal portal) {
@@ -134,7 +152,7 @@ public class RendererDeferred extends PortalRenderer {
         if (Shaders.isShadowPass) {
             return true;
         }
-        if (isRendering()) {
+        if (PortalLayers.isRendering()) {
             return portal.isInFrontOfPortal(cameraPos);
         }
         return false;
@@ -162,7 +180,7 @@ public class RendererDeferred extends PortalRenderer {
     
     @Override
     public void onRenderCenterEnded(MatrixStack matrixStack) {
-        if (isRendering()) {
+        if (PortalLayers.isRendering()) {
             return;
         }
         

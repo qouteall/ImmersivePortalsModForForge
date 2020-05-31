@@ -4,10 +4,12 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.render.MyRenderHelper;
+import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.PortalRenderer;
 import com.qouteall.immersive_portals.render.SecondaryFrameBuffer;
 import com.qouteall.immersive_portals.render.ShaderManager;
+import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.world.ClientWorld;
@@ -63,16 +65,16 @@ public class RendererDebugWithShader extends PortalRenderer {
     
     @Override
     protected void doRenderPortal(Portal portal, MatrixStack matrixStack) {
-        if (MyRenderHelper.getRenderedPortalNum() >= 1) {
+        if (RenderStates.getRenderedPortalNum() >= 1) {
             return;
         }
+    
+        PortalLayers.pushPortalLayer(portal);
         
-        portalLayers.push(portal);
-        
-        manageCameraAndRenderPortalContent(portal);
+        mustRenderPortalHere(portal);
         //it will bind the gbuffer of rendered dimension
-        
-        portalLayers.pop();
+    
+        PortalLayers.popPortalLayer();
         
         deferredBuffer.fb.bindFramebuffer(true);
         
@@ -86,24 +88,40 @@ public class RendererDebugWithShader extends PortalRenderer {
     }
     
     @Override
-    protected void renderPortalContentWithContextSwitched(
-        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
+    protected void invokeWorldRendering(
+        Vec3d newEyePos, Vec3d newLastTickEyePos, ClientWorld newWorld
     ) {
-        OFGlobal.shaderContextManager.switchContextAndRun(
-            () -> {
-                OFGlobal.bindToShaderFrameBuffer.run();
-                super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
+        MyGameRenderer.depictTheFascinatingWorld(
+            newWorld, newEyePos,
+            newLastTickEyePos,
+            runnable -> {
+                OFGlobal.shaderContextManager.switchContextAndRun(()->{
+                    OFGlobal.bindToShaderFrameBuffer.run();
+                    runnable.run();
+                });
             }
         );
     }
     
+//    @Override
+//    protected void renderPortalContentWithContextSwitched(
+//        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
+//    ) {
+//        OFGlobal.shaderContextManager.switchContextAndRun(
+//            () -> {
+//                OFGlobal.bindToShaderFrameBuffer.run();
+//                super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
+//            }
+//        );
+//    }
+    
     @Override
     public void onRenderCenterEnded(MatrixStack matrixStack) {
-        if (isRendering()) {
+        if (PortalLayers.isRendering()) {
             return;
         }
         
-        if (MyRenderHelper.getRenderedPortalNum() == 0) {
+        if (RenderStates.getRenderedPortalNum() == 0) {
             return;
         }
         

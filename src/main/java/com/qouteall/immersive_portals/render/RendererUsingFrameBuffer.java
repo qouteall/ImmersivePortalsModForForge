@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.render.context_management.PortalLayers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import org.lwjgl.opengl.GL11;
@@ -51,7 +52,7 @@ public class RendererUsingFrameBuffer extends PortalRenderer {
         Portal portal,
         MatrixStack matrixStack
     ) {
-        if (isRendering()) {
+        if (PortalLayers.isRendering()) {
             //only support one-layer portal
             return;
         }
@@ -59,8 +60,8 @@ public class RendererUsingFrameBuffer extends PortalRenderer {
         if (!testShouldRenderPortal(portal, matrixStack)) {
             return;
         }
-        
-        portalLayers.push(portal);
+    
+        PortalLayers.pushPortalLayer(portal);
     
         Framebuffer oldFrameBuffer = client.getFramebuffer();
     
@@ -75,12 +76,12 @@ public class RendererUsingFrameBuffer extends PortalRenderer {
         );
         GL11.glDisable(GL11.GL_STENCIL_TEST);
     
-        manageCameraAndRenderPortalContent(portal);
+        mustRenderPortalHere(portal);
         
         ((IEMinecraftClient) client).setFrameBuffer(oldFrameBuffer);
         oldFrameBuffer.bindFramebuffer(true);
-        
-        portalLayers.pop();
+    
+        PortalLayers.popPortalLayer();
     
         renderSecondBufferIntoMainBuffer(portal, matrixStack);
     }

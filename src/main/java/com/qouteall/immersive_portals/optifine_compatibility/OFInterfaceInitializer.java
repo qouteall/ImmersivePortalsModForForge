@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.optifine.Config;
+import net.optifine.shaders.ShaderPackDefault;
 import net.optifine.shaders.Shaders;
 import org.apache.commons.lang3.Validate;
 
@@ -92,5 +93,7 @@ public class OFInterfaceInitializer {
 //        OFInterface.initShaderCullingManager = ShaderCullingManager::init;
         OFInterface.isFogDisabled = () -> Config.isFogOff();
         OFInterface.updateEntityTypeForShader = Shaders::nextEntity;
+    
+        OFInterface.isInternalShader = () -> Shaders.getShaderPack() instanceof ShaderPackDefault;
     }
 }

@@ -1,10 +1,11 @@
 package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEMatrix4f;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -31,42 +32,24 @@ public class TransformationManager {
         
         matrixStack.rotate(finalRotation);
         
-        CGlobal.renderer.applyAdditionalTransformations(matrixStack);
-        
-        //applyMirrorTransformation(camera, matrixStack);
+        PortalLayers.applyAdditionalTransformations(matrixStack);
         
     }
     
     public static boolean isAnimationRunning() {
-        double progress = (MyRenderHelper.renderStartNanoTime - interpolationStartTime) /
+        double progress = (RenderStates.renderStartNanoTime - interpolationStartTime) /
             ((double) interpolationEndTime - interpolationStartTime);
         
         return progress >= -0.1 && progress <= 1.1;
     }
     
     public static Quaternion getFinalRotation(Quaternion cameraRotation) {
-        double progress = (MyRenderHelper.renderStartNanoTime - interpolationStartTime) /
+        double progress = (RenderStates.renderStartNanoTime - interpolationStartTime) /
             ((double) interpolationEndTime - interpolationStartTime);
         
         if (progress < 0 || progress >= 1) {
             return cameraRotation;
         }
-
-//        if (inertialRotation != null) {
-//
-//            if (Helper.isClose(inertialRotation, cameraRotation, 0.000001f)) {
-//                inertialRotation = null;
-//                return cameraRotation;
-//            }
-//
-//            inertialRotation = Helper.interpolateQuaternion(
-//                inertialRotation, cameraRotation, 0.04f
-//            );
-//            return inertialRotation;
-//        }
-//        else {
-//            return cameraRotation;
-//        }
         
         progress = mapProgress(progress);
         
@@ -134,7 +117,7 @@ public class TransformationManager {
             b.conjugate();
             visualRotation.multiply(b);
             
-            Vec3d oldViewVector = player.getLook(MyRenderHelper.tickDelta);
+            Vec3d oldViewVector = player.getLook(RenderStates.tickDelta);
             Vec3d newViewVector = portal.transformLocalVec(oldViewVector);
             
             player.rotationYaw = getYawFromViewVector(newViewVector);
@@ -152,7 +135,7 @@ public class TransformationManager {
             
             if (!Helper.isClose(newCameraRotation, visualRotation, 0.001f)) {
                 inertialRotation = visualRotation;
-                interpolationStartTime = MyRenderHelper.renderStartNanoTime;
+                interpolationStartTime = RenderStates.renderStartNanoTime;
                 interpolationEndTime = interpolationStartTime +
                     Helper.secondToNano(1);
             }
@@ -168,7 +151,7 @@ public class TransformationManager {
             client.player,
             client.gameSettings.thirdPersonView > 0,
             client.gameSettings.thirdPersonView == 2,
-            MyRenderHelper.tickDelta
+            RenderStates.tickDelta
         );
     }
     

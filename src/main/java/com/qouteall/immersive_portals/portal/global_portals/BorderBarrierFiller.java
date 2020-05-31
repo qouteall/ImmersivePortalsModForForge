@@ -6,12 +6,15 @@ import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.IntBox;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.server.ServerWorld;
 import java.util.List;
 import java.util.WeakHashMap;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -23,69 +26,69 @@ public class BorderBarrierFiller {
         ServerPlayerEntity player
     ) {
         ServerWorld world = (ServerWorld) player.world;
-        IntBox borderBox = getBorderBox(world);
-        if (borderBox == null) {
-            McHelper.serverLog(
-                player,
-                "There is no world wrapping portal in this dimension"
-            );
+        Vec3d playerPos = player.getPositionVec();
+        
+        List<WorldWrappingPortal.WrappingZone> wrappingZones =
+            WorldWrappingPortal.getWrappingZones(world);
+        
+        WorldWrappingPortal.WrappingZone zone = wrappingZones.stream().filter(
+            wrappingZone -> wrappingZone.getArea().contains(playerPos)
+        ).findFirst().orElse(null);
+        
+        if (zone == null) {
+            player.sendMessage(new TranslationTextComponent("imm_ptl.clear_border_warning"));
             return;
         }
+        
+        doInvoke(player, world, zone);
+    }
+    
+    public static void onCommandExecuted(
+        ServerPlayerEntity player,
+        int zoneId
+    ) {
+        ServerWorld world = (ServerWorld) player.world;
+        
+        List<WorldWrappingPortal.WrappingZone> wrappingZones =
+            WorldWrappingPortal.getWrappingZones(world);
+        
+        WorldWrappingPortal.WrappingZone zone = wrappingZones.stream().filter(
+            wrappingZone -> wrappingZone.id == zoneId
+        ).findFirst().orElse(null);
+        
+        if (zone == null) {
+            player.sendMessage(new TranslationTextComponent("imm_ptl.cannot_find_zone"));
+            return;
+        }
+        
+        doInvoke(player, world, zone);
+    }
+    
+    private static void doInvoke(
+        ServerPlayerEntity player,
+        ServerWorld world,
+        WorldWrappingPortal.WrappingZone zone
+    ) {
+        IntBox borderBox = zone.getBorderBox();
         
         boolean warned = warnedPlayers.containsKey(player);
         if (!warned) {
             warnedPlayers.put(player, null);
-            McHelper.serverLog(
-                player,
-                "Warning! It will fill the outer layer of the border with barrier blocks.\n" +
-                    "This operation cannot be undone. You should backup the world before doing that.\n" +
-                    "Invoke this command again to precede."
-            );
+            player.sendMessage(new TranslationTextComponent("imm_ptl.clear_border_warning"));
         }
         else {
             warnedPlayers.remove(player);
             
-            McHelper.serverLog(player, "Start filling border");
+            player.sendMessage(new TranslationTextComponent("imm_ptl.start_clearing_border"));
             
-            startFillingBorder(world, borderBox, player);
+            startFillingBorder(world, borderBox, player::sendMessage);
         }
-    }
-    
-    private static IntBox getBorderBox(ServerWorld world) {
-        List<BorderPortal> borderPortals = McHelper.getGlobalPortals(world).stream().filter(
-            p -> p instanceof BorderPortal
-        ).map(
-            p -> ((BorderPortal) p)
-        ).collect(Collectors.toList());
-        
-        if (borderPortals.size() != 4) {
-            return null;
-        }
-        
-        AxisAlignedBB floatBox = new AxisAlignedBB(
-            borderPortals.get(0).getPositionVec(),
-            borderPortals.get(1).getPositionVec()
-        ).union(
-            new AxisAlignedBB(
-                borderPortals.get(2).getPositionVec(),
-                borderPortals.get(3).getPositionVec()
-            )
-        );
-        
-        return new IntBox(
-            new BlockPos(
-                floatBox.minX - 1, -1, floatBox.minZ - 1
-            ),
-            new BlockPos(
-                floatBox.maxX, 256, floatBox.maxZ
-            )
-        );
     }
     
     private static void startFillingBorder(
         ServerWorld world,
         IntBox borderBox,
-        ServerPlayerEntity informer
+        Consumer<ITextComponent> informer
     ) {
         Supplier<IntStream> xStream = () -> IntStream.range(
             borderBox.l.getX(), borderBox.h.getX() + 1
@@ -110,24 +113,22 @@ public class BorderBarrierFiller {
             pos -> {
                 for (int y = 0; y < 256; y++) {
                     temp1.setPos(pos.getX(), y, pos.getZ());
-                    world.setBlockState(temp1, Blocks.BARRIER.getDefaultState());
+                    world.setBlockState(temp1, Blocks.AIR.getDefaultState());
                 }
                 return false;
             },
             columns -> {
-                if (McHelper.getServerGameTime() % 40 == 0) {
-                    double progress = ((double) columns) / totalColumns;
-                    McHelper.serverLog(
-                        informer, Integer.toString((int) (progress * 100)) + "%"
-                    );
-                }
+                double progress = ((double) columns) / totalColumns;
+                informer.accept(new StringTextComponent(
+                    Integer.toString((int) (progress * 100)) + "%"
+                ));
                 return true;
             },
             e -> {
                 //nothing
             },
             () -> {
-            
+                informer.accept(new TranslationTextComponent("imm_ptl.finished"));
             },
             () -> {
             

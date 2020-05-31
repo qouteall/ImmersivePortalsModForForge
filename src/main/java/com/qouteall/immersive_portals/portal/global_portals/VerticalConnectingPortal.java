@@ -18,10 +18,10 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     private static Predicate<GlobalTrackedPortal> getPredicate(ConnectorType connectorType) {
         switch (connectorType) {
             case floor:
-                return portal -> portal.getPosY() < 100;
+                return portal -> portal instanceof VerticalConnectingPortal&& portal.getNormal().y > 0;
             default:
             case ceil:
-                return portal -> portal.getPosY() > 100;
+                return portal -> portal instanceof VerticalConnectingPortal&& portal.getNormal().y < 0;
         }
     }
     
@@ -90,7 +90,7 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         
         switch (connectorType) {
             case floor:
-        
+                
                 verticalConnectingPortal.setPosition(0, downY, 0);
                 verticalConnectingPortal.destination = new Vec3d(0, upY, 0);
                 verticalConnectingPortal.axisW = new Vec3d(0, 0, 1);
@@ -105,8 +105,8 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         }
         
         verticalConnectingPortal.dimensionTo = toWorld.dimension.getType();
-        verticalConnectingPortal.width = 23333;
-        verticalConnectingPortal.height = 23333;
+        verticalConnectingPortal.width = 23333333333.0d;
+        verticalConnectingPortal.height = 23333333333.0d;
         return verticalConnectingPortal;
     }
     
@@ -122,11 +122,11 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     ) {
         ServerWorld endWorld = McHelper.getServer().getWorld(dimension);
         GlobalPortalStorage storage = GlobalPortalStorage.get(endWorld);
-    
+        
         storage.data.removeIf(
             portal -> portal instanceof VerticalConnectingPortal && predicate.test(portal)
         );
-    
+        
         storage.onDataChanged();
     }
     
@@ -140,12 +140,5 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     
     public static int getHeight(DimensionType dimensionType) {
         return McHelper.getServer().getWorld(dimensionType).getActualHeight();
-//        if (dimensionType == DimensionType.THE_NETHER) {
-//            if (O_O.isNetherHigherModPresent()) {
-//                return 256;
-//            }
-//            return 128;
-//        }
-//        return 256;
     }
 }

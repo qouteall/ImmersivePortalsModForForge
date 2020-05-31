@@ -16,9 +16,9 @@ import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.TransformationManager;
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
+import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.DownloadTerrainScreen;
@@ -27,24 +27,29 @@ import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ClassInheritanceMultiMap;
+import net.minecraft.util.Tuple;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 @OnlyIn(Dist.CLIENT)
 public class ClientTeleportationManager {
     Minecraft client = Minecraft.getInstance();
     public long tickTimeForTeleportation = 0;
     private long lastTeleportGameTime = 0;
-    private Vec3d lastPlayerHeadPos = null;
+    private Vec3d moveStartPoint = null;
     private long teleportWhileRidingTime = 0;
     private long teleportTickTimeLimit = 0;
     
     public static boolean isTeleportingTick = false;
+    
+    private static final int teleportLimit = 2;
     
     public ClientTeleportationManager() {
 //        ModMain.preRenderSignal.connectWithWeakRef(
@@ -58,7 +63,7 @@ public class ClientTeleportationManager {
     private void tick() {
         tickTimeForTeleportation++;
         changePlayerMotionIfCollidingWithPortal();
-    
+        
         isTeleportingTick = false;
     }
     
@@ -84,33 +89,66 @@ public class ClientTeleportationManager {
         }
         
         if (client.world == null || client.player == null) {
-            lastPlayerHeadPos = null;
+            moveStartPoint = null;
         }
         else {
+            //not initialized
             if (client.player.prevPosX == 0 && client.player.prevPosY == 0 && client.player.prevPosZ == 0) {
                 return;
             }
             
-            Vec3d currentHeadPos = getPlayerHeadPos(tickDelta);
-            if (lastPlayerHeadPos != null) {
-                if (lastPlayerHeadPos.squareDistanceTo(currentHeadPos) > 100) {
-                    Helper.err("The Player is Moving Too Fast!");
-                }
-                CHelper.getClientNearbyPortals(20).filter(
-                    portal -> {
-                        return client.player.dimension == portal.dimension &&
-                            portal.isTeleportable() &&
-                            portal.isMovedThroughPortal(
-                                lastPlayerHeadPos,
-                                currentHeadPos
-                            );
+            if (moveStartPoint != null) {
+                for (int i = 0; i < teleportLimit; i++) {
+                    boolean teleported = tryTeleport(tickDelta);
+                    if (!teleported) {
+                        break;
                     }
-                ).findFirst().ifPresent(
-                    portal -> onEntityGoInsidePortal(client.player, portal)
-                );
+                }
             }
             
-            lastPlayerHeadPos = getPlayerHeadPos(tickDelta);
+            moveStartPoint = getPlayerHeadPos(tickDelta);
+        }
+    }
+    
+    private boolean tryTeleport(float tickDelta) {
+        Vec3d newHeadPos = getPlayerHeadPos(tickDelta);
+        
+        if (moveStartPoint.squareDistanceTo(newHeadPos) > 100) {
+            Helper.err("The Player is Moving Too Fast!");
+        }
+        
+        Tuple<Portal, Vec3d> pair = CHelper.getClientNearbyPortals(32)
+            .flatMap(portal -> {
+                if (portal.isTeleportable()) {
+                    Vec3d collidingPoint = portal.pick(
+                        moveStartPoint,
+                        newHeadPos
+                    );
+                    if (collidingPoint != null) {
+                        return Stream.of(new Tuple<>(portal, collidingPoint));
+                    }
+                }
+                return Stream.empty();
+            })
+            .min(Comparator.comparingDouble(
+                p -> p.getB().squareDistanceTo(moveStartPoint)
+            ))
+            .orElse(null);
+        
+        if (pair != null) {
+            Portal portal = pair.getA();
+            Vec3d collidingPos = pair.getB();
+            
+            teleportPlayer(portal);
+            
+            moveStartPoint = portal.transformPoint(collidingPos)
+                .add(portal.getContentDirection().scale(0.00001));
+            //avoid teleporting through parallel portal due to floating point inaccuracy
+            
+            return true;
+        }
+        else {
+            return false;
         }
     }
     
@@ -132,13 +170,6 @@ public class ClientTeleportationManager {
 //            MathHelper.lerp((double) tickDelta, client.player.prevZ, client.player.getZ())
 //        );
         
-    }
-    
-    private void onEntityGoInsidePortal(Entity entity, Portal portal) {
-        if (entity instanceof ClientPlayerEntity) {
-            assert entity.dimension == portal.dimension;
-            teleportPlayer(portal);
-        }
     }
     
     private void teleportPlayer(Portal portal) {
@@ -186,12 +217,12 @@ public class ClientTeleportationManager {
         if (player.getRidingEntity() != null) {
             disableTeleportFor(40);
         }
-
+        
         Helper.log("Client Teleported " + portal);
         
         //update colliding portal
-        ((IEEntity) player).tickCollidingPortal(MyRenderHelper.tickDelta);
-    
+        ((IEEntity) player).tickCollidingPortal(RenderStates.tickDelta);
+        
         isTeleportingTick = true;
     }
     
@@ -224,7 +255,7 @@ public class ClientTeleportationManager {
             changePlayerDimension(player, fromWorld, toWorld, destination);
         }
         
-        lastPlayerHeadPos = null;
+        moveStartPoint = null;
         disableTeleportFor(20);
         
         amendChunkEntityStatus(player);
@@ -294,7 +325,7 @@ public class ClientTeleportationManager {
         
         //because the teleportation may happen before rendering
         //but after pre render info being updated
-        MyRenderHelper.updatePreRenderInfo(MyRenderHelper.tickDelta);
+        RenderStates.updatePreRenderInfo(RenderStates.tickDelta);
         
         OFInterface.onPlayerTraveled.accept(fromDimension, toDimension);
         

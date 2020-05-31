@@ -14,10 +14,10 @@ import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
-import com.qouteall.immersive_portals.portal.global_portals.BorderPortal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
+import com.qouteall.immersive_portals.portal.global_portals.WorldWrappingPortal;
 import com.qouteall.immersive_portals.portal.nether_portal.GeneralBreakablePortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalEntity;
 import com.qouteall.immersive_portals.render.LoadingIndicatorRenderer;
@@ -107,7 +107,7 @@ public class ModMainForge {
             Mirror.entityType,
             BreakableMirror.entityType,
             GlobalTrackedPortal.entityType,
-            BorderPortal.entityType,
+            WorldWrappingPortal.entityType,
             VerticalConnectingPortal.entityType,
             GeneralBreakablePortal.entityType
         }).peek(
@@ -144,6 +144,7 @@ public class ModMainForge {
             Global.correctCrossPortalEntityRendering =
                 ConfigClient.instance.correctCrossPortalEntityRendering.get();
             Global.edgelessSky = ConfigClient.instance.edgelessSky.get();
+            Global.pureMirror = ConfigClient.instance.pureMirror.get();
             RenderDimensionRedirect.updateIdMap(
                 ConfigClient.listToMap(
                     Arrays.asList(
@@ -433,17 +434,17 @@ public class ModMainForge {
                     "immersive_portals:global_tracked_portal")
             );
             
-            BorderPortal.entityType = EntityType.Builder.create(
-                BorderPortal::new, EntityClassification.MISC
+            WorldWrappingPortal.entityType = EntityType.Builder.create(
+                WorldWrappingPortal::new, EntityClassification.MISC
             ).size(
                 1, 1
             ).immuneToFire().setCustomClientFactory((a, world) ->
-                new BorderPortal(BorderPortal.entityType, world)
+                new WorldWrappingPortal(WorldWrappingPortal.entityType, world)
             ).build(
                 "immersive_portals:border_portal"
             );
             event.getRegistry().register(
-                BorderPortal.entityType.setRegistryName("immersive_portals:border_portal")
+                WorldWrappingPortal.entityType.setRegistryName("immersive_portals:border_portal")
             );
             
             VerticalConnectingPortal.entityType = EntityType.Builder.create(

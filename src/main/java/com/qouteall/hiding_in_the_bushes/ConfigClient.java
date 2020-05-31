@@ -19,6 +19,7 @@ public class ConfigClient {
     public final ForgeConfigSpec.BooleanValue renderYourselfInPortal;
     public final ForgeConfigSpec.BooleanValue correctCrossPortalEntityRendering;
     public final ForgeConfigSpec.BooleanValue edgelessSky;
+    public final ForgeConfigSpec.BooleanValue pureMirror;
     public final ForgeConfigSpec.ConfigValue<String> renderDimensionRedirect;
     
     public final String defaultDimRedirect = "immersive_portals:alternate1->minecraft:overworld\n" +
@@ -46,6 +47,9 @@ public class ConfigClient {
         edgelessSky = builder
             .comment("Remove Sky Edge in Dimension Stack")
             .define("edgeless_sky", false);
+        pureMirror = builder
+            .comment("Remove the glass texture on mirrors")
+            .define("pure_mirror", false);
         renderDimensionRedirect = builder.comment(
             "See the Wiki to Know How to Configure it"
         ).define(

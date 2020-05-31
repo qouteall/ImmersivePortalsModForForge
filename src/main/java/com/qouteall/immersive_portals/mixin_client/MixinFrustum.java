@@ -2,16 +2,13 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.render.FrustumCuller;
+import net.minecraft.client.renderer.culling.ClippingHelperImpl;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.util.function.Supplier;
-import net.minecraft.client.renderer.culling.ClippingHelperImpl;
-import net.minecraft.util.math.AxisAlignedBB;
 
 @Mixin(ClippingHelperImpl.class)
 public class MixinFrustum {
@@ -22,17 +19,17 @@ public class MixinFrustum {
     @Shadow
     private double cameraZ;
     
-    private FrustumCuller frustumCuller;
+    private FrustumCuller portal_frustumCuller;
     
     @Inject(
         method = "Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;setCameraPosition(DDD)V",
         at = @At("TAIL")
     )
     private void onSetOrigin(double double_1, double double_2, double double_3, CallbackInfo ci) {
-        if (frustumCuller == null) {
-            frustumCuller = new FrustumCuller();
+        if (portal_frustumCuller == null) {
+            portal_frustumCuller = new FrustumCuller();
         }
-        frustumCuller.update(cameraX, cameraY, cameraZ);
+        portal_frustumCuller.update(cameraX, cameraY, cameraZ);
     }
     
     @Inject(
@@ -41,29 +38,18 @@ public class MixinFrustum {
         cancellable = true
     )
     private void onIntersectionTest(
-        double double_1,
-        double double_2,
-        double double_3,
-        double double_4,
-        double double_5,
-        double double_6,
+        double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
         CallbackInfoReturnable<Boolean> cir
     ) {
         if (CGlobal.doUseAdvancedFrustumCulling) {
-            //this allocation should be avoided by jvm
-            Supplier<AxisAlignedBB> boxInLocalCoordinateSupplier = () -> new AxisAlignedBB(
-                double_1, double_2, double_3,
-                double_4, double_5, double_6
-            ).offset(
-                -cameraX, -cameraY, -cameraZ
+            boolean canDetermineInvisible = portal_frustumCuller.canDetermineInvisible(
+                minX - cameraX, minY - cameraY, minZ - cameraZ,
+                maxX - cameraX, maxY - cameraY, maxZ - cameraZ
             );
-    
-            if (frustumCuller.canDetermineInvisible(boxInLocalCoordinateSupplier)) {
+            if (canDetermineInvisible) {
                 cir.setReturnValue(false);
-                cir.cancel();
             }
         }
     }
-    
     
 }
