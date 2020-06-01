@@ -14,12 +14,11 @@ import com.qouteall.immersive_portals.render.SecondaryFrameBuffer;
 import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.render.ViewAreaRenderer;
 import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Vec3d;
-import net.optifine.shaders.Shaders;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -78,31 +77,29 @@ public class RendererDeferred extends PortalRenderer {
             return;
         }
         
-        OFHelper.copyFromShaderFbTo(deferredBuffer.fb, GL11.GL_DEPTH_BUFFER_BIT);
         
         if (!testShouldRenderPortal(portal, matrixStack)) {
             return;
         }
-    
+        
         PortalLayers.pushPortalLayer(portal);
         
-        mustRenderPortalHere(portal);
-        //it will bind the gbuffer of rendered dimension
-    
+        renderPortalContent(portal);
+        
         PortalLayers.popPortalLayer();
         
         deferredBuffer.fb.bindFramebuffer(true);
-    
-//        RenderSystem.disableBlend();
-//        RenderSystem.color4f(1.0f, 1.0f, 1.0f, 1.0f);
-//        RenderSystem.colorMask(true,true,true,true);
+        
         RenderSystem.disableAlphaTest();
+        RenderSystem.colorMask(true, true, true, false);
+        RenderSystem.depthMask(true);
+        RenderSystem.enableDepthTest();
         MyRenderHelper.drawFrameBufferUp(
             portal,
             client.getFramebuffer(),
-            CGlobal.shaderManager,
             matrixStack
         );
+        RenderSystem.colorMask(true, true, true, true);
         
         OFGlobal.bindToShaderFrameBuffer.run();
     }
@@ -111,11 +108,11 @@ public class RendererDeferred extends PortalRenderer {
     protected void invokeWorldRendering(
         Vec3d newEyePos, Vec3d newLastTickEyePos, ClientWorld newWorld
     ) {
-        MyGameRenderer.depictTheFascinatingWorld(
+        MyGameRenderer.switchAndRenderTheWorld(
             newWorld, newEyePos,
             newLastTickEyePos,
             runnable -> {
-                OFGlobal.shaderContextManager.switchContextAndRun(()->{
+                OFGlobal.shaderContextManager.switchContextAndRun(() -> {
                     OFGlobal.bindToShaderFrameBuffer.run();
                     runnable.run();
                 });
@@ -123,49 +120,23 @@ public class RendererDeferred extends PortalRenderer {
         );
     }
     
-//    @Override
-//    protected void renderPortalContentWithContextSwitched(
-//        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
-//    ) {
-//        OFGlobal.shaderContextManager.switchContextAndRun(
-//            () -> {
-//                OFGlobal.bindToShaderFrameBuffer.run();
-//                super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
-//            }
-//        );
-//    }
-    
     @Override
     public void renderPortalInEntityRenderer(Portal portal) {
-//        if (shouldRenderPortalInEntityRenderer(portal)) {
-//            assert false;
-//            //ViewAreaRenderer.drawPortalViewTriangle(portal);
-//        }
+    
     }
     
-    private boolean shouldRenderPortalInEntityRenderer(Portal portal) {
-        Entity cameraEntity = Minecraft.getInstance().renderViewEntity;
-        if (cameraEntity == null) {
-            return false;
-        }
-        Vec3d cameraPos = cameraEntity.getPositionVec();
-        if (Shaders.isShadowPass) {
-            return true;
-        }
-        if (PortalLayers.isRendering()) {
-            return portal.isInFrontOfPortal(cameraPos);
-        }
-        return false;
-    }
-    
-    //NOTE it will write to shader depth buffer
     private boolean testShouldRenderPortal(Portal portal, MatrixStack matrixStack) {
+        //reset projection matrix
+        client.gameRenderer.resetProjectionMatrix(RenderStates.projectionMatrix);
+        
+        deferredBuffer.fb.bindFramebuffer(true);
         return QueryManager.renderAndGetDoesAnySamplePassed(() -> {
             GlStateManager.enableDepthTest();
-//            GlStateManager.disableDepthTest();//test
+            
             GlStateManager.disableTexture();
-//            GlStateManager.colorMask(false, false, false, false);
-            GlStateManager.depthMask(true);
+            GlStateManager.colorMask(false, false, false, false);
+            
+            GlStateManager.depthMask(false);
             GL20.glUseProgram(0);
             
             ViewAreaRenderer.drawPortalViewTriangle(
@@ -186,7 +157,6 @@ public class RendererDeferred extends PortalRenderer {
         
         GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, client.getFramebuffer().framebufferObject);
         GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, deferredBuffer.fb.framebufferObject);
-        
         GL30.glBlitFramebuffer(
             0, 0, deferredBuffer.fb.framebufferTextureWidth, deferredBuffer.fb.framebufferTextureHeight,
             0, 0, deferredBuffer.fb.framebufferTextureWidth, deferredBuffer.fb.framebufferTextureHeight,
@@ -194,6 +164,8 @@ public class RendererDeferred extends PortalRenderer {
         );
         
         CHelper.checkGlError();
+        
+        OFHelper.copyFromShaderFbTo(deferredBuffer.fb, GL11.GL_DEPTH_BUFFER_BIT);
         
         renderPortals(modelView);
         modelView.pop();
