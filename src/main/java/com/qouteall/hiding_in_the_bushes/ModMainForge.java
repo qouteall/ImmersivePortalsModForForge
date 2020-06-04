@@ -145,6 +145,7 @@ public class ModMainForge {
                 ConfigClient.instance.correctCrossPortalEntityRendering.get();
             Global.edgelessSky = ConfigClient.instance.edgelessSky.get();
             Global.pureMirror = ConfigClient.instance.pureMirror.get();
+            Global.lagAttackProof = ConfigClient.instance.lagAttackProof.get();
             RenderDimensionRedirect.updateIdMap(
                 ConfigClient.listToMap(
                     Arrays.asList(

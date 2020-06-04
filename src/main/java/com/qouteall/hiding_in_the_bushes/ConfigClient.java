@@ -20,6 +20,7 @@ public class ConfigClient {
     public final ForgeConfigSpec.BooleanValue correctCrossPortalEntityRendering;
     public final ForgeConfigSpec.BooleanValue edgelessSky;
     public final ForgeConfigSpec.BooleanValue pureMirror;
+    public final ForgeConfigSpec.BooleanValue lagAttackProof;
     public final ForgeConfigSpec.ConfigValue<String> renderDimensionRedirect;
     
     public final String defaultDimRedirect = "immersive_portals:alternate1->minecraft:overworld\n" +
@@ -50,6 +51,9 @@ public class ConfigClient {
         pureMirror = builder
             .comment("Remove the glass texture on mirrors")
             .define("pure_mirror", false);
+        lagAttackProof = builder
+            .comment("Render Fewer Portals When Laggy")
+            .define("lag_attack_proof", true);
         renderDimensionRedirect = builder.comment(
             "See the Wiki to Know How to Configure it"
         ).define(
