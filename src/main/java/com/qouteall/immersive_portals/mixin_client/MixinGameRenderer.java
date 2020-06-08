@@ -6,7 +6,7 @@ import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
-import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -154,7 +154,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         )
     )
     private void redirectLoadProjectionMatrix(GameRenderer gameRenderer, Matrix4f matrix4f) {
-        if (PortalLayers.isRendering()) {
+        if (PortalRendering.isRendering()) {
             //load recorded projection matrix
             resetProjectionMatrix(RenderStates.projectionMatrix);
         }
@@ -183,8 +183,8 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         MatrixStack matrix,
         CallbackInfo ci
     ) {
-        if (PortalLayers.isRendering()) {
-            PortalLayers.adjustCameraPos(activeRender);
+        if (PortalRendering.isRendering()) {
+            PortalRendering.adjustCameraPos(activeRender);
         }
     }
     

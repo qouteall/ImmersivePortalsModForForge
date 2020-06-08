@@ -4,7 +4,7 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEMatrix4f;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
@@ -32,7 +32,7 @@ public class TransformationManager {
         
         matrixStack.rotate(finalRotation);
         
-        PortalLayers.applyAdditionalTransformations(matrixStack);
+        PortalRendering.applyAdditionalTransformations(matrixStack);
         
     }
     

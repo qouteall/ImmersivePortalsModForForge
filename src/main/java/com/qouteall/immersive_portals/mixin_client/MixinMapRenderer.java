@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.gui.MapItemRenderer;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
@@ -25,7 +25,7 @@ public class MixinMapRenderer {
         int i,
         CallbackInfo ci
     ) {
-        if (PortalLayers.isRenderingOddNumberOfMirrors()) {
+        if (PortalRendering.isRenderingOddNumberOfMirrors()) {
             RenderStates.shouldForceDisableCull = true;
         }
     }
@@ -45,7 +45,7 @@ public class MixinMapRenderer {
         if (vertexConsumerProvider instanceof IRenderTypeBuffer.Impl) {
             ((IRenderTypeBuffer.Impl) vertexConsumerProvider).finish();
         }
-        if (PortalLayers.isRenderingOddNumberOfMirrors()) {
+        if (PortalRendering.isRenderingOddNumberOfMirrors()) {
             RenderStates.shouldForceDisableCull = false;
         }
     }

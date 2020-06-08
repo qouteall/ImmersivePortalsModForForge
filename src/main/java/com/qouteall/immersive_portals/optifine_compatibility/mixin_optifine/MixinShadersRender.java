@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.optifine_compatibility.mixin_optifine;
 
-import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.optifine.shaders.ShadersRender;
@@ -22,6 +22,6 @@ public class MixinShadersRender {
         float partialTicks,
         CallbackInfo ci
     ) {
-        PortalLayers.adjustCameraPos(camera);
+        PortalRendering.adjustCameraPos(camera);
     }
 }

@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.ducks.IEEntity;
-import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.OverlayRenderer;
@@ -26,7 +26,7 @@ public class MixinInGameOverlayRenderer {
         MatrixStack matrixStack,
         CallbackInfo ci
     ) {
-        if (PortalLayers.isRendering()) {
+        if (PortalRendering.isRendering()) {
             ci.cancel();
         }
         ClientPlayerEntity player = Minecraft.getInstance().player;

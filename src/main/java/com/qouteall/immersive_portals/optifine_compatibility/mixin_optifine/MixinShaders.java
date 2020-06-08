@@ -5,7 +5,7 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
 import com.qouteall.immersive_portals.optifine_compatibility.ShaderCullingManager;
-import com.qouteall.immersive_portals.render.context_management.PortalLayers;
+import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -233,7 +233,7 @@ public abstract class MixinShaders {
         Entity entity,
         float tickDelta
     ) {
-        if (PortalLayers.isRendering()) {
+        if (PortalRendering.isRendering()) {
             return RenderStates.originalCameraLightPacked;
         }
         else {
