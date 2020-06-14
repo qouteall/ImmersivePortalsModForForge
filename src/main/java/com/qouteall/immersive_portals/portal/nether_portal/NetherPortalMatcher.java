@@ -145,7 +145,7 @@ public class NetherPortalMatcher {
     ) {
         IntBox aboveLavaLake = getAirCubeOnGround(
             areaSize.add(20, 20, 20), world, searchingCenter,
-            findingRadius / 8,
+            findingRadius / 8 - 5,
             blockPos -> isLavaLake(world, blockPos)
         );
         if (aboveLavaLake != null) {
@@ -155,7 +155,7 @@ public class NetherPortalMatcher {
         
         IntBox biggerArea = getAirCubeOnSolidGround(
             areaSize.add(5, 0, 5), world, searchingCenter,
-            findingRadius / 8
+            findingRadius / 8 - 5
         );
         if (biggerArea == null) {
             Helper.log("Cannot Find Portal Placement on Ground");
