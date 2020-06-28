@@ -169,21 +169,31 @@ public class McHelper {
     ) {
         int[] progress = new int[1];
         Helper.SimpleBox<Boolean> isAborted = new Helper.SimpleBox<>(false);
-        Helper.SimpleBox<Runnable> finishBehavior = new Helper.SimpleBox<>(null);
+        Helper.SimpleBox<Runnable> finishBehavior = new Helper.SimpleBox<>(() -> {
+            Helper.err("Error Occured???");
+        });
         CompletableFuture<Void> future = CompletableFuture.runAsync(
             () -> {
-                T result = stream.peek(
-                    obj -> {
-                        progress[0] += 1;
+                try {
+                    T result = stream.peek(
+                        obj -> {
+                            progress[0] += 1;
+                        }
+                    ).filter(
+                        predicate
+                    ).findFirst().orElse(null);
+                    if (result != null) {
+                        finishBehavior.obj = () -> onFound.accept(result);
                     }
-                ).filter(
-                    predicate
-                ).findFirst().orElse(null);
-                if (result != null) {
-                    finishBehavior.obj = () -> onFound.accept(result);
+                    else {
+                        finishBehavior.obj = onNotFound;
+                    }
                 }
-                else {
-                    finishBehavior.obj = onNotFound;
+                catch (Throwable t) {
+                    t.printStackTrace();
+                    finishBehavior.obj = () -> {
+                        t.printStackTrace();
+                    };
                 }
             },
             McHelper.getServer().getBackgroundExecutor()
@@ -549,7 +559,7 @@ public class McHelper {
             e -> e.getBoundingBox().intersects(box) && predicate.test(e)
         );
     }
-
+    
     public static ResourceLocation dimensionTypeId(DimensionType dimType) {
         return Objects.requireNonNull(Registry.DIMENSION_TYPE.getKey(dimType));
     }

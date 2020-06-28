@@ -156,12 +156,12 @@ public class CrossPortalEntityRenderer {
             //correctly rendering it needs two culling planes
             //use some rough check to work around
             
-            if (!Portal.isFlippedPortal(renderingPortal,collidingPortal)) {
+            if (!Portal.isFlippedPortal(renderingPortal, collidingPortal)) {
                 Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
                 
                 boolean isHidden = cameraPos.subtract(collidingPortal.destination)
                     .dotProduct(collidingPortal.getContentDirection()) < 0;
-                if (renderingPortal==collidingPortal|| !isHidden) {
+                if (renderingPortal == collidingPortal || !isHidden) {
                     renderEntityRegardingPlayer(entity, collidingPortal, matrixStack);
                 }
             }
@@ -214,13 +214,13 @@ public class CrossPortalEntityRenderer {
         }
         
         if (entity instanceof ClientPlayerEntity) {
-            if(!Global.renderYourselfInPortal){
+            if (!Global.renderYourselfInPortal) {
                 return;
             }
             
             //avoid rendering player too near and block view
-            double dis = newEyePos.squareDistanceTo(cameraPos);
-            double valve = 0.5 + McHelper.lastTickPosOf(entity).squareDistanceTo(entity.getPositionVec());
+            double dis = newEyePos.distanceTo(cameraPos);
+            double valve = 0.5 + McHelper.lastTickPosOf(entity).distanceTo(entity.getPositionVec());
             if (dis < valve) {
                 return;
             }
