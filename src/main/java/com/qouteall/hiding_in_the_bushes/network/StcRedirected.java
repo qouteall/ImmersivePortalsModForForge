@@ -66,7 +66,7 @@ public class StcRedirected {
     
     private static int reportedErrors = 0;
     
-    private static void doProcessRedirectedPacket(
+    public static void doProcessRedirectedPacket(
         DimensionType dimension,
         IPacket packet
     ) {

@@ -4,7 +4,9 @@ import com.qouteall.hiding_in_the_bushes.network.CtsPlayerAction;
 import com.qouteall.hiding_in_the_bushes.network.CtsRightClick;
 import com.qouteall.hiding_in_the_bushes.network.CtsTeleport;
 import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
+import com.qouteall.hiding_in_the_bushes.network.StcRedirected;
 import io.netty.buffer.Unpooled;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.client.CCustomPayloadPacket;
@@ -57,5 +59,14 @@ public class MyNetworkClient {
     
     public static void init() {
         //nothing
+    }
+    
+    public static void doProcessRedirectedMessage(
+        ClientWorld world, IPacket packet
+    ) {
+        StcRedirected.doProcessRedirectedPacket(
+            world.getDimension().getType(),
+            packet
+        );
     }
 }
