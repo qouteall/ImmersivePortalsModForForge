@@ -27,13 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ModelDataHacker {
     private static int loggedNum = 0;
     
-    public static void log(Runnable runnable) {
-//        if (loggedNum < 200) {
-//            loggedNum++;
-//            runnable.run();
-//        }
-    }
-    
     @OnlyIn(Dist.CLIENT)
     public static void updateForgeModelData() {
     
@@ -47,17 +40,11 @@ public class ModelDataHacker {
         TileEntity tileEntity = chunk.getTileEntity(pos);
     
         if (tileEntity == null) {
-            log(() -> {
-                Helper.err("Cannot find block entity for model data");
-            });
             return net.minecraftforge.client.model.data.EmptyModelData.INSTANCE;
         }
     
         IModelData modelData = tileEntity.getModelData();
         if (modelData == null) {
-            log(() -> {
-                Helper.err("Block entity has null model data? " + tileEntity);
-            });
             return net.minecraftforge.client.model.data.EmptyModelData.INSTANCE;
         }
     
@@ -69,11 +56,7 @@ public class ModelDataHacker {
         Chunk chunk = world.getChunk(chunkPos.x, chunkPos.z);
         chunk.getTileEntityMap().values().forEach(tileEntity -> {
             IModelData modelData = tileEntity.getModelData();
-            if (modelData == null) {
-                Helper.err("Null Model Data " +
-                    world.dimension.getType() + tileEntity.getPos() + tileEntity);
-            }
-            else {
+            if (modelData != null) {
                 data.put(tileEntity.getPos(), modelData);
             }
         });

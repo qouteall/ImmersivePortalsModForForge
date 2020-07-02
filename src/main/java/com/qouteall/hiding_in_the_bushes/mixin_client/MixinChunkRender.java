@@ -1,5 +1,6 @@
 package com.qouteall.hiding_in_the_bushes.mixin_client;
 
+import com.qouteall.hiding_in_the_bushes.ModMainForge;
 import com.qouteall.hiding_in_the_bushes.fix_model_data.IEChunkRender;
 import com.qouteall.hiding_in_the_bushes.fix_model_data.IEChunkRenderDispatcher;
 import com.qouteall.hiding_in_the_bushes.fix_model_data.IEChunkRenderTask;
@@ -30,6 +31,10 @@ public class MixinChunkRender implements IEChunkRender {
         cancellable = true
     )
     private void onMakeCompileTaskChunk(CallbackInfoReturnable<ChunkRenderDispatcher.ChunkRender.ChunkRenderTask> cir) {
+        if (!ModMainForge.enableModelDataFix) {
+            return;
+        }
+        
         ChunkRenderDispatcher.ChunkRender.ChunkRenderTask task = cir.getReturnValue();
         World world = ((IEChunkRenderDispatcher) this$0).myGetWorld();
         IChunk chunk = world.getChunk(position);

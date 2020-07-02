@@ -11,8 +11,6 @@ public class MixinChunkRenderDispatcher implements IEChunkRenderDispatcher {
     @Shadow
     private World world;
     
-    
-    
     @Override
     public World myGetWorld() {
         return world;

@@ -6,5 +6,5 @@ public interface IEChunkRenderTask {
     
     void portal_setChunk(Chunk d);
     
-    Chunk portal_getDimension();
+    Chunk portal_getChunk();
 }

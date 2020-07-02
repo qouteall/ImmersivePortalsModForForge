@@ -79,6 +79,8 @@ public class ModMainForge {
     
     public static boolean isServerMixinApplied = false;
     
+    public static boolean enableModelDataFix = false;
+    
     public ModMainForge() {
         // Register the setup method for modloading
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
@@ -146,6 +148,7 @@ public class ModMainForge {
             Global.edgelessSky = ConfigClient.instance.edgelessSky.get();
             Global.pureMirror = ConfigClient.instance.pureMirror.get();
             Global.lagAttackProof = ConfigClient.instance.lagAttackProof.get();
+            enableModelDataFix = ConfigClient.instance.modelDataFix.get();
             RenderDimensionRedirect.updateIdMap(
                 ConfigClient.listToMap(
                     Arrays.asList(
