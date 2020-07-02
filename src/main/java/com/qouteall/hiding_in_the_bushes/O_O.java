@@ -6,6 +6,7 @@ import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.portal.nether_portal.BlockPortalShape;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -80,8 +81,8 @@ public class O_O {
         //nothing
     }
     
-    public static boolean isObsidian(IWorld world, BlockPos obsidianPos) {
-        return world.getBlockState(obsidianPos).isPortalFrame(world, obsidianPos);
+    public static boolean isObsidian(BlockState blockState) {
+        return blockState.isPortalFrame(DummyWorldReader.instance, BlockPos.ZERO);
     }
     
     public static final boolean isReachEntityAttributesPresent = false;

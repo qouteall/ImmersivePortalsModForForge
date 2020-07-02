@@ -31,7 +31,7 @@ public class NetherPortalEntity extends BreakablePortalEntity {
             ) &&
             blockPortalShape.frameAreaWithoutCorner.stream()
                 .allMatch(blockPos ->
-                    O_O.isObsidian(world, blockPos)
+                    O_O.isObsidian(world.getBlockState(blockPos))
                 );
     }
     

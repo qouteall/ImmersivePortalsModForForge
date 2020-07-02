@@ -4,6 +4,17 @@ import com.mojang.datafixers.util.Either;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.IPacket;
+import net.minecraft.util.concurrent.ITaskExecutor;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkTaskPriorityQueueSorter;
+import net.minecraft.world.server.ChunkHolder;
+import net.minecraft.world.server.ChunkManager;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.server.ServerWorldLightManager;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -14,19 +25,11 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.IPacket;
-import net.minecraft.util.concurrent.ITaskExecutor;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkTaskPriorityQueueSorter;
-import net.minecraft.world.server.ChunkHolder;
-import net.minecraft.world.server.ChunkManager;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.server.ServerWorldLightManager;
 
 @Mixin(ChunkManager.class)
 public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvilChunkStorage {
@@ -66,6 +69,9 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
     @Final
     private File field_219270_x;
     
+    @Shadow
+    protected abstract CompoundNBT loadChunkData(ChunkPos pos) throws IOException;
+    
     @Override
     public int getWatchDistance() {
         return viewDistance;
@@ -89,6 +95,18 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
     @Override
     public File portal_getSaveDir() {
         return field_219270_x;
+    }
+    
+    @Override
+    public boolean portal_isChunkGenerated(ChunkPos chunkPos) {
+        try {
+            CompoundNBT tag = loadChunkData(chunkPos);
+            return tag != null;
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
     
     /**

@@ -44,6 +44,7 @@ public class Global {
     
     public static boolean looseVisibleChunkIteration = true;
     
+    //OpenJdk's stream has issues with MutableBlockPos
     public static boolean blameOpenJdk = true;
     
     public static boolean portalPlaceholderPassthrough = true;
@@ -56,6 +57,9 @@ public class Global {
     
     public static int portalRenderLimit = 200;
     
+    public static boolean smoothLoading = false;
+    
+    public static boolean cacheGlBuffer = true;
     
     public static enum RenderMode {
         normal,

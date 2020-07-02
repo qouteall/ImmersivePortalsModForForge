@@ -470,6 +470,16 @@ public class ClientDebugCommand {
             "early_cull_portal",
             cond -> CGlobal.earlyFrustumCullingPortal = cond
         );
+        registerSwitchCommand(
+            builder,
+            "smooth_loading",
+            cond -> Global.smoothLoading = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "cache_gl_buffer",
+            cond -> Global.cacheGlBuffer = cond
+        );
         
         builder.then(Commands
             .literal("print_class_path")

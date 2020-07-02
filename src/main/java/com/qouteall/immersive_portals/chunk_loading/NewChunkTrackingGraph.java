@@ -17,6 +17,7 @@ import net.minecraft.network.play.server.SUnloadChunkPacket;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -95,7 +96,7 @@ public class NewChunkTrackingGraph {
     
     private static final Map<DimensionType, Long2ObjectLinkedOpenHashMap<ChunkRecord>> data = new HashMap<>();
     
-    public static final ArrayList<ChunkVisibilityManager.ChunkLoader>
+    private static final ArrayList<WeakReference<ChunkVisibilityManager.ChunkLoader>>
         additionalChunkLoaders = new ArrayList<>();
     
     public static final SignalBiArged<ServerPlayerEntity, DimensionalChunkPos> beginWatchChunkSignal = new SignalBiArged<>();
@@ -129,7 +130,7 @@ public class NewChunkTrackingGraph {
             ));
     }
     
-    private static void purge() {
+    private static void updateAndPurge() {
         long unloadTimeValve = getUnloadTimeValve();
         long currTime = McHelper.getOverWorldOnServer().getGameTime();
         data.forEach((dimension, chunkRecords) -> {
@@ -167,14 +168,19 @@ public class NewChunkTrackingGraph {
             );
             
             LongSortedSet additionalLoadedChunks = new LongLinkedOpenHashSet();
-            additionalChunkLoaders.forEach(chunkLoader -> chunkLoader.foreachChunkPos(
-                (dim, x, z, dis) -> {
-                    if (world.dimension.getType() == dim) {
-                        additionalLoadedChunks.add(ChunkPos.asLong(x, z));
-                        MyLoadingTicket.load(world, new ChunkPos(x, z));
+            additionalChunkLoaders.forEach(weakRef -> {
+                ChunkVisibilityManager.ChunkLoader loader = weakRef.get();
+                if (loader == null) return;
+                loader.foreachChunkPos(
+                    (dim, x, z, dis) -> {
+                        if (world.dimension.getType() == dim) {
+                            additionalLoadedChunks.add(ChunkPos.asLong(x, z));
+                            MyLoadingTicket.load(world, new ChunkPos(x, z));
+                        }
                     }
-                }
-            ));
+                );
+            });
+            additionalChunkLoaders.removeIf(ref -> ref.get() == null);
             
             LongList chunksToUnload = new LongArrayList();
             MyLoadingTicket.getRecord(world).forEach((long longChunkPos) -> {
@@ -203,7 +209,7 @@ public class NewChunkTrackingGraph {
             }
         });
         if (gameTime % 40 == 0) {
-            purge();
+            updateAndPurge();
         }
     }
     
@@ -311,5 +317,17 @@ public class NewChunkTrackingGraph {
         Long2ObjectLinkedOpenHashMap<ChunkRecord> map =
             data.get(dimension);
         return !map.isEmpty();
+    }
+    
+    public static void addAdditionalChunkLoader(ChunkVisibilityManager.ChunkLoader chunkLoader) {
+        additionalChunkLoaders.add(new WeakReference<>(chunkLoader));
+        updateAndPurge();
+    }
+    
+    // if this method is accidentally not called
+    // the chunk loader will still be removed if it's not referenced (maybe after a long time)
+    public static void removeAdditionalChunkLoader(ChunkVisibilityManager.ChunkLoader chunkLoader) {
+        // WeakReference does not have equals()
+        additionalChunkLoaders.removeIf(weakRef -> weakRef.get() == chunkLoader);
     }
 }
