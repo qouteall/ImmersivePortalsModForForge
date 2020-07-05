@@ -1,6 +1,7 @@
 package com.qouteall.hiding_in_the_bushes.mixin_client;
 
 import com.google.common.base.Preconditions;
+import com.qouteall.hiding_in_the_bushes.ModMainForge;
 import com.qouteall.immersive_portals.CGlobal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.BlockPos;
@@ -24,18 +25,21 @@ import java.util.Set;
 public class MixinForgeModelDataManager {
     @Shadow
     private static WeakReference<World> currentWorld;
-    
+
     @Shadow
     @Final
     private static Map<ChunkPos, Set<BlockPos>> needModelDataRefresh;
-    
+
     @Shadow
     @Final
     private static Map<ChunkPos, Map<BlockPos, IModelData>> modelDataCache;
-    
+
     @Inject(method = "cleanCaches", at = @At("HEAD"), cancellable = true)
     private static void onCleanCaches(World world, CallbackInfo ci) {
         if (world != Minecraft.getInstance().world) {
+            //the other patch will supply the model data
+            needModelDataRefresh.clear();
+            modelDataCache.clear();
             ci.cancel();
         }
     }

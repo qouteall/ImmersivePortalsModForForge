@@ -32,22 +32,6 @@ public class MixinForgeDimensionManager {
     
     }
     
-//    @Inject(
-//        method = "canUnloadWorld",
-//        at = @At("HEAD"),
-//        cancellable = true
-//    )
-//    private static void onCanUnloadWorld(ServerWorld world, CallbackInfoReturnable<Boolean> cir) {
-//        DimensionType type = world.dimension.getType();
-//        if (ModMainForge.disableDimensionUnload ||
-//            type.isVanilla() ||
-//            NewChunkTrackingGraph.shouldLoadDimension(type)
-//        ) {
-//            cir.setReturnValue(false);
-//            cir.cancel();
-//        }
-//    }
-    
     @Inject(
         method = "registerDimension",
         at = @At("RETURN"),
