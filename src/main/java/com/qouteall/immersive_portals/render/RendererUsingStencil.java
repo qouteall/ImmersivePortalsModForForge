@@ -7,13 +7,13 @@ import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ducks.IEFrameBuffer;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.Vec3d;
+import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
 import java.nio.FloatBuffer;
+import net.minecraft.client.Minecraft;
 
 import static org.lwjgl.opengl.GL11.GL_ALWAYS;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_FUNC;
@@ -55,9 +55,7 @@ public class RendererUsingStencil extends PortalRenderer {
     
     @Override
     public void onAfterTranslucentRendering(MatrixStack matrixStack) {
-//        if (isRendering()) {
-//            doPortalRendering(matrixStack);
-//        }
+    
     }
     
     @Override
@@ -74,8 +72,14 @@ public class RendererUsingStencil extends PortalRenderer {
         GlStateManager.enableDepthTest();
         GL11.glEnable(GL_STENCIL_TEST);
         
-        ((IEFrameBuffer) client.getFramebuffer())
-            .setIsStencilBufferEnabledAndReload(true);
+        IEFrameBuffer ieFrameBuffer = (IEFrameBuffer) client.getFramebuffer();
+        if (!ieFrameBuffer.getIsStencilBufferEnabled()) {
+            ieFrameBuffer.setIsStencilBufferEnabledAndReload(true);
+            if (Minecraft.func_238218_y_()) {
+                client.worldRenderer.loadRenderers();
+            }
+        }
+        
     }
     
     @Override
@@ -135,12 +139,11 @@ public class RendererUsingStencil extends PortalRenderer {
     }
     
     @Override
-    protected void invokeWorldRendering(
-        Vec3d newEyePos, Vec3d newLastTickEyePos, ClientWorld newWorld
+    public void invokeWorldRendering(
+        RenderInfo renderInfo
     ) {
-        MyGameRenderer.switchAndRenderTheWorld(
-            newWorld, newEyePos,
-            newLastTickEyePos,
+        MyGameRenderer.renderWorldNew(
+            renderInfo,
             runnable -> {
                 setStencilStateForWorldRendering();
                 runnable.run();

@@ -1,21 +1,24 @@
 package com.qouteall.immersive_portals.mixin;
 
-import com.google.gson.JsonElement;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
-import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.mojang.datafixers.DataFixer;
 import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
+import com.qouteall.immersive_portals.dimension_sync.DimensionIdManagement;
 import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
-import net.minecraft.command.Commands;
+import net.minecraft.resources.DataPackRegistries;
+import net.minecraft.resources.ResourcePackInfo;
+import net.minecraft.resources.ResourcePackList;
+import net.minecraft.server.IDynamicRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerProfileCache;
 import net.minecraft.util.FrameTimer;
-import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.listener.IChunkStatusListenerFactory;
+import net.minecraft.world.storage.IServerConfiguration;
+import net.minecraft.world.storage.SaveFormat;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -23,7 +26,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.io.File;
 import java.lang.ref.WeakReference;
 import java.net.Proxy;
 import java.util.function.BooleanSupplier;
@@ -34,27 +36,26 @@ public class MixinMinecraftServer implements IEMinecraftServer {
     @Final
     private FrameTimer frameTimer;
     
-    @Shadow
-    @Final
-    private File anvilFile;
-    
+    @Shadow @Final protected IDynamicRegistries.Impl field_240767_f_;
     private boolean portal_areAllWorldsLoaded;
     
     @Inject(
-        method = "Lnet/minecraft/server/MinecraftServer;<init>(Ljava/io/File;Ljava/net/Proxy;Lcom/mojang/datafixers/DataFixer;Lnet/minecraft/command/Commands;Lcom/mojang/authlib/yggdrasil/YggdrasilAuthenticationService;Lcom/mojang/authlib/minecraft/MinecraftSessionService;Lcom/mojang/authlib/GameProfileRepository;Lnet/minecraft/server/management/PlayerProfileCache;Lnet/minecraft/world/chunk/listener/IChunkStatusListenerFactory;Ljava/lang/String;)V",
+        method = "<init>",
         at = @At("RETURN")
     )
     private void onServerConstruct(
-        File file_1,
-        Proxy proxy_1,
-        DataFixer dataFixer_1,
-        Commands commandManager_1,
-        YggdrasilAuthenticationService yggdrasilAuthenticationService_1,
-        MinecraftSessionService minecraftSessionService_1,
-        GameProfileRepository gameProfileRepository_1,
-        PlayerProfileCache userCache_1,
-        IChunkStatusListenerFactory worldGenerationProgressListenerFactory_1,
-        String string_1,
+        Thread thread,
+        IDynamicRegistries.Impl modifiable,
+        SaveFormat.LevelSave session,
+        IServerConfiguration saveProperties,
+        ResourcePackList<ResourcePackInfo> resourcePackManager,
+        Proxy proxy,
+        DataFixer dataFixer,
+        DataPackRegistries serverResourceManager,
+        MinecraftSessionService minecraftSessionService,
+        GameProfileRepository gameProfileRepository,
+        PlayerProfileCache userCache,
+        IChunkStatusListenerFactory worldGenerationProgressListenerFactory,
         CallbackInfo ci
     ) {
         McHelper.refMinecraftServer = new WeakReference<>((MinecraftServer) ((Object) this));
@@ -71,7 +72,7 @@ public class MixinMinecraftServer implements IEMinecraftServer {
     }
     
     @Inject(
-        method = "Lnet/minecraft/server/MinecraftServer;run()V",
+        method = "Lnet/minecraft/server/MinecraftServer;func_240802_v_()V",
         at = @At("RETURN")
     )
     private void onServerClose(CallbackInfo ci) {
@@ -80,18 +81,14 @@ public class MixinMinecraftServer implements IEMinecraftServer {
     }
     
     @Inject(
-        method = "Lnet/minecraft/server/MinecraftServer;loadAllWorlds(Ljava/lang/String;Ljava/lang/String;JLnet/minecraft/world/WorldType;Lcom/google/gson/JsonElement;)V",
+        method = "Lnet/minecraft/server/MinecraftServer;func_240787_a_(Lnet/minecraft/world/chunk/listener/IChunkStatusListener;)V",
         at = @At("RETURN")
     )
     private void onFinishedLoadingAllWorlds(
-        String name,
-        String serverName,
-        long seed,
-        WorldType generatorType,
-        JsonElement generatorSettings,
         CallbackInfo ci
     ) {
         portal_areAllWorldsLoaded = true;
+        DimensionIdManagement.onServerStarted();
     }
     
     @Override
@@ -102,5 +99,10 @@ public class MixinMinecraftServer implements IEMinecraftServer {
     @Override
     public boolean portal_getAreAllWorldsLoaded() {
         return portal_areAllWorldsLoaded;
+    }
+    
+    @Override
+    public IDynamicRegistries.Impl portal_getDimensionTracker() {
+        return field_240767_f_;
     }
 }

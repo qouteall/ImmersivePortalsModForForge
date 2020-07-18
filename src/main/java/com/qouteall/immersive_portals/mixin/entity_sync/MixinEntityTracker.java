@@ -11,7 +11,7 @@ import net.minecraft.network.IPacket;
 import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.SectionPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.TrackedEntity;
 import net.minecraft.world.server.ChunkHolder;
 import org.spongepowered.asm.mixin.Final;
@@ -45,6 +45,8 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
     @Shadow
     public abstract void removeAllTrackers();
     
+    @Shadow protected abstract int func_229843_b_();
+    
     @Redirect(
         method = "Lnet/minecraft/world/server/ChunkManager$EntityTracker;sendToAllTracking(Lnet/minecraft/network/IPacket;)V",
         at = @At(
@@ -58,7 +60,7 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
     ) {
         serverPlayNetworkHandler.sendPacket(
             MyNetwork.createRedirectedMessage(
-                entity.dimension,
+                entity.world.func_234923_W_(),
                 packet_1
             )
         );
@@ -77,7 +79,7 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
     ) {
         serverPlayNetworkHandler.sendPacket(
             MyNetwork.createRedirectedMessage(
-                entity.dimension,
+                entity.world.func_234923_W_(),
                 packet_1
             )
         );
@@ -110,20 +112,20 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
     
     @Override
     public void updateCameraPosition_(ServerPlayerEntity player) {
-        IEThreadedAnvilChunkStorage storage = McHelper.getIEStorage(entity.dimension);
+        IEThreadedAnvilChunkStorage storage = McHelper.getIEStorage(entity.world.func_234923_W_());
         
         if (player != this.entity) {
             McHelper.checkDimension(this.entity);
             
-            Vec3d relativePos = (player.getPositionVec()).subtract(this.entry.func_219456_b());
+            Vector3d relativePos = (player.getPositionVec()).subtract(this.entry.func_219456_b());
             int maxWatchDistance = Math.min(
-                this.range,
+                this.func_229843_b_(),
                 (storage.getWatchDistance() - 1) * 16
             );
             boolean isWatchedNow =
                 NewChunkTrackingGraph.isPlayerWatchingChunkWithinRaidus(
                     player,
-                    this.entity.dimension,
+                    this.entity.world.func_234923_W_(),
                     this.entity.chunkCoordX,
                     this.entity.chunkCoordZ,
                     maxWatchDistance
@@ -159,7 +161,7 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
     @Override
     public void resendSpawnPacketToTrackers() {
         IPacket<?> spawnPacket = entity.createSpawnPacket();
-        IPacket redirected = MyNetwork.createRedirectedMessage(entity.dimension, spawnPacket);
+        IPacket redirected = MyNetwork.createRedirectedMessage(entity.world.func_234923_W_(), spawnPacket);
         trackingPlayers.forEach(player -> {
             player.connection.sendPacket(redirected);
         });

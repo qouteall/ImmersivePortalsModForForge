@@ -1,23 +1,23 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.dimension.DimensionType;
-
+import net.minecraft.world.World;
 import java.util.Objects;
 
 
 public class DimensionalChunkPos {
-    public DimensionType dimension;
+    public RegistryKey<World> dimension;
     public int x;
     public int z;
     
-    public DimensionalChunkPos(DimensionType dimension, int x, int z) {
+    public DimensionalChunkPos(RegistryKey<World> dimension, int x, int z) {
         this.dimension = dimension;
         this.x = x;
         this.z = z;
     }
     
-    public DimensionalChunkPos(DimensionType dimension, ChunkPos chunkPos) {
+    public DimensionalChunkPos(RegistryKey<World> dimension, ChunkPos chunkPos) {
         this(dimension, chunkPos.x, chunkPos.z);
     }
     
@@ -37,7 +37,7 @@ public class DimensionalChunkPos {
     
     @Override
     public int hashCode() {
-        return Objects.hash(dimension.getId(), x, z);
+        return Objects.hash(dimension, x, z);
     }
     
     @Override

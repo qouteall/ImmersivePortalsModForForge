@@ -8,25 +8,26 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.fluid.IFluidState;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.RayTraceContext;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockReader;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.World;
 
 public class BlockManipulationClient {
     private static final Minecraft client = Minecraft.getInstance();
     
-    public static DimensionType remotePointedDim;
+    public static RegistryKey<World> remotePointedDim;
     public static RayTraceResult remoteHitResult;
     public static boolean isContextSwitched = false;
     
@@ -34,8 +35,8 @@ public class BlockManipulationClient {
         return remotePointedDim != null;
     }
 
-    private static BlockRayTraceResult createMissedHitResult(Vec3d from, Vec3d to) {
-        Vec3d dir = to.subtract(from).normalize();
+    private static BlockRayTraceResult createMissedHitResult(Vector3d from, Vector3d to) {
+        Vector3d dir = to.subtract(from).normalize();
 
         return BlockRayTraceResult.createMiss(to, Direction.getFacingFromVector(dir.x, dir.y, dir.z), new BlockPos(to));
     }
@@ -44,7 +45,7 @@ public class BlockManipulationClient {
         return bhr == null || bhr.getType() == RayTraceResult.Type.MISS;
     }
 
-    public static void updatePointedBlock(float partialTicks) {
+    public static void updatePointedBlock(float tickDelta) {
         if (client.playerController == null || client.world == null) {
             return;
         }
@@ -52,12 +53,12 @@ public class BlockManipulationClient {
         remotePointedDim = null;
         remoteHitResult = null;
         
-        Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
         
         float reachDistance = client.playerController.getBlockReachDistance();
 
         PortalCommand.getPlayerPointingPortalRaw(
-            client.player, partialTicks, reachDistance, true
+            client.player, tickDelta, reachDistance, true
         ).ifPresent(pair -> {
             if(pair.getFirst().isInteractable()) {
                 double distanceToPortalPointing = pair.getSecond().distanceTo(cameraPos);
@@ -66,8 +67,8 @@ public class BlockManipulationClient {
 
                     updateTargetedBlockThroughPortal(
                             cameraPos,
-                            client.player.getLook(partialTicks),
-                            client.player.dimension,
+                            client.player.getLook(tickDelta),
+                            client.player.world.func_234923_W_(),
                             distanceToPortalPointing,
                             reachDistance,
                             pair.getFirst()
@@ -78,7 +79,7 @@ public class BlockManipulationClient {
     }
 
     private static double getCurrentTargetDistance() {
-        Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
 
         if (hitResultIsMissedOrNull(client.objectMouseOver)) {
             return 23333;
@@ -95,18 +96,18 @@ public class BlockManipulationClient {
     }
     
     private static void updateTargetedBlockThroughPortal(
-        Vec3d cameraPos,
-        Vec3d viewVector,
-        DimensionType playerDimension,
+        Vector3d cameraPos,
+        Vector3d viewVector,
+        RegistryKey<World> playerDimension,
         double beginDistance,
         double endDistance,
         Portal portal
     ) {
         
-        Vec3d from = portal.transformPoint(
+        Vector3d from = portal.transformPoint(
             cameraPos.add(viewVector.scale(beginDistance))
         );
-        Vec3d to = portal.transformPoint(
+        Vector3d to = portal.transformPoint(
             cameraPos.add(viewVector.scale(endDistance))
         );
     
@@ -137,12 +138,12 @@ public class BlockManipulationClient {
                     return null;
                 }
                 
-                IFluidState fluidState = world.getFluidState(blockPos);
-                Vec3d start = rayTraceContext.func_222253_b();
-                Vec3d end = rayTraceContext.func_222250_a();
+                FluidState fluidState = world.getFluidState(blockPos);
+                Vector3d start = rayTraceContext.func_222253_b();
+                Vector3d end = rayTraceContext.func_222250_a();
                 /**{@link VoxelShape#rayTrace(Vec3d, Vec3d, BlockPos)}*/
                 //correct the start pos to avoid being considered inside block
-                Vec3d correctedStart = start.subtract(end.subtract(start).scale(0.0015));
+                Vector3d correctedStart = start.subtract(end.subtract(start).scale(0.0015));
 //                Vec3d correctedStart = start;
                 VoxelShape solidShape = rayTraceContext.getBlockShape(blockState, world, blockPos);
                 BlockRayTraceResult blockHitResult = world.rayTraceBlocks(
@@ -157,7 +158,7 @@ public class BlockManipulationClient {
                 return d <= e ? blockHitResult : blockHitResult2;
             },
             (rayTraceContext) -> {
-                Vec3d vec3d = rayTraceContext.func_222253_b().subtract(rayTraceContext.func_222250_a());
+                Vector3d vec3d = rayTraceContext.func_222253_b().subtract(rayTraceContext.func_222250_a());
                 return BlockRayTraceResult.createMiss(
                     rayTraceContext.func_222250_a(),
                     Direction.getFacingFromVector(vec3d.x, vec3d.y, vec3d.z),
@@ -279,8 +280,8 @@ public class BlockManipulationClient {
         ItemStack itemStack = client.player.getHeldItem(hand);
         BlockRayTraceResult blockHitResult = (BlockRayTraceResult) remoteHitResult;
         
-        Tuple<BlockRayTraceResult, DimensionType> result =
-            BlockManipulationServer.getHitResultForPlacingNew(targetWorld, blockHitResult);
+        Tuple<BlockRayTraceResult, RegistryKey<World>> result =
+            BlockManipulationServer.getHitResultForPlacing(targetWorld, blockHitResult);
         blockHitResult = result.getA();
         targetWorld = CGlobal.clientWorldLoader.getWorld(result.getB());
         remoteHitResult = blockHitResult;

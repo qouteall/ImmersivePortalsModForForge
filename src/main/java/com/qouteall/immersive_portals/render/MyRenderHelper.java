@@ -13,6 +13,8 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.shader.Framebuffer;
+import net.minecraft.entity.Entity;
+import net.minecraft.util.math.MathHelper;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
@@ -43,7 +45,7 @@ public class MyRenderHelper {
             matrixStack,
             () -> {
                 shaderManager.loadContentShaderAndShaderVars(0);
-                
+    
                 if (OFInterface.isShaders.getAsBoolean()) {
                     GlStateManager.viewport(
                         0,
@@ -52,20 +54,20 @@ public class MyRenderHelper {
                         PortalRenderer.client.getFramebuffer().framebufferHeight
                     );
                 }
-                
+    
                 GlStateManager.enableTexture();
                 GlStateManager.activeTexture(GL13.GL_TEXTURE0);
-                
+    
                 GlStateManager.bindTexture(textureProvider.framebufferTexture);
                 GlStateManager.texParameter(3553, 10241, 9729);
                 GlStateManager.texParameter(3553, 10240, 9729);
                 GlStateManager.texParameter(3553, 10242, 10496);
                 GlStateManager.texParameter(3553, 10243, 10496);
-                
+    
                 ViewAreaRenderer.drawPortalViewTriangle(portal, matrixStack, false, false);
-                
+    
                 shaderManager.unloadShader();
-                
+    
                 OFInterface.resetViewport.run();
             }
         );
@@ -128,10 +130,10 @@ public class MyRenderHelper {
         boolean doEnableModifyAlpha
     ) {
         CHelper.checkGlError();
-        
+    
         int int_1 = textureProvider.framebufferWidth;
         int int_2 = textureProvider.framebufferHeight;
-        
+    
         RenderSystem.assertThread(RenderSystem::isOnRenderThread);
         if (doEnableModifyAlpha) {
             GlStateManager.colorMask(true, true, true, true);
@@ -198,12 +200,12 @@ public class MyRenderHelper {
         textureProvider.unbindFramebufferTexture();
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
-        
+    
         GlStateManager.matrixMode(GL_PROJECTION);
         GlStateManager.popMatrix();
         GlStateManager.matrixMode(GL_MODELVIEW);
         GlStateManager.popMatrix();
-        
+    
         CHelper.checkGlError();
     }
     

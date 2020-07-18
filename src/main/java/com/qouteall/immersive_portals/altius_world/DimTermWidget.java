@@ -2,18 +2,19 @@ package com.qouteall.immersive_portals.altius_world;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.widget.list.AbstractList;
-import net.minecraft.world.dimension.DimensionType;
-
+import net.minecraft.util.RegistryKey;
+import net.minecraft.world.World;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import java.util.function.Consumer;
 
 public class DimTermWidget extends AbstractList.AbstractListEntry<DimTermWidget> {
     
-    public DimensionType dimension;
+    public RegistryKey<World> dimension;
     public final DimListWidget parent;
     private Consumer<DimTermWidget> selectCallback;
     
     public DimTermWidget(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         DimListWidget parent,
         Consumer<DimTermWidget> selectCallback
     ) {
@@ -23,26 +24,26 @@ public class DimTermWidget extends AbstractList.AbstractListEntry<DimTermWidget>
     }
     
     @Override
-    public void render(
-        int index,
+    public void func_230432_a_(
+        MatrixStack matrixStack,
         int y,
         int x,
         int width,
         int height,
         int mouseX,
         int mouseY,
-        boolean hovering,
-        float delta
+        int i,
+        boolean bl,
+        float f
     ) {
-        Minecraft.getInstance().fontRenderer.drawString(
-            dimension.toString(),
-            x, y, 0xFFFFFFFF
+        Minecraft.getInstance().fontRenderer.func_238421_b_(
+            matrixStack, dimension.func_240901_a_().toString(), width + 32 + 3, (float) (x), 0xFFFFFFFF
         );
     }
     
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean func_231044_a_(double mouseX, double mouseY, int button) {
         selectCallback.accept(this);
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.func_231044_a_(mouseX, mouseY, button);
     }
 }

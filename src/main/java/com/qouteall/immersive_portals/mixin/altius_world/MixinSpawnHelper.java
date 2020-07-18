@@ -1,8 +1,8 @@
 package com.qouteall.immersive_portals.mixin.altius_world;
 
 import com.qouteall.immersive_portals.altius_world.AltiusInfo;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.spawner.WorldEntitySpawner;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,9 +28,10 @@ public class MixinSpawnHelper {
         int z
     ) {
         int height = chunk.getTopBlockY(type, x, z);
+        int dimHeight = chunk.getWorld().func_234938_ad_();
         if (AltiusInfo.isAltius()) {
-            if (chunk.getWorld().getDimension().getType() == DimensionType.THE_NETHER) {
-                return Math.min(height, chunk.getWorld().getActualHeight() - 3);
+            if (chunk.getWorld().func_234923_W_() == World.field_234919_h_) {
+                return Math.min(height, dimHeight - 3);
             }
         }
         return height;

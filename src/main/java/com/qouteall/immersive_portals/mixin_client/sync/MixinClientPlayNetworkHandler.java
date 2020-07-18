@@ -6,6 +6,7 @@ import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
+import com.qouteall.immersive_portals.dimension_sync.DimensionTypeSync;
 import com.qouteall.immersive_portals.ducks.IEBuiltChunk;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEPlayerPositionLookS2CPacket;
@@ -21,13 +22,16 @@ import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.NetworkManager;
+import net.minecraft.network.play.server.SJoinGamePacket;
 import net.minecraft.network.play.server.SPlayerPositionLookPacket;
 import net.minecraft.network.play.server.SSetPassengersPacket;
 import net.minecraft.network.play.server.SUnloadChunkPacket;
 import net.minecraft.profiler.IProfiler;
+import net.minecraft.server.IDynamicRegistries;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.SectionPos;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -58,6 +62,8 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
     @Shadow
     public abstract void handleSetPassengers(SSetPassengersPacket entityPassengersSetS2CPacket_1);
     
+    @Shadow private IDynamicRegistries field_239163_t_;
+    
     @Override
     public void setWorld(ClientWorld world) {
         this.world = world;
@@ -87,6 +93,11 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
         isReProcessingPassengerPacket = false;
     }
     
+    @Inject(method = "Lnet/minecraft/client/network/play/ClientPlayNetHandler;handleJoinGame(Lnet/minecraft/network/play/server/SJoinGamePacket;)V", at = @At("RETURN"))
+    private void onOnGameJoin(SJoinGamePacket packet, CallbackInfo ci) {
+        DimensionTypeSync.onGameJoinPacketReceived(packet.func_240817_g_());
+    }
+    
     @Inject(
         method = "Lnet/minecraft/client/network/play/ClientPlayNetHandler;handlePlayerPosLook(Lnet/minecraft/network/play/server/SPlayerPositionLookPacket;)V",
         at = @At(
@@ -100,7 +111,7 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
         SPlayerPositionLookPacket packet,
         CallbackInfo ci
     ) {
-        DimensionType playerDimension = ((IEPlayerPositionLookS2CPacket) packet).getPlayerDimension();
+        RegistryKey<World> playerDimension = ((IEPlayerPositionLookS2CPacket) packet).getPlayerDimension();
         assert playerDimension != null;
         ClientWorld world = client.world;
         
@@ -109,8 +120,8 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
         }
         
         if (world != null) {
-            if (world.dimension != null) {
-                if (world.dimension.getType() != playerDimension) {
+            if (world.func_230315_m_() != null) {
+                if (world.func_234923_W_() != playerDimension) {
                     if (!Minecraft.getInstance().player.removed) {
                         Helper.log(String.format(
                             "denied position packet %s %s %s %s",
@@ -170,13 +181,13 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
     private void onOnUnload(SUnloadChunkPacket packet, CallbackInfo ci) {
         if (CGlobal.smoothChunkUnload) {
             DimensionalChunkPos pos = new DimensionalChunkPos(
-                world.dimension.getType(),
+                world.func_234923_W_(),
                 packet.getX(),
                 packet.getZ()
             );
             
             WorldRenderer worldRenderer =
-                CGlobal.clientWorldLoader.getWorldRenderer(world.dimension.getType());
+                CGlobal.clientWorldLoader.getWorldRenderer(world.func_234923_W_());
             ViewFrustum storage = ((IEWorldRenderer) worldRenderer).getBuiltChunkStorage();
             if (storage instanceof MyBuiltChunkStorage) {
                 for (int y = 0; y < 16; ++y) {
@@ -231,5 +242,10 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
             this.doneLoadingTerrain = true;
             this.client.displayGuiScreen((Screen) null);
         }
+    }
+    
+    @Override
+    public void portal_setDimensionTracker(IDynamicRegistries arg) {
+        field_239163_t_ = arg;
     }
 }

@@ -14,10 +14,9 @@ import com.qouteall.immersive_portals.render.SecondaryFrameBuffer;
 import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.render.ViewAreaRenderer;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
+import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.shader.Framebuffer;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.Vec3d;
 import net.optifine.shaders.Shaders;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
@@ -61,9 +60,10 @@ public class RendererMixed extends PortalRenderer {
         
         Framebuffer mcFrameBuffer = client.getFramebuffer();
     
-        if (OFHelper.isChocapicShader()) {
+//        if (OFHelper.isChocapicShader()) {
+        
             MyRenderHelper.clearAlphaTo1(mcFrameBuffer);
-        }
+//        }
         
         deferredFbs[portalLayer].fb.bindFramebuffer(true);
         MyRenderHelper.myDrawFrameBuffer(mcFrameBuffer, false, true);
@@ -225,12 +225,11 @@ public class RendererMixed extends PortalRenderer {
     }
     
     @Override
-    protected void invokeWorldRendering(
-        Vec3d newEyePos, Vec3d newLastTickEyePos, ClientWorld newWorld
+    public void invokeWorldRendering(
+        RenderInfo renderInfo
     ) {
-        MyGameRenderer.switchAndRenderTheWorld(
-            newWorld, newEyePos,
-            newLastTickEyePos,
+        MyGameRenderer.renderWorldNew(
+            renderInfo,
             runnable -> {
                 OFGlobal.shaderContextManager.switchContextAndRun(()->{
                     OFGlobal.bindToShaderFrameBuffer.run();

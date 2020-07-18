@@ -67,7 +67,7 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
     
     @Shadow
     @Final
-    private File field_219270_x;
+    private File dimensionDirectory;
     
     @Shadow
     protected abstract CompoundNBT loadChunkData(ChunkPos pos) throws IOException;
@@ -94,7 +94,7 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
     
     @Override
     public File portal_getSaveDir() {
-        return field_219270_x;
+        return dimensionDirectory;
     }
     
     @Override

@@ -5,6 +5,7 @@ import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
 import com.qouteall.immersive_portals.render.FPSMonitor;
+import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.lag_spike_fix.SmoothLoading;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
@@ -18,6 +19,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Minecraft.class)
 public class MixinMinecraftClient implements IEMinecraftClient {
@@ -69,6 +71,14 @@ public class MixinMinecraftClient implements IEMinecraftClient {
         CGlobal.clientWorldLoader.cleanUp();
         CrossPortalEntityRenderer.cleanUp();
         SmoothLoading.cleanUp();
+    }
+    
+    //avoid messing up rendering states in fabulous
+    @Inject(method = "Lnet/minecraft/client/Minecraft;func_238218_y_()Z", at = @At("HEAD"), cancellable = true)
+    private static void onIsFabulousGraphicsOrBetter(CallbackInfoReturnable<Boolean> cir) {
+        if (PortalRendering.isRendering()) {
+            cir.setReturnValue(false);
+        }
     }
     
     @Override

@@ -164,17 +164,6 @@ public class GlobalPortalStorage extends WorldSavedData {
     }
     
     private static void upgradeData(ServerWorld world) {
-        LongOpenHashSet forcedChunks = new LongOpenHashSet();
-        forcedChunks.addAll(world.getForcedChunks());
-        
-        forcedChunks.forEach((long curr) -> {
-            world.forceChunk(
-                ChunkPos.getX(curr),
-                ChunkPos.getZ(curr),
-                false
-            );
-        });
-        
-        Helper.log("World info upgraded for " + world.dimension.getType());
+        //removed
     }
 }

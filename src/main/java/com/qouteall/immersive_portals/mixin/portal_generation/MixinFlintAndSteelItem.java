@@ -1,9 +1,8 @@
 package com.qouteall.immersive_portals.mixin.portal_generation;
 
-import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
-import com.qouteall.immersive_portals.portal.CustomizablePortalGeneration;
+import com.qouteall.immersive_portals.portal.CustomizablePortalGenerationOld;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -22,40 +21,40 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(FlintAndSteelItem.class)
 public class MixinFlintAndSteelItem {
-    @Inject(
-        method = "Lnet/minecraft/item/FlintAndSteelItem;canSetFire(Lnet/minecraft/block/BlockState;Lnet/minecraft/world/IWorld;Lnet/minecraft/util/math/BlockPos;)Z",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private static void onCanIgnite(
-        BlockState block,
-        IWorld world,
-        BlockPos pos,
-        CallbackInfoReturnable<Boolean> cir
-    ) {
-        for (Direction direction : Direction.values()) {
-            if (O_O.isObsidian(world.getBlockState(pos.offset(direction)))) {
-                if (block.isAir()) {
-                    cir.setReturnValue(true);
-                    cir.cancel();
-                }
-            }
-        }
-    }
+//    @Inject(
+//        method = "canIgnite",
+//        at = @At("HEAD"),
+//        cancellable = true
+//    )
+//    private static void onCanIgnite(
+//        BlockState block,
+//        WorldAccess world,
+//        BlockPos pos,
+//        CallbackInfoReturnable<Boolean> cir
+//    ) {
+//        for (Direction direction : Direction.values()) {
+//            if (O_O.isObsidian(world, pos.offset(direction))) {
+//                if (block.isAir()) {
+//                    cir.setReturnValue(true);
+//                    cir.cancel();
+//                }
+//            }
+//        }
+//    }
     
     @Inject(method = "Lnet/minecraft/item/FlintAndSteelItem;onItemUse(Lnet/minecraft/item/ItemUseContext;)Lnet/minecraft/util/ActionResultType;", at = @At("HEAD"), cancellable = true)
     private void onUseFlintAndSteel(
         ItemUseContext context,
         CallbackInfoReturnable<ActionResultType> cir
     ) {
-        World world = context.getWorld();
+        IWorld world = context.getWorld();
         if (!world.isRemote()) {
             BlockPos targetPos = context.getPos();
             Direction side = context.getFace();
             BlockPos firePos = targetPos.offset(side);
             BlockState targetBlockState = world.getBlockState(targetPos);
             Block targetBlock = targetBlockState.getBlock();
-            if (BreakableMirror.isGlass(world, targetPos)) {
+            if (BreakableMirror.isGlass(((World) world), targetPos)) {
                 BreakableMirror mirror = BreakableMirror.createMirror(
                     ((ServerWorld) world), targetPos, side
                 );
@@ -68,7 +67,7 @@ public class MixinFlintAndSteelItem {
                 );
             }
             else {
-                CustomizablePortalGeneration.onFireLit(
+                CustomizablePortalGenerationOld.onFireLit(
                     ((ServerWorld) world),
                     firePos,
                     targetBlock

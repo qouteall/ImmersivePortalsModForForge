@@ -27,11 +27,13 @@ import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ClassInheritanceMultiMap;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.Tuple;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import java.util.Comparator;
@@ -43,7 +45,7 @@ public class ClientTeleportationManager {
     Minecraft client = Minecraft.getInstance();
     public long tickTimeForTeleportation = 0;
     private long lastTeleportGameTime = 0;
-    private Vec3d moveStartPoint = null;
+    private Vector3d moveStartPoint = null;
     private long teleportWhileRidingTime = 0;
     private long teleportTickTimeLimit = 0;
     
@@ -68,8 +70,8 @@ public class ClientTeleportationManager {
     }
     
     public void acceptSynchronizationDataFromServer(
-        DimensionType dimension,
-        Vec3d pos,
+        RegistryKey<World> dimension,
+        Vector3d pos,
         boolean forceAccept
     ) {
         if (!forceAccept) {
@@ -77,7 +79,7 @@ public class ClientTeleportationManager {
                 return;
             }
         }
-        if (client.player.dimension != dimension) {
+        if (client.player.world.func_234923_W_() != dimension) {
             forceTeleportPlayer(dimension, pos);
         }
         getOutOfLoadingScreen(dimension, pos);
@@ -102,7 +104,8 @@ public class ClientTeleportationManager {
                     boolean teleported = tryTeleport(tickDelta);
                     if (!teleported) {
                         break;
-                    }else {
+                    }
+                    else {
                         if (i != 0) {
                             Helper.log("Nested teleport");
                         }
@@ -115,16 +118,16 @@ public class ClientTeleportationManager {
     }
     
     private boolean tryTeleport(float tickDelta) {
-        Vec3d newHeadPos = getPlayerHeadPos(tickDelta);
+        Vector3d newHeadPos = getPlayerHeadPos(tickDelta);
         
         if (moveStartPoint.squareDistanceTo(newHeadPos) > 100) {
             Helper.err("The Player is Moving Too Fast!");
         }
         
-        Tuple<Portal, Vec3d> pair = CHelper.getClientNearbyPortals(32)
+        Tuple<Portal, Vector3d> pair = CHelper.getClientNearbyPortals(32)
             .flatMap(portal -> {
                 if (portal.isTeleportable()) {
-                    Vec3d collidingPoint = portal.pick(
+                    Vector3d collidingPoint = portal.pick(
                         moveStartPoint,
                         newHeadPos
                     );
@@ -141,7 +144,7 @@ public class ClientTeleportationManager {
         
         if (pair != null) {
             Portal portal = pair.getA();
-            Vec3d collidingPos = pair.getB();
+            Vector3d collidingPos = pair.getB();
             
             teleportPlayer(portal);
             
@@ -156,7 +159,7 @@ public class ClientTeleportationManager {
         }
     }
     
-    private Vec3d getPlayerHeadPos(float tickDelta) {
+    private Vector3d getPlayerHeadPos(float tickDelta) {
         return client.player.getEyePosition(tickDelta);
 //        Camera camera = client.gameRenderer.getCamera();
 //        float cameraY = MathHelper.lerp(
@@ -185,15 +188,15 @@ public class ClientTeleportationManager {
         
         ClientPlayerEntity player = client.player;
         
-        DimensionType toDimension = portal.dimensionTo;
+        RegistryKey<World> toDimension = portal.dimensionTo;
         
-        Vec3d oldEyePos = McHelper.getEyePos(player);
+        Vector3d oldEyePos = McHelper.getEyePos(player);
         
-        Vec3d newEyePos = portal.transformPoint(oldEyePos);
-        Vec3d newLastTickEyePos = portal.transformPoint(McHelper.getLastTickEyePos(player));
+        Vector3d newEyePos = portal.transformPoint(oldEyePos);
+        Vector3d newLastTickEyePos = portal.transformPoint(McHelper.getLastTickEyePos(player));
         
         ClientWorld fromWorld = client.world;
-        DimensionType fromDimension = fromWorld.dimension.getType();
+        RegistryKey<World> fromDimension = fromWorld.func_234923_W_();
         
         if (fromDimension != toDimension) {
             ClientWorld toWorld = CGlobal.clientWorldLoader.getWorld(toDimension);
@@ -239,11 +242,11 @@ public class ClientTeleportationManager {
         }
     }
     
-    private void forceTeleportPlayer(DimensionType toDimension, Vec3d destination) {
+    private void forceTeleportPlayer(RegistryKey<World> toDimension, Vector3d destination) {
         Helper.log("force teleported " + toDimension + destination);
         
         ClientWorld fromWorld = client.world;
-        DimensionType fromDimension = fromWorld.dimension.getType();
+        RegistryKey<World> fromDimension = fromWorld.func_234923_W_();
         ClientPlayerEntity player = client.player;
         if (fromDimension == toDimension) {
             player.setPosition(
@@ -266,13 +269,13 @@ public class ClientTeleportationManager {
     }
     
     public void changePlayerDimension(
-        ClientPlayerEntity player, ClientWorld fromWorld, ClientWorld toWorld, Vec3d newEyePos
+        ClientPlayerEntity player, ClientWorld fromWorld, ClientWorld toWorld, Vector3d newEyePos
     ) {
         Entity vehicle = player.getRidingEntity();
         player.detach();
         
-        DimensionType toDimension = toWorld.dimension.getType();
-        DimensionType fromDimension = fromWorld.dimension.getType();
+        RegistryKey<World> toDimension = toWorld.func_234923_W_();
+        RegistryKey<World> fromDimension = fromWorld.func_234923_W_();
         
         ClientPlayNetHandler workingNetHandler = ((IEClientWorld) fromWorld).getNetHandler();
         ClientPlayNetHandler fakedNetHandler = ((IEClientWorld) toWorld).getNetHandler();
@@ -285,7 +288,7 @@ public class ClientTeleportationManager {
         
         player.world = toWorld;
         
-        player.dimension = toDimension;
+        
         McHelper.setEyePos(player, newEyePos, newEyePos);
         McHelper.updateBoundingBox(player);
         
@@ -308,7 +311,7 @@ public class ClientTeleportationManager {
             .getDimensionRenderHelper(toDimension).lightmapTexture);
         
         if (vehicle != null) {
-            Vec3d vehiclePos = new Vec3d(
+            Vector3d vehiclePos = new Vector3d(
                 newEyePos.x,
                 McHelper.getVehicleY(vehicle, player),
                 newEyePos.z
@@ -322,8 +325,8 @@ public class ClientTeleportationManager {
         
         Helper.log(String.format(
             "Client Changed Dimension from %s to %s time: %s",
-            fromDimension,
-            toDimension,
+            fromDimension.func_240901_a_(),
+            toDimension.func_240901_a_(),
             tickTimeForTeleportation
         ));
         
@@ -339,7 +342,7 @@ public class ClientTeleportationManager {
     }
     
     private void amendChunkEntityStatus(Entity entity) {
-        Chunk worldChunk1 = entity.world.getChunkAt(entity.getPosition());
+        Chunk worldChunk1 = entity.world.getChunkAt(new BlockPos(entity.getPositionVec()));
         IChunk chunk2 = entity.world.getChunk(entity.chunkCoordX, entity.chunkCoordZ);
         removeEntityFromChunk(entity, worldChunk1);
         if (chunk2 instanceof Chunk) {
@@ -354,10 +357,10 @@ public class ClientTeleportationManager {
         }
     }
     
-    private void getOutOfLoadingScreen(DimensionType dimension, Vec3d playerPos) {
+    private void getOutOfLoadingScreen(RegistryKey<World> dimension, Vector3d playerPos) {
         if (((IEMinecraftClient) client).getCurrentScreen() instanceof DownloadTerrainScreen) {
             Helper.err("Manually getting out of loading screen. The game is in abnormal state.");
-            if (client.player.dimension != dimension) {
+            if (client.player.world.func_234923_W_() != dimension) {
                 Helper.err("Manually fix dimension state while loading terrain");
                 ClientWorld toWorld = CGlobal.clientWorldLoader.getWorld(dimension);
                 changePlayerDimension(client.player, client.world, toWorld, playerPos);
@@ -377,10 +380,10 @@ public class ClientTeleportationManager {
         
         if (!portals.isEmpty()) {
             Portal portal = portals.get(0);
-            if (portal.motionAffinity > 0) {
+            if (portal.extension.motionAffinity > 0) {
                 changeMotion(player, portal);
             }
-            else if (portal.motionAffinity < 0) {
+            else if (portal.extension.motionAffinity < 0) {
                 if (player.getMotion().length() > 0.7) {
                     changeMotion(player, portal);
                 }
@@ -389,25 +392,25 @@ public class ClientTeleportationManager {
     }
     
     private void changeMotion(Entity player, Portal portal) {
-        Vec3d velocity = player.getMotion();
-        Vec3d velocityOnNormal =
-            portal.getNormal().scale(velocity.dotProduct(portal.getNormal()));
-        player.setMotion(
-            velocity.subtract(velocityOnNormal)
-                .add(velocityOnNormal.scale(1 + portal.motionAffinity))
-        );
+        Vector3d velocity = player.getMotion();
+        player.setMotion(velocity.scale(1 + portal.extension.motionAffinity));
+//        Vec3d velocityOnNormal =
+//            portal.getNormal().multiply(velocity.dotProduct(portal.getNormal()));
+//        player.setVelocity(
+//            velocity.subtract(velocityOnNormal)
+//                .add(velocityOnNormal.multiply(1 + portal.motionAffinity))
+//        );
     }
     
     //foot pos, not eye pos
     public static void moveClientEntityAcrossDimension(
         Entity entity,
         ClientWorld newWorld,
-        Vec3d newPos
+        Vector3d newPos
     ) {
         ClientWorld oldWorld = (ClientWorld) entity.world;
         O_O.segregateClientEntity(oldWorld, entity);
         entity.world = newWorld;
-        entity.dimension = newWorld.dimension.getType();
         entity.setPosition(newPos.x, newPos.y, newPos.z);
         newWorld.addEntity(entity.getEntityId(), entity);
     }

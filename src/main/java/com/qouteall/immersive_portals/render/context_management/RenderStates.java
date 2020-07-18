@@ -12,14 +12,16 @@ import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
 import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.renderer.Matrix4f;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Matrix4f;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameType;
-import net.minecraft.world.dimension.DimensionType;
-
+import net.minecraft.world.World;
+import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,18 +30,18 @@ import java.util.Set;
 
 public class RenderStates {
     
-    public static DimensionType originalPlayerDimension;
-    public static Vec3d originalPlayerPos;
-    public static Vec3d originalPlayerLastTickPos;
+    public static RegistryKey<World> originalPlayerDimension;
+    public static Vector3d originalPlayerPos;
+    public static Vector3d originalPlayerLastTickPos;
     public static GameType originalGameMode;
     public static float tickDelta = 0;
     
-    public static Set<DimensionType> renderedDimensions = new HashSet<>();
+    public static Set<RegistryKey<World>> renderedDimensions = new HashSet<>();
     public static List<List<WeakReference<Portal>>> lastPortalRenderInfos = new ArrayList<>();
     public static List<List<WeakReference<Portal>>> portalRenderInfos = new ArrayList<>();
     
-    public static Vec3d lastCameraPos = Vec3d.ZERO;
-    public static Vec3d cameraPosDelta = Vec3d.ZERO;
+    public static Vector3d lastCameraPos = Vector3d.ZERO;
+    public static Vector3d cameraPosDelta = Vector3d.ZERO;
     
     public static boolean shouldForceDisableCull = false;
     
@@ -70,7 +72,7 @@ public class RenderStates {
             return;
         }
         
-        originalPlayerDimension = cameraEntity.dimension;
+        originalPlayerDimension = cameraEntity.world.func_234923_W_();
         originalPlayerPos = cameraEntity.getPositionVec();
         originalPlayerLastTickPos = McHelper.lastTickPosOf(cameraEntity);
         NetworkPlayerInfo entry = CHelper.getClientPlayerListEntry();
@@ -128,7 +130,7 @@ public class RenderStates {
     }
     
     private static void updateViewBobbingFactor(Entity cameraEntity) {
-        Vec3d cameraPosVec = cameraEntity.getEyePosition(tickDelta);
+        Vector3d cameraPosVec = cameraEntity.getEyePosition(tickDelta);
         double minPortalDistance = CHelper.getClientNearbyPortals(10)
             .map(portal -> portal.getDistanceToNearestPointInPortal(cameraPosVec))
             .min(Double::compareTo).orElse(1.0);
@@ -158,7 +160,7 @@ public class RenderStates {
         Minecraft mc = Minecraft.getInstance();
         IEGameRenderer gameRenderer = (IEGameRenderer) Minecraft.getInstance().gameRenderer;
         gameRenderer.setLightmapTextureManager(CGlobal.clientWorldLoader
-            .getDimensionRenderHelper(mc.world.dimension.getType()).lightmapTexture);
+            .getDimensionRenderHelper(mc.world.func_234923_W_()).lightmapTexture);
         
         if (getRenderedPortalNum() != 0) {
             //recover chunk renderer dispatcher
@@ -168,10 +170,10 @@ public class RenderStates {
             );
         }
         
-        Vec3d currCameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d currCameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
         cameraPosDelta = currCameraPos.subtract(lastCameraPos);
         if (cameraPosDelta.lengthSquared() > 1) {
-            cameraPosDelta = Vec3d.ZERO;
+            cameraPosDelta = Vector3d.ZERO;
         }
         lastCameraPos = currCameraPos;
     }
@@ -180,7 +182,7 @@ public class RenderStates {
         return portalRenderInfos.size();
     }
     
-    public static boolean isDimensionRendered(DimensionType dimensionType) {
+    public static boolean isDimensionRendered(RegistryKey<World> dimensionType) {
         if (dimensionType == originalPlayerDimension) {
             return true;
         }

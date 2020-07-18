@@ -1,9 +1,9 @@
 package com.qouteall.immersive_portals.ducks;
 
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 
 public interface IERayTraceContext {
-    IERayTraceContext setStart(Vec3d newStart);
+    IERayTraceContext setStart(Vector3d newStart);
 
-    IERayTraceContext setEnd(Vec3d newEnd);
+    IERayTraceContext setEnd(Vector3d newEnd);
 }

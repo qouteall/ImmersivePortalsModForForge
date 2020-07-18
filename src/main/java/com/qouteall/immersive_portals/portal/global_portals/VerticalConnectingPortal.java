@@ -1,10 +1,11 @@
 package com.qouteall.immersive_portals.portal.global_portals;
 
+import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.McHelper;
 import net.minecraft.entity.EntityType;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import java.util.function.Predicate;
 
@@ -33,18 +34,18 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     }
     
     public static void connect(
-        DimensionType from,
+        RegistryKey<World> from,
         ConnectorType connectorType,
-        DimensionType to
+        RegistryKey<World> to
     ) {
         int upY = connectorType == ConnectorType.ceil ? getHeight(from) : getHeight(to);
         connect(from, connectorType, to, 0, upY);
     }
     
     public static void connect(
-        DimensionType from,
+        RegistryKey<World> from,
         ConnectorType connectorType,
-        DimensionType to,
+        RegistryKey<World> to,
         int downY,
         int upY
     ) {
@@ -68,8 +69,8 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     }
     
     public static void connectMutually(
-        DimensionType up,
-        DimensionType down,
+        RegistryKey<World> up,
+        RegistryKey<World> down,
         int downY,
         int upY
     ) {
@@ -92,19 +93,19 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
             case floor:
                 
                 verticalConnectingPortal.setPosition(0, downY, 0);
-                verticalConnectingPortal.destination = new Vec3d(0, upY, 0);
-                verticalConnectingPortal.axisW = new Vec3d(0, 0, 1);
-                verticalConnectingPortal.axisH = new Vec3d(1, 0, 0);
+                verticalConnectingPortal.destination = new Vector3d(0, upY, 0);
+                verticalConnectingPortal.axisW = new Vector3d(0, 0, 1);
+                verticalConnectingPortal.axisH = new Vector3d(1, 0, 0);
                 break;
             case ceil:
                 verticalConnectingPortal.setPosition(0, upY, 0);
-                verticalConnectingPortal.destination = new Vec3d(0, downY, 0);
-                verticalConnectingPortal.axisW = new Vec3d(1, 0, 0);
-                verticalConnectingPortal.axisH = new Vec3d(0, 0, 1);
+                verticalConnectingPortal.destination = new Vector3d(0, downY, 0);
+                verticalConnectingPortal.axisW = new Vector3d(1, 0, 0);
+                verticalConnectingPortal.axisH = new Vector3d(0, 0, 1);
                 break;
         }
         
-        verticalConnectingPortal.dimensionTo = toWorld.dimension.getType();
+        verticalConnectingPortal.dimensionTo = toWorld.func_234923_W_();
         verticalConnectingPortal.width = 23333333333.0d;
         verticalConnectingPortal.height = 23333333333.0d;
         return verticalConnectingPortal;
@@ -112,13 +113,13 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     
     public static void removeConnectingPortal(
         ConnectorType connectorType,
-        DimensionType dimension
+        RegistryKey<World> dimension
     ) {
         removeConnectingPortal(getPredicate(connectorType), dimension);
     }
     
     private static void removeConnectingPortal(
-        Predicate<GlobalTrackedPortal> predicate, DimensionType dimension
+        Predicate<GlobalTrackedPortal> predicate, RegistryKey<World> dimension
     ) {
         ServerWorld endWorld = McHelper.getServer().getWorld(dimension);
         GlobalPortalStorage storage = GlobalPortalStorage.get(endWorld);
@@ -138,7 +139,7 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
             .findFirst().orElse(null);
     }
     
-    public static int getHeight(DimensionType dimensionType) {
-        return McHelper.getServer().getWorld(dimensionType).getActualHeight();
+    public static int getHeight(RegistryKey<World> dim) {
+        return McHelper.getServer().getWorld(dim).func_234938_ad_();
     }
 }

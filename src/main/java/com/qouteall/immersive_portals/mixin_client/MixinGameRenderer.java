@@ -5,6 +5,7 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
+import com.qouteall.immersive_portals.render.CrossPortalThirdPersonView;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
@@ -12,7 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.Matrix4f;
+import net.minecraft.util.math.vector.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -106,6 +107,24 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         RenderStates.onTotalRenderEnd();
     }
     
+    //special rendering in third person view
+    @Redirect(
+        method = "Lnet/minecraft/client/renderer/GameRenderer;updateCameraAndRender(FJZ)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;renderWorld(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V"
+        )
+    )
+    private void redirectRenderingWorld(
+        GameRenderer gameRenderer, float tickDelta, long limitTime, MatrixStack matrix
+    ) {
+        if (CrossPortalThirdPersonView.renderCrossPortalThirdPersonView()) {
+            return;
+        }
+        
+        gameRenderer.renderWorld(tickDelta, limitTime, matrix);
+    }
+    
     @Inject(method = "Lnet/minecraft/client/renderer/GameRenderer;renderWorld(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V", at = @At("TAIL"))
     private void onRenderCenterEnded(
         float float_1,
@@ -150,7 +169,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         method = "Lnet/minecraft/client/renderer/GameRenderer;renderWorld(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/GameRenderer;resetProjectionMatrix(Lnet/minecraft/client/renderer/Matrix4f;)V"
+            target = "Lnet/minecraft/client/renderer/GameRenderer;resetProjectionMatrix(Lnet/minecraft/util/math/vector/Matrix4f;)V"
         )
     )
     private void redirectLoadProjectionMatrix(GameRenderer gameRenderer, Matrix4f matrix4f) {
@@ -166,25 +185,6 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
             if (RenderStates.projectionMatrix == null) {
                 RenderStates.projectionMatrix = matrix4f;
             }
-        }
-    }
-    
-    @Inject(
-        method = "Lnet/minecraft/client/renderer/GameRenderer;renderWorld(FJLcom/mojang/blaze3d/matrix/MatrixStack;)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/ActiveRenderInfo;update(Lnet/minecraft/world/IBlockReader;Lnet/minecraft/entity/Entity;ZZF)V",
-            shift = At.Shift.AFTER
-        )
-    )
-    private void onCameraUpdated(
-        float tickDelta,
-        long limitTime,
-        MatrixStack matrix,
-        CallbackInfo ci
-    ) {
-        if (PortalRendering.isRendering()) {
-            PortalRendering.adjustCameraPos(activeRender);
         }
     }
     

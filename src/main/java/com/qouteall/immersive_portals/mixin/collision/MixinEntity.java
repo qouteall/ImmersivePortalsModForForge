@@ -12,10 +12,9 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -45,25 +44,16 @@ public abstract class MixinEntity implements IEEntity {
     public abstract void setBoundingBox(AxisAlignedBB box_1);
     
     @Shadow
-    protected abstract void dealFireDamage(int int_1);
-    
-    @Shadow
-    public DimensionType dimension;
-    
-    @Shadow
-    protected abstract Vec3d getAllowedMovement(Vec3d vec3d_1);
-    
-    @Shadow
-    private double posX;
-    
-    @Shadow
-    private double posY;
-    
-    @Shadow
-    private double posZ;
+    protected abstract Vector3d getAllowedMovement(Vector3d vec3d_1);
     
     @Shadow
     public abstract ITextComponent getName();
+    
+    @Shadow public abstract double getPosX();
+    
+    @Shadow public abstract double getPosY();
+    
+    @Shadow public abstract double getPosZ();
     
     @Shadow protected abstract BlockPos getOnPosition();
     
@@ -76,16 +66,16 @@ public abstract class MixinEntity implements IEEntity {
     }
     
     @Redirect(
-        method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/Vec3d;)V",
+        method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/vector/Vector3d;)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/entity/Entity;getAllowedMovement(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;"
+            target = "Lnet/minecraft/entity/Entity;getAllowedMovement(Lnet/minecraft/util/math/vector/Vector3d;)Lnet/minecraft/util/math/vector/Vector3d;"
         )
     )
-    private Vec3d redirectHandleCollisions(Entity entity, Vec3d attemptedMove) {
+    private Vector3d redirectHandleCollisions(Entity entity, Vector3d attemptedMove) {
         if (attemptedMove.lengthSquared() > 256) {
             Helper.err("Entity moving too fast " + entity + attemptedMove);
-            return Vec3d.ZERO;
+            return Vector3d.ZERO;
         }
         
         if (collidingPortal == null) {
@@ -96,7 +86,7 @@ public abstract class MixinEntity implements IEEntity {
             return getAllowedMovement(attemptedMove);
         }
         
-        Vec3d result = CollisionHelper.handleCollisionHalfwayInPortal(
+        Vector3d result = CollisionHelper.handleCollisionHalfwayInPortal(
             (Entity) (Object) this,
             attemptedMove,
             collidingPortal,
@@ -115,23 +105,8 @@ public abstract class MixinEntity implements IEEntity {
         }
     }
     
-    //don't burn when jumping into end portal
-    @Redirect(
-        method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/Vec3d;)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/entity/Entity;dealFireDamage(I)V"
-        )
-    )
-    private void redirectBurn(Entity entity, int int_1) {
-        if (!CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
-            dealFireDamage(int_1);
-        }
-    }
-    
-    
     @Inject(
-        method = "Lnet/minecraft/entity/Entity;isImmuneToFire()Z",
+        method = "Lnet/minecraft/entity/Entity;func_230279_az_()Z",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -153,19 +128,8 @@ public abstract class MixinEntity implements IEEntity {
         }
     }
     
-    @Inject(
-        method = "Lnet/minecraft/entity/Entity;dealFireDamage(I)V",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private void onBurn(int int_1, CallbackInfo ci) {
-        if (CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
-            ci.cancel();
-        }
-    }
-    
     @Redirect(
-        method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/Vec3d;)V",
+        method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/vector/Vector3d;)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/entity/Entity;isInWaterRainOrBubbleColumn()Z"
@@ -194,16 +158,16 @@ public abstract class MixinEntity implements IEEntity {
         at = @At("RETURN")
     )
     private void onReadFinished(CompoundNBT compound, CallbackInfo ci) {
-        if (dimension == null) {
-            Helper.err("Invalid Dimension Id Read From NBT " + this);
-            if (world != null) {
-                dimension = world.dimension.getType();
-            }
-            else {
-                Helper.err("World Field is Null");
-                dimension = DimensionType.OVERWORLD;
-            }
-        }
+//        if (dimension == null) {
+//            Helper.err("Invalid Dimension Id Read From NBT " + this);
+//            if (world != null) {
+//                dimension = world.getRegistryKey();
+//            }
+//            else {
+//                Helper.err("World Field is Null");
+//                dimension = DimensionType.OVERWORLD;
+//            }
+//        }
     }
     
     //for teleportation debug
@@ -214,15 +178,15 @@ public abstract class MixinEntity implements IEEntity {
     private void onSetPos(double nx, double ny, double nz, CallbackInfo ci) {
         if (((Object) this) instanceof ServerPlayerEntity) {
             if (Global.teleportationDebugEnabled) {
-                if (Math.abs(posX - nx) > 10 ||
-                    Math.abs(posY - ny) > 10 ||
-                    Math.abs(posZ - nz) > 10
+                if (Math.abs(getPosX() - nx) > 10 ||
+                    Math.abs(getPosY() - ny) > 10 ||
+                    Math.abs(getPosZ() - nz) > 10
                 ) {
                     Helper.log(String.format(
                         "%s %s teleported from %s %s %s to %s %s %s",
                         getName().getUnformattedComponentText(),
-                        dimension,
-                        (int) posX, (int) posY, (int) posZ,
+                        world.func_234923_W_(),
+                        (int) getPosX(), (int) getPosY(), (int) getPosZ(),
                         (int) nx, (int) ny, (int) nz
                     ));
                     new Throwable().printStackTrace();
@@ -253,7 +217,7 @@ public abstract class MixinEntity implements IEEntity {
         Entity this_ = (Entity) (Object) this;
         
         if (collidingPortal != null) {
-            if (collidingPortal.dimension != dimension) {
+            if (collidingPortal.world != world) {
                 collidingPortal = null;
             }
         }

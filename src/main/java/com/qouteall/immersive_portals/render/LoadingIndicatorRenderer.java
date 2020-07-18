@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.StringTextComponent;
 
 public class LoadingIndicatorRenderer extends EntityRenderer<LoadingIndicatorEntity> {
     public LoadingIndicatorRenderer(EntityRendererManager entityRenderDispatcher_1) {
@@ -26,13 +27,13 @@ public class LoadingIndicatorRenderer extends EntityRenderer<LoadingIndicatorEnt
         IRenderTypeBuffer vertexConsumerProvider_1,
         int int_1
     ) {
-        String[] splited = entity_1.getText().getUnformattedComponentText().split("\n");
+        String[] splited = entity_1.getText().getString().split("\n");
         for (int i = 0; i < splited.length; i++) {
             matrixStack_1.push();
             matrixStack_1.translate(0, -i * 0.25 - 0.5, 0);
             this.renderName(
                 entity_1,
-                splited[i],
+                new StringTextComponent(splited[i]),
                 matrixStack_1,
                 vertexConsumerProvider_1,
                 int_1

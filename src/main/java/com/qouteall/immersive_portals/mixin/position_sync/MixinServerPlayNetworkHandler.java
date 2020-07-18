@@ -3,6 +3,8 @@ package com.qouteall.immersive_portals.mixin.position_sync;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.ducks.IEEntity;
+import com.qouteall.immersive_portals.ducks.IEPlayerEntity;
 import com.qouteall.immersive_portals.ducks.IEPlayerMoveC2SPacket;
 import com.qouteall.immersive_portals.ducks.IEPlayerPositionLookS2CPacket;
 import com.qouteall.immersive_portals.ducks.IEServerPlayNetworkHandler;
@@ -13,9 +15,11 @@ import net.minecraft.network.play.client.CConfirmTeleportPacket;
 import net.minecraft.network.play.client.CMoveVehiclePacket;
 import net.minecraft.network.play.client.CPlayerPacket;
 import net.minecraft.network.play.server.SPlayerPositionLookPacket;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IWorldReader;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,16 +35,13 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     @Shadow
     public ServerPlayerEntity player;
     @Shadow
-    private Vec3d targetPos;
+    private Vector3d targetPos;
     @Shadow
     private int teleportId;
     @Shadow
     private int lastPositionUpdate;
     @Shadow
     private int networkTickCount;
-    
-    @Shadow
-    protected abstract boolean func_223133_a(IWorldReader worldView_1);
     
     @Shadow
     private boolean vehicleFloating;
@@ -54,8 +55,9 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     @Shadow
     private double lowestRiddenZ1;
     
-    @Shadow
-    protected abstract boolean func_217264_d();
+    @Shadow protected abstract boolean func_217264_d();
+    
+    @Shadow protected abstract boolean func_241163_a_(IWorldReader worldView, AxisAlignedBB box);
     
     //do not process move packet when client dimension and server dimension are not synced
     @Inject(
@@ -68,7 +70,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         cancellable = true
     )
     private void onProcessMovePacket(CPlayerPacket packet, CallbackInfo ci) {
-        DimensionType packetDimension = ((IEPlayerMoveC2SPacket) packet).getPlayerDimension();
+        RegistryKey<World> packetDimension = ((IEPlayerMoveC2SPacket) packet).getPlayerDimension();
         
         assert packetDimension != null;
         
@@ -76,7 +78,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
             cancelTeleportRequest();
         }
         
-        if (player.dimension != packetDimension) {
+        if (player.world.func_234923_W_() != packetDimension) {
             Global.serverTeleportationManager.acceptDubiousMovePacket(
                 player, packet, packetDimension
             );
@@ -115,7 +117,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     ) {
         Helper.log(String.format("request teleport %s %s (%d %d %d)->(%d %d %d)",
             player.getName().getUnformattedComponentText(),
-            player.dimension,
+            player.world.func_234923_W_(),
             (int) player.getPosX(), (int) player.getPosY(), (int) player.getPosZ(),
             (int) destX, (int) destY, (int) destZ
         ));
@@ -127,7 +129,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         float currPitch = updates.contains(SPlayerPositionLookPacket.Flags.X_ROT) ? this.player.rotationPitch : 0.0F;
         
         if (!Global.serverTeleportationManager.isJustTeleported(player, 100)) {
-            this.targetPos = new Vec3d(destX, destY, destZ);
+            this.targetPos = new Vector3d(destX, destY, destZ);
         }
         
         if (++this.teleportId == Integer.MAX_VALUE) {
@@ -146,7 +148,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
             this.teleportId
         );
         //noinspection ConstantConditions
-        ((IEPlayerPositionLookS2CPacket) lookPacket).setPlayerDimension(player.dimension);
+        ((IEPlayerPositionLookS2CPacket) lookPacket).setPlayerDimension(player.world.func_234923_W_());
         this.player.connection.sendPacket(lookPacket);
         
         if (Global.teleportationDebugEnabled) {
@@ -156,28 +158,33 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     
     //server will check the collision when receiving position packet from client
     //we treat collision specially when player is halfway through a portal
+    //"isPlayerNotCollidingWithBlocks" is wrong now
     @Redirect(
         method = "Lnet/minecraft/network/play/ServerPlayNetHandler;processPlayer(Lnet/minecraft/network/play/client/CPlayerPacket;)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/network/play/ServerPlayNetHandler;func_223133_a(Lnet/minecraft/world/IWorldReader;)Z"
+            target = "Lnet/minecraft/network/play/ServerPlayNetHandler;func_241163_a_(Lnet/minecraft/world/IWorldReader;Lnet/minecraft/util/math/AxisAlignedBB;)Z"
         )
     )
     private boolean onCheckPlayerCollision(
         ServerPlayNetHandler serverPlayNetworkHandler,
-        IWorldReader worldView_1
+        IWorldReader worldView,
+        AxisAlignedBB box
     ) {
         if (Global.serverTeleportationManager.isJustTeleported(player, 100)) {
-            return true;
+            return false;
+        }
+        if (((IEEntity) player).getCollidingPortal() != null) {
+            return false;
         }
         boolean portalsNearby = McHelper.getServerPortalsNearby(
             player,
             5
         ).findAny().isPresent();
         if (portalsNearby) {
-            return true;
+            return false;
         }
-        return func_223133_a(worldView_1);
+        return func_241163_a_(worldView, box);
     }
     
     @Inject(

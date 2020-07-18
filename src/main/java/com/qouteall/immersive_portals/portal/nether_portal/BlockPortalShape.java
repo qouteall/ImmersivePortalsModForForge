@@ -9,8 +9,8 @@ import net.minecraft.nbt.IntNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.math.vector.Vector3i;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Comparator;
@@ -91,11 +91,11 @@ public class BlockPortalShape {
         anchor = area.stream()
             .min(
                 Comparator.<BlockPos>comparingInt(
-                    Vec3i::getX
+                    Vector3i::getX
                 ).<BlockPos>thenComparingInt(
-                    Vec3i::getY
+                    Vector3i::getY
                 ).<BlockPos>thenComparingInt(
-                    Vec3i::getZ
+                    Vector3i::getZ
                 )
             ).get();
         
@@ -160,6 +160,14 @@ public class BlockPortalShape {
         if (!isAir.test(startingPos)) {
             return null;
         }
+    
+        return findShapeWithoutRegardingStartingPos(startingPos, axis, isAir, isObsidian);
+    }
+    
+    public static BlockPortalShape findShapeWithoutRegardingStartingPos(
+        BlockPos startingPos, Direction.Axis axis, Predicate<BlockPos> isAir, Predicate<BlockPos> isObsidian
+    ) {
+        startingPos = startingPos.toImmutable();
         
         Set<BlockPos> area = new HashSet<>();
         area.add(startingPos);
@@ -169,7 +177,8 @@ public class BlockPortalShape {
             isAir,
             isObsidian,
             Helper.getAnotherFourDirections(axis),
-            area
+            area,
+            startingPos
         );
         
         if (!isNormalFrame) {
@@ -188,26 +197,32 @@ public class BlockPortalShape {
     
     //return false to abort
     private static boolean findAreaRecursively(
-        BlockPos startingPos,
+        BlockPos currPos,
         Predicate<BlockPos> isAir,
         Predicate<BlockPos> isObsidian,
         Direction[] directions,
-        Set<BlockPos> foundArea
+        Set<BlockPos> foundArea,
+        BlockPos initialPos
     ) {
         if (foundArea.size() > 400) {
-            return true;
+            return false;
+        }
+        BlockPos delta = initialPos.subtract(currPos);
+        if (Math.abs(delta.getX()) > 20 || Math.abs(delta.getY()) > 20 || Math.abs(delta.getZ()) > 20) {
+            return false;
         }
         for (Direction direction : directions) {
-            BlockPos newPos = startingPos.add(direction.getDirectionVec());
+            BlockPos newPos = currPos.add(direction.getDirectionVec());
             if (!foundArea.contains(newPos)) {
                 if (isAir.test(newPos)) {
-                    foundArea.add(newPos);
+                    foundArea.add(newPos.toImmutable());
                     boolean shouldContinue = findAreaRecursively(
                         newPos,
                         isAir,
                         isObsidian,
                         directions,
-                        foundArea
+                        foundArea,
+                        initialPos
                     );
                     if (!shouldContinue) {
                         return false;
@@ -305,7 +320,7 @@ public class BlockPortalShape {
     }
     
     public void initPortalPosAxisShape(Portal portal, boolean doInvert) {
-        Vec3d center = innerAreaBox.getCenterVec();
+        Vector3d center = innerAreaBox.getCenterVec();
         portal.setPosition(center.x, center.y, center.z);
         
         IntBox rectanglePart = Helper.expandRectangle(
@@ -325,13 +340,13 @@ public class BlockPortalShape {
             wDirection = anotherFourDirections[1];
             hDirection = anotherFourDirections[0];
         }
-        portal.axisW = new Vec3d(wDirection.getDirectionVec());
-        portal.axisH = new Vec3d(hDirection.getDirectionVec());
+        portal.axisW =  Vector3d.func_237491_b_(wDirection.getDirectionVec());
+        portal.axisH =  Vector3d.func_237491_b_(hDirection.getDirectionVec());
         portal.width = Helper.getCoordinate(innerAreaBox.getSize(), wDirection.getAxis());
         portal.height = Helper.getCoordinate(innerAreaBox.getSize(), hDirection.getAxis());
         
         GeometryPortalShape shape = new GeometryPortalShape();
-        Vec3d offset = new Vec3d(
+        Vector3d offset = Vector3d.func_237491_b_(
             Direction.getFacingFromAxis(Direction.AxisDirection.POSITIVE, axis)
                 .getDirectionVec()
         ).scale(0.5);
@@ -342,8 +357,8 @@ public class BlockPortalShape {
                 .map(blockPos -> new IntBox(blockPos, blockPos)),
             Stream.of(rectanglePart)
         ).forEach(part -> {
-            Vec3d p1 = new Vec3d(part.l).add(offset);
-            Vec3d p2 = new Vec3d(part.h).add(1, 1, 1).add(offset);
+            Vector3d p1 = Vector3d.func_237491_b_(part.l).add(offset);
+            Vector3d p2 = Vector3d.func_237491_b_(part.h).add(1, 1, 1).add(offset);
             double p1LocalX = p1.subtract(center).dotProduct(portal.axisW);
             double p1LocalY = p1.subtract(center).dotProduct(portal.axisH);
             double p2LocalX = p2.subtract(center).dotProduct(portal.axisW);
@@ -356,8 +371,8 @@ public class BlockPortalShape {
         
         portal.specialShape = shape;
         
-        Vec3d p1 = new Vec3d(rectanglePart.l).add(offset);
-        Vec3d p2 = new Vec3d(rectanglePart.h).add(1, 1, 1).add(offset);
+        Vector3d p1 = Vector3d.func_237491_b_(rectanglePart.l).add(offset);
+        Vector3d p2 = Vector3d.func_237491_b_(rectanglePart.h).add(1, 1, 1).add(offset);
         double p1LocalX = p1.subtract(center).dotProduct(portal.axisW);
         double p1LocalY = p1.subtract(center).dotProduct(portal.axisH);
         double p2LocalX = p2.subtract(center).dotProduct(portal.axisW);

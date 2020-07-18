@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.render.FrustumCuller;
-import net.minecraft.client.renderer.culling.ClippingHelperImpl;
+import net.minecraft.client.renderer.culling.ClippingHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(ClippingHelperImpl.class)
+@Mixin(ClippingHelper.class)
 public class MixinFrustum {
     @Shadow
     private double cameraX;
@@ -22,7 +22,7 @@ public class MixinFrustum {
     private FrustumCuller portal_frustumCuller;
     
     @Inject(
-        method = "Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;setCameraPosition(DDD)V",
+        method = "Lnet/minecraft/client/renderer/culling/ClippingHelper;setCameraPosition(DDD)V",
         at = @At("TAIL")
     )
     private void onSetOrigin(double double_1, double double_2, double double_3, CallbackInfo ci) {
@@ -33,7 +33,7 @@ public class MixinFrustum {
     }
     
     @Inject(
-        method = "Lnet/minecraft/client/renderer/culling/ClippingHelperImpl;isBoxInFrustum(DDDDDD)Z",
+        method = "Lnet/minecraft/client/renderer/culling/ClippingHelper;isBoxInFrustum(DDDDDD)Z",
         at = @At("HEAD"),
         cancellable = true
     )

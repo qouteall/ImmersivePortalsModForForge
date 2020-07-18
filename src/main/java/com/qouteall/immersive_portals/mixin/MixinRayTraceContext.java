@@ -9,9 +9,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceContext;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,20 +24,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MixinRayTraceContext implements IERayTraceContext {
     @SuppressWarnings("ShadowModifiers")
     @Shadow
-    private Vec3d startVec;
+    private Vector3d startVec;
     
     @SuppressWarnings("ShadowModifiers")
     @Shadow
-    private Vec3d endVec;
+    private Vector3d endVec;
     
     @Override
-    public IERayTraceContext setStart(Vec3d newStart) {
+    public IERayTraceContext setStart(Vector3d newStart) {
         startVec = newStart;
         return this;
     }
     
     @Override
-    public IERayTraceContext setEnd(Vec3d newEnd) {
+    public IERayTraceContext setEnd(Vector3d newEnd) {
         endVec = newEnd;
         return this;
     }

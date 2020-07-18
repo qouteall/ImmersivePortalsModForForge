@@ -5,7 +5,9 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.SortedArraySet;
 import net.minecraft.util.math.SectionPos;
+import net.minecraft.world.server.Ticket;
 import net.minecraft.world.server.TicketManager;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,6 +27,8 @@ public abstract class MixinChunkTicketManager implements IEChunkTicketManager {
     @Shadow
     protected abstract void setViewDistance(int viewDistance);
     
+    @Shadow protected abstract SortedArraySet<Ticket<?>> getTicketSet(long position);
+    
     //avoid NPE
     @Inject(method = "Lnet/minecraft/world/server/TicketManager;removePlayer(Lnet/minecraft/util/math/SectionPos;Lnet/minecraft/entity/player/ServerPlayerEntity;)V", at = @At("HEAD"))
     private void onHandleChunkLeave(
@@ -39,5 +43,10 @@ public abstract class MixinChunkTicketManager implements IEChunkTicketManager {
     @Override
     public void mySetWatchDistance(int newWatchDistance) {
         setViewDistance(newWatchDistance);
+    }
+    
+    @Override
+    public SortedArraySet<Ticket<?>> portal_getTicketSet(long chunkPos) {
+        return getTicketSet(chunkPos);
     }
 }

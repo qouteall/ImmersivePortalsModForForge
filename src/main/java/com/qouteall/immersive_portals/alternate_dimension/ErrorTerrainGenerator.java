@@ -3,74 +3,125 @@ package com.qouteall.immersive_portals.alternate_dimension;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.qouteall.immersive_portals.Helper;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.crash.CrashReport;
-import net.minecraft.crash.ReportedException;
 import net.minecraft.util.SharedSeedRandom;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MutableBoundingBox;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.Blockreader;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeManager;
-import net.minecraft.world.biome.provider.BiomeProvider;
 import net.minecraft.world.chunk.ChunkPrimer;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.gen.ChunkGenerator;
-import net.minecraft.world.gen.EndChunkGenerator;
-import net.minecraft.world.gen.EndGenerationSettings;
 import net.minecraft.world.gen.GenerationStage;
 import net.minecraft.world.gen.Heightmap;
+import net.minecraft.world.gen.PerlinNoiseGenerator;
 import net.minecraft.world.gen.WorldGenRegion;
 import net.minecraft.world.gen.carver.ConfiguredCarver;
-import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.structure.EndCityStructure;
 import net.minecraft.world.gen.feature.structure.MineshaftStructure;
 import net.minecraft.world.gen.feature.structure.OceanMonumentStructure;
 import net.minecraft.world.gen.feature.structure.StrongholdStructure;
 import net.minecraft.world.gen.feature.structure.Structure;
-import net.minecraft.world.gen.feature.structure.StructureStart;
+import net.minecraft.world.gen.feature.structure.StructureManager;
 import net.minecraft.world.gen.feature.structure.WoodlandMansionStructure;
-import net.minecraft.world.gen.feature.template.TemplateManager;
+import net.minecraft.world.gen.settings.DimensionStructuresSettings;
+import net.minecraft.world.spawner.WorldEntitySpawner;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-public class ErrorTerrainGenerator extends EndChunkGenerator {
-    private final BlockState AIR;
+public class ErrorTerrainGenerator extends ChunkGenerator {
+    public static final Codec<ErrorTerrainGenerator> codec = RecordCodecBuilder.create(instance ->
+        instance.group(
+            Codec.LONG.fieldOf("seed").stable().forGetter(g -> g.worldSeed)
+        ).apply(instance, instance.stable(ErrorTerrainGenerator::new))
+    );
+    
+    private final BlockState air = Blocks.AIR.getDefaultState();
+    private final BlockState defaultBlock = Blocks.STONE.getDefaultState();
+    private final BlockState defaultFluid = Blocks.WATER.getDefaultState();
+    
     
     public static final int regionChunkNum = 4;
     public static final int averageY = 64;
     public static final int maxY = 128;
     
-    LoadingCache<ChunkPos, RegionErrorTerrainGenerator> cache = CacheBuilder.newBuilder()
+    private static final Blockreader verticalBlockSample = new Blockreader(
+        Stream.concat(
+            Stream.generate(Blocks.STONE::getDefaultState).limit(64),
+            Stream.generate(Blocks.AIR::getDefaultState).limit(128 + 64)
+        ).toArray(BlockState[]::new)
+    );
+    
+    private long worldSeed;
+    
+    private final LoadingCache<ChunkPos, RegionErrorTerrainGenerator> cache = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterWrite(30, TimeUnit.SECONDS)
         .build(
             new CacheLoader<ChunkPos, RegionErrorTerrainGenerator>() {
                 public RegionErrorTerrainGenerator load(ChunkPos key) {
-                    return new RegionErrorTerrainGenerator(key.x, key.z, world.getSeed());
+                    return new RegionErrorTerrainGenerator(key.x, key.z, worldSeed);
                 }
             });
     
-    public ErrorTerrainGenerator(
-        IWorld iWorld,
-        BiomeProvider biomeSource,
-        EndGenerationSettings floatingIslandsChunkGeneratorConfig
-    ) {
-        super(iWorld, biomeSource, floatingIslandsChunkGeneratorConfig);
-        AIR = Blocks.AIR.getDefaultState();
+    private final PerlinNoiseGenerator surfaceDepthNoise;
+    
+    public ErrorTerrainGenerator(long seed) {
+        super(new ChaosBiomeSource(seed), new DimensionStructuresSettings(true));
+        worldSeed = seed;
+        
+        surfaceDepthNoise = new PerlinNoiseGenerator(new SharedSeedRandom(
+            seed), IntStream.rangeClosed(-3, 0));
+    }
+    
+    private static double getProbability(Structure<?> structureFeature) {
+        if (structureFeature instanceof StrongholdStructure) {
+            return 0.0007;
+        }
+        if (structureFeature instanceof MineshaftStructure) {
+            return 0.015;
+        }
+        if (structureFeature instanceof OceanMonumentStructure) {
+            return 0.03;
+        }
+        if (structureFeature instanceof WoodlandMansionStructure) {
+            return 0.08;
+        }
+        if (structureFeature instanceof EndCityStructure) {
+            return 0.2;
+        }
+        return 0.15;
     }
     
     @Override
-    public void makeBase(IWorld world, IChunk chunk) {
+    public void func_230354_a_(WorldGenRegion region) {
+        int i = region.getMainChunkX();
+        int j = region.getMainChunkZ();
+        Biome biome = region.getBiome((new ChunkPos(i, j)).asBlockPos());
+        SharedSeedRandom chunkRandom = new SharedSeedRandom();
+        chunkRandom.setDecorationSeed(region.getSeed(), i << 4, j << 4);
+        WorldEntitySpawner.performWorldGenSpawning(region, biome, i, j, chunkRandom);
+    }
+    
+    @Override
+    public void func_230352_b_(
+        IWorld world, StructureManager accessor, IChunk chunk
+    ) {
         ChunkPrimer protoChunk = (ChunkPrimer) chunk;
         ChunkPos pos = chunk.getPos();
         Heightmap oceanFloorHeightMap = protoChunk.getHeightmap(Heightmap.Type.OCEAN_FLOOR_WG);
@@ -98,7 +149,7 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
                             worldX, worldY, worldZ
                         );
                         
-                        if (currBlockState != AIR) {
+                        if (currBlockState != air) {
                             section.setBlockState(localX, localY, localZ, currBlockState, false);
                             oceanFloorHeightMap.update(localX, worldY, localZ, currBlockState);
                             surfaceHeightMap.update(localX, worldY, localZ, currBlockState);
@@ -110,190 +161,125 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
             section.unlock();
         }
         
+    }
+    
+    @Override
+    public int func_222529_a(int x, int z, Heightmap.Type heightmapType) {
+        return 64;
+    }
+    
+    @Override
+    public int func_230355_e_() {
+        return 128;
+    }
+    
+    //if it's not 0, the sea biome will cause huge lag spike because of light updates
+    //don't know why
+    @Override
+    public int func_230356_f_() {
+        return 0;
+    }
+    
+    //may be incorrect
+    @Override
+    public IBlockReader func_230348_a_(int x, int z) {
+        return verticalBlockSample;
+    }
+    
+    @Override
+    protected Codec<? extends ChunkGenerator> func_230347_a_() {
+        return codec;
+    }
+    
+    @Override
+    public ChunkGenerator func_230349_a_(long seed) {
+        return new ErrorTerrainGenerator(seed);
+    }
+    
+    @Override
+    public void generateSurface(WorldGenRegion region, IChunk chunk) {
+        ChunkPos chunkPos = chunk.getPos();
+        int i = chunkPos.x;
+        int j = chunkPos.z;
+        SharedSeedRandom chunkRandom = new SharedSeedRandom();
+        chunkRandom.setBaseChunkSeed(i, j);
+        ChunkPos chunkPos2 = chunk.getPos();
+        int k = chunkPos2.getXStart();
+        int l = chunkPos2.getZStart();
+        double d = 0.0625D;
+        BlockPos.Mutable mutable = new BlockPos.Mutable();
         
+        for (int m = 0; m < 16; ++m) {
+            for (int n = 0; n < 16; ++n) {
+                int o = k + m;
+                int p = l + n;
+                int q = chunk.getTopBlockY(Heightmap.Type.WORLD_SURFACE_WG, m, n) + 1;
+                double e = this.surfaceDepthNoise.noiseAt(
+                    (double) o * 0.0625D,
+                    (double) p * 0.0625D,
+                    0.0625D,
+                    (double) m * 0.0625D
+                ) * 15.0D;
+                region.getBiome(mutable.setPos(k + m, q, l + n)).buildSurface(
+                    chunkRandom,
+                    chunk,
+                    o,
+                    p,
+                    q,
+                    e,
+                    this.defaultBlock,
+                    this.defaultFluid,
+                    this.func_230356_f_(),
+                    region.getSeed()
+                );
+            }
+        }
+        
+        
+        avoidSandLag(region);
     }
     
     //carve more
     @Override
-    public void func_225550_a_(BiomeManager biomeAccess, IChunk chunk, GenerationStage.Carving carver) {
+    public void func_230350_a_(
+        long seed, BiomeManager access, IChunk chunk, GenerationStage.Carving carver
+    ) {
+        BiomeManager biomeAccess = access.copyWithProvider(this.biomeProvider);
         SharedSeedRandom chunkRandom = new SharedSeedRandom();
         ChunkPos chunkPos = chunk.getPos();
-        int chunkX = chunkPos.x;
-        int chunkZ = chunkPos.z;
-        Biome biome = this.getBiome(biomeAccess, chunkPos.asBlockPos());
-        BitSet bitSet = chunk.getCarvingMask(carver);
+        Biome biome = this.biomeProvider.getNoiseBiome(
+            chunkPos.x << 2, 0, chunkPos.z << 2
+        );
+        BitSet bitSet = ((ChunkPrimer) chunk).func_230345_b_(carver);
         
-        for (int cx = chunkX - 8; cx <= chunkX + 8; ++cx) {
-            for (int cz = chunkZ - 8; cz <= chunkZ + 8; ++cz) {
-                List<ConfiguredCarver<?>> list = biome.getCarvers(carver);
-                ListIterator listIterator = list.listIterator();
-                
-                while (listIterator.hasNext()) {
-                    int n = listIterator.nextIndex();
-                    ConfiguredCarver<?> configuredCarver = (ConfiguredCarver) listIterator.next();
-                    chunkRandom.setLargeFeatureSeed(this.seed + (long) n, cx, cz);
-                    boolean shouldCarve = configuredCarver.shouldCarve(chunkRandom, cx, cz);
-                    if (shouldCarve) {
-                        //carve more
-                        for (int i = 0; i < 4; i++) {
-                            configuredCarver.func_227207_a_(chunk, (blockPos) -> {
-                                return this.getBiome(biomeAccess, blockPos);
-                            }, chunkRandom, this.getSeaLevel(), cx, cz, chunkX, chunkZ, bitSet);
+        for (int num = 0; num < 4; num++) {
+            for (int cx = chunkPos.x - 8; cx <= chunkPos.x + 8; ++cx) {
+                for (int cz = chunkPos.z - 8; cz <= chunkPos.z + 8; ++cz) {
+                    List<ConfiguredCarver<?>> list = biome.getCarvers(carver);
+                    ListIterator listIterator = list.listIterator();
+                    
+                    while (listIterator.hasNext()) {
+                        int n = listIterator.nextIndex();
+                        ConfiguredCarver<?> configuredCarver = (ConfiguredCarver) listIterator.next();
+                        chunkRandom.setLargeFeatureSeed(seed + (long) n + num * 2333, cx, cz);
+                        if (configuredCarver.shouldCarve(chunkRandom, cx, cz)) {
+                            configuredCarver.func_227207_a_(
+                                chunk,
+                                biomeAccess::getBiome,
+                                chunkRandom,
+                                this.func_230356_f_(),
+                                cx,
+                                cz,
+                                chunkPos.x,
+                                chunkPos.z,
+                                bitSet
+                            );
                         }
                     }
                 }
             }
         }
         
-    }
-    
-    //generate more ore
-    @Override
-    public void decorate(WorldGenRegion region) {
-        try {
-            super.decorate(region);
-            
-        }
-        catch (Throwable throwable) {
-            Helper.err("Force ignore exception while generating feature " + throwable);
-        }
-        
-        int centerChunkX = region.getMainChunkX();
-        int centerChunkZ = region.getMainChunkZ();
-        int x = centerChunkX * 16;
-        int z = centerChunkZ * 16;
-        BlockPos blockPos = new BlockPos(x, 0, z);
-        
-        for (int pass = 1; pass < 4; pass++) {
-            Biome biome = this.getBiome(region.getBiomeManager(), blockPos.add(8, 8, 8));
-            SharedSeedRandom chunkRandom = new SharedSeedRandom();
-            long currSeed = chunkRandom.setDecorationSeed(region.getSeed() + pass, x, z);
-            
-            generateFeatureForStep(
-                region, centerChunkX, centerChunkZ,
-                blockPos, biome, chunkRandom, currSeed,
-                GenerationStage.Decoration.UNDERGROUND_ORES
-            );
-        }
-        
-        SpongeDungeonFeature.instance.place(
-            region,
-            this,
-            randomSeed,
-            blockPos,
-            null
-        );
-    }
-    
-    private void generateFeatureForStep(
-        WorldGenRegion region,
-        Object centerChunkX,
-        Object centerChunkZ,
-        BlockPos blockPos,
-        Biome biome,
-        SharedSeedRandom chunkRandom,
-        long currSeed,
-        GenerationStage.Decoration feature
-    ) {
-        try {
-            biome.decorate(
-                feature, this, region, currSeed, chunkRandom, blockPos
-            );
-        }
-        catch (Exception var17) {
-            CrashReport crashReport = CrashReport.makeCrashReport(var17, "Biome decoration");
-            crashReport.makeCategory("Generation").addDetail("CenterX", centerChunkX).addDetail(
-                "CenterZ",
-                centerChunkZ
-            ).addDetail("Step", (Object) feature).addDetail("Seed", (Object) currSeed).addDetail(
-                "Biome",
-                (Object) Registry.BIOME.getKey(biome)
-            );
-            throw new ReportedException(crashReport);
-        }
-    }
-    
-    public void generateStructures(
-        BiomeManager biomeAccess,
-        IChunk chunk,
-        ChunkGenerator<?> chunkGenerator,
-        TemplateManager structureManager
-    ) {
-        randomSeed.setBaseChunkSeed(chunk.getPos().x, chunk.getPos().z);
-        
-        Iterator var5 = Feature.STRUCTURES.values().iterator();
-        
-        while (var5.hasNext()) {
-            Structure<?> structureFeature = (Structure) var5.next();
-            if (chunkGenerator.getBiomeProvider().hasStructure(structureFeature)) {
-                StructureStart structureStart = chunk.getStructureStart(structureFeature.getStructureName());
-                int i = structureStart != null ? structureStart.func_227457_j_() : 0;
-                SharedSeedRandom chunkRandom = new SharedSeedRandom();
-                ChunkPos chunkPos = chunk.getPos();
-                StructureStart structureStart2 = StructureStart.DUMMY;
-                Biome biome = biomeAccess.getBiome(new BlockPos(
-                    chunkPos.getXStart() + 9,
-                    0,
-                    chunkPos.getZStart() + 9
-                ));
-                boolean shouldStart = hasStructure(biome, structureFeature);
-                if (randomSeed.nextDouble() > getProbability(structureFeature)) {
-                    shouldStart = false;
-                }
-                if (shouldStart) {
-                    StructureStart structureStart3 = structureFeature.getStartFactory().create(
-                        structureFeature,
-                        chunkPos.x,
-                        chunkPos.z,
-                        MutableBoundingBox.getNewBoundingBox(),
-                        i,
-                        chunkGenerator.getSeed()
-                    );
-                    structureStart3.init(
-                        this,
-                        structureManager,
-                        chunkPos.x,
-                        chunkPos.z,
-                        biome
-                    );
-                    structureStart2 = structureStart3.isValid() ? structureStart3 : StructureStart.DUMMY;
-                }
-                
-                chunk.putStructureStart(structureFeature.getStructureName(), structureStart2);
-            }
-        }
-        
-    }
-    
-    private static double getProbability(Structure<?> structureFeature) {
-        if (structureFeature instanceof StrongholdStructure) {
-            return 0.0007;
-        }
-        if (structureFeature instanceof MineshaftStructure) {
-            return 0.015;
-        }
-        if (structureFeature instanceof OceanMonumentStructure) {
-            return 0.03;
-        }
-        if (structureFeature instanceof WoodlandMansionStructure) {
-            return 0.08;
-        }
-        if (structureFeature instanceof EndCityStructure) {
-            return 0.2;
-        }
-        return 0.15;
-    }
-    
-    @Override
-    public void spawnMobs(WorldGenRegion region) {
-        super.spawnMobs(region);
-        
-    }
-    
-    @Override
-    public void func_225551_a_(WorldGenRegion chunkRegion, IChunk chunk) {
-        super.func_225551_a_(chunkRegion, chunk);
-        avoidSandLag(chunkRegion);
     }
     
     private static void avoidSandLag(WorldGenRegion region) {
@@ -318,23 +304,6 @@ public class ErrorTerrainGenerator extends EndChunkGenerator {
                     isLastAir = blockState.isAir();
                 }
             }
-        }
-    }
-    
-    //make end city and woodland mansion be able to generate
-    @Override
-    public int func_222529_a(int x, int z, Heightmap.Type heightmapType) {
-        return 64;
-    }
-    
-    @Override
-    public void generateStructureStarts(IWorld world, IChunk chunk) {
-        try {
-            super.generateStructureStarts(world, chunk);
-        }
-        catch (Throwable throwable) {
-            Helper.err("Error Generating " + world.getDimension().getType() + chunk.getPos());
-            throwable.printStackTrace();
         }
     }
 }

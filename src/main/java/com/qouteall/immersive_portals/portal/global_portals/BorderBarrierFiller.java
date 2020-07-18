@@ -7,7 +7,7 @@ import com.qouteall.immersive_portals.my_util.IntBox;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
@@ -26,7 +26,7 @@ public class BorderBarrierFiller {
         ServerPlayerEntity player
     ) {
         ServerWorld world = (ServerWorld) player.world;
-        Vec3d playerPos = player.getPositionVec();
+        Vector3d playerPos = player.getPositionVec();
         
         List<WorldWrappingPortal.WrappingZone> wrappingZones =
             WorldWrappingPortal.getWrappingZones(world);
@@ -36,7 +36,7 @@ public class BorderBarrierFiller {
         ).findFirst().orElse(null);
         
         if (zone == null) {
-            player.sendMessage(new TranslationTextComponent("imm_ptl.clear_border_warning"));
+            player.sendStatusMessage(new TranslationTextComponent("imm_ptl.clear_border_warning"), false);
             return;
         }
         
@@ -57,7 +57,7 @@ public class BorderBarrierFiller {
         ).findFirst().orElse(null);
         
         if (zone == null) {
-            player.sendMessage(new TranslationTextComponent("imm_ptl.cannot_find_zone"));
+            player.sendStatusMessage(new TranslationTextComponent("imm_ptl.cannot_find_zone"), false);
             return;
         }
         
@@ -74,14 +74,16 @@ public class BorderBarrierFiller {
         boolean warned = warnedPlayers.containsKey(player);
         if (!warned) {
             warnedPlayers.put(player, null);
-            player.sendMessage(new TranslationTextComponent("imm_ptl.clear_border_warning"));
+            player.sendStatusMessage(new TranslationTextComponent("imm_ptl.clear_border_warning"),
+                false);
         }
         else {
             warnedPlayers.remove(player);
             
-            player.sendMessage(new TranslationTextComponent("imm_ptl.start_clearing_border"));
+            player.sendStatusMessage(new TranslationTextComponent("imm_ptl.start_clearing_border"),
+                false);
             
-            startFillingBorder(world, borderBox, player::sendMessage);
+            startFillingBorder(world, borderBox, l -> player.sendStatusMessage(l, false));
         }
     }
     

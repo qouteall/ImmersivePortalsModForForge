@@ -1,11 +1,11 @@
 package com.qouteall.immersive_portals.portal;
 
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import net.minecraft.client.renderer.Quaternion;
+import com.qouteall.immersive_portals.my_util.RotationHelper;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Quaternion;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import java.util.List;
@@ -40,11 +40,19 @@ public class PortalManipulation {
         );
     }
     
-    public static Portal completeBiWayPortal(Portal portal, EntityType<Portal> entityType) {
+    public static Portal completeBiWayPortal(Portal portal, EntityType<? extends Portal> entityType) {
+        Portal newPortal = createReversePortal(portal, entityType);
+    
+        newPortal.world.addEntity(newPortal);
+        
+        return newPortal;
+    }
+    
+    public static Portal createReversePortal(Portal portal, EntityType<? extends Portal> entityType) {
         ServerWorld world = McHelper.getServer().getWorld(portal.dimensionTo);
         
         Portal newPortal = entityType.create(world);
-        newPortal.dimensionTo = portal.dimension;
+        newPortal.dimensionTo = portal.world.func_234923_W_();
         newPortal.setPosition(portal.destination.x, portal.destination.y, portal.destination.z);
         newPortal.destination = portal.getPositionVec();
         newPortal.specificPlayerId = portal.specificPlayerId;
@@ -72,19 +80,16 @@ public class PortalManipulation {
             newPortal.rotation = new Quaternion(portal.rotation);
             newPortal.rotation.conjugate();
         }
-        
-        newPortal.motionAffinity = portal.motionAffinity;
-        
+    
+        newPortal.extension.motionAffinity = portal.extension.motionAffinity;
+    
         newPortal.specificPlayerId = portal.specificPlayerId;
-        
-        world.addEntity(newPortal);
-        
         return newPortal;
     }
     
     public static void rotatePortalBody(Portal newPortal, Quaternion rotation) {
-        newPortal.axisW = Helper.getRotated(rotation, newPortal.axisW);
-        newPortal.axisH = Helper.getRotated(rotation, newPortal.axisH);
+        newPortal.axisW = RotationHelper.getRotated(rotation, newPortal.axisW);
+        newPortal.axisH = RotationHelper.getRotated(rotation, newPortal.axisH);
     }
     
     public static Portal completeBiFacedPortal(Portal portal, EntityType<Portal> entityType) {
@@ -113,8 +118,8 @@ public class PortalManipulation {
         );
         
         newPortal.rotation = portal.rotation;
-        
-        newPortal.motionAffinity = portal.motionAffinity;
+    
+        newPortal.extension.motionAffinity = portal.extension.motionAffinity;
     
         newPortal.specificPlayerId = portal.specificPlayerId;
         
@@ -148,7 +153,7 @@ public class PortalManipulation {
     
         newPortal.rotation = portal.rotation;
     
-        newPortal.motionAffinity = portal.motionAffinity;
+        newPortal.extension.motionAffinity = portal.extension.motionAffinity;
     
         newPortal.specificPlayerId = portal.specificPlayerId;
     
@@ -205,8 +210,8 @@ public class PortalManipulation {
     
     public static void removeOverlappedPortals(
         World world,
-        Vec3d pos,
-        Vec3d normal,
+        Vector3d pos,
+        Vector3d normal,
         Predicate<Portal> predicate,
         Consumer<Portal> informer
     ) {
@@ -218,8 +223,8 @@ public class PortalManipulation {
     
     public static List<Portal> getPortalClutter(
         World world,
-        Vec3d pos,
-        Vec3d normal,
+        Vector3d pos,
+        Vector3d normal,
         Predicate<Portal> predicate
     ) {
         return world.getEntitiesWithinAABB(

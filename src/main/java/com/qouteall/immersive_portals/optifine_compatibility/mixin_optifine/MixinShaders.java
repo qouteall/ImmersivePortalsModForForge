@@ -6,12 +6,14 @@ import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
 import com.qouteall.immersive_portals.optifine_compatibility.ShaderCullingManager;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
+import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.world.World;
 import net.optifine.shaders.IShaderPack;
 import net.optifine.shaders.Program;
 import net.optifine.shaders.Shaders;
@@ -224,7 +226,7 @@ public abstract class MixinShaders {
         method = "beginRender",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/entity/EntityRendererManager;getPackedLight(Lnet/minecraft/entity/Entity;F)I",
+            target = "Lnet/minecraft/client/render/entity/EntityRenderDispatcher;getLight(Lnet/minecraft/entity/Entity;F)I",
             remap = true
         )
     )
@@ -240,6 +242,19 @@ public abstract class MixinShaders {
             return entityRenderDispatcher.getPackedLight(entity, tickDelta);
         }
     }
+    
+//    @Redirect(
+//        method = "init",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/world/World;getRegistryKey()Lnet/minecraft/util/registry/RegistryKey;",
+//            remap = true
+//        ),
+//        remap = false
+//    )
+//    private static RegistryKey<World> redirectGetRegistryKey(World world){
+//        return RenderDimensionRedirect.getRedirectedDimension(world.getRegistryKey());
+//    }
     
     //correct the previous camera pos
 //    @Inject(method = "beginRender", at = @At("TAIL"))

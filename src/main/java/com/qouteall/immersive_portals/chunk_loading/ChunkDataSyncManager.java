@@ -9,8 +9,9 @@ import net.minecraft.network.IPacket;
 import net.minecraft.network.play.server.SChunkDataPacket;
 import net.minecraft.network.play.server.SUnloadChunkPacket;
 import net.minecraft.network.play.server.SUpdateLightPacket;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerChunkProvider;
 import java.util.function.Supplier;
@@ -58,7 +59,7 @@ public class ChunkDataSyncManager {
                 player.connection.sendPacket(
                     MyNetwork.createRedirectedMessage(
                         chunkPos.dimension,
-                        new SChunkDataPacket(((Chunk) chunk), 65535)
+                        new SChunkDataPacket(((Chunk) chunk), 65535, true)
                     )
                 );
                 
@@ -67,7 +68,8 @@ public class ChunkDataSyncManager {
                         chunkPos.dimension,
                         new SUpdateLightPacket(
                             chunkPos.getChunkPos(),
-                            ieStorage.getLightingProvider()
+                            ieStorage.getLightingProvider(),
+                            true
                         )
                     )
                 );
@@ -85,7 +87,7 @@ public class ChunkDataSyncManager {
      * {@link ThreadedAnvilChunkStorage#sendChunkDataPackets(ServerPlayerEntity, Packet[], WorldChunk)}r
      */
     public void onChunkProvidedDeferred(Chunk chunk) {
-        DimensionType dimension = chunk.getWorld().dimension.getType();
+        RegistryKey<World> dimension = chunk.getWorld().func_234923_W_();
         IEThreadedAnvilChunkStorage ieStorage = McHelper.getIEStorage(dimension);
         
         McHelper.getServer().getProfiler().startSection("ptl_create_chunk_packet");
@@ -93,14 +95,14 @@ public class ChunkDataSyncManager {
         Supplier<IPacket> chunkDataPacketRedirected = Helper.cached(
             () -> MyNetwork.createRedirectedMessage(
                 dimension,
-                new SChunkDataPacket(((Chunk) chunk), 65535)
+                new SChunkDataPacket(((Chunk) chunk), 65535, true)
             )
         );
         
         Supplier<IPacket> lightPacketRedirected = Helper.cached(
             () -> MyNetwork.createRedirectedMessage(
                 dimension,
-                new SUpdateLightPacket(chunk.getPos(), ieStorage.getLightingProvider())
+                new SUpdateLightPacket(chunk.getPos(), ieStorage.getLightingProvider(), true)
             )
         );
         

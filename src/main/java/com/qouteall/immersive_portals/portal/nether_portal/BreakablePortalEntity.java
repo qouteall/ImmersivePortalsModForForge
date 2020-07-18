@@ -41,7 +41,7 @@ public abstract class BreakablePortalEntity extends Portal {
         if (compoundTag.contains("netherPortalShape")) {
             blockPortalShape = new BlockPortalShape(compoundTag.getCompound("netherPortalShape"));
         }
-        reversePortalId = compoundTag.getUniqueId("reversePortalId");
+        reversePortalId = Helper.getUuid(compoundTag,"reversePortalId");
         unbreakable = compoundTag.getBoolean("unbreakable");
     }
     
@@ -51,7 +51,7 @@ public abstract class BreakablePortalEntity extends Portal {
         if (blockPortalShape != null) {
             compoundTag.put("netherPortalShape", blockPortalShape.toTag());
         }
-        compoundTag.putUniqueId("reversePortalId", reversePortalId);
+        Helper.putUuid(compoundTag,"reversePortalId", reversePortalId);
         compoundTag.putBoolean("unbreakable", unbreakable);
     }
     

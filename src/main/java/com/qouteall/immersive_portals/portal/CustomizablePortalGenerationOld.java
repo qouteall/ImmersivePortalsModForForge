@@ -3,16 +3,18 @@ package com.qouteall.immersive_portals.portal;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.dimension_sync.DimId;
 import com.qouteall.immersive_portals.portal.nether_portal.GeneralBreakablePortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalMatcher;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,18 +23,18 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class CustomizablePortalGeneration {
+public class CustomizablePortalGenerationOld {
     public static class Entry {
-        public DimensionType fromDimension;
+        public RegistryKey<World> fromDimension;
         public int fromSpaceRatio;
-        public DimensionType toDimension;
+        public RegistryKey<World> toDimension;
         public int toSpaceRatio;
         public Block frameBlock;
         
         public Entry(
-            DimensionType fromDimension,
+            RegistryKey<World> fromDimension,
             int fromSpaceRatio,
-            DimensionType toDimension,
+            RegistryKey<World> toDimension,
             int toSpaceRatio,
             Block frameBlock
         ) {
@@ -61,8 +63,8 @@ public class CustomizablePortalGeneration {
             Helper.err("Invalid Entry " + str);
             return null;
         }
-        
-        DimensionType fromDim = DimensionType.byName(new ResourceLocation(components[0]));
+    
+        RegistryKey<World> fromDim = DimId.idToKey(new ResourceLocation(components[0]));
         if (fromDim == null) {
             Helper.err("Invalid dimension type " + components[0]);
             return null;
@@ -72,7 +74,7 @@ public class CustomizablePortalGeneration {
             Helper.err("Invalid space ratio");
             return null;
         }
-        DimensionType toDim = DimensionType.byName(new ResourceLocation(components[2]));
+        RegistryKey<World> toDim = DimId.idToKey(new ResourceLocation(components[2]));
         if (toDim == null) {
             Helper.err("Invalid dimension type " + components[2]);
         }
@@ -116,7 +118,7 @@ public class CustomizablePortalGeneration {
     private static void initCache() {
         if (entryCache == null) {
             entryCache = configContent.stream()
-                .map(CustomizablePortalGeneration::readEntry)
+                .map(CustomizablePortalGenerationOld::readEntry)
                 .filter(Objects::nonNull)
                 .flatMap(entry -> Stream.of(
                     entry, entry.getReverse()
@@ -131,8 +133,8 @@ public class CustomizablePortalGeneration {
         Block frameBlock
     ) {
         initCache();
-        
-        DimensionType fromDim = fromWorld.dimension.getType();
+    
+        RegistryKey<World> fromDim = fromWorld.func_234923_W_();
         Entry entry = entryCache.stream().filter(
             entry_ -> entry_.fromDimension == fromDim && entry_.frameBlock == frameBlock
         ).findFirst().orElse(null);
@@ -141,7 +143,7 @@ public class CustomizablePortalGeneration {
         }
         
         ServerWorld toWorld = McHelper.getServer().getWorld(entry.toDimension);
-        return NetherPortalGeneration.startGeneratingPortal(
+        return NetherPortalGeneration.triggerGeneratingPortal(
             fromWorld,
             firePos,
             toWorld,

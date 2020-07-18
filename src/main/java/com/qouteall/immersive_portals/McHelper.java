@@ -1,28 +1,37 @@
 package com.qouteall.immersive_portals;
 
 import com.google.common.collect.Streams;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.JsonOps;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.ducks.IEWorldChunk;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ClassInheritanceMultiMap;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
@@ -33,7 +42,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
@@ -45,7 +53,7 @@ public class McHelper {
     public static WeakReference<MinecraftServer> refMinecraftServer =
         new WeakReference<>(null);
     
-    public static IEThreadedAnvilChunkStorage getIEStorage(DimensionType dimension) {
+    public static IEThreadedAnvilChunkStorage getIEStorage(RegistryKey<World> dimension) {
         return (IEThreadedAnvilChunkStorage) (
             (ServerChunkProvider) getServer().getWorld(dimension).getChunkProvider()
         ).chunkManager;
@@ -59,8 +67,8 @@ public class McHelper {
         return getServer().getPlayerList().getPlayers();
     }
     
-    public static Vec3d lastTickPosOf(Entity entity) {
-        return new Vec3d(entity.prevPosX, entity.prevPosY, entity.prevPosZ);
+    public static Vector3d lastTickPosOf(Entity entity) {
+        return new Vector3d(entity.prevPosX, entity.prevPosY, entity.prevPosZ);
     }
     
     public static MinecraftServer getServer() {
@@ -68,14 +76,14 @@ public class McHelper {
     }
     
     public static ServerWorld getOverWorldOnServer() {
-        return getServer().getWorld(DimensionType.OVERWORLD);
+        return getServer().getWorld(World.field_234918_g_);
     }
     
     public static void serverLog(
         ServerPlayerEntity player,
         String text
     ) {
-        player.sendMessage(new StringTextComponent(text));
+        player.sendStatusMessage(new StringTextComponent(text), false);
     }
     
     public static AxisAlignedBB getChunkBoundingBox(ChunkPos chunkPos) {
@@ -196,7 +204,7 @@ public class McHelper {
                     };
                 }
             },
-            McHelper.getServer().getBackgroundExecutor()
+            Util.getServerExecutor()
         );
         ModMain.serverTaskList.addTask(() -> {
             if (future.isDone()) {
@@ -234,7 +242,7 @@ public class McHelper {
     
     public static <ENTITY extends Entity> Stream<ENTITY> getEntitiesNearby(
         World world,
-        Vec3d center,
+        Vector3d center,
         Class<ENTITY> entityClass,
         double range
     ) {
@@ -278,11 +286,14 @@ public class McHelper {
     
     public static List<GlobalTrackedPortal> getGlobalPortals(World world) {
         List<GlobalTrackedPortal> result;
-        if (world.isRemote) {
+        if (world.isRemote()) {
             result = CHelper.getClientGlobalPortal(world);
         }
-        else {
+        else if (world instanceof ServerWorld) {
             result = GlobalPortalStorage.get(((ServerWorld) world)).data;
+        }
+        else {
+            result = null;
         }
         return result != null ? result : Collections.emptyList();
     }
@@ -309,13 +320,13 @@ public class McHelper {
     }
     
     public static int getRenderDistanceOnServer() {
-        return getIEStorage(DimensionType.OVERWORLD).getWatchDistance();
+        return getIEStorage(World.field_234918_g_).getWatchDistance();
     }
     
     public static void setPosAndLastTickPos(
         Entity entity,
-        Vec3d pos,
-        Vec3d lastTickPos
+        Vector3d pos,
+        Vector3d lastTickPos
     ) {
         
         
@@ -329,17 +340,17 @@ public class McHelper {
         entity.prevPosZ = lastTickPos.z;
     }
     
-    public static Vec3d getEyePos(Entity entity) {
+    public static Vector3d getEyePos(Entity entity) {
         float eyeHeight = entity.getEyeHeight();
         return entity.getPositionVec().add(0, eyeHeight, 0);
     }
     
-    public static Vec3d getLastTickEyePos(Entity entity) {
+    public static Vector3d getLastTickEyePos(Entity entity) {
         float eyeHeight = entity.getEyeHeight();
         return lastTickPosOf(entity).add(0, eyeHeight, 0);
     }
     
-    public static void setEyePos(Entity entity, Vec3d eyePos, Vec3d lastTickEyePos) {
+    public static void setEyePos(Entity entity, Vector3d eyePos, Vector3d lastTickEyePos) {
         float eyeHeight = entity.getEyeHeight();
         setPosAndLastTickPos(
             entity,
@@ -366,19 +377,11 @@ public class McHelper {
     }
     
     public static void checkDimension(Entity entity) {
-        if (entity.dimension != entity.world.dimension.getType()) {
-            Helper.err(String.format(
-                "Entity dimension field abnormal. Force corrected. %s %s %s",
-                entity,
-                entity.dimension,
-                entity.world.dimension.getType()
-            ));
-            entity.dimension = entity.world.dimension.getType();
-        }
+        //no need in 1.16
     }
     
     public static Chunk getServerChunkIfPresent(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         int x, int z
     ) {
         //TODO cleanup
@@ -403,7 +406,7 @@ public class McHelper {
     
     public static <ENTITY extends Entity> Stream<ENTITY> getServerEntitiesNearbyWithoutLoadingChunk(
         World world,
-        Vec3d center,
+        Vector3d center,
         Class<ENTITY> entityClass,
         double range
     ) {
@@ -461,10 +464,14 @@ public class McHelper {
 //        return list;
     }
     
+    
     //avoid dedicated server crash
     public static void onClientEntityTick(Entity entity) {
         CrossPortalEntityRenderer.onEntityTickClient(entity);
     }
+    
+   
+    
     
     public static interface ChunkAccessor {
         Chunk getChunk(int x, int z);
@@ -515,7 +522,7 @@ public class McHelper {
     public static <T extends Entity> List<T> findEntitiesRough(
         Class<T> entityClass,
         World world,
-        Vec3d center,
+        Vector3d center,
         int radiusChunks,
         Predicate<T> predicate
     ) {
@@ -560,7 +567,90 @@ public class McHelper {
         );
     }
     
-    public static ResourceLocation dimensionTypeId(DimensionType dimType) {
-        return Objects.requireNonNull(Registry.DIMENSION_TYPE.getKey(dimType));
+    public static ResourceLocation dimensionTypeId(RegistryKey<World> dimType) {
+        return dimType.func_240901_a_();
+    }
+    
+    public static <T> String serializeToJson(T object, Codec<T> codec) {
+        DataResult<JsonElement> r = codec.encode(object, JsonOps.INSTANCE, new JsonObject());
+        Either<JsonElement, DataResult.PartialResult<JsonElement>> either = r.get();
+        JsonElement result = either.left().orElse(null);
+        if (result != null) {
+            return Global.gson.toJson(result);
+        }
+        
+        return either.right().map(DataResult.PartialResult::toString).orElse("");
+    }
+    
+    public static Vector3d getCurrentCameraPos() {
+        return Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
+    }
+    
+    public static class MyDecodeException extends RuntimeException {
+    
+        public MyDecodeException(String message) {
+            super(message);
+        }
+    }
+    
+    public static <T, Serialized> T decodeFailHard(
+        Codec<T> codec,
+        DynamicOps<Serialized> ops,
+        Serialized target
+    ) {
+        return codec.decode(ops, target)
+            .getOrThrow(false, s -> {
+                throw new MyDecodeException("Cannot decode" + s + target);
+            }).getFirst();
+    }
+    
+    public static <Serialized> Serialized getElementFailHard(
+        DynamicOps<Serialized> ops,
+        Serialized target,
+        String key
+    ) {
+        return ops.get(target, key).getOrThrow(false, s -> {
+            throw new MyDecodeException("Cannot find" + key + s + target);
+        });
+    }
+    
+    public static <T, Serialized> void encode(
+        Codec<T> codec,
+        DynamicOps<Serialized> ops,
+        Serialized target,
+        T object
+    ) {
+        codec.encode(object, ops, target);
+    }
+    
+    public static <Serialized, T> T decodeElementFailHard(
+        DynamicOps<Serialized> ops, Serialized input,
+        Codec<T> codec, String key
+    ) {
+        return decodeFailHard(
+            codec, ops,
+            getElementFailHard(ops, input, key)
+        );
+    }
+    
+    public static void sendMessageToFirstLoggedPlayer(ITextComponent text) {
+        Helper.log(text.getUnformattedComponentText());
+        ModMain.serverTaskList.addTask(() -> {
+            MinecraftServer server = getServer();
+            if (server == null) {
+                return false;
+            }
+            
+            List<ServerPlayerEntity> playerList = server.getPlayerList().getPlayers();
+            if (playerList.isEmpty()) {
+                return false;
+            }
+            
+            for (ServerPlayerEntity player : playerList) {
+                player.sendStatusMessage(text, false);
+            }
+            
+            return true;
+        });
     }
 }

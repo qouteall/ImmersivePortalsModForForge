@@ -15,7 +15,9 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.SectionPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.LightType;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeContainer;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -29,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Stream;
 
 //this class is modified based on ClientChunkManager
 //re-write this class upon updating mod
@@ -48,7 +51,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
         this.lightingProvider = new WorldLightManager(
             this,
             true,
-            RenderDimensionRedirect.hasSkylight(clientWorld.dimension)
+            RenderDimensionRedirect.hasSkylight(clientWorld)
         );
         
     }
@@ -95,41 +98,45 @@ public class MyClientChunkManager extends ClientChunkProvider {
         BiomeContainer biomeArray,
         PacketBuffer packetByteBuf,
         CompoundNBT compoundTag,
-        int sections
+        int k,
+        boolean bl
     ) {
-        ChunkPos chunkPos = new ChunkPos(x, z);
-        Chunk worldChunk;
+        long chunkPosLong = ChunkPos.asLong(x, z);
         
+        Chunk worldChunk;
         synchronized (chunkMapNew) {
-            worldChunk = (Chunk) chunkMapNew.get(chunkPos.asLong());
-            if (!positionEquals(worldChunk, x, z)) {
-                if (biomeArray == null) {
-                    LOGGER.warn(
-                        "Ignoring chunk since we don't have complete data: {}, {}",
-                        x,
-                        z
-                    );
-                    return null;
-                }
-                
-                worldChunk = new Chunk(this.world, chunkPos, biomeArray);
-                worldChunk.read(biomeArray, packetByteBuf, compoundTag, sections);
-                chunkMapNew.put(chunkPos.asLong(), worldChunk);
+            worldChunk = (Chunk) this.chunkMapNew.get(chunkPosLong);
+            if (!bl && positionEquals(worldChunk, x, z)) {
+                worldChunk.read(biomeArray, packetByteBuf, compoundTag, k);
             }
             else {
-                worldChunk.read(biomeArray, packetByteBuf, compoundTag, sections);
+                if (biomeArray == null) {
+                    LOGGER.error(
+                        "Missing Biome Array: {} {} {} Client Biome May be Incorrect",
+                        world.func_234923_W_().func_240901_a_(), x, z
+                    );
+                    biomeArray = new BiomeContainer(
+                        Stream.generate(() -> Biomes.PLAINS)
+                            .limit(BiomeContainer.BIOMES_SIZE)
+                            .toArray(Biome[]::new)
+                    );
+                }
+                
+                worldChunk = new Chunk(this.world, new ChunkPos(x, z), biomeArray);
+                worldChunk.read(biomeArray, packetByteBuf, compoundTag, k);
+                chunkMapNew.put(chunkPosLong, worldChunk);
             }
         }
         
         ChunkSection[] chunkSections = worldChunk.getSections();
         WorldLightManager lightingProvider = this.getLightManager();
-        lightingProvider.enableLightSources(chunkPos, true);
+        lightingProvider.enableLightSources(new ChunkPos(x, z), true);
         
-        for (int i = 0; i < chunkSections.length; ++i) {
-            ChunkSection chunkSection_1 = chunkSections[i];
+        for (int m = 0; m < chunkSections.length; ++m) {
+            ChunkSection chunkSection = chunkSections[m];
             lightingProvider.updateSectionStatus(
-                SectionPos.of(x, i, z),
-                ChunkSection.isEmpty(chunkSection_1)
+                SectionPos.of(x, m, z),
+                ChunkSection.isEmpty(chunkSection)
             );
         }
         
@@ -159,10 +166,6 @@ public class MyClientChunkManager extends ClientChunkProvider {
     }
     
     @Override
-    public void tick(BooleanSupplier booleanSupplier_1) {
-    }
-    
-    @Override
     public void setCenter(int int_1, int int_2) {
         //do nothing
     }
@@ -187,7 +190,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
     @Override
     public void markLightChanged(LightType lightType_1, SectionPos chunkSectionPos_1) {
         CGlobal.clientWorldLoader.getWorldRenderer(
-            world.dimension.getType()
+            world.func_234923_W_()
         ).markForRerender(
             chunkSectionPos_1.getSectionX(),
             chunkSectionPos_1.getSectionY(),

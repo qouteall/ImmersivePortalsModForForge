@@ -14,19 +14,19 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import java.util.List;
 
 public class BlockManipulationServer {
     
     public static void processBreakBlock(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         CPlayerDiggingPacket packet,
         ServerPlayerEntity player
     ) {
@@ -41,7 +41,7 @@ public class BlockManipulationServer {
     }
     
     private static boolean shouldFinishMining(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         CPlayerDiggingPacket packet,
         ServerPlayerEntity player
     
@@ -59,15 +59,15 @@ public class BlockManipulationServer {
     }
     
     private static boolean canPlayerReach(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         ServerPlayerEntity player,
         BlockPos requestPos
     ) {
-        Vec3d pos = new Vec3d(requestPos);
-        Vec3d playerPos = player.getPositionVec();
+        Vector3d pos = Vector3d.func_237489_a_(requestPos);
+        Vector3d playerPos = player.getPositionVec();
         double multiplier = HandReachTweak.getActualHandReachMultiplier(player);
         double distanceSquare = 6 * 6 * multiplier * multiplier;
-        if (player.dimension == dimension) {
+        if (player.world.func_234923_W_() == dimension) {
             if (playerPos.squareDistanceTo(pos) < distanceSquare) {
                 return true;
             }
@@ -82,7 +82,7 @@ public class BlockManipulationServer {
     }
     
     private static void doDestroyBlock(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         CPlayerDiggingPacket packet,
         ServerPlayerEntity player
     ) {
@@ -113,13 +113,13 @@ public class BlockManipulationServer {
         return !blockState.isAir() && progress >= 1.0F;
     }
     
-    public static Tuple<BlockRayTraceResult, DimensionType> getHitResultForPlacingNew(
+    public static Tuple<BlockRayTraceResult, RegistryKey<World>> getHitResultForPlacing(
         World world,
         BlockRayTraceResult blockHitResult
     ) {
         Direction side = blockHitResult.getFace();
-        Vec3d sideVec = new Vec3d(side.getDirectionVec());
-        Vec3d hitCenter = new Vec3d(blockHitResult.getPos()).add(0.5, 0.5, 0.5);
+        Vector3d sideVec = Vector3d.func_237491_b_(side.getDirectionVec());
+        Vector3d hitCenter =  Vector3d.func_237489_a_(blockHitResult.getPos());
         
         List<GlobalTrackedPortal> globalPortals = McHelper.getGlobalPortals(world);
         
@@ -130,14 +130,14 @@ public class BlockManipulationServer {
         ).findFirst().orElse(null);
         
         if (portal == null) {
-            return new Tuple<>(blockHitResult, world.dimension.getType());
+            return new Tuple<>(blockHitResult, world.func_234923_W_());
         }
         
-        Vec3d newCenter = portal.transformPoint(hitCenter.add(sideVec));
+        Vector3d newCenter = portal.transformPoint(hitCenter.add(sideVec));
         BlockPos placingBlockPos = new BlockPos(newCenter);
         
         BlockRayTraceResult newHitResult = new BlockRayTraceResult(
-            Vec3d.ZERO,
+            Vector3d.ZERO,
             side.getOpposite(),
             placingBlockPos,
             blockHitResult.isInside()
@@ -147,7 +147,7 @@ public class BlockManipulationServer {
     }
     
     public static void processRightClickBlock(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         CPlayerTryUseItemOnBlockPacket packet,
         ServerPlayerEntity player
     ) {
@@ -160,7 +160,7 @@ public class BlockManipulationServer {
     }
     
     public static void doProcessRightClick(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         ServerPlayerEntity player,
         Hand hand,
         BlockRayTraceResult blockHitResult
@@ -191,7 +191,7 @@ public class BlockManipulationServer {
                     blockHitResult
                 );
                 if (actionResult.isSuccess()) {
-                    player.func_226292_a_(hand, true);
+                    player.swing(hand, true);
                 }
             }
             finally {

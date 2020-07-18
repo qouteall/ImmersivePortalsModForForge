@@ -23,7 +23,7 @@ public class DimListWidget extends AbstractList<DimTermWidget> {
     }
     
     public void update() {
-        this.clearEntries();
-        this.terms.forEach(this::addEntry);
+        this.func_230963_j_();
+        this.terms.forEach(this::func_230513_b_);
     }
 }

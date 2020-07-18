@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
@@ -14,12 +15,12 @@ import com.qouteall.immersive_portals.render.SecondaryFrameBuffer;
 import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.render.ViewAreaRenderer;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
+import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 
@@ -36,18 +37,17 @@ public class RendererDeferred extends PortalRenderer {
     
     @Override
     public void onBeforeTranslucentRendering(MatrixStack matrixStack) {
-    
+        if (PortalRendering.isRendering()) {
+            return;
+        }
+        modelView.push();
+        modelView.getLast().getMatrix().mul(matrixStack.getLast().getMatrix());
+        modelView.getLast().getNormal().mul(matrixStack.getLast().getNormal());
     }
     
     @Override
     public void onAfterTranslucentRendering(MatrixStack matrixStack) {
-        if (PortalRendering.isRendering()) {
-            return;
-        }
-//        OFHelper.copyFromShaderFbTo(deferredBuffer.fb, GL11.GL_DEPTH_BUFFER_BIT);
-        modelView.push();
-        modelView.getLast().getMatrix().mul(matrixStack.getLast().getMatrix());
-        modelView.getLast().getNormal().mul(matrixStack.getLast().getNormal());
+    
     }
     
     @Override
@@ -82,35 +82,40 @@ public class RendererDeferred extends PortalRenderer {
             return;
         }
         
+        OFGlobal.bindToShaderFrameBuffer.run();
+        
         PortalRendering.pushPortalLayer(portal);
         
         renderPortalContent(portal);
         
         PortalRendering.popPortalLayer();
         
-        deferredBuffer.fb.bindFramebuffer(true);
-        
-        RenderSystem.disableAlphaTest();
-        RenderSystem.colorMask(true, true, true, false);
-        RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
+    
+        GlStateManager.activeTexture(GL13.GL_TEXTURE0);
+    
+        client.gameRenderer.resetProjectionMatrix(RenderStates.projectionMatrix);
+    
+        OFInterface.resetViewport.run();
+    
+        deferredBuffer.fb.bindFramebuffer(true);
         MyRenderHelper.drawFrameBufferUp(
             portal,
             client.getFramebuffer(),
             matrixStack
         );
+        
         RenderSystem.colorMask(true, true, true, true);
         
         OFGlobal.bindToShaderFrameBuffer.run();
     }
     
     @Override
-    protected void invokeWorldRendering(
-        Vec3d newEyePos, Vec3d newLastTickEyePos, ClientWorld newWorld
+    public void invokeWorldRendering(
+        RenderInfo renderInfo
     ) {
-        MyGameRenderer.switchAndRenderTheWorld(
-            newWorld, newEyePos,
-            newLastTickEyePos,
+        MyGameRenderer.renderWorldNew(
+            renderInfo,
             runnable -> {
                 OFGlobal.shaderContextManager.switchContextAndRun(() -> {
                     OFGlobal.bindToShaderFrameBuffer.run();
@@ -170,10 +175,9 @@ public class RendererDeferred extends PortalRenderer {
         renderPortals(modelView);
         modelView.pop();
         
-        GlStateManager.enableAlphaTest();
         Framebuffer mainFrameBuffer = client.getFramebuffer();
         mainFrameBuffer.bindFramebuffer(true);
-        
+
         MyRenderHelper.myDrawFrameBuffer(
             deferredBuffer.fb,
             false,

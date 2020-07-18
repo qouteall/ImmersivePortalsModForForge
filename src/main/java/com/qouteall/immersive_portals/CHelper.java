@@ -11,15 +11,19 @@ import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.opengl.GL11;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
@@ -35,28 +39,23 @@ public class CHelper {
         );
     }
     
-    //NOTE this may not be reliable
-    public static DimensionType getOriginalDimension() {
-        if (PortalRendering.isRendering()) {
-            return RenderStates.originalPlayerDimension;
-        }
-        else {
-            return Minecraft.getInstance().player.dimension;
-        }
-    }
-    
     public static boolean shouldDisableFog() {
         return OFInterface.shouldDisableFog.getAsBoolean();
     }
     
     //do not inline this
     //or it will crash in server
-    public static World getClientWorld(DimensionType dimension) {
+    public static World getClientWorld(RegistryKey<World> dimension) {
         return CGlobal.clientWorldLoader.getWorld(dimension);
     }
     
     public static List<GlobalTrackedPortal> getClientGlobalPortal(World world) {
-        return ((IEClientWorld) world).getGlobalPortals();
+        if (world instanceof ClientWorld) {
+            return ((IEClientWorld) world).getGlobalPortals();
+        }
+        else {
+            return null;
+        }
     }
     
     public static Stream<Portal> getClientNearbyPortals(double range) {
@@ -66,7 +65,7 @@ public class CHelper {
             Portal.class,
             player.world,
             player.getPositionVec(),
-            (int)(range / 16),
+            (int) (range / 16),
             p -> true
         );
         if (globalPortals == null) {
@@ -126,7 +125,7 @@ public class CHelper {
         public static Rect of(Screen screen) {
             return new Rect(
                 0, 0,
-                screen.width, screen.height
+                screen.field_230708_k_, screen.field_230709_l_
             );
         }
 
@@ -165,8 +164,8 @@ public class CHelper {
                 false,
                 widthRatio,
                 (a, b) -> {
-                    widget.x = a;
-                    widget.setWidth(b - a);
+                    widget.field_230690_l_ = a;
+                    widget.func_230991_b_(b - a);
                 }
             );
         }
@@ -176,7 +175,7 @@ public class CHelper {
                 true,
                 height,
                 (a, b) -> {
-                    widget.y = a;
+                    widget.field_230691_m_ = a;
                 }
             );
         }
@@ -209,6 +208,29 @@ public class CHelper {
             }
             element.apply.apply(currCoordinate, currCoordinate + currLen);
             currCoordinate += currLen;
+        }
+    }
+    
+    public static <T> T withWorldSwitched(Entity entity, Portal portal, Supplier<T> func) {
+        
+        World oldWorld = entity.world;
+        Vector3d eyePos = McHelper.getEyePos(entity);
+        Vector3d lastTickEyePos = McHelper.getLastTickEyePos(entity);
+        
+        entity.world = portal.getDestinationWorld();
+        McHelper.setEyePos(
+            entity,
+            portal.transformPoint(eyePos),
+            portal.transformPoint(lastTickEyePos)
+        );
+        
+        try {
+            T result = func.get();
+            return result;
+        }
+        finally {
+            entity.world = oldWorld;
+            McHelper.setEyePos(entity, eyePos, lastTickEyePos);
         }
     }
     

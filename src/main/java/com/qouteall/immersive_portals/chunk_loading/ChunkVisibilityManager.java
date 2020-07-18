@@ -2,15 +2,17 @@ package com.qouteall.immersive_portals.chunk_loading;
 
 import com.google.common.collect.Streams;
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.WorldGenRegion;
 import net.minecraft.world.server.ServerWorld;
 import java.util.ArrayList;
@@ -23,17 +25,23 @@ public class ChunkVisibilityManager {
     public static final int secondaryPortalLoadingRange = 16;
     
     public static interface ChunkPosConsumer {
-        void consume(DimensionType dimensionType, int x, int z, int distanceToSource);
+        void consume(RegistryKey<World> dimensionType, int x, int z, int distanceToSource);
     }
     
     //the players and portals are chunk loaders
     public static class ChunkLoader {
         public DimensionalChunkPos center;
         public int radius;
+        public boolean isDirectLoader = false;
         
         public ChunkLoader(DimensionalChunkPos center, int radius) {
+            this(center, radius, false);
+        }
+        
+        public ChunkLoader(DimensionalChunkPos center, int radius, boolean isDirectLoader) {
             this.center = center;
             this.radius = radius;
+            this.isDirectLoader = isDirectLoader;
         }
         
         public void foreachChunkPos(ChunkPosConsumer func) {
@@ -89,14 +97,14 @@ public class ChunkVisibilityManager {
         }
     }
     
-    private static ChunkLoader playerDirectLoader(ServerPlayerEntity player) {
+    public static ChunkLoader playerDirectLoader(ServerPlayerEntity player) {
         return new ChunkLoader(
             new DimensionalChunkPos(
-                player.dimension,
+                player.world.func_234923_W_(),
                 player.chunkCoordX, player.chunkCoordZ
             ),
-            McHelper.getRenderDistanceOnServer()
-            //ServerPerformanceAdjust.getPlayerLoadingDistance(player)
+            McHelper.getRenderDistanceOnServer(),
+            true
         );
     }
     
@@ -180,7 +188,7 @@ public class ChunkVisibilityManager {
     }
     
     private static Stream<GlobalTrackedPortal> getGlobalPortals(
-        DimensionType dimension
+        RegistryKey<World> dimension
     ) {
         List<GlobalTrackedPortal> data = GlobalPortalStorage.get(
             McHelper.getServer().getWorld(dimension)
@@ -229,7 +237,7 @@ public class ChunkVisibilityManager {
                 )
             ),
             
-            getGlobalPortals(player.dimension)
+            getGlobalPortals(player.world.func_234923_W_())
                 .flatMap(
                     portal -> Stream.concat(
                         Stream.of(globalPortalDirectLoader(

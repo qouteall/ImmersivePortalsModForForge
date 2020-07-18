@@ -7,11 +7,10 @@ import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
@@ -22,18 +21,18 @@ public class CollisionHelper {
     //cut a box with a plane
     //the facing that normal points to will be remained
     //return null for empty box
-    private static AxisAlignedBB clipBox(AxisAlignedBB box, Vec3d planePos, Vec3d planeNormal) {
+    private static AxisAlignedBB clipBox(AxisAlignedBB box, Vector3d planePos, Vector3d planeNormal) {
         
         boolean xForward = planeNormal.x > 0;
         boolean yForward = planeNormal.y > 0;
         boolean zForward = planeNormal.z > 0;
         
-        Vec3d pushedPos = new Vec3d(
+        Vector3d pushedPos = new Vector3d(
             xForward ? box.minX : box.maxX,
             yForward ? box.minY : box.maxY,
             zForward ? box.minZ : box.maxZ
         );
-        Vec3d staticPos = new Vec3d(
+        Vector3d staticPos = new Vector3d(
             xForward ? box.maxX : box.minX,
             yForward ? box.maxY : box.minY,
             zForward ? box.maxZ : box.minZ
@@ -54,7 +53,7 @@ public class CollisionHelper {
         }
         
         //the plane cut the box halfly
-        Vec3d afterBeingPushed = pushedPos.add(planeNormal.scale(tOfPushedPos));
+        Vector3d afterBeingPushed = pushedPos.add(planeNormal.scale(tOfPushedPos));
         return new AxisAlignedBB(afterBeingPushed, staticPos);
     }
     
@@ -63,20 +62,20 @@ public class CollisionHelper {
             portal.isInFrontOfPortal(entity.getEyePosition(tickDelta));
     }
     
-    public static Vec3d handleCollisionHalfwayInPortal(
+    public static Vector3d handleCollisionHalfwayInPortal(
         Entity entity,
-        Vec3d attemptedMove,
+        Vector3d attemptedMove,
         Portal collidingPortal,
-        Function<Vec3d, Vec3d> handleCollisionFunc
+        Function<Vector3d, Vector3d> handleCollisionFunc
     ) {
         AxisAlignedBB originalBoundingBox = entity.getBoundingBox();
         
-        Vec3d thisSideMove = getThisSideMove(
+        Vector3d thisSideMove = getThisSideMove(
             entity, attemptedMove, collidingPortal,
             handleCollisionFunc, originalBoundingBox
         );
         
-        Vec3d otherSideMove = getOtherSideMove(
+        Vector3d otherSideMove = getOtherSideMove(
             entity, attemptedMove, collidingPortal,
             handleCollisionFunc, originalBoundingBox
         );
@@ -85,7 +84,7 @@ public class CollisionHelper {
         if (attemptedMove.y < 0) {
             if (otherSideMove.y > 0) {
                 //stepping on the other side
-                return new Vec3d(
+                return new Vector3d(
                     absMin(thisSideMove.x, otherSideMove.x),
                     otherSideMove.y,
                     absMin(thisSideMove.z, otherSideMove.z)
@@ -95,10 +94,10 @@ public class CollisionHelper {
                 //stepping on this side
                 //re-calc collision with intact collision box
                 //the stepping is shorter using the clipped collision box
-                Vec3d newThisSideMove = handleCollisionFunc.apply(attemptedMove);
+                Vector3d newThisSideMove = handleCollisionFunc.apply(attemptedMove);
                 
                 //apply the stepping move for the other side
-                Vec3d newOtherSideMove = getOtherSideMove(
+                Vector3d newOtherSideMove = getOtherSideMove(
                     entity, newThisSideMove, collidingPortal,
                     handleCollisionFunc, originalBoundingBox
                 );
@@ -107,7 +106,7 @@ public class CollisionHelper {
             }
         }
         
-        return new Vec3d(
+        return new Vector3d(
             absMin(thisSideMove.x, otherSideMove.x),
             absMin(thisSideMove.y, otherSideMove.y),
             absMin(thisSideMove.z, otherSideMove.z)
@@ -118,11 +117,11 @@ public class CollisionHelper {
         return Math.abs(a) < Math.abs(b) ? a : b;
     }
     
-    private static Vec3d getOtherSideMove(
+    private static Vector3d getOtherSideMove(
         Entity entity,
-        Vec3d attemptedMove,
+        Vector3d attemptedMove,
         Portal collidingPortal,
-        Function<Vec3d, Vec3d> handleCollisionFunc,
+        Function<Vector3d, Vector3d> handleCollisionFunc,
         AxisAlignedBB originalBoundingBox
     ) {
         if (collidingPortal.rotation != null) {
@@ -141,13 +140,13 @@ public class CollisionHelper {
         
         //switch world and check collision
         World oldWorld = entity.world;
-        Vec3d oldPos = entity.getPositionVec();
-        Vec3d oldLastTickPos = McHelper.lastTickPosOf(entity);
+        Vector3d oldPos = entity.getPositionVec();
+        Vector3d oldLastTickPos = McHelper.lastTickPosOf(entity);
         
         entity.world = getWorld(entity.world.isRemote, collidingPortal.dimensionTo);
         entity.setBoundingBox(boxOtherSide);
         
-        Vec3d move2 = handleCollisionFunc.apply(attemptedMove);
+        Vector3d move2 = handleCollisionFunc.apply(attemptedMove);
         
         entity.world = oldWorld;
         McHelper.setPosAndLastTickPos(entity, oldPos, oldLastTickPos);
@@ -156,11 +155,11 @@ public class CollisionHelper {
         return move2;
     }
     
-    private static Vec3d getThisSideMove(
+    private static Vector3d getThisSideMove(
         Entity entity,
-        Vec3d attemptedMove,
+        Vector3d attemptedMove,
         Portal collidingPortal,
-        Function<Vec3d, Vec3d> handleCollisionFunc,
+        Function<Vector3d, Vector3d> handleCollisionFunc,
         AxisAlignedBB originalBoundingBox
     ) {
         AxisAlignedBB boxThisSide = getCollisionBoxThisSide(
@@ -171,7 +170,7 @@ public class CollisionHelper {
         }
         
         entity.setBoundingBox(boxThisSide);
-        Vec3d move1 = handleCollisionFunc.apply(attemptedMove);
+        Vector3d move1 = handleCollisionFunc.apply(attemptedMove);
         
         entity.setBoundingBox(originalBoundingBox);
         
@@ -181,11 +180,11 @@ public class CollisionHelper {
     private static AxisAlignedBB getCollisionBoxThisSide(
         Portal portal,
         AxisAlignedBB originalBox,
-        Vec3d attemptedMove
+        Vector3d attemptedMove
     ) {
         //cut the collision box a little bit more for horizontal portals
         //because the box will be stretched by attemptedMove when calculating collision
-        Vec3d cullingPos = portal.getPositionVec().subtract(attemptedMove);
+        Vector3d cullingPos = portal.getPositionVec().subtract(attemptedMove);
         return clipBox(
             originalBox,
             cullingPos,
@@ -196,9 +195,9 @@ public class CollisionHelper {
     private static AxisAlignedBB getCollisionBoxOtherSide(
         Portal portal,
         AxisAlignedBB originalBox,
-        Vec3d attemptedMove
+        Vector3d attemptedMove
     ) {
-        Vec3d teleportation = portal.destination.subtract(portal.getPositionVec());
+        Vector3d teleportation = portal.destination.subtract(portal.getPositionVec());
         return clipBox(
             originalBox.offset(teleportation),
             portal.destination.subtract(attemptedMove),
@@ -206,7 +205,7 @@ public class CollisionHelper {
         );
     }
     
-    public static World getWorld(boolean isClient, DimensionType dimension) {
+    public static World getWorld(boolean isClient, RegistryKey<World> dimension) {
         if (isClient) {
             return CHelper.getClientWorld(dimension);
         }
@@ -274,7 +273,7 @@ public class CollisionHelper {
             AxisAlignedBB thisSideBox = getCollisionBoxThisSide(
                 collidingPortal,
                 entity.getBoundingBox(),
-                Vec3d.ZERO //is it ok?
+                Vector3d.ZERO //is it ok?
             );
             if (thisSideBox != null) {
                 return thisSideBox;

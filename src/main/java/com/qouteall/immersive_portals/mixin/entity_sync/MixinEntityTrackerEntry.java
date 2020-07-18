@@ -32,7 +32,7 @@ public abstract class MixinEntityTrackerEntry {
     ) {
         serverPlayNetworkHandler.sendPacket(
             MyNetwork.createRedirectedMessage(
-                trackedEntity.dimension,
+                trackedEntity.world.func_234923_W_(),
                 packet_1
             )
         );

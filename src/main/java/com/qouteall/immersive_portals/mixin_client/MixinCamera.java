@@ -2,17 +2,19 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.ducks.IECamera;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
+import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.fluid.IFluidState;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockReader;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ActiveRenderInfo.class)
@@ -20,7 +22,7 @@ public abstract class MixinCamera implements IECamera {
     private static double lastClipSpaceResult = 1;
     
     @Shadow
-    private net.minecraft.util.math.Vec3d pos;
+    private Vector3d pos;
     @Shadow
     private IBlockReader world;
     @Shadow
@@ -31,14 +33,25 @@ public abstract class MixinCamera implements IECamera {
     private float previousHeight;
     
     @Shadow
-    protected abstract void setPostion(net.minecraft.util.math.Vec3d vec3d_1);
+    protected abstract void setPostion(Vector3d vec3d_1);
     
     @Inject(
-        method = "Lnet/minecraft/client/renderer/ActiveRenderInfo;getFluidState()Lnet/minecraft/fluid/IFluidState;",
+        method = "Lnet/minecraft/client/renderer/ActiveRenderInfo;update(Lnet/minecraft/world/IBlockReader;Lnet/minecraft/entity/Entity;ZZF)V",
+        at = @At("RETURN")
+    )
+    private void onUpdateFinished(
+        IBlockReader area, Entity focusedEntity, boolean thirdPerson,
+        boolean inverseView, float tickDelta, CallbackInfo ci
+    ) {
+        RenderInfo.adjustCameraPos((ActiveRenderInfo) (Object) this);
+    }
+    
+    @Inject(
+        method = "Lnet/minecraft/client/renderer/ActiveRenderInfo;getFluidState()Lnet/minecraft/fluid/FluidState;",
         at = @At("HEAD"),
         cancellable = true
     )
-    private void getSubmergedFluidState(CallbackInfoReturnable<IFluidState> cir) {
+    private void getSubmergedFluidState(CallbackInfoReturnable<FluidState> cir) {
         if (PortalRendering.isRendering()) {
             cir.setReturnValue(Fluids.EMPTY.getDefaultState());
             cir.cancel();
@@ -59,7 +72,7 @@ public abstract class MixinCamera implements IECamera {
     }
     
     @Override
-    public void resetState(Vec3d pos, ClientWorld currWorld) {
+    public void resetState(Vector3d pos, ClientWorld currWorld) {
         setPostion(pos);
         world = currWorld;
     }
@@ -81,7 +94,12 @@ public abstract class MixinCamera implements IECamera {
     }
     
     @Override
-    public void mySetPos(Vec3d pos) {
+    public void portal_setPos(Vector3d pos) {
         setPostion(pos);
+    }
+    
+    @Override
+    public void portal_setFocusedEntity(Entity arg) {
+        renderViewEntity = arg;
     }
 }

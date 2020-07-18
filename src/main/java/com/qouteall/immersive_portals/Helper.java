@@ -8,8 +8,6 @@ import com.qouteall.immersive_portals.my_util.IntBox;
 import com.qouteall.immersive_portals.portal.Portal;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.Quaternion;
-import net.minecraft.client.renderer.Vector3f;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundNBT;
@@ -22,8 +20,8 @@ import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceContext;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.math.vector.Vector3i;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
@@ -33,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
+import javax.annotation.Nullable;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +39,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -76,10 +76,10 @@ public class Helper {
     //get the t of the colliding point
     //normal and lineDirection have to be normalized
     public static double getCollidingT(
-        Vec3d planeCenter,
-        Vec3d planeNormal,
-        Vec3d lineCenter,
-        Vec3d lineDirection
+        Vector3d planeCenter,
+        Vector3d planeNormal,
+        Vector3d lineCenter,
+        Vector3d lineDirection
     ) {
         return (planeCenter.subtract(lineCenter).dotProduct(planeNormal))
             /
@@ -87,51 +87,51 @@ public class Helper {
     }
     
     public static boolean isInFrontOfPlane(
-        Vec3d pos,
-        Vec3d planePos,
-        Vec3d planeNormal
+        Vector3d pos,
+        Vector3d planePos,
+        Vector3d planeNormal
     ) {
         return pos.subtract(planePos).dotProduct(planeNormal) > 0;
     }
     
-    public static Vec3d fallPointOntoPlane(
-        Vec3d point,
-        Vec3d planePos,
-        Vec3d planeNormal
+    public static Vector3d fallPointOntoPlane(
+        Vector3d point,
+        Vector3d planePos,
+        Vector3d planeNormal
     ) {
         double t = getCollidingT(planePos, planeNormal, point, planeNormal);
         return point.add(planeNormal.scale(t));
     }
     
-    public static Vec3i getUnitFromAxis(Direction.Axis axis) {
+    public static Vector3i getUnitFromAxis(Direction.Axis axis) {
         return Direction.getFacingFromAxis(
             Direction.AxisDirection.POSITIVE,
             axis
         ).getDirectionVec();
     }
     
-    public static int getCoordinate(Vec3i v, Direction.Axis axis) {
+    public static int getCoordinate(Vector3i v, Direction.Axis axis) {
         return axis.getCoordinate(v.getX(), v.getY(), v.getZ());
     }
     
-    public static double getCoordinate(Vec3d v, Direction.Axis axis) {
+    public static double getCoordinate(Vector3d v, Direction.Axis axis) {
         return axis.getCoordinate(v.x, v.y, v.z);
     }
     
-    public static int getCoordinate(Vec3i v, Direction direction) {
+    public static int getCoordinate(Vector3i v, Direction direction) {
         return getCoordinate(v, direction.getAxis()) *
             (direction.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1 : -1);
     }
     
-    public static Vec3d putCoordinate(Vec3d v, Direction.Axis axis, double value) {
+    public static Vector3d putCoordinate(Vector3d v, Direction.Axis axis, double value) {
         if (axis == Direction.Axis.X) {
-            return new Vec3d(value, v.y, v.z);
+            return new Vector3d(value, v.y, v.z);
         }
         else if (axis == Direction.Axis.Y) {
-            return new Vec3d(v.x, value, v.z);
+            return new Vector3d(v.x, value, v.z);
         }
         else {
-            return new Vec3d(v.x, v.y, value);
+            return new Vector3d(v.x, v.y, value);
         }
     }
     
@@ -180,11 +180,11 @@ public class Helper {
         throw new IllegalArgumentException();
     }
     
-    public static BlockPos scale(Vec3i v, int m) {
+    public static BlockPos scale(Vector3i v, int m) {
         return new BlockPos(v.getX() * m, v.getY() * m, v.getZ() * m);
     }
     
-    public static BlockPos divide(Vec3i v, int d) {
+    public static BlockPos divide(Vector3i v, int d) {
         return new BlockPos(v.getX() / d, v.getY() / d, v.getZ() / d);
     }
     
@@ -228,13 +228,13 @@ public class Helper {
         );
     }
     
-    public static Vec3d getBoxSize(AxisAlignedBB box) {
-        return new Vec3d(box.getXSize(), box.getYSize(), box.getZSize());
+    public static Vector3d getBoxSize(AxisAlignedBB box) {
+        return new Vector3d(box.getXSize(), box.getYSize(), box.getZSize());
     }
     
     public static AxisAlignedBB getBoxSurface(AxisAlignedBB box, Direction direction) {
         double size = getCoordinate(getBoxSize(box), direction.getAxis());
-        Vec3d shrinkVec = new Vec3d(direction.getDirectionVec()).scale(size);
+        Vector3d shrinkVec = Vector3d.func_237491_b_(direction.getDirectionVec()).scale(size);
         return box.contract(shrinkVec.x, shrinkVec.y, shrinkVec.z);
     }
     
@@ -273,7 +273,7 @@ public class Helper {
         }
     }
     
-    //@Nullable
+    @Nullable
     public static <T> T getLastSatisfying(Stream<T> stream, Predicate<T> predicate) {
         SimpleBox<T> box = new SimpleBox<T>(null);
         stream.filter(curr -> {
@@ -292,9 +292,9 @@ public class Helper {
         public T run();
     }
     
-    public static Vec3d interpolatePos(Entity entity, float partialTicks) {
-        Vec3d currPos = entity.getPositionVec();
-        Vec3d lastTickPos = McHelper.lastTickPosOf(entity);
+    public static Vector3d interpolatePos(Entity entity, float partialTicks) {
+        Vector3d currPos = entity.getPositionVec();
+        Vector3d lastTickPos = McHelper.lastTickPosOf(entity);
         return lastTickPos.add(currPos.subtract(lastTickPos).scale(partialTicks));
     }
     
@@ -367,34 +367,34 @@ public class Helper {
         LOGGER.debug(str);
     }
     
-    public static Vec3d[] eightVerticesOf(AxisAlignedBB box) {
-        return new Vec3d[]{
-            new Vec3d(box.minX, box.minY, box.minZ),
-            new Vec3d(box.minX, box.minY, box.maxZ),
-            new Vec3d(box.minX, box.maxY, box.minZ),
-            new Vec3d(box.minX, box.maxY, box.maxZ),
-            new Vec3d(box.maxX, box.minY, box.minZ),
-            new Vec3d(box.maxX, box.minY, box.maxZ),
-            new Vec3d(box.maxX, box.maxY, box.minZ),
-            new Vec3d(box.maxX, box.maxY, box.maxZ)
+    public static Vector3d[] eightVerticesOf(AxisAlignedBB box) {
+        return new Vector3d[]{
+            new Vector3d(box.minX, box.minY, box.minZ),
+            new Vector3d(box.minX, box.minY, box.maxZ),
+            new Vector3d(box.minX, box.maxY, box.minZ),
+            new Vector3d(box.minX, box.maxY, box.maxZ),
+            new Vector3d(box.maxX, box.minY, box.minZ),
+            new Vector3d(box.maxX, box.minY, box.maxZ),
+            new Vector3d(box.maxX, box.maxY, box.minZ),
+            new Vector3d(box.maxX, box.maxY, box.maxZ)
         };
     }
     
-    public static void putVec3d(CompoundNBT compoundTag, String name, Vec3d vec3d) {
+    public static void putVec3d(CompoundNBT compoundTag, String name, Vector3d vec3d) {
         compoundTag.putDouble(name + "X", vec3d.x);
         compoundTag.putDouble(name + "Y", vec3d.y);
         compoundTag.putDouble(name + "Z", vec3d.z);
     }
     
-    public static Vec3d getVec3d(CompoundNBT compoundTag, String name) {
-        return new Vec3d(
+    public static Vector3d getVec3d(CompoundNBT compoundTag, String name) {
+        return new Vector3d(
             compoundTag.getDouble(name + "X"),
             compoundTag.getDouble(name + "Y"),
             compoundTag.getDouble(name + "Z")
         );
     }
     
-    public static void putVec3i(CompoundNBT compoundTag, String name, Vec3i vec3i) {
+    public static void putVec3i(CompoundNBT compoundTag, String name, Vector3i vec3i) {
         compoundTag.putInt(name + "X", vec3i.getX());
         compoundTag.putInt(name + "Y", vec3i.getY());
         compoundTag.putInt(name + "Z", vec3i.getZ());
@@ -580,122 +580,22 @@ public class Helper {
         return t;
     }
     
-    //NOTE this will mutate a and return a
-    public static Quaternion quaternionNumAdd(Quaternion a, Quaternion b) {
-        //TODO correct wrong parameter name for yarn
-        a.set(
-            a.getX() + b.getX(),
-            a.getY() + b.getY(),
-            a.getZ() + b.getZ(),
-            a.getW() + b.getW()
-        );
-        return a;
+    public static void putUuid(CompoundNBT tag, String key, UUID uuid) {
+        tag.putLong(key + "Most", uuid.getMostSignificantBits());
+        tag.putLong(key + "Least", uuid.getLeastSignificantBits());
     }
     
-    //NOTE this will mutate a and reutrn a
-    public static Quaternion quaternionScale(Quaternion a, float scale) {
-        a.set(
-            a.getX() * scale,
-            a.getY() * scale,
-            a.getZ() * scale,
-            a.getW() * scale
-        );
-        return a;
+    public static UUID getUuid(CompoundNBT tag, String key) {
+        return new UUID(tag.getLong(key + "Most"), tag.getLong(key + "Least"));
     }
     
-    //a quaternion is a 4d vector on 4d sphere
-    //this method may mutate argument but will not change rotation
-    public static Quaternion interpolateQuaternion(
-        Quaternion a,
-        Quaternion b,
-        float t
-    ) {
-        a.normalize();
-        b.normalize();
-        
-        double dot = dotProduct4d(a, b);
-        
-        if (dot < 0.0f) {
-            a.multiply(-1);
-            dot = -dot;
-        }
-        
-        double DOT_THRESHOLD = 0.9995;
-        if (dot > DOT_THRESHOLD) {
-            // If the inputs are too close for comfort, linearly interpolate
-            // and normalize the result.
-            
-            Quaternion result = quaternionNumAdd(
-                quaternionScale(a.copy(), 1 - t),
-                quaternionScale(b.copy(), t)
-            );
-            result.normalize();
-            return result;
-        }
-        
-        double theta_0 = Math.acos(dot);
-        double theta = theta_0 * t;
-        double sin_theta = Math.sin(theta);
-        double sin_theta_0 = Math.sin(theta_0);
-        
-        double s0 = Math.cos(theta) - dot * sin_theta / sin_theta_0;
-        double s1 = sin_theta / sin_theta_0;
-        
-        return quaternionNumAdd(
-            quaternionScale(a.copy(), (float) s0),
-            quaternionScale(b.copy(), (float) s1)
-        );
+    public static Vector3d getFlippedVec(Vector3d vec, Vector3d flippingAxis) {
+        Vector3d component = getProjection(vec, flippingAxis);
+        return vec.subtract(component).scale(-1).add(component);
     }
     
-    public static double dotProduct4d(Quaternion a, Quaternion b) {
-        return a.getW() * b.getW() +
-            a.getX() * b.getX() +
-            a.getY() * b.getY() +
-            a.getZ() * b.getZ();
-    }
-    
-    public static boolean isClose(Quaternion a, Quaternion b, float valve) {
-        a.normalize();
-        b.normalize();
-        if (a.getW() * b.getW() < 0) {
-            a.multiply(-1);
-        }
-        float da = a.getW() - b.getW();
-        float db = a.getX() - b.getX();
-        float dc = a.getY() - b.getY();
-        float dd = a.getZ() - b.getZ();
-        return da * da + db * db + dc * dc + dd * dd < valve;
-    }
-    
-    public static Vec3d getRotated(Quaternion rotation, Vec3d vec) {
-        Vector3f vector3f = new Vector3f(vec);
-        vector3f.transform(rotation);
-        return new Vec3d(vector3f);
-    }
-    
-    public static Quaternion ortholize(Quaternion quaternion) {
-        if (quaternion.getW() < 0) {
-            quaternion.multiply(-1);
-        }
-        return quaternion;
-    }
-    
-    //naive interpolation is better?
-    //not better
-    public static Quaternion interpolateQuaternionNaive(
-        Quaternion a,
-        Quaternion b,
-        float t
-    ) {
-        return makeIntoExpression(
-            new Quaternion(
-                MathHelper.lerp(t, a.getX(), b.getX()),
-                MathHelper.lerp(t, a.getY(), b.getY()),
-                MathHelper.lerp(t, a.getZ(), b.getZ()),
-                MathHelper.lerp(t, a.getW(), b.getW())
-            ),
-            Quaternion::normalize
-        );
+    public static Vector3d getProjection(Vector3d vec, Vector3d direction) {
+        return direction.scale(vec.dotProduct(direction));
     }
     
     /**
@@ -718,7 +618,7 @@ public class Helper {
     @SuppressWarnings("WeakerAccess")
     public static <T extends Entity> List<T> getNearbyEntities(
         World world,
-        Vec3d pos,
+        Vector3d pos,
         int chunkRadius,
         Class<T> entityClass
     ) {
@@ -760,10 +660,10 @@ public class Helper {
      * @author LoganDark
      */
     @SuppressWarnings("WeakerAccess")
-    public static List<Tuple<Portal, Vec3d>> rayTracePortals(
+    public static List<Tuple<Portal, Vector3d>> rayTracePortals(
         World world,
-        Vec3d start,
-        Vec3d end,
+        Vector3d start,
+        Vector3d end,
         boolean includeGlobalPortals,
         Predicate<Portal> filter
     ) {
@@ -771,7 +671,7 @@ public class Helper {
         // smaller, and as a result, the search to be faster and slightly less inefficient.
         //
         // The searching method employed by getNearbyEntities is still not ideal, but it's the best idea I have.
-        Vec3d middle = start.scale(0.5).add(end.scale(0.5));
+        Vector3d middle = start.scale(0.5).add(end.scale(0.5));
         
         // This could result in searching more chunks than necessary, but it always expands to completely cover any
         // chunks the line from start->end passes through.
@@ -784,11 +684,11 @@ public class Helper {
         
         // Make a list of all portals actually intersecting with this line, and then sort them by the distance from the
         // start position. Nearest portals first.
-        List<Tuple<Portal, Vec3d>> hits = new ArrayList<>();
+        List<Tuple<Portal, Vector3d>> hits = new ArrayList<>();
         
         nearby.forEach(portal -> {
             if (filter == null || filter.test(portal)) {
-                Vec3d intersection = portal.pick(start, end);
+                Vector3d intersection = portal.pick(start, end);
                 
                 if (intersection != null) {
                     hits.add(new Tuple<>(portal, intersection));
@@ -797,8 +697,8 @@ public class Helper {
         });
         
         hits.sort((pair1, pair2) -> {
-            Vec3d intersection1 = pair1.getB();
-            Vec3d intersection2 = pair2.getB();
+            Vector3d intersection1 = pair1.getB();
+            Vector3d intersection2 = pair2.getB();
             
             // Return a negative number if intersection1 is smaller (should come first)
             return (int) Math.signum(intersection1.squareDistanceTo(start) - intersection2.squareDistanceTo(
@@ -868,12 +768,12 @@ public class Helper {
         boolean includeGlobalPortals,
         List<Portal> portals
     ) {
-        Vec3d start = context.func_222253_b();
-        Vec3d end = context.func_222250_a();
+        Vector3d start = context.func_222253_b();
+        Vector3d end = context.func_222250_a();
         
         // If we're past the max portal layer, don't let the player target behind this portal, create a missed result
         if (portals.size() > Global.maxPortalLayer) {
-            Vec3d diff = end.subtract(start);
+            Vector3d diff = end.subtract(start);
             
             return new Tuple<>(
                 BlockRayTraceResult.createMiss(
@@ -888,7 +788,7 @@ public class Helper {
         // First ray trace normally
         BlockRayTraceResult hitResult = world.rayTraceBlocks(context);
         
-        List<Tuple<Portal, Vec3d>> rayTracedPortals = withSwitchedContext(
+        List<Tuple<Portal, Vector3d>> rayTracedPortals = withSwitchedContext(
             world,
             () -> rayTracePortals(world, start, end, includeGlobalPortals, Portal::isInteractable)
         );
@@ -897,9 +797,9 @@ public class Helper {
             return new Tuple<>(hitResult, portals);
         }
         
-        Tuple<Portal, Vec3d> portalHit = rayTracedPortals.get(0);
+        Tuple<Portal, Vector3d> portalHit = rayTracedPortals.get(0);
         Portal portal = portalHit.getA();
-        Vec3d intersection = portalHit.getB();
+        Vector3d intersection = portalHit.getB();
         
         // If the portal is not closer, return the hit result we just got
         if (hitResult.getHitVec().squareDistanceTo(start) < intersection.squareDistanceTo(start)) {
@@ -965,7 +865,7 @@ public class Helper {
      * @return The {@link Direction} of the passed {@code vec}, excluding directions of axis {@code axis}.
      */
     @SuppressWarnings("WeakerAccess")
-    public static Direction getFacingExcludingAxis(Vec3d vec, Direction.Axis axis) {
+    public static Direction getFacingExcludingAxis(Vector3d vec, Direction.Axis axis) {
         return Arrays.stream(Direction.values())
             .filter(d -> d.getAxis() != axis)
             .max(Comparator.comparingDouble(
@@ -985,7 +885,7 @@ public class Helper {
      * @author LoganDark
      */
     public static Portal placePortal(double width, double height, Entity entity) {
-        Vec3d playerLook = entity.getLookVec();
+        Vector3d playerLook = entity.getLookVec();
         
         Tuple<BlockRayTraceResult, List<Portal>> rayTrace =
             rayTrace(
@@ -1021,9 +921,9 @@ public class Helper {
             return null;
         }
         
-        Vec3d axisH = new Vec3d(hitResult.getFace().getDirectionVec());
-        Vec3d axisW = axisH.crossProduct(new Vec3d(lookingDirection.getOpposite().getDirectionVec()));
-        Vec3d pos = new Vec3d(hitResult.getPos()).add(.5, .5, .5)
+        Vector3d axisH = Vector3d.func_237491_b_(hitResult.getFace().getDirectionVec());
+        Vector3d axisW = axisH.crossProduct(Vector3d.func_237491_b_(lookingDirection.getOpposite().getDirectionVec()));
+        Vector3d pos = Vector3d.func_237489_a_(hitResult.getPos())
             .add(axisH.scale(0.5 + height / 2));
         
         World world = hitPortals.isEmpty()
@@ -1055,5 +955,16 @@ public class Helper {
                 return cache;
             }
         };
+    }
+    
+    // I cannot find existing indexOf with predicate
+    public static <T> int indexOf(List<T> list, Predicate<T> predicate) {
+        for (int i = 0; i < list.size(); i++) {
+            T ele = list.get(i);
+            if (predicate.test(ele)) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

@@ -1,12 +1,14 @@
 package com.qouteall.immersive_portals.alternate_dimension;
 
-import com.mojang.datafixers.Dynamic;
+import com.mojang.serialization.Codec;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.block_manipulation.HandReachTweak;
+import net.fabricmc.fabric.mixin.registry.sync.MixinSimpleRegistry;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.material.Material;
+import net.minecraft.block.ShulkerBoxBlock;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -20,6 +22,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.potion.Effect;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.potion.PotionUtils;
@@ -30,13 +33,15 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.WeightedSpawnerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.registry.DefaultedRegistry;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.ISeedReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.ChunkGenerator;
-import net.minecraft.world.gen.GenerationSettings;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.NoFeatureConfig;
+import net.minecraft.world.gen.feature.structure.StructureManager;
 import org.apache.commons.lang3.Validate;
 
 import java.util.ArrayList;
@@ -51,7 +56,7 @@ import java.util.stream.IntStream;
 public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
     //no need to register it
     public static final Feature<NoFeatureConfig> instance =
-        new SpongeDungeonFeature(NoFeatureConfig::deserialize);
+        new SpongeDungeonFeature(NoFeatureConfig.field_236558_a_);
     
     private static RandomSelector<BlockState> spawnerShieldSelector =
         new RandomSelector.Builder<BlockState>()
@@ -74,7 +79,7 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
     
     private static RandomSelector<EntityType<?>> monsterTypeSelector =
         new RandomSelector.Builder<EntityType<?>>()
-            .add(10, EntityType.ZOMBIE_PIGMAN)
+            .add(10, EntityType.ZOMBIFIED_PIGLIN)
             .add(10, EntityType.HUSK)
             .add(30, EntityType.SKELETON)
             .add(10, EntityType.WITHER_SKELETON)
@@ -113,30 +118,6 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
             .add(10, vehicleTypeSelector)
             .build();
     
-    public SpongeDungeonFeature(Function<Dynamic<?>, ? extends NoFeatureConfig> configDeserializer) {
-        super(configDeserializer);
-    }
-    
-    @Override
-    public boolean place(
-        IWorld world,
-        ChunkGenerator<? extends GenerationSettings> generator,
-        Random random,
-        BlockPos pos,
-        NoFeatureConfig config
-    ) {
-        ChunkPos chunkPos = new ChunkPos(pos);
-        
-        random.setSeed(chunkPos.asLong() + random.nextInt(2333));
-        
-        if (random.nextDouble() < 0.03) {
-            generateOnce(world, random, chunkPos);
-        }
-        
-        return true;
-        
-    }
-    
     private static final BlockPos[] shieldPoses = new BlockPos[]{
         new BlockPos(0, -2, 0),
         new BlockPos(1, -1, 0),
@@ -151,8 +132,12 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
     };
     
     private static List<Block> shulkerBoxes = Registry.BLOCK.stream()
-        .filter(block -> block.getMaterial(block.getDefaultState()) == Material.SHULKER)
+        .filter(block -> block instanceof ShulkerBoxBlock)
         .collect(Collectors.toList());
+    
+    public SpongeDungeonFeature(Codec<NoFeatureConfig> codec) {
+        super(codec);
+    }
     
     public void generateOnce(IWorld world, Random random, ChunkPos chunkPos) {
         int height = heightSelector.select(random).apply(random);
@@ -441,7 +426,7 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
                 ItemStack stack = new ItemStack(() -> Items.LINGERING_POTION, 1);
                 ArrayList<EffectInstance> effects = new ArrayList<>();
                 effects.add(new EffectInstance(
-                    Registry.EFFECTS.getRandom(random),
+                    ((DefaultedRegistry<Effect>) Registry.EFFECTS).getRandom(random),
                     1200, 4
                 ));
                 PotionUtils.appendEffects(stack, effects);
@@ -449,7 +434,7 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
             })
             .add(10, random -> {
                 ItemStack stack = new ItemStack(() -> Items.ENCHANTED_BOOK, 1);
-                stack.addEnchantment(Registry.ENCHANTMENT.getRandom(random), 5);
+                stack.addEnchantment(((DefaultedRegistry<Enchantment>) Registry.ENCHANTMENT).getRandom(random), 5);
                 return stack;
             })
             .build();
@@ -469,4 +454,25 @@ public class SpongeDungeonFeature extends Feature<NoFeatureConfig> {
                 );
             })
             .build();
+    
+    @Override
+    public boolean func_230362_a_(
+        ISeedReader serverWorldAccess,
+        StructureManager accessor,
+        ChunkGenerator generator,
+        Random random,
+        BlockPos pos,
+        NoFeatureConfig config
+    ) {
+        ChunkPos chunkPos = new ChunkPos(pos);
+    
+        random.setSeed(chunkPos.asLong() + random.nextInt(2333));
+    
+        if (random.nextDouble() < 0.03) {
+            generateOnce(serverWorldAccess, random, chunkPos);
+        }
+    
+        return true;
+    }
+    
 }

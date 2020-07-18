@@ -9,10 +9,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.network.play.server.SDestroyEntitiesPacket;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -28,20 +29,20 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
     @Shadow
     public ServerPlayNetHandler connection;
     @Shadow
-    private Vec3d enteredNetherPosition;
+    private Vector3d enteredNetherPosition;
     
-    private HashMultimap<DimensionType, Entity> myRemovedEntities;
-    
-    public MixinServerPlayerEntity(
-        World world,
-        GameProfile profile
-    ) {
-        super(world, profile);
-        throw new IllegalStateException();
-    }
+    private HashMultimap<RegistryKey<World>, Entity> myRemovedEntities;
     
     @Shadow
     private boolean invulnerableDimensionChange;
+    
+    public MixinServerPlayerEntity(
+        World world,
+        BlockPos blockPos,
+        GameProfile gameProfile
+    ) {
+        super(world, blockPos, gameProfile);
+    }
     
     @Shadow
     protected abstract void func_213846_b(ServerWorld targetWorld);
@@ -83,7 +84,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
         at = @At("RETURN")
     )
     private void onCopyFrom(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfo ci) {
-        HashMultimap<DimensionType, Entity> oldPlayerRemovedEntities =
+        HashMultimap<RegistryKey<World>, Entity> oldPlayerRemovedEntities =
             ((MixinServerPlayerEntity) (Object) oldPlayer).myRemovedEntities;
         if (oldPlayerRemovedEntities != null) {
             myRemovedEntities = HashMultimap.create();
@@ -99,7 +100,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
         if (entity_1 instanceof PlayerEntity) {
             this.connection.sendPacket(
                 MyNetwork.createRedirectedMessage(
-                    entity_1.dimension,
+                    entity_1.world.func_234923_W_(),
                     new SDestroyEntitiesPacket(entity_1.getEntityId())
                 )
             );
@@ -110,7 +111,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
             }
             //do not use entity.dimension
             //or it will work abnormally when changeDimension() is run
-            myRemovedEntities.put(entity_1.world.dimension.getType(), entity_1);
+            myRemovedEntities.put(entity_1.world.func_234923_W_(), entity_1);
         }
         
     }
@@ -121,12 +122,12 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
     @Overwrite
     public void addEntity(Entity entity_1) {
         if (myRemovedEntities != null) {
-            myRemovedEntities.remove(entity_1.dimension, entity_1);
+            myRemovedEntities.remove(entity_1.world.func_234923_W_(), entity_1);
         }
     }
     
     @Override
-    public void setEnteredNetherPos(Vec3d pos) {
+    public void setEnteredNetherPos(Vector3d pos) {
         enteredNetherPosition = pos;
     }
     

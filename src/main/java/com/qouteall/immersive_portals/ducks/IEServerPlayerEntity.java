@@ -1,11 +1,11 @@
 package com.qouteall.immersive_portals.ducks;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.server.ServerWorld;
 
 public interface IEServerPlayerEntity {
-    void setEnteredNetherPos(Vec3d pos);
+    void setEnteredNetherPos(Vector3d pos);
     
     void updateDimensionTravelAdvancements(ServerWorld fromWorld);
     

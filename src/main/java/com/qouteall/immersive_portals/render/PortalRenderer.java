@@ -6,17 +6,22 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
+import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.renderer.culling.ClippingHelperImpl;
+import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Matrix4f;
+import net.minecraft.util.math.vector.Quaternion;
+import net.minecraft.util.math.vector.Vector3d;
+import org.apache.commons.lang3.Validate;
 
+import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +29,8 @@ import java.util.stream.Collectors;
 public abstract class PortalRenderer {
     
     public static final Minecraft client = Minecraft.getInstance();
+    
+   
     
     //this WILL be called when rendering portal
     public abstract void onBeforeTranslucentRendering(MatrixStack matrixStack);
@@ -46,8 +53,7 @@ public abstract class PortalRenderer {
     public abstract boolean shouldSkipClearing();
     
     protected void renderPortals(MatrixStack matrixStack) {
-        assert client.renderViewEntity.world == client.world;
-        assert client.renderViewEntity.dimension == client.world.dimension.getType();
+        Validate.isTrue(client.renderViewEntity.world == client.world);
         
         List<Portal> portalsNearbySorted = getPortalsNearbySorted();
         
@@ -55,14 +61,14 @@ public abstract class PortalRenderer {
             return;
         }
         
-        ClippingHelperImpl frustum = null;
+        ClippingHelper frustum = null;
         if (CGlobal.earlyFrustumCullingPortal) {
-            frustum = new ClippingHelperImpl(
+            frustum = new ClippingHelper(
                 matrixStack.getLast().getMatrix(),
                 RenderStates.projectionMatrix
             );
             
-            Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+            Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
             frustum.setCameraPosition(cameraPos.x, cameraPos.y, cameraPos.z);
         }
         
@@ -74,7 +80,7 @@ public abstract class PortalRenderer {
     private void renderPortalIfRoughCheckPassed(
         Portal portal,
         MatrixStack matrixStack,
-        ClippingHelperImpl frustum
+        ClippingHelper frustum
     ) {
         if (!portal.isPortalValid()) {
             Helper.err("rendering invalid portal " + portal);
@@ -85,7 +91,7 @@ public abstract class PortalRenderer {
             return;
         }
         
-        Vec3d thisTickEyePos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d thisTickEyePos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
         
         if (!portal.isInFrontOfPortal(thisTickEyePos)) {
             return;
@@ -124,7 +130,7 @@ public abstract class PortalRenderer {
     }
     
     private List<Portal> getPortalsNearbySorted() {
-        Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
         return CHelper.getClientNearbyPortals(getRenderRange())
             .sorted(
                 Comparator.comparing(portalEntity ->
@@ -147,8 +153,8 @@ public abstract class PortalRenderer {
         
         Entity cameraEntity = client.renderViewEntity;
         
-        Vec3d newEyePos = portal.transformPoint(McHelper.getEyePos(cameraEntity));
-        Vec3d newLastTickEyePos = portal.transformPoint(McHelper.getLastTickEyePos(cameraEntity));
+//        Vec3d newEyePos = portal.transformPoint(McHelper.getEyePos(cameraEntity));
+//        Vec3d newLastTickEyePos = portal.transformPoint(McHelper.getLastTickEyePos(cameraEntity));
         
         ClientWorld newWorld = CGlobal.clientWorldLoader.getWorld(portal.dimensionTo);
         
@@ -158,7 +164,12 @@ public abstract class PortalRenderer {
         
         PortalRendering.onBeginPortalWorldRendering();
         
-        invokeWorldRendering(newEyePos, newLastTickEyePos, newWorld);
+        invokeWorldRendering(new RenderInfo(
+            newWorld,
+            PortalRendering.getRenderingCameraPos(),
+            getAdditionalCameraTransformation(portal),
+            portal
+        ));
         
         PortalRendering.onEndPortalWorldRendering();
         
@@ -171,14 +182,11 @@ public abstract class PortalRenderer {
         MyGameRenderer.resetFogState();
     }
     
-    protected void invokeWorldRendering(
-        Vec3d newEyePos,
-        Vec3d newLastTickEyePos,
-        ClientWorld newWorld
+    public void invokeWorldRendering(
+        RenderInfo renderInfo
     ) {
-        MyGameRenderer.switchAndRenderTheWorld(
-            newWorld, newEyePos,
-            newLastTickEyePos,
+        MyGameRenderer.renderWorldNew(
+            renderInfo,
             Runnable::run
         );
     }
@@ -200,23 +208,21 @@ public abstract class PortalRenderer {
 //        return false;
     }
     
-//    @Deprecated
-//    protected void renderPortalContentWithContextSwitched(
-//        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
-//    ) {
-//
-//
-//        WorldRenderer worldRenderer = CGlobal.clientWorldLoader.getWorldRenderer(portal.dimensionTo);
-//        ClientWorld destClientWorld = CGlobal.clientWorldLoader.getWorld(portal.dimensionTo);
-//
-//        CHelper.checkGlError();
-//
-//        MyGameRenderer.renderWorldDeprecated(
-//            worldRenderer, destClientWorld, oldCameraPos, oldWorld
-//        );
-//
-//        CHelper.checkGlError();
-//
-//    }
+    @Nullable
+    public static Matrix4f getAdditionalCameraTransformation(Portal portal) {
+        if (portal instanceof Mirror) {
+            return TransformationManager.getMirrorTransformation(portal.getNormal());
+        }
+        else {
+            if (portal.rotation != null) {
+                Quaternion rot = portal.rotation.copy();
+                rot.conjugate();
+                return new Matrix4f(rot);
+            }
+            else {
+                return null;
+            }
+        }
+    }
     
 }

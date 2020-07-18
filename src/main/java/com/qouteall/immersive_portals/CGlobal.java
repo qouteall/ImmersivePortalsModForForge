@@ -7,10 +7,9 @@ import com.qouteall.immersive_portals.render.RendererUsingFrameBuffer;
 import com.qouteall.immersive_portals.render.RendererUsingStencil;
 import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
-import net.minecraft.world.dimension.DimensionType;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.world.DimensionType;
 
 public class CGlobal {
     

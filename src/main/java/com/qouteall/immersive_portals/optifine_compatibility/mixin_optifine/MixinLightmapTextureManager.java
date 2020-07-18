@@ -15,12 +15,12 @@ public class MixinLightmapTextureManager {
         method = "Lnet/minecraft/client/renderer/LightTexture;updateLightmap(F)V",
         at = @At(
             value = "FIELD",
-            target = "Lnet/minecraft/client/Minecraft;world:Lnet/minecraft/client/world/ClientWorld;"
+            target = "Lnet/minecraft/client/MinecraftClient;world:Lnet/minecraft/client/world/ClientWorld;"
         )
     )
     ClientWorld redirectWorldInUpdate(Minecraft client) {
         return CGlobal.clientWorldLoader.getWorld(RenderDimensionRedirect.getRedirectedDimension(
-            client.world.dimension.getType()
+            client.world.func_234923_W_()
         ));
     }
 }

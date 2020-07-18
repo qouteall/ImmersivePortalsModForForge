@@ -5,8 +5,9 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import org.lwjgl.opengl.GL11;
 
 public class PixelCuller {
@@ -45,10 +46,9 @@ public class PixelCuller {
     
     public static boolean isShaderCulling() {
         return OFInterface.isShaders.getAsBoolean() &&
-            !OFInterface.isInternalShader.getAsBoolean();
-//            !RenderDimensionRedirect.isNoShader(
-//                MinecraftClient.getInstance().world.dimension.getType()
-//            );
+            !RenderDimensionRedirect.isNoShader(
+                Minecraft.getInstance().world.func_234923_W_()
+            );
     }
     
     public static void loadCullingPlaneClassical(MatrixStack matrixStack) {
@@ -69,9 +69,9 @@ public class PixelCuller {
     
     private static double[] getClipEquationInner(Portal portal, boolean doCompensate) {
         
-        Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
         
-        Vec3d planeNormal = portal.getContentDirection();
+        Vector3d planeNormal = portal.getContentDirection();
         
         double correction;
         if (doCompensate) {
@@ -82,7 +82,7 @@ public class PixelCuller {
             correction = 0;
         }
         
-        Vec3d portalPos = portal.destination
+        Vector3d portalPos = portal.destination
             .subtract(planeNormal.scale(correction))//avoid z fighting
             .subtract(cameraPos);
         
@@ -96,9 +96,9 @@ public class PixelCuller {
     }
     
     private static double[] getClipEquationOuter(Portal portal) {
-        Vec3d planeNormal = portal.getNormal();
+        Vector3d planeNormal = portal.getNormal();
         
-        Vec3d portalPos = portal.getPositionVec()
+        Vector3d portalPos = portal.getPositionVec()
             //.subtract(planeNormal.multiply(0.01))//avoid z fighting
             .subtract(client.gameRenderer.getActiveRenderInfo().getProjectedView());
         

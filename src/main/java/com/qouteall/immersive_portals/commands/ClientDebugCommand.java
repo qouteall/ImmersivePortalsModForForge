@@ -9,8 +9,10 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.altius_world.AltiusInfo;
 import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
+import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.optifine_compatibility.UniformReport;
@@ -24,16 +26,19 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.SectionPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -103,7 +108,7 @@ public class ClientDebugCommand {
                             int chunkZ = IntegerArgumentType.getInteger(context, "chunkZ");
                             ServerPlayerEntity player = context.getSource().asPlayer();
                             IChunk chunk = McHelper.getServer()
-                                .getWorld(player.dimension)
+                                .getWorld(player.world.func_234923_W_())
                                 .getChunk(
                                     chunkX, chunkZ,
                                     ChunkStatus.FULL, false
@@ -188,7 +193,7 @@ public class ClientDebugCommand {
                 ServerPlayerEntity player = context.getSource().asPlayer();
                 List<Entity> entities = player.world.getEntitiesWithinAABB(
                     Entity.class,
-                    new AxisAlignedBB(player.getPosition()).grow(32),
+                    new AxisAlignedBB(player.getPositionVec(), player.getPositionVec()).grow(32),
                     e -> true
                 );
                 McHelper.serverLog(player, entities.toString());
@@ -203,7 +208,7 @@ public class ClientDebugCommand {
             .literal("report_render_info_num")
             .executes(context -> {
                 String str = Helper.myToString(CGlobal.renderInfoNumMap.entrySet().stream());
-                context.getSource().asPlayer().sendMessage(new StringTextComponent(str));
+                context.getSource().asPlayer().sendStatusMessage(new StringTextComponent(str), false);
                 return 0;
             })
         );
@@ -297,7 +302,7 @@ public class ClientDebugCommand {
                 Minecraft mc = Minecraft.getInstance();
                 mc.execute(() -> {
                     mc.world.getChunkProvider().getLightManager().updateSectionStatus(
-                        SectionPos.from(mc.player.getPosition()),
+                        SectionPos.from(new BlockPos(mc.player.getPositionVec())),
                         false
                     );
                 });
@@ -351,7 +356,7 @@ public class ClientDebugCommand {
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
                 
-                eraseChunk(new ChunkPos(player.getPosition()), player.world, 0, 256);
+                eraseChunk(new ChunkPos(new BlockPos(player.getPositionVec())), player.world, 0, 256);
                 
                 return 0;
             })
@@ -361,7 +366,7 @@ public class ClientDebugCommand {
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
                 
-                ChunkPos center = new ChunkPos(player.getPosition());
+                ChunkPos center = new ChunkPos(new BlockPos(player.getPositionVec()));
                 
                 for (int dx = -4; dx <= 4; dx++) {
                     for (int dz = -4; dz <= 4; dz++) {
@@ -383,7 +388,7 @@ public class ClientDebugCommand {
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
                 
-                ChunkPos center = new ChunkPos(player.getPosition());
+                ChunkPos center = new ChunkPos(new BlockPos(player.getPositionVec()));
                 
                 for (int dx = -4; dx <= 4; dx++) {
                     for (int dz = -4; dz <= 4; dz++) {
@@ -419,6 +424,44 @@ public class ClientDebugCommand {
                 return 0;
             })
         );
+        builder.then(Commands
+            .literal("is_altius")
+            .executes(context -> {
+                
+                boolean altius = AltiusInfo.isAltius();
+                
+                if (altius) {
+                    context.getSource().sendFeedback(
+                        new StringTextComponent("yes"),
+                        false
+                    );
+                }
+                else {
+                    context.getSource().sendFeedback(
+                        new StringTextComponent("no"),
+                        false
+                    );
+                }
+                
+                return 0;
+            })
+        );
+        builder.then(Commands
+            .literal("print_generator_config")
+            .executes(context -> {
+                McHelper.getServer().getWorlds().forEach(world -> {
+                    ChunkGenerator generator = world.getChunkProvider().getChunkGenerator();
+                    Helper.log(world.func_234923_W_().func_240901_a_());
+                    Helper.log(McHelper.serializeToJson(generator, ChunkGenerator.field_235948_a_));
+                    Helper.log(McHelper.serializeToJson(
+                        world.func_230315_m_(),
+                        DimensionType.field_235997_a_.codec()
+                    ));
+                });
+                
+                return 0;
+            })
+        );
         registerSwitchCommand(
             builder,
             "render_fewer_on_fast_graphic",
@@ -434,7 +477,7 @@ public class ClientDebugCommand {
             "smooth_chunk_unload",
             cond -> CGlobal.smoothChunkUnload = cond
         );
-     
+        
         registerSwitchCommand(
             builder,
             "early_light_update",
@@ -445,6 +488,7 @@ public class ClientDebugCommand {
             "super_advanced_frustum_culling",
             cond -> CGlobal.useSuperAdvancedFrustumCulling = cond
         );
+        
         registerSwitchCommand(
             builder,
             "teleportation_debug",
@@ -479,6 +523,11 @@ public class ClientDebugCommand {
             builder,
             "cache_gl_buffer",
             cond -> Global.cacheGlBuffer = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "add_custom_ticket_for_direct_loading_delayed",
+            cond -> NewChunkTrackingGraph.addCustomTicketForDirectLoadingDelayed = cond
         );
         
         builder.then(Commands
@@ -547,7 +596,7 @@ public class ClientDebugCommand {
         CGlobal.clientWorldLoader.clientWorldMap.values().forEach(world -> {
             str.append(String.format(
                 "%s %s\n",
-                world.dimension.getType(),
+                world.func_234923_W_(),
                 ((MyClientChunkManager) world.getChunkProvider()).getLoadedChunksCount()
             ));
         });
@@ -571,7 +620,7 @@ public class ClientDebugCommand {
             world -> {
                 str.append(String.format(
                     "%s %s\n",
-                    world.dimension.getType(),
+                    world.func_234923_W_(),
                     world.getForcedChunks().size()
                 ));
             }
@@ -581,7 +630,7 @@ public class ClientDebugCommand {
         
         Helper.log(str);
         
-        context.getSource().asPlayer().sendMessage(new StringTextComponent(result));
+        context.getSource().asPlayer().sendStatusMessage(new StringTextComponent(result), false);
         
         return 0;
     }
@@ -636,18 +685,18 @@ public class ClientDebugCommand {
     
     static {
         originalAddPortalFunctionality = (player) -> {
-            Vec3d fromPos = player.getPositionVec();
-            Vec3d fromNormal = player.getLookVec().scale(-1);
+            Vector3d fromPos = player.getPositionVec();
+            Vector3d fromNormal = player.getLookVec().scale(-1);
             ServerWorld fromWorld = ((ServerWorld) player.world);
             
             addPortalFunctionality = (playerEntity) -> {
-                Vec3d toPos = playerEntity.getPositionVec();
-                DimensionType toDimension = player.dimension;
+                Vector3d toPos = playerEntity.getPositionVec();
+                RegistryKey<World> toDimension = player.world.func_234923_W_();
                 
                 Portal portal = new Portal(Portal.entityType, fromWorld);
                 portal.setRawPosition(fromPos.x, fromPos.y, fromPos.z);
                 
-                portal.axisH = new Vec3d(0, 1, 0);
+                portal.axisH = new Vector3d(0, 1, 0);
                 portal.axisW = portal.axisH.crossProduct(fromNormal).normalize();
                 
                 portal.dimensionTo = toDimension;
@@ -685,11 +734,11 @@ public class ClientDebugCommand {
         
         McHelper.serverLog(
             playerMP,
-            "On Server " + playerMP.dimension + " " + playerMP.getPosition()
+            "On Server " + playerMP.world.func_234923_W_() + " " + playerMP.getPositionVec()
         );
         McHelper.serverLog(
             playerMP,
-            "On Client " + playerSP.dimension + " " + playerSP.getPosition()
+            "On Client " + playerSP.world.func_234923_W_() + " " + playerSP.getPositionVec()
         );
         return 0;
     }

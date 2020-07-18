@@ -2,8 +2,8 @@ package com.qouteall.immersive_portals;
 
 import it.unimi.dsi.fastutil.floats.FloatConsumer;
 import net.minecraft.entity.Entity;
-import net.minecraft.world.dimension.DimensionType;
-
+import net.minecraft.util.RegistryKey;
+import net.minecraft.world.World;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -27,7 +27,7 @@ public class OFInterface {
     
     public static Runnable resetViewport = invokeNothing;
     
-    public static BiConsumer<DimensionType, DimensionType> onPlayerTraveled = (a, b) -> {
+    public static BiConsumer<RegistryKey<World>, RegistryKey<World>> onPlayerTraveled = (a, b) -> {
     };
     
     public static BooleanSupplier shouldDisableFog = returnFalse;

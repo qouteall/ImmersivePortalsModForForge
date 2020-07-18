@@ -4,12 +4,12 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
+import java.util.Comparator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import java.util.Comparator;
 
 @OnlyIn(Dist.CLIENT)
 public class FrustumCuller {
@@ -54,18 +54,18 @@ public class FrustumCuller {
         if (PortalRendering.isRendering()) {
             Portal portal = PortalRendering.getRenderingPortal();
             
-            Vec3d portalOriginInLocalCoordinate = portal.destination.add(
+            Vector3d portalOriginInLocalCoordinate = portal.destination.add(
                 -cameraX, -cameraY, -cameraZ
             );
-            Vec3d[] downLeftUpRightPlaneNormals = getDownLeftUpRightPlaneNormals(
+            Vector3d[] downLeftUpRightPlaneNormals = getDownLeftUpRightPlaneNormals(
                 portalOriginInLocalCoordinate,
                 portal.getFourVerticesLocalRotated(0)
             );
             
-            Vec3d downPlane = downLeftUpRightPlaneNormals[0];
-            Vec3d leftPlane = downLeftUpRightPlaneNormals[1];
-            Vec3d upPlane = downLeftUpRightPlaneNormals[2];
-            Vec3d rightPlane = downLeftUpRightPlaneNormals[3];
+            Vector3d downPlane = downLeftUpRightPlaneNormals[0];
+            Vector3d leftPlane = downLeftUpRightPlaneNormals[1];
+            Vector3d upPlane = downLeftUpRightPlaneNormals[2];
+            Vector3d rightPlane = downLeftUpRightPlaneNormals[3];
             
             return
                 (double minX, double minY, double minZ, double maxX, double maxY, double maxZ) ->
@@ -82,24 +82,24 @@ public class FrustumCuller {
             Portal portal = getCurrentNearestVisibleCullablePortal();
             if (portal != null) {
                 
-                Vec3d portalOrigin = portal.getPositionVec();
-                Vec3d portalOriginInLocalCoordinate = portalOrigin.add(
+                Vector3d portalOrigin = portal.getPositionVec();
+                Vector3d portalOriginInLocalCoordinate = portalOrigin.add(
                     -cameraX,
                     -cameraY,
                     -cameraZ
                 );
-                Vec3d[] downLeftUpRightPlaneNormals = getDownLeftUpRightPlaneNormals(
+                Vector3d[] downLeftUpRightPlaneNormals = getDownLeftUpRightPlaneNormals(
                     portalOriginInLocalCoordinate,
                     portal.getFourVerticesLocalCullable(0)
                 );
     
-                Vec3d downPlane = downLeftUpRightPlaneNormals[0];
-                Vec3d leftPlane = downLeftUpRightPlaneNormals[1];
-                Vec3d upPlane = downLeftUpRightPlaneNormals[2];
-                Vec3d rightPlane = downLeftUpRightPlaneNormals[3];
+                Vector3d downPlane = downLeftUpRightPlaneNormals[0];
+                Vector3d leftPlane = downLeftUpRightPlaneNormals[1];
+                Vector3d upPlane = downLeftUpRightPlaneNormals[2];
+                Vector3d rightPlane = downLeftUpRightPlaneNormals[3];
                 
-                Vec3d nearPlanePosInLocalCoordinate = portalOriginInLocalCoordinate;
-                Vec3d nearPlaneNormal = portal.getNormal().scale(-1);
+                Vector3d nearPlanePosInLocalCoordinate = portalOriginInLocalCoordinate;
+                Vector3d nearPlaneNormal = portal.getNormal().scale(-1);
                 
                 return
                     (double minX, double minY, double minZ, double maxX, double maxY, double maxZ) -> {
@@ -128,11 +128,11 @@ public class FrustumCuller {
         }
     }
     
-    public Vec3d[] getDownLeftUpRightPlaneNormals(
-        Vec3d portalOriginInLocalCoordinate,
-        Vec3d[] fourVertices
+    public Vector3d[] getDownLeftUpRightPlaneNormals(
+        Vector3d portalOriginInLocalCoordinate,
+        Vector3d[] fourVertices
     ) {
-        Vec3d[] relativeVertices = {
+        Vector3d[] relativeVertices = {
             fourVertices[0].add(portalOriginInLocalCoordinate),
             fourVertices[1].add(portalOriginInLocalCoordinate),
             fourVertices[2].add(portalOriginInLocalCoordinate),
@@ -141,7 +141,7 @@ public class FrustumCuller {
         
         //3  2
         //1  0
-        return new Vec3d[]{
+        return new Vector3d[]{
             relativeVertices[0].crossProduct(relativeVertices[1]),
             relativeVertices[1].crossProduct(relativeVertices[3]),
             relativeVertices[3].crossProduct(relativeVertices[2]),
@@ -219,7 +219,7 @@ public class FrustumCuller {
     public static BatchTestResult testBoxTwoVertices(
         double minX, double minY, double minZ,
         double maxX, double maxY, double maxZ,
-        Vec3d planeNormal
+        Vector3d planeNormal
     ) {
         return testBoxTwoVertices(
             minX, minY, minZ, maxX, maxY, maxZ,
@@ -254,7 +254,7 @@ public class FrustumCuller {
         return true;
     }
     
-    private static boolean isInFrontOf(double x, double y, double z, Vec3d planeNormal) {
+    private static boolean isInFrontOf(double x, double y, double z, Vector3d planeNormal) {
         return x * planeNormal.x + y * planeNormal.y + z * planeNormal.z >= 0;
     }
     
@@ -267,10 +267,10 @@ public class FrustumCuller {
     
     private static boolean isFullyOutsideFrustum(
         double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
-        Vec3d leftPlane,
-        Vec3d rightPlane,
-        Vec3d upPlane,
-        Vec3d downPlane
+        Vector3d leftPlane,
+        Vector3d rightPlane,
+        Vector3d upPlane,
+        Vector3d downPlane
     ) {
         BatchTestResult left = testBoxTwoVertices(
             minX, minY, minZ, maxX, maxY, maxZ, leftPlane
@@ -304,10 +304,10 @@ public class FrustumCuller {
     @Deprecated
     private static boolean isFullyOutsideFrustum_(
         AxisAlignedBB boxInLocalCoordinate,
-        Vec3d leftPlane,
-        Vec3d rightPlane,
-        Vec3d upPlane,
-        Vec3d downPlane
+        Vector3d leftPlane,
+        Vector3d rightPlane,
+        Vector3d upPlane,
+        Vector3d downPlane
     ) {
         BatchTestResult left = testBox_(
             boxInLocalCoordinate, (x, y, z) -> isInFrontOf(x, y, z, leftPlane)
@@ -340,10 +340,10 @@ public class FrustumCuller {
     
     private static boolean isFullyInFrustum(
         double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
-        Vec3d leftPlane,
-        Vec3d rightPlane,
-        Vec3d upPlane,
-        Vec3d downPlane
+        Vector3d leftPlane,
+        Vector3d rightPlane,
+        Vector3d upPlane,
+        Vector3d downPlane
     ) {
         return testBoxTwoVertices(minX, minY, minZ, maxX, maxY, maxZ, leftPlane)
             == BatchTestResult.all_true
@@ -358,10 +358,10 @@ public class FrustumCuller {
     @Deprecated
     private static boolean isFullyInFrustum_(
         AxisAlignedBB boxInLocalCoordinate,
-        Vec3d leftPlane,
-        Vec3d rightPlane,
-        Vec3d upPlane,
-        Vec3d downPlane
+        Vector3d leftPlane,
+        Vector3d rightPlane,
+        Vector3d upPlane,
+        Vector3d downPlane
     ) {
         return testBoxAllTrue_(
             boxInLocalCoordinate,
@@ -373,7 +373,7 @@ public class FrustumCuller {
     }
     
     private static Portal getCurrentNearestVisibleCullablePortal() {
-        Vec3d cameraPos = Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d cameraPos = Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
         return CHelper.getClientNearbyPortals(16).filter(
             portal -> portal.isInFrontOfPortal(cameraPos)
         ).filter(

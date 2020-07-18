@@ -14,7 +14,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 
@@ -125,30 +125,30 @@ public class BreakableMirror extends Mirror {
         
         AxisAlignedBB wallBox = getWallBox(world, wallArea);
         
-        Vec3d pos = Helper.getBoxSurface(wallBox, facing.getOpposite()).getCenter();
+        Vector3d pos = Helper.getBoxSurface(wallBox, facing.getOpposite()).getCenter();
         pos = Helper.putCoordinate(
             //getWallBox is incorrect with corner glass pane so correct the coordinate on the normal axis
             pos, facing.getAxis(),
             Helper.getCoordinate(
                 wallArea.getCenterVec().add(
-                    new Vec3d(facing.getDirectionVec()).scale(distanceToCenter)
+                     Vector3d.func_237491_b_(facing.getDirectionVec()).scale(distanceToCenter)
                 ),
                 facing.getAxis()
             )
         );
         breakableMirror.setPosition(pos.x, pos.y, pos.z);
         breakableMirror.destination = pos;
-        breakableMirror.dimensionTo = world.dimension.getType();
+        breakableMirror.dimensionTo = world.func_234923_W_();
         
         Tuple<Direction, Direction> dirs =
             Helper.getPerpendicularDirections(facing);
         
-        Vec3d boxSize = Helper.getBoxSize(wallBox);
+        Vector3d boxSize = Helper.getBoxSize(wallBox);
         double width = Helper.getCoordinate(boxSize, dirs.getA().getAxis());
         double height = Helper.getCoordinate(boxSize, dirs.getB().getAxis());
         
-        breakableMirror.axisW = new Vec3d(dirs.getA().getDirectionVec());
-        breakableMirror.axisH = new Vec3d(dirs.getB().getDirectionVec());
+        breakableMirror.axisW =  Vector3d.func_237491_b_(dirs.getA().getDirectionVec());
+        breakableMirror.axisH =  Vector3d.func_237491_b_(dirs.getB().getDirectionVec());
         breakableMirror.width = width;
         breakableMirror.height = height;
         
@@ -183,7 +183,7 @@ public class BreakableMirror extends Mirror {
     private static AxisAlignedBB getWallBox(ServerWorld world, IntBox glassArea) {
         return glassArea.stream().map(blockPos ->
             world.getBlockState(blockPos).getCollisionShape(world, blockPos).getBoundingBox()
-                .offset(new Vec3d(blockPos))
+                .offset( Vector3d.func_237491_b_(blockPos))
         ).reduce(AxisAlignedBB::union).orElse(null);
     }
 }

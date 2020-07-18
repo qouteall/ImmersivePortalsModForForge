@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.Global;
 import net.minecraft.entity.EntityType;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 
 public class Mirror extends Portal {
@@ -25,26 +25,26 @@ public class Mirror extends Portal {
     }
 
     @Override
-    public Vec3d getContentDirection() {
+    public Vector3d getContentDirection() {
         return getNormal();
     }
 
     @Override
-    public Vec3d transformPoint(Vec3d pos) {
-        Vec3d localPos = pos.subtract(getPositionVec());
+    public Vector3d transformPoint(Vector3d pos) {
+        Vector3d localPos = pos.subtract(getPositionVec());
         
         return transformLocalVec(localPos).add(destination);
     }
     
     @Override
-    public Vec3d transformLocalVec(Vec3d localVec) {
+    public Vector3d transformLocalVec(Vector3d localVec) {
         double len = localVec.dotProduct(getNormal());
         return localVec.add(getNormal().scale(len * -2));
     }
     
     
     @Override
-    public Vec3d untransformLocalVec(Vec3d localVec) {
+    public Vector3d untransformLocalVec(Vector3d localVec) {
         return transformLocalVec(localVec);
     }
 }

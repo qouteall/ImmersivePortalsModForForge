@@ -20,8 +20,6 @@ import com.qouteall.immersive_portals.portal.global_portals.BorderBarrierFiller;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
 import com.qouteall.immersive_portals.portal.global_portals.WorldWrappingPortal;
-import net.minecraft.client.renderer.Quaternion;
-import net.minecraft.client.renderer.Vector3f;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.ColumnPosArgument;
@@ -35,13 +33,16 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.ColumnPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Quaternion;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import java.util.Collection;
 import java.util.Comparator;
@@ -158,12 +159,12 @@ public class PortalCommand {
                         DimensionArgument.getDimension()
                     ).executes(
                         context -> {
-                            DimensionType from = DimensionArgument.getDimensionArgument(
+                            RegistryKey<World> from = DimensionArgument.getDimensionArgument(
                                 context, "from"
-                            );
-                            DimensionType to = DimensionArgument.getDimensionArgument(
+                            ).func_234923_W_();
+                            RegistryKey<World> to = DimensionArgument.getDimensionArgument(
                                 context, "to"
-                            );
+                            ).func_234923_W_();
                             
                             VerticalConnectingPortal.connect(
                                 from, VerticalConnectingPortal.ConnectorType.floor, to
@@ -180,12 +181,12 @@ public class PortalCommand {
                 .then(Commands.argument("to", DimensionArgument.getDimension())
                     .executes(
                         context -> {
-                            DimensionType from = DimensionArgument.getDimensionArgument(
+                            RegistryKey<World> from = DimensionArgument.getDimensionArgument(
                                 context, "from"
-                            );
-                            DimensionType to = DimensionArgument.getDimensionArgument(
+                            ).func_234923_W_();
+                            RegistryKey<World> to = DimensionArgument.getDimensionArgument(
                                 context, "to"
-                            );
+                            ).func_234923_W_();
                             
                             VerticalConnectingPortal.connect(
                                 from, VerticalConnectingPortal.ConnectorType.ceil, to
@@ -202,9 +203,9 @@ public class PortalCommand {
             .then(Commands.argument("dim", DimensionArgument.getDimension())
                 .executes(
                     context -> {
-                        DimensionType dim = DimensionArgument.getDimensionArgument(
+                        RegistryKey<World> dim = DimensionArgument.getDimensionArgument(
                             context, "dim"
-                        );
+                        ).func_234923_W_();
                         
                         VerticalConnectingPortal.removeConnectingPortal(
                             VerticalConnectingPortal.ConnectorType.floor, dim
@@ -220,9 +221,9 @@ public class PortalCommand {
             .then(Commands.argument("dim", DimensionArgument.getDimension())
                 .executes(
                     context -> {
-                        DimensionType dim = DimensionArgument.getDimensionArgument(
+                        RegistryKey<World> dim = DimensionArgument.getDimensionArgument(
                             context, "dim"
-                        );
+                        ).func_234923_W_();
                         
                         VerticalConnectingPortal.removeConnectingPortal(
                             VerticalConnectingPortal.ConnectorType.ceil, dim
@@ -330,7 +331,7 @@ public class PortalCommand {
                         context,
                         portal -> {
                             try {
-                                Vec3d rotatingAxis = Vec3Argument.getVec3(
+                                Vector3d rotatingAxis = Vec3Argument.getVec3(
                                     context, "rotatingAxis"
                                 ).normalize();
                                 
@@ -374,7 +375,7 @@ public class PortalCommand {
                         context,
                         portal -> {
                             try {
-                                Vec3d rotatingAxis = Vec3Argument.getVec3(
+                                Vector3d rotatingAxis = Vec3Argument.getVec3(
                                     context, "rotatingAxis"
                                 ).normalize();
                                 
@@ -410,7 +411,7 @@ public class PortalCommand {
                         context,
                         portal -> {
                             try {
-                                Vec3d rotatingAxis = Vec3Argument.getVec3(
+                                Vector3d rotatingAxis = Vec3Argument.getVec3(
                                     context, "rotatingAxis"
                                 ).normalize();
                                 
@@ -496,11 +497,11 @@ public class PortalCommand {
                                 DoubleArgumentType.getDouble(context, "distance");
                             
                             ServerPlayerEntity player = context.getSource().asPlayer();
-                            Vec3d viewVector = player.getLookVec();
+                            Vector3d viewVector = player.getLookVec();
                             Direction facing = Direction.getFacingFromVector(
                                 viewVector.x, viewVector.y, viewVector.z
                             );
-                            Vec3d offset = new Vec3d(facing.getDirectionVec()).scale(distance);
+                            Vector3d offset = Vector3d.func_237491_b_(facing.getDirectionVec()).scale(distance);
                             portal.setPosition(
                                 portal.getPosX() + offset.x,
                                 portal.getPosY() + offset.y,
@@ -514,7 +515,7 @@ public class PortalCommand {
                 ))
             )
         );
-    
+        
         builder.then(Commands.literal("move_portal_destination")
             .then(Commands.argument("distance", DoubleArgumentType.doubleArg())
                 .executes(context -> processPortalTargetedCommand(
@@ -522,14 +523,14 @@ public class PortalCommand {
                         try {
                             double distance =
                                 DoubleArgumentType.getDouble(context, "distance");
-                        
+                            
                             ServerPlayerEntity player = context.getSource().asPlayer();
-                            Vec3d viewVector = player.getLookVec();
+                            Vector3d viewVector = player.getLookVec();
                             Direction facing = Direction.getFacingFromVector(
                                 viewVector.x, viewVector.y, viewVector.z
                             );
-                            Vec3d offset = new Vec3d(facing.getDirectionVec()).scale(distance);
-    
+                            Vector3d offset = Vector3d.func_237491_b_(facing.getDirectionVec()).scale(distance);
+                            
                             portal.destination = portal.destination.add(
                                 portal.transformLocalVec(offset)
                             );
@@ -588,7 +589,7 @@ public class PortalCommand {
                                             DimensionArgument.getDimensionArgument(
                                                 context,
                                                 "dimension"
-                                            ),
+                                            ).func_234923_W_(),
                                             Vec3Argument.getVec3(context, "destination"),
                                             BoolArgumentType.getBool(context, "isBiFaced"),
                                             BoolArgumentType.getBool(context, "isBiWay")
@@ -705,6 +706,45 @@ public class PortalCommand {
                 )
             )
         );
+        
+        builder.then(Commands.literal("cb_make_portal")
+            .then(Commands.argument("width", DoubleArgumentType.doubleArg())
+                .then(Commands.argument("height", DoubleArgumentType.doubleArg())
+                    .then(Commands.argument("from", EntityArgument.entity())
+                        .then(Commands.argument("to", EntityArgument.entity())
+                            .executes(context -> {
+                                double width = DoubleArgumentType.getDouble(context, "width");
+                                double height = DoubleArgumentType.getDouble(context, "height");
+                                
+                                Entity fromEntity = EntityArgument.getEntity(context, "from");
+                                Entity toEntity = EntityArgument.getEntity(context, "to");
+                                
+                                Portal portal = Portal.entityType.create(fromEntity.world);
+                                
+                                portal.setPosition(fromEntity.getPosX(), fromEntity.getPosY(), fromEntity.getPosZ());
+                                
+                                portal.dimensionTo = toEntity.world.func_234923_W_();
+                                portal.destination = toEntity.getPositionVec();
+                                portal.width = width;
+                                portal.height = height;
+                                
+                                Vector3d normal = fromEntity.getLook(1);
+                                Vector3d rightVec = getRightVec(fromEntity);
+                                
+                                Vector3d axisH = rightVec.crossProduct(normal).normalize();
+                                
+                                portal.axisW = rightVec;
+                                portal.axisH = axisH;
+                                
+                                portal.world.addEntity(portal);
+                                
+                                return 0;
+                            })
+                        )
+                    )
+                )
+            )
+        );
     }
     
     private static void registerUtilityCommands(
@@ -717,7 +757,7 @@ public class PortalCommand {
                     
                     Global.serverTeleportationManager.invokeTpmeCommand(
                         context.getSource().asPlayer(),
-                        entity.world.dimension.getType(),
+                        entity.world.func_234923_W_(),
                         entity.getPositionVec()
                     );
                     
@@ -734,12 +774,12 @@ public class PortalCommand {
             )
             .then(Commands.argument("dest", Vec3Argument.vec3())
                 .executes(context -> {
-                    Vec3d dest = Vec3Argument.getVec3(context, "dest");
+                    Vector3d dest = Vec3Argument.getVec3(context, "dest");
                     ServerPlayerEntity player = context.getSource().asPlayer();
                     
                     Global.serverTeleportationManager.invokeTpmeCommand(
                         player,
-                        player.world.dimension.getType(),
+                        player.world.func_234923_W_(),
                         dest
                     );
                     
@@ -757,11 +797,11 @@ public class PortalCommand {
             .then(Commands.argument("dim", DimensionArgument.getDimension())
                 .then(Commands.argument("dest", Vec3Argument.vec3())
                     .executes(context -> {
-                        DimensionType dim = DimensionArgument.getDimensionArgument(
+                        RegistryKey<World> dim = DimensionArgument.getDimensionArgument(
                             context,
                             "dim"
-                        );
-                        Vec3d dest = Vec3Argument.getVec3(context, "dest");
+                        ).func_234923_W_();
+                        Vector3d dest = Vec3Argument.getVec3(context, "dest");
                         
                         Global.serverTeleportationManager.invokeTpmeCommand(
                             context.getSource().asPlayer(),
@@ -793,7 +833,7 @@ public class PortalCommand {
                         
                         int numTeleported = teleport(
                             entities,
-                            target.world.dimension.getType(),
+                            target.world.func_234923_W_(),
                             target.getPositionVec()
                         );
                         
@@ -813,11 +853,11 @@ public class PortalCommand {
                     .executes(context -> {
                         Collection<? extends Entity> entities =
                             EntityArgument.getEntities(context, "from");
-                        Vec3d dest = Vec3Argument.getVec3(context, "dest");
+                        Vector3d dest = Vec3Argument.getVec3(context, "dest");
                         
                         int numTeleported = teleport(
                             entities,
-                            context.getSource().getWorld().dimension.getType(),
+                            context.getSource().getWorld().func_234923_W_(),
                             dest
                         );
                         
@@ -838,15 +878,15 @@ public class PortalCommand {
                         .executes(context -> {
                             Collection<? extends Entity> entities =
                                 EntityArgument.getEntities(context, "from");
-                            DimensionType dim = DimensionArgument.getDimensionArgument(
+                            RegistryKey<World> dim = DimensionArgument.getDimensionArgument(
                                 context,
                                 "dim"
-                            );
-                            Vec3d dest = Vec3Argument.getVec3(context, "dest");
+                            ).func_234923_W_();
+                            Vector3d dest = Vec3Argument.getVec3(context, "dest");
                             
                             int numTeleported = teleport(
                                 entities,
-                                context.getSource().getWorld().dimension.getType(),
+                                context.getSource().getWorld().func_234923_W_(),
                                 dest
                             );
                             
@@ -888,7 +928,7 @@ public class PortalCommand {
         builder.then(Commands.literal("goback")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
-                net.minecraft.util.Tuple<DimensionType, Vec3d> lastPos =
+                net.minecraft.util.Tuple<RegistryKey<World>, Vector3d> lastPos =
                     Global.serverTeleportationManager.lastPosition.get(player);
                 if (lastPos == null) {
                     sendMessage(context, "You haven't teleported");
@@ -906,8 +946,8 @@ public class PortalCommand {
             .then(Commands.argument("p1", Vec3Argument.vec3(false))
                 .then(Commands.argument("p2", Vec3Argument.vec3(false))
                     .executes(context -> {
-                        Vec3d p1 = Vec3Argument.getVec3(context, "p1");
-                        Vec3d p2 = Vec3Argument.getVec3(context, "p2");
+                        Vector3d p1 = Vec3Argument.getVec3(context, "p1");
+                        Vector3d p2 = Vec3Argument.getVec3(context, "p2");
                         AxisAlignedBB box = new AxisAlignedBB(p1, p2);
                         ServerWorld world = context.getSource().getWorld();
                         addSmallWorldWrappingPortals(box, world, true);
@@ -921,8 +961,8 @@ public class PortalCommand {
             .then(Commands.argument("p1", Vec3Argument.vec3(false))
                 .then(Commands.argument("p2", Vec3Argument.vec3(false))
                     .executes(context -> {
-                        Vec3d p1 = Vec3Argument.getVec3(context, "p1");
-                        Vec3d p2 = Vec3Argument.getVec3(context, "p2");
+                        Vector3d p1 = Vec3Argument.getVec3(context, "p1");
+                        Vector3d p2 = Vec3Argument.getVec3(context, "p2");
                         AxisAlignedBB box = new AxisAlignedBB(p1, p2);
                         ServerWorld world = context.getSource().getWorld();
                         addSmallWorldWrappingPortals(box, world, false);
@@ -993,7 +1033,7 @@ public class PortalCommand {
     ) throws CommandSyntaxException {
         portal.dimensionTo = DimensionArgument.getDimensionArgument(
             context, "dim"
-        );
+        ).func_234923_W_();
         portal.destination = Vec3Argument.getVec3(
             context, "dest"
         );
@@ -1104,8 +1144,8 @@ public class PortalCommand {
         CommandContext<CommandSource> context,
         Portal pointedPortal,
         ServerPlayerEntity player,
-        DimensionType dimension,
-        Vec3d destination,
+        RegistryKey<World> dimension,
+        Vector3d destination,
         boolean biFaced,
         boolean biWay
     ) {
@@ -1153,7 +1193,7 @@ public class PortalCommand {
     
     public static void reloadPortal(Portal portal) {
         portal.updateCache();
-        McHelper.getIEStorage(portal.dimension).resendSpawnPacketToTrackers(portal);
+        McHelper.getIEStorage(portal.world.func_234923_W_()).resendSpawnPacketToTrackers(portal);
     }
     
     public static void sendMessage(CommandContext<CommandSource> context, String message) {
@@ -1175,7 +1215,7 @@ public class PortalCommand {
             "imm_ptl.command.make_portal.success",
             Double.toString(portal.width),
             Double.toString(portal.height),
-            McHelper.dimensionTypeId(portal.world.dimension.getType()).toString(),
+            McHelper.dimensionTypeId(portal.world.func_234923_W_()).toString(),
             portal.getPositionVec().toString(),
             McHelper.dimensionTypeId(portal.dimensionTo).toString(),
             portal.destination.toString()
@@ -1186,8 +1226,8 @@ public class PortalCommand {
     private static int placePortalAbsolute(CommandContext<CommandSource> context) throws CommandSyntaxException {
         double width = DoubleArgumentType.getDouble(context, "width");
         double height = DoubleArgumentType.getDouble(context, "height");
-        DimensionType to = DimensionArgument.getDimensionArgument(context, "to");
-        Vec3d dest = Vec3Argument.getVec3(context, "dest");
+        RegistryKey<World> to = DimensionArgument.getDimensionArgument(context, "to").func_234923_W_();
+        Vector3d dest = Vec3Argument.getVec3(context, "dest");
         
         Portal portal = Helper.placePortal(width, height, context.getSource().asPlayer());
         
@@ -1208,7 +1248,7 @@ public class PortalCommand {
     private static int placePortalShift(CommandContext<CommandSource> context) throws CommandSyntaxException {
         double width = DoubleArgumentType.getDouble(context, "width");
         double height = DoubleArgumentType.getDouble(context, "height");
-        DimensionType to = DimensionArgument.getDimensionArgument(context, "to");
+        RegistryKey<World> to = DimensionArgument.getDimensionArgument(context, "to").func_234923_W_();
         double dist = DoubleArgumentType.getDouble(context, "dist");
         
         Portal portal = Helper.placePortal(width, height, context.getSource().asPlayer());
@@ -1229,8 +1269,8 @@ public class PortalCommand {
     
     private static int teleport(
         Collection<? extends Entity> entities,
-        DimensionType targetDim,
-        Vec3d targetPos
+        RegistryKey<World> targetDim,
+        Vector3d targetPos
     ) {
         ServerWorld targetWorld = McHelper.getServer().getWorld(targetDim);
         
@@ -1258,8 +1298,7 @@ public class PortalCommand {
                     McHelper.setPosAndLastTickPos(entity, targetPos, targetPos);
                     McHelper.updateBoundingBox(entity);
                     entity.world = targetWorld;
-                    entity.dimension = targetWorld.dimension.getType();
-                    targetWorld.func_217460_e(entity);
+                    targetWorld.addFromAnotherDimension(entity);
                 }
             }
             
@@ -1309,25 +1348,33 @@ public class PortalCommand {
             .map(Pair::getFirst).orElse(null);
     }
     
-    public static Optional<Pair<Portal, Vec3d>> getPlayerPointingPortalRaw(
+    public static Optional<Pair<Portal, Vector3d>> getPlayerPointingPortalRaw(
         PlayerEntity player, float tickDelta, double maxDistance, boolean includeGlobalPortal
     ) {
-        Vec3d from = player.getEyePosition(tickDelta);
-        Vec3d to = from.add(player.getLook(tickDelta).scale(maxDistance));
+        Vector3d from = player.getEyePosition(tickDelta);
+        Vector3d to = from.add(player.getLook(tickDelta).scale(maxDistance));
+        World world = player.world;
+        return raytracePortals(world, from, to, includeGlobalPortal);
+    }
+    
+    public static Optional<Pair<Portal, Vector3d>> raytracePortals(
+        World world, Vector3d from, Vector3d to, boolean includeGlobalPortal
+    ) {
         Stream<Portal> portalStream = McHelper.getEntitiesNearby(
-            player,
+            world,
+            from,
             Portal.class,
-            maxDistance
+            from.distanceTo(to)
         );
         if (includeGlobalPortal) {
-            List<GlobalTrackedPortal> globalPortals = McHelper.getGlobalPortals(player.world);
+            List<GlobalTrackedPortal> globalPortals = McHelper.getGlobalPortals(world);
             portalStream = Streams.concat(
                 portalStream,
                 globalPortals.stream()
             );
         }
         return portalStream.map(
-            portal -> new Pair<Portal, Vec3d>(
+            portal -> new Pair<Portal, Vector3d>(
                 portal, portal.pick(from, to)
             )
         ).filter(
@@ -1356,5 +1403,17 @@ public class PortalCommand {
         portal.cullableXEnd = 0;
         portal.cullableYStart = 0;
         portal.cullableYEnd = 0;
+    }
+    
+    /**
+     * {@link Entity#getRotationVector()}
+     */
+    private static Vector3d getRightVec(Entity entity) {
+        float yaw = entity.rotationYaw + 90;
+        float radians = -yaw * 0.017453292F;
+        
+        return new Vector3d(
+            Math.sin(radians), 0, Math.cos(radians)
+        );
     }
 }

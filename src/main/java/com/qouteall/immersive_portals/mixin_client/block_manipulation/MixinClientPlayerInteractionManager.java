@@ -34,7 +34,7 @@ public abstract class MixinClientPlayerInteractionManager implements IEClientPla
     private ClientPlayNetHandler connection;
     
     @Inject(
-        method = "Lnet/minecraft/client/multiplayer/PlayerController;func_225324_a(Lnet/minecraft/network/play/client/CPlayerDiggingPacket$Action;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/Direction;)V",
+        method = "Lnet/minecraft/client/multiplayer/PlayerController;sendDiggingPacket(Lnet/minecraft/network/play/client/CPlayerDiggingPacket$Action;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/Direction;)V",
         at = @At("HEAD"),
         cancellable = true
     )

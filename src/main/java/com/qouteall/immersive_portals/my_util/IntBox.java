@@ -4,9 +4,8 @@ import com.qouteall.immersive_portals.Helper;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
-
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.math.vector.Vector3i;
 import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -45,7 +44,7 @@ public class IntBox {
             l.getZ() <= h.getZ();
     }
     
-    public IntBox expandOrShrink(Vec3i offset) {
+    public IntBox expandOrShrink(Vector3i offset) {
         assert isSorted();
         
         return new IntBox(
@@ -182,8 +181,8 @@ public class IntBox {
         return Helper.divide(l.add(h), 2);
     }
     
-    public Vec3d getCenterVec() {
-        return new Vec3d(
+    public Vector3d getCenterVec() {
+        return new Vector3d(
             (l.getX() + h.getX() + 1) / 2.0,
             (l.getY() + h.getY() + 1) / 2.0,
             (l.getZ() + h.getZ() + 1) / 2.0
@@ -236,7 +235,7 @@ public class IntBox {
         );
     }
     
-    public IntBox getMoved(Vec3i offset) {
+    public IntBox getMoved(Vector3i offset) {
         return new IntBox(
             l.add(offset),
             h.add(offset)

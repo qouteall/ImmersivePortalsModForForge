@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals.block_manipulation;
 
 import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Global;
-import net.minecraft.entity.ai.attributes.IAttribute;
+import net.minecraft.entity.ai.attributes.Attribute;
 import net.minecraft.entity.ai.attributes.RangedAttribute;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.potion.Effect;
@@ -15,10 +15,10 @@ public class HandReachTweak {
     public static BiFunction<EffectType, Integer, Effect>
         statusEffectConstructor;
     
-    public static final IAttribute handReachMultiplierAttribute =
-        (new RangedAttribute((IAttribute) null, "imm_ptl.hand_reach_multiplier",
+    public static final Attribute handReachMultiplierAttribute =
+        (new RangedAttribute( "imm_ptl.hand_reach_multiplier",
             1.0D, 0.0D, 1024.0D
-        )).setDescription("Hand Reach Multiplier").setShouldWatch(true);
+        )).func_233753_a_(true);
     
     public static Effect longerReachEffect;
     

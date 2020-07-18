@@ -12,10 +12,9 @@ import net.minecraft.item.Items;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.GameType;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 
 public class EndPortalEntity extends Portal {
@@ -29,17 +28,17 @@ public class EndPortalEntity extends Portal {
     }
     
     public static void onEndPortalComplete(ServerWorld world, BlockPattern.PatternHelper pattern) {
-        Portal portal = new EndPortalEntity(entityType,world);
+        Portal portal = new EndPortalEntity(entityType, world);
         
-        Vec3d center = new Vec3d(pattern.getFrontTopLeft()).add(-1.5, 0.5, -1.5);
+        Vector3d center = Vector3d.func_237491_b_(pattern.getFrontTopLeft()).add(-1.5, 0.5, -1.5);
         portal.setPosition(center.x, center.y, center.z);
         
-        portal.destination = new Vec3d(0, 120, 0);
+        portal.destination = new Vector3d(0, 120, 0);
         
-        portal.dimensionTo = DimensionType.THE_END;
+        portal.dimensionTo = World.field_234920_i_;
         
-        portal.axisW = new Vec3d(0, 0, 1);
-        portal.axisH = new Vec3d(1, 0, 0);
+        portal.axisW = new Vector3d(0, 0, 1);
+        portal.axisH = new Vector3d(1, 0, 0);
         
         portal.width = 3;
         portal.height = 3;
@@ -83,8 +82,8 @@ public class EndPortalEntity extends Portal {
     }
     
     private void generateObsidianPlatform() {
-        ServerWorld endWorld = McHelper.getServer().getWorld(DimensionType.THE_END);
-        BlockPos spawnPoint = endWorld.getSpawnCoordinate();
+        ServerWorld endWorld = McHelper.getServer().getWorld(World.field_234920_i_);
+        BlockPos spawnPoint = endWorld.func_241135_u_();
         
         int int_1 = spawnPoint.getX();
         int int_2 = spawnPoint.getY() - 1;

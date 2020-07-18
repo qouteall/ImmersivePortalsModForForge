@@ -22,7 +22,7 @@ public class MixinNetherPortalBlock {
         at = @At("HEAD"),
         cancellable = true
     )
-    private void onCreatePortal(
+    private static void onCreatePortal(
         IWorld world,
         BlockPos pos,
         CallbackInfoReturnable<Boolean> cir

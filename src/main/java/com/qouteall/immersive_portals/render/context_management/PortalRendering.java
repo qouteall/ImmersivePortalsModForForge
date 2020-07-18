@@ -1,24 +1,22 @@
 package com.qouteall.immersive_portals.render.context_management;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ducks.IECamera;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.TransformationManager;
-import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.renderer.Matrix3f;
-import net.minecraft.client.renderer.Matrix4f;
-import net.minecraft.client.renderer.Quaternion;
-import net.minecraft.util.math.Vec3d;
-
 import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Stack;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
+// TODO remove this and use RenderInfo
+@OnlyIn(Dist.CLIENT)
 public class PortalRendering {
     private static final Stack<Portal> portalLayers = new Stack<>();
     private static boolean isRenderingCache = false;
@@ -87,26 +85,12 @@ public class PortalRendering {
         );
     }
     
-    public static void adjustCameraPos(ActiveRenderInfo camera) {
-        Vec3d pos = RenderStates.originalCamera.getProjectedView();
+    public static Vector3d getRenderingCameraPos() {
+        Vector3d pos = RenderStates.originalCamera.getProjectedView();
         for (Portal portal : portalLayers) {
             pos = portal.transformPoint(pos);
         }
-        ((IECamera) camera).mySetPos(pos);
+        return pos;
     }
     
-    public static void applyAdditionalTransformations(MatrixStack matrixStack) {
-        portalLayers.forEach(portal -> {
-            if (portal instanceof Mirror) {
-                Matrix4f matrix = TransformationManager.getMirrorTransformation(portal.getNormal());
-                matrixStack.getLast().getMatrix().mul(matrix);
-                matrixStack.getLast().getNormal().mul(new Matrix3f(matrix));
-            }
-            else if (portal.rotation != null) {
-                Quaternion rot = portal.rotation.copy();
-                rot.conjugate();
-                matrixStack.rotate(rot);
-            }
-        });
-    }
 }

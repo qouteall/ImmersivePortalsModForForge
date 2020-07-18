@@ -5,7 +5,8 @@ import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.world.World;
 import net.optifine.shaders.IShaderPack;
 import net.optifine.shaders.ShaderPackDefault;
 import net.optifine.shaders.Shaders;
@@ -27,28 +28,15 @@ public class MixinShaders_DimensionRedirect {
     
     @Inject(method = "init", at = @At("HEAD"), remap = false)
     private static void onInit(CallbackInfo ci) {
-        Minecraft mc = Minecraft.getInstance();
-        DimensionType currDimension = mc.world.dimension.getType();
+        Minecraft client = Minecraft.getInstance();
+        RegistryKey<World> currDimension = client.world.func_234923_W_();
         
         Helper.log("Shader init " + currDimension);
         
-        if (RenderDimensionRedirect.isNoShader(currentWorld.dimension.getType())) {
+        if (RenderDimensionRedirect.isNoShader(currentWorld.func_234923_W_())) {
             shaderPack = new ShaderPackDefault();
             Helper.log("Set to internal shader");
         }
-    }
-    
-    @Redirect(
-        method = "init",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/dimension/DimensionType;getId()I",
-            remap = true
-        ),
-        remap = false
-    )
-    private static int redirectGetDimensionRawId(DimensionType dimensionType) {
-        return RenderDimensionRedirect.getRedirectedDimension(dimensionType).getId();
     }
     
     //redirect dimension for shadow camera
@@ -56,7 +44,7 @@ public class MixinShaders_DimensionRedirect {
         method = "setCameraShadow",
         at = @At(
             value = "FIELD",
-            target = "Lnet/minecraft/client/Minecraft;world:Lnet/minecraft/client/world/ClientWorld;",
+            target = "Lnet/minecraft/client/MinecraftClient;world:Lnet/minecraft/client/world/ClientWorld;",
             remap = true
         ),
         remap = false
@@ -64,7 +52,7 @@ public class MixinShaders_DimensionRedirect {
     private static ClientWorld redirectWorldForShadowCamera(Minecraft client) {
         return CGlobal.clientWorldLoader.getWorld(
             RenderDimensionRedirect.getRedirectedDimension(
-                client.world.getDimension().getType()
+                client.world.func_234923_W_()
             )
         );
     }
@@ -73,7 +61,7 @@ public class MixinShaders_DimensionRedirect {
         method = "beginRender",
         at = @At(
             value = "FIELD",
-            target = "Lnet/minecraft/client/Minecraft;world:Lnet/minecraft/client/world/ClientWorld;",
+            target = "Lnet/minecraft/client/MinecraftClient;world:Lnet/minecraft/client/world/ClientWorld;",
             ordinal = 1,
             remap = true
         ),
@@ -82,7 +70,7 @@ public class MixinShaders_DimensionRedirect {
     private static ClientWorld redirectWorldInBeginRender(Minecraft client) {
         return CGlobal.clientWorldLoader.getWorld(
             RenderDimensionRedirect.getRedirectedDimension(
-                client.world.getDimension().getType()
+                client.world.func_234923_W_()
             )
         );
     }

@@ -5,15 +5,14 @@ import com.qouteall.immersive_portals.portal.nether_portal.BreakablePortalEntity
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.EntityType;
 import net.minecraft.state.EnumProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.state.properties.BlockStateProperties;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
@@ -91,12 +90,12 @@ public class PortalPlaceholderBlock extends Block {
         BlockPos blockPos,
         BlockPos neighborPos
     ) {
-        if (!world.isRemote()) {
+        if(!world.isRemote()){
             Direction.Axis axis = thisState.get(AXIS);
             if (direction.getAxis() != axis) {
                 McHelper.getEntitiesNearby(
                     world.getWorld(),
-                    new Vec3d(blockPos),
+                    Vector3d.func_237491_b_(blockPos),
                     Portal.class,
                     20
                 ).forEach(
@@ -130,7 +129,7 @@ public class PortalPlaceholderBlock extends Block {
         //nothing
     }
     
-    
+   
     //---------These are copied from BlockBarrier
     @Override
     public boolean propagatesSkylightDown(
@@ -154,16 +153,6 @@ public class PortalPlaceholderBlock extends Block {
         BlockPos blockPos_1
     ) {
         return 1.0F;
-    }
-    
-    @Override
-    public boolean canEntitySpawn(
-        BlockState blockState_1,
-        IBlockReader blockView_1,
-        BlockPos blockPos_1,
-        EntityType<?> entityType_1
-    ) {
-        return false;
     }
     
 }

@@ -9,7 +9,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
@@ -77,24 +77,24 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         boolean isInward,
         Portal portal
     ) {
-        Vec3d areaSize = Helper.getBoxSize(area);
+        Vector3d areaSize = Helper.getBoxSize(area);
         
         Tuple<Direction, Direction> axises = Helper.getPerpendicularDirections(
             isInward ? direction : direction.getOpposite()
         );
         AxisAlignedBB boxSurface = Helper.getBoxSurface(area, direction);
-        Vec3d center = boxSurface.getCenter();
+        Vector3d center = boxSurface.getCenter();
         AxisAlignedBB oppositeSurface = Helper.getBoxSurface(area, direction.getOpposite());
-        Vec3d destination = oppositeSurface.getCenter();
+        Vector3d destination = oppositeSurface.getCenter();
         portal.setPosition(center.x, center.y, center.z);
         portal.destination = destination;
         
-        portal.axisW = new Vec3d(axises.getA().getDirectionVec());
-        portal.axisH = new Vec3d(axises.getB().getDirectionVec());
+        portal.axisW =  Vector3d.func_237491_b_(axises.getA().getDirectionVec());
+        portal.axisH =  Vector3d.func_237491_b_(axises.getB().getDirectionVec());
         portal.width = Helper.getCoordinate(areaSize, axises.getA().getAxis());
         portal.height = Helper.getCoordinate(areaSize, axises.getB().getAxis());
         
-        portal.dimensionTo = serverWorld.dimension.getType();
+        portal.dimensionTo = serverWorld.func_234923_W_();
     }
     
     public static class WrappingZone {
@@ -263,7 +263,7 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
     
     public static void invokeRemoveWrappingZone(
         ServerWorld world,
-        Vec3d playerPos,
+        Vector3d playerPos,
         Consumer<ITextComponent> feedbackSender
     ) {
         List<WrappingZone> wrappingZones = getWrappingZones(world);

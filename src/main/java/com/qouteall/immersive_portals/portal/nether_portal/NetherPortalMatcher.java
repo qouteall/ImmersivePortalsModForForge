@@ -6,10 +6,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.vector.Vector3i;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import java.util.Arrays;
 import java.util.Objects;
@@ -17,10 +16,9 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-//Well it will create millions of short-lived BlockPos objects
-//It will generate intense GC pressure
-//This is not frequently invoked so I don't want to optimize it
 public class NetherPortalMatcher {
+    // bad in performance
+    @Deprecated
     public static Stream<BlockPos> fromNearToFarWithinHeightLimit(
         BlockPos searchingCenter,
         int maxRadius,
@@ -53,12 +51,17 @@ public class NetherPortalMatcher {
         new BlockPos(Integer.MAX_VALUE, 126, Integer.MAX_VALUE)
     );
     
+    @Deprecated
     public static IntBox getHeightLimit(
-        DimensionType dimension
+        World world
     ) {
-        return dimension == DimensionType.THE_NETHER ? heightLimitNether : heightLimitOverworld;
+        return new IntBox(
+            new BlockPos(Integer.MIN_VALUE, 2, Integer.MIN_VALUE),
+            new BlockPos(Integer.MAX_VALUE, world.func_234938_ad_() - 2, Integer.MAX_VALUE)
+        );
     }
     
+    @Deprecated
     public static Stream<BlockPos> forOneDirection(
         BlockPos startPos,
         Direction facing,
@@ -71,6 +74,7 @@ public class NetherPortalMatcher {
     }
     
     //@Nullable
+    @Deprecated
     private static IntBox detectStick(
         IWorld world,
         BlockPos center,
@@ -112,6 +116,7 @@ public class NetherPortalMatcher {
     }
     
     //@Nullable
+    @Deprecated
     private static BlockPos detectStickForOneDirection(
         BlockPos startPos,
         Direction facing,
@@ -203,10 +208,10 @@ public class NetherPortalMatcher {
         ).map(
             basePoint -> IntBox.getBoxByBasePointAndSize(
                 areaSize,
-                basePoint.subtract(new Vec3i(-areaSize.getX() / 2, 0, -areaSize.getZ() / 2))
+                basePoint.subtract(new Vector3i(-areaSize.getX() / 2, 0, -areaSize.getZ() / 2))
             )
         ).filter(
-            box -> isAllAir(world, box)
+            box -> isAirCubeMediumPlace(world, box)
         ).findFirst().orElse(null);
     }
     
@@ -231,7 +236,7 @@ public class NetherPortalMatcher {
         ).map(
             basePoint -> IntBox.getBoxByBasePointAndSize(areaSize, basePoint)
         ).filter(
-            box -> isAllAir(world, box)
+            box -> isAirCubeMediumPlace(world, box)
         ).findFirst().orElse(null);
     }
     
@@ -309,20 +314,23 @@ public class NetherPortalMatcher {
                 areaSize, basePoint
             )
         ).filter(
-            box -> isAllAir(world, box)
+            box -> isAirCubeMediumPlace(world, box)
         ).findFirst().orElse(null);
     }
     
-    public static boolean isAllAir(IWorld world, IntBox box) {
+    public static boolean isAirCubeMediumPlace(IWorld world, IntBox box) {
         //the box out of height limit is not accepted
-        if (box.h.getY() + 5 >= ((World) world).getActualHeight()) {
+        if (box.h.getY() + 5 >= ((World) world).func_234938_ad_()) {
             return false;
         }
         if (box.l.getY() - 5 <= 0) {
             return false;
         }
         
-        
+        return isAllAir(world, box);
+    }
+    
+    public static boolean isAllAir(IWorld world, IntBox box) {
         boolean roughTest = Arrays.stream(box.getEightVertices()).allMatch(
             blockPos -> isAir(world, blockPos)
         );
@@ -341,16 +349,16 @@ public class NetherPortalMatcher {
     ) {
         Integer maxUpShift = Helper.getLastSatisfying(
             IntStream.range(1, 40).boxed(),
-            upShift -> isAllAir(
+            upShift -> isAirCubeMediumPlace(
                 world,
-                airCube.getMoved(new Vec3i(0, upShift, 0))
+                airCube.getMoved(new Vector3i(0, upShift, 0))
             )
         );
         if (maxUpShift == null) {
             maxUpShift = 0;
         }
         
-        return airCube.getMoved(new Vec3i(0, maxUpShift * 2 / 3, 0));
+        return airCube.getMoved(new Vector3i(0, maxUpShift * 2 / 3, 0));
     }
     
     public static IntBox pushDownBox(
@@ -358,16 +366,16 @@ public class NetherPortalMatcher {
     ) {
         Integer downShift = Helper.getLastSatisfying(
             IntStream.range(0, 40).boxed(),
-            i -> isAllAir(
+            i -> isAirCubeMediumPlace(
                 world,
-                airCube.getMoved(new Vec3i(0, -i, 0))
+                airCube.getMoved(new Vector3i(0, -i, 0))
             )
         );
         if (downShift == null) {
             downShift = 0;
         }
         
-        return airCube.getMoved(new Vec3i(0, -downShift, 0));
+        return airCube.getMoved(new Vector3i(0, -downShift, 0));
     }
     
 }

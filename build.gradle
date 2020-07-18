@@ -204,3 +204,9 @@ mixin {
     add sourceSets.main, "imm_ptl.refmap.json"
     //add sourceSets.another, "another.refmap.json"
 }
+
+task printClasspath {
+    doLast {
+        configurations.compileClasspath.each { println "\""+ (it.toString().replace("\\","/")) + "\"," }
+    }
+}

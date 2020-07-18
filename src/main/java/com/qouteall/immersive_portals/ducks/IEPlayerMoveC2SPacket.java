@@ -1,9 +1,10 @@
 package com.qouteall.immersive_portals.ducks;
 
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.world.World;
 
 public interface IEPlayerMoveC2SPacket {
-    DimensionType getPlayerDimension();
+    RegistryKey<World> getPlayerDimension();
     
-    void setPlayerDimension(DimensionType dim);
+    void setPlayerDimension(RegistryKey<World> dim);
 }

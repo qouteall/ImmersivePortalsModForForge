@@ -6,7 +6,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -45,7 +45,7 @@ public class NetherPortalEntity extends BreakablePortalEntity {
                 double px = (random.nextDouble() * 2 - 1) * (width / 2);
                 double py = (random.nextDouble() * 2 - 1) * (height / 2);
                 
-                Vec3d pos = getPointInPlane(px, py);
+                Vector3d pos = getPointInPlane(px, py);
                 
                 double speedMultiplier = 20;
                 

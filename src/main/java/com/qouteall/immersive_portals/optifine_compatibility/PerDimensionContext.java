@@ -2,9 +2,9 @@ package com.qouteall.immersive_portals.optifine_compatibility;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.Vector4f;
 import net.minecraft.client.renderer.texture.Texture;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.vector.Vector4f;
 import net.optifine.shaders.FlipTextures;
 import net.optifine.shaders.ICustomTexture;
 import net.optifine.shaders.IShaderPack;

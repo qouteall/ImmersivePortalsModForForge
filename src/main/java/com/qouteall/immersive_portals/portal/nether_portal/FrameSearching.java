@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.portal.nether_portal;
 
 import com.qouteall.immersive_portals.McHelper;
 import net.minecraft.block.BlockState;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.IChunk;
@@ -9,7 +10,6 @@ import net.minecraft.world.gen.WorldGenRegion;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -21,6 +21,7 @@ public class FrameSearching {
         BlockPortalShape templateShape,
         Predicate<BlockState> areaPredicate,
         Predicate<BlockState> framePredicate,
+        Predicate<BlockPortalShape> resultPredicate,
         Consumer<BlockPortalShape> onFound,
         Runnable onNotFound
     ) {
@@ -31,8 +32,7 @@ public class FrameSearching {
                         region, regionRadius,
                         centerPoint, templateShape,
                         areaPredicate, framePredicate,
-                        (a, b) -> {
-                        }
+                        resultPredicate
                     );
                     McHelper.getServer().execute(() -> {
                         if (result != null) {
@@ -48,7 +48,7 @@ public class FrameSearching {
                     onNotFound.run();
                 }
             },
-            McHelper.getServer().getBackgroundExecutor()
+            Util.getServerExecutor()
         );
         
     }
@@ -62,7 +62,7 @@ public class FrameSearching {
         BlockPortalShape templateShape,
         Predicate<BlockState> areaPredicate,
         Predicate<BlockState> framePredicate,
-        BiConsumer<Integer, Integer> progressInformer
+        Predicate<BlockPortalShape> resultPredicate
     ) {
         ArrayList<IChunk> chunks = getChunksFromNearToFar(
             region, centerPoint, regionRadius
@@ -73,7 +73,6 @@ public class FrameSearching {
         
         // avoid using stream api and maintain cache locality
         for (int chunkIndex = 0; chunkIndex < chunks.size(); chunkIndex++) {
-            progressInformer.accept(chunkIndex, chunks.size());
             IChunk chunk = chunks.get(chunkIndex);
             ChunkSection[] sectionArray = chunk.getSections();
             for (int sectionY = 0; sectionY < sectionArray.length; sectionY++) {
@@ -97,7 +96,9 @@ public class FrameSearching {
                                         temp1
                                     );
                                     if (result != null) {
-                                        return result;
+                                        if (resultPredicate.test(result)) {
+                                            return result;
+                                        }
                                     }
                                 }
                             }

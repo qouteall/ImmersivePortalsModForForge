@@ -1,9 +1,10 @@
 package com.qouteall.immersive_portals.ducks;
 
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.world.World;
 
 public interface IEPlayerPositionLookS2CPacket {
-    DimensionType getPlayerDimension();
+    RegistryKey<World> getPlayerDimension();
     
-    void setPlayerDimension(DimensionType dimension);
+    void setPlayerDimension(RegistryKey<World> dimension);
 }

@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.entity.Entity;
 
 public interface IEWorldRenderer {
@@ -28,4 +29,8 @@ public interface IEWorldRenderer {
         MatrixStack matrixStack,
         IRenderTypeBuffer vertexConsumerProvider
     );
+    
+    ShaderGroup portal_getTransparencyShader();
+    
+    void portal_setTransparencyShader(ShaderGroup arg);
 }

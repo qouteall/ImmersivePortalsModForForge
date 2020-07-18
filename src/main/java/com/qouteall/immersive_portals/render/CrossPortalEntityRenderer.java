@@ -18,9 +18,9 @@ import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import java.util.WeakHashMap;
@@ -131,16 +131,16 @@ public class CrossPortalEntityRenderer {
                 //no need to render entity projection for mirrors
                 return;
             }
-            DimensionType projectionDimension = collidingPortal.dimensionTo;
-            if (client.world.dimension.getType() == projectionDimension) {
+            RegistryKey<World> projectionDimension = collidingPortal.dimensionTo;
+            if (client.world.func_234923_W_() == projectionDimension) {
                 renderProjectedEntity(entity, collidingPortal, matrixStack);
             }
         });
     }
     
     public static boolean hasIntersection(
-        Vec3d outerPlanePos, Vec3d outerPlaneNormal,
-        Vec3d entityPos, Vec3d collidingPortalNormal
+        Vector3d outerPlanePos, Vector3d outerPlaneNormal,
+        Vector3d entityPos, Vector3d collidingPortalNormal
     ) {
         return entityPos.subtract(outerPlanePos).dotProduct(outerPlaneNormal) > 0.01 &&
             outerPlanePos.subtract(entityPos).dotProduct(collidingPortalNormal) > 0.01;
@@ -157,7 +157,7 @@ public class CrossPortalEntityRenderer {
             //use some rough check to work around
             
             if (!Portal.isFlippedPortal(renderingPortal, collidingPortal)) {
-                Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+                Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
                 
                 boolean isHidden = cameraPos.subtract(collidingPortal.destination)
                     .dotProduct(collidingPortal.getContentDirection()) < 0;
@@ -194,17 +194,17 @@ public class CrossPortalEntityRenderer {
         Portal transformingPortal,
         MatrixStack matrixStack
     ) {
-        Vec3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
         
         ClientWorld newWorld = CGlobal.clientWorldLoader.getWorld(
             transformingPortal.dimensionTo
         );
         
-        Vec3d oldEyePos = McHelper.getEyePos(entity);
-        Vec3d oldLastTickEyePos = McHelper.getLastTickEyePos(entity);
+        Vector3d oldEyePos = McHelper.getEyePos(entity);
+        Vector3d oldLastTickEyePos = McHelper.getLastTickEyePos(entity);
         World oldWorld = entity.world;
         
-        Vec3d newEyePos = transformingPortal.transformPoint(oldEyePos);
+        Vector3d newEyePos = transformingPortal.transformPoint(oldEyePos);
         
         if (PortalRendering.isRendering()) {
             Portal renderingPortal = PortalRendering.getRenderingPortal();
@@ -263,7 +263,7 @@ public class CrossPortalEntityRenderer {
         if (!PortalRendering.isRendering()) {
             return false;
         }
-        if (client.renderViewEntity.dimension == RenderStates.originalPlayerDimension) {
+        if (client.renderViewEntity.world.func_234923_W_() == RenderStates.originalPlayerDimension) {
             return true;
         }
         return false;
@@ -281,7 +281,7 @@ public class CrossPortalEntityRenderer {
             Portal collidingPortal = ((IEEntity) entity).getCollidingPortal();
             if (collidingPortal != null) {
                 if (!Portal.isReversePortal(collidingPortal, renderingPortal)) {
-                    Vec3d cameraPos = PortalRenderer.client.gameRenderer.getActiveRenderInfo().getProjectedView();
+                    Vector3d cameraPos = PortalRenderer.client.gameRenderer.getActiveRenderInfo().getProjectedView();
                     
                     boolean isHidden = cameraPos.subtract(collidingPortal.getPositionVec())
                         .dotProduct(collidingPortal.getNormal()) < 0;

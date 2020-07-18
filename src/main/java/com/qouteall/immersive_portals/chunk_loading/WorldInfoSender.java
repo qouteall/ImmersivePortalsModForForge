@@ -1,14 +1,14 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
-import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.server.SChangeGameStatePacket;
 import net.minecraft.network.play.server.SUpdateTimePacket;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import java.util.Optional;
 import java.util.Set;
@@ -20,18 +20,18 @@ public class WorldInfoSender {
         ModMain.postServerTickSignal.connect(() -> {
             if (McHelper.getServerGameTime() % 100 == 42) {
                 for (ServerPlayerEntity player : McHelper.getCopiedPlayerList()) {
-                    Set<DimensionType> visibleDimensions = getVisibleDimensions(player);
+                    Set<RegistryKey<World>> visibleDimensions = getVisibleDimensions(player);
                     
-                    if (player.dimension != DimensionType.OVERWORLD) {
+                    if (player.world.func_234923_W_() != World.field_234918_g_) {
                         sendWorldInfo(
                             player,
-                            McHelper.getServer().getWorld(DimensionType.OVERWORLD)
+                            McHelper.getServer().getWorld(World.field_234918_g_)
                         );
                     }
                     
                     McHelper.getServer().getWorlds().forEach(thisWorld -> {
-                        if (thisWorld.dimension instanceof AlternateDimension) {
-                            if (visibleDimensions.contains(thisWorld.dimension.getType())) {
+                        if (ModMain.isAlternateDimension(thisWorld)) {
+                            if (visibleDimensions.contains(thisWorld.func_234923_W_())) {
                                 sendWorldInfo(
                                     player,
                                     thisWorld
@@ -47,7 +47,7 @@ public class WorldInfoSender {
     
     //send the daytime and weather info to player when player is in nether
     public static void sendWorldInfo(ServerPlayerEntity player, ServerWorld world) {
-        DimensionType remoteDimension = world.dimension.getType();
+        RegistryKey<World> remoteDimension = world.func_234923_W_();
         
         player.connection.sendPacket(
             MyNetwork.createRedirectedMessage(
@@ -63,43 +63,43 @@ public class WorldInfoSender {
         );
         
         /**{@link net.minecraft.client.network.ClientPlayNetworkHandler#onGameStateChange(GameStateChangeS2CPacket)}*/
+        
         if (world.isRaining()) {
-            player.connection.sendPacket(
-                MyNetwork.createRedirectedMessage(
-                    remoteDimension,
-                    new SChangeGameStatePacket(1, 0.0F)
+            player.connection.sendPacket(MyNetwork.createRedirectedMessage(
+                world.func_234923_W_(),
+                new SChangeGameStatePacket(
+                    SChangeGameStatePacket.field_241765_b_,
+                    0.0F
                 )
-            );
-            player.connection.sendPacket(
-                MyNetwork.createRedirectedMessage(
-                    remoteDimension,
-                    new SChangeGameStatePacket(7, world.getRainStrength(1.0F))
+            ));
+            
+            player.connection.sendPacket(MyNetwork.createRedirectedMessage(
+                world.func_234923_W_(),
+                new SChangeGameStatePacket(
+                    SChangeGameStatePacket.field_241771_h_,
+                    world.getRainStrength(1.0F)
                 )
-            );
-            player.connection.sendPacket(
-                MyNetwork.createRedirectedMessage(
-                    remoteDimension,
-                    new SChangeGameStatePacket(8, world.getThunderStrength(1.0F))
+            ));
+            player.connection.sendPacket(MyNetwork.createRedirectedMessage(
+                world.func_234923_W_(),
+                new SChangeGameStatePacket(
+                    SChangeGameStatePacket.field_241772_i_,
+                    world.getThunderStrength(1.0F)
                 )
-            );
+            ));
         }
         else {
-            player.connection.sendPacket(
-                MyNetwork.createRedirectedMessage(
-                    remoteDimension,
-                    new SChangeGameStatePacket(7, world.getRainStrength(1.0F))
-                )
-            );
-            player.connection.sendPacket(
-                MyNetwork.createRedirectedMessage(
-                    remoteDimension,
-                    new SChangeGameStatePacket(8, world.getThunderStrength(1.0F))
-                )
-            );
+//            player.networkHandler.sendPacket(MyNetwork.createRedirectedMessage(
+//                world.getRegistryKey(),
+//                new GameStateChangeS2CPacket(
+//                    GameStateChangeS2CPacket.RAIN_STOPPED,
+//                    0.0F
+//                )
+//            ));
         }
     }
     
-    public static Set<DimensionType> getVisibleDimensions(ServerPlayerEntity player) {
+    public static Set<RegistryKey<World>> getVisibleDimensions(ServerPlayerEntity player) {
         return Stream.concat(
             ChunkVisibilityManager.getChunkLoaders(player)
                 .map(chunkLoader -> chunkLoader.center.dimension),

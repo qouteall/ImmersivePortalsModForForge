@@ -6,8 +6,9 @@ import com.qouteall.immersive_portals.ducks.IEChunkHolder;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.World;
 import net.minecraft.world.server.ChunkHolder;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,8 +33,8 @@ public class MixinChunkHolder implements IEChunkHolder {
      */
     @Overwrite
     private void sendToTracking(IPacket<?> packet_1, boolean onlyOnRenderDistanceEdge) {
-        DimensionType dimension =
-            ((IEThreadedAnvilChunkStorage) playerProvider).getWorld().dimension.getType();
+        RegistryKey<World> dimension =
+            ((IEThreadedAnvilChunkStorage) playerProvider).getWorld().func_234923_W_();
         
         Consumer<ServerPlayerEntity> func = player ->
             player.connection.sendPacket(

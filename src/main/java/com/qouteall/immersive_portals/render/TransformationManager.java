@@ -3,36 +3,41 @@ package com.qouteall.immersive_portals.render;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEMatrix4f;
+import com.qouteall.immersive_portals.my_util.DQuaternion;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.render.context_management.PortalRendering;
+import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.renderer.Matrix4f;
-import net.minecraft.client.renderer.Quaternion;
-import net.minecraft.client.renderer.Vector3f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.Tuple;
+import net.minecraft.util.math.vector.Matrix4f;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class TransformationManager {
-    public static Quaternion inertialRotation;
+    private static DQuaternion interpolationStart;
+    private static DQuaternion lastCameraRotation;
+    
     private static long interpolationStartTime = 0;
     private static long interpolationEndTime = 1;
-    public static Quaternion portalRotation;
+    
+    public static final Minecraft client = Minecraft.getInstance();
     
     public static void processTransformation(ActiveRenderInfo camera, MatrixStack matrixStack) {
+        // override vanilla camera transformation
         matrixStack.getLast().getMatrix().setIdentity();
         matrixStack.getLast().getNormal().setIdentity();
         
-        Quaternion cameraRotation = getCameraRotation(camera.getPitch(), camera.getYaw());
-        Quaternion finalRotation = getFinalRotation(cameraRotation);
+        DQuaternion cameraRotation = DQuaternion.getCameraRotation(camera.getPitch(), camera.getYaw());
         
-        matrixStack.rotate(finalRotation);
+        DQuaternion finalRotation = getFinalRotation(cameraRotation);
         
-        PortalRendering.applyAdditionalTransformations(matrixStack);
+        matrixStack.rotate(finalRotation.toMcQuaternion());
+        
+        RenderInfo.applyAdditionalTransformations(matrixStack);
         
     }
     
@@ -43,7 +48,7 @@ public class TransformationManager {
         return progress >= -0.1 && progress <= 1.1;
     }
     
-    public static Quaternion getFinalRotation(Quaternion cameraRotation) {
+    public static DQuaternion getFinalRotation(DQuaternion cameraRotation) {
         double progress = (RenderStates.renderStartNanoTime - interpolationStartTime) /
             ((double) interpolationEndTime - interpolationStartTime);
         
@@ -53,10 +58,15 @@ public class TransformationManager {
         
         progress = mapProgress(progress);
         
-        return Helper.interpolateQuaternion(
-            Helper.ortholize(inertialRotation),
-            Helper.ortholize(cameraRotation.copy()),
-            (float) progress
+        DQuaternion cameraRotDelta = cameraRotation.hamiltonProduct(lastCameraRotation.getConjugated());
+        interpolationStart = interpolationStart.hamiltonProduct(cameraRotDelta);
+        
+        lastCameraRotation = cameraRotation;
+        
+        return DQuaternion.interpolate(
+            interpolationStart,
+            cameraRotation,
+            progress
         );
     }
     
@@ -66,82 +76,58 @@ public class TransformationManager {
 //        return Math.sqrt(1 - (1 - progress) * (1 - progress));
     }
     
-    public static Quaternion getCameraRotation(float pitch, float yaw) {
-        Quaternion cameraRotation = Vector3f.XP.rotationDegrees(pitch);
-        cameraRotation.multiply(
-            Vector3f.YP.rotationDegrees(yaw + 180.0F)
-        );
-        return cameraRotation;
-    }
-    
-    /**
-     * Entity#getRotationVector(float, float)
-     */
-    private static float getYawFromViewVector(Vec3d viewVector) {
-        double lx = viewVector.x;
-        double lz = viewVector.z;
-        double len = Math.sqrt(lx * lx + lz * lz);
-        lx /= len;
-        lz /= len;
-        
-        if (lz >= 0) {
-            return (float) -Math.asin(lx) / 0.017453292F;
-        }
-        else {
-            if (lx > 0) {
-                return (float) -Math.acos(lz) / 0.017453292F;
-            }
-            else {
-                return (float) Math.acos(lz) / 0.017453292F;
-            }
-        }
-    }
-    
-    private static float getPitchFromViewVector(Vec3d viewVector) {
-        return (float) -Math.asin(viewVector.y) / 0.017453292F;
-    }
-    
     public static void onClientPlayerTeleported(
         Portal portal
     ) {
         if (portal.rotation != null) {
-            Minecraft client = Minecraft.getInstance();
             ClientPlayerEntity player = client.player;
             
-            Quaternion currentCameraRotation =
-                getFinalRotation(getCameraRotation(player.rotationPitch, player.rotationYaw));
+            DQuaternion currentCameraRotation = DQuaternion.getCameraRotation(player.rotationPitch, player.rotationYaw);
+            DQuaternion currentCameraRotationInterpolated = getFinalRotation(currentCameraRotation);
             
-            Quaternion visualRotation =
-                currentCameraRotation.copy();
-            Quaternion b = portal.rotation.copy();
-            b.conjugate();
-            visualRotation.multiply(b);
+            DQuaternion rotationThroughPortal =
+                currentCameraRotationInterpolated.hamiltonProduct(
+                    DQuaternion.fromMcQuaternion(portal.rotation).getConjugated()
+                );
             
-            Vec3d oldViewVector = player.getLook(RenderStates.tickDelta);
-            Vec3d newViewVector = portal.transformLocalVec(oldViewVector);
+            Vector3d oldViewVector = player.getLook(RenderStates.tickDelta);
+            Vector3d newViewVector;
             
-            player.rotationYaw = getYawFromViewVector(newViewVector);
+            Tuple<Double, Double> pitchYaw = DQuaternion.getPitchYawFromRotation(rotationThroughPortal);
+            
+            player.rotationYaw = (float) (double) (pitchYaw.getB());
+            player.rotationPitch = (float) (double) (pitchYaw.getA());
+            
+            if (player.rotationPitch > 90) {
+                player.rotationPitch = 90 - (player.rotationPitch - 90);
+            }
+            else if (player.rotationPitch < -90) {
+                player.rotationPitch = -90 + (-90 - player.rotationPitch);
+            }
+            
             player.prevRotationYaw = player.rotationYaw;
-            player.rotationPitch = getPitchFromViewVector(newViewVector);
             player.prevRotationPitch = player.rotationPitch;
-            
             player.renderArmYaw = player.rotationYaw;
             player.renderArmPitch = player.rotationPitch;
-            
             player.prevRenderArmYaw = player.renderArmYaw;
             player.prevRenderArmPitch = player.renderArmPitch;
             
-            Quaternion newCameraRotation = getCameraRotation(player.rotationPitch, player.rotationYaw);
+            DQuaternion newCameraRotation = DQuaternion.getCameraRotation(player.rotationPitch, player.rotationYaw);
             
-            if (!Helper.isClose(newCameraRotation, visualRotation, 0.001f)) {
-                inertialRotation = visualRotation;
+            if (!DQuaternion.isClose(newCameraRotation, rotationThroughPortal, 0.001f)) {
+                interpolationStart = rotationThroughPortal;
+                lastCameraRotation = newCameraRotation;
                 interpolationStartTime = RenderStates.renderStartNanoTime;
                 interpolationEndTime = interpolationStartTime +
-                    Helper.secondToNano(1);
+                    Helper.secondToNano(getAnimationDurationSeconds());
             }
             
             updateCamera(client);
         }
+    }
+    
+    private static double getAnimationDurationSeconds() {
+        return 1;
     }
     
     private static void updateCamera(Minecraft client) {
@@ -155,7 +141,7 @@ public class TransformationManager {
         );
     }
     
-    public static Matrix4f getMirrorTransformation(Vec3d normal) {
+    public static Matrix4f getMirrorTransformation(Vector3d normal) {
         float x = (float) normal.x;
         float y = (float) normal.y;
         float z = (float) normal.z;
@@ -170,4 +156,5 @@ public class TransformationManager {
         ((IEMatrix4f) (Object) matrix).loadFromArray(arr);
         return matrix;
     }
+    
 }
