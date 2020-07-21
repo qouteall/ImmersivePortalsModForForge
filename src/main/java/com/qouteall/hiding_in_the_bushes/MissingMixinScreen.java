@@ -23,7 +23,7 @@ public class MissingMixinScreen extends Screen {
         
         downloadLinkButton = new Button(
             0, 0, 72, 20,
-            I18n.format("imm_ptl.download_mixinbootstrap"),
+            new TranslationTextComponent("imm_ptl.download_mixinbootstrap"),
             (buttonWidget) -> {
                 try {
                     Util.getOSType().openURI(
@@ -37,7 +37,7 @@ public class MissingMixinScreen extends Screen {
         );
         quitGameButton = new Button(
             0, 0, 72, 20,
-            I18n.format("menu.quit"),
+            new TranslationTextComponent("menu.quit"),
             (buttonWidget) -> {
                 Minecraft.getInstance().shutdown();
             }

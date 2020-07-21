@@ -6,7 +6,9 @@ import com.qouteall.immersive_portals.block_manipulation.BlockManipulationServer
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.client.CPlayerDiggingPacket;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkEvent;
 
@@ -15,11 +17,11 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public class CtsPlayerAction {
-    DimensionType dimension;
+    RegistryKey<World> dimension;
     CPlayerDiggingPacket packet;
     
     public CtsPlayerAction(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         CPlayerDiggingPacket packet
     ) {
         this.dimension = dimension;

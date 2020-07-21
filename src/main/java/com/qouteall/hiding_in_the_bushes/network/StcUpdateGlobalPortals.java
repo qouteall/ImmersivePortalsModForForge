@@ -1,6 +1,7 @@
 package com.qouteall.hiding_in_the_bushes.network;
 
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.dimension_sync.DimId;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
@@ -8,7 +9,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
@@ -18,23 +20,23 @@ import java.util.function.Supplier;
 
 public class StcUpdateGlobalPortals {
     private CompoundNBT data;
-    private DimensionType dimensionType;
+    private RegistryKey<World> dimensionType;
     
     public StcUpdateGlobalPortals(
         CompoundNBT data,
-        DimensionType dimensionType
+        RegistryKey<World> dimensionType
     ) {
         this.data = data;
         this.dimensionType = dimensionType;
     }
     
     public StcUpdateGlobalPortals(PacketBuffer buf) {
-        dimensionType = DimensionType.getById(buf.readInt());
+        dimensionType = DimId.readWorldId(buf, true);
         data = buf.readCompoundTag();
     }
     
     public void encode(PacketBuffer buf) {
-        buf.writeInt(dimensionType.getId());
+        DimId.writeWorldId(buf,dimensionType,false);
         buf.writeCompoundTag(data);
     }
     

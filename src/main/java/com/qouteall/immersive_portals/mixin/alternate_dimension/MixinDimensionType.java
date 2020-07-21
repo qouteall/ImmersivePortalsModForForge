@@ -1,15 +1,6 @@
 package com.qouteall.immersive_portals.mixin.alternate_dimension;
 
-import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.alternate_dimension.ErrorTerrainGenerator;
-import com.qouteall.immersive_portals.alternate_dimension.NormalSkylandGenerator;
-import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
-import net.minecraft.server.IDynamicRegistries;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.registry.SimpleRegistry;
-import net.minecraft.world.DimensionType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,6 +8,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.OptionalLong;
+import net.minecraft.server.IDynamicRegistries;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.DimensionType;
 
 @Mixin(DimensionType.class)
 public class MixinDimensionType {

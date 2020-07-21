@@ -6,15 +6,18 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
-import net.minecraft.fluid.IFluidState;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.ITickList;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.IWorldReader;
@@ -25,15 +28,14 @@ import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.AbstractChunkProvider;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.lighting.WorldLightManager;
-import net.minecraft.world.storage.WorldInfo;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 // used for IForgeBlockState#isPortalFrame
 // the nether portal searching optimization needs to test whether a block state
@@ -47,8 +49,8 @@ public class DummyWorldReader implements IWorldReader {
     }
     
     @Override
-    public IFluidState getFluidState(BlockPos pos) {
-        return Fluids.EMPTY.getDefaultState();
+    public FluidState getFluidState(BlockPos pos) {
+        return null;
     }
     
     @Nullable
@@ -93,13 +95,23 @@ public class DummyWorldReader implements IWorldReader {
     }
     
     @Override
-    public Dimension getDimension() {
+    public DimensionType func_230315_m_() {
         return null;
     }
     
     @Override
     public WorldBorder getWorldBorder() {
         return null;
+    }
+    
+    @Override
+    public Stream<VoxelShape> func_230318_c_(@Nullable Entity p_230318_1_, AxisAlignedBB p_230318_2_, Predicate<Entity> p_230318_3_) {
+        return null;
+    }
+    
+    @Override
+    public float func_230487_a_(Direction p_230487_1_, boolean p_230487_2_) {
+        return 0;
     }
     
     @Override

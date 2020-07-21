@@ -15,7 +15,6 @@ public class ConfigServer {
     public final ForgeConfigSpec.BooleanValue loadFewerChunks;
     public final ForgeConfigSpec.BooleanValue multiThreadedNetherPortalSearching;
     public final ForgeConfigSpec.BooleanValue looseMovementCheck;
-    public final ForgeConfigSpec.ConfigValue<String> customPortalFrame;
     
     public ConfigServer(ForgeConfigSpec.Builder builder) {
         portalSearchingRange = builder
@@ -39,12 +38,6 @@ public class ConfigServer {
         looseMovementCheck = builder
             .comment("Loose Serve Side Anti Hack Movement Check")
             .define("loose_movement_check", false);
-        customPortalFrame = builder.comment(
-            "See the Wiki to Know How to Configure it"
-        ).define(
-            "custom_portal_frame",
-            ""
-        );
     }
     
     static {

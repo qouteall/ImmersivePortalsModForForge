@@ -6,9 +6,6 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.FuzzedBiomeMagnifier;
 import net.minecraft.world.biome.provider.BiomeProvider;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ChaosBiomeSource extends BiomeProvider {

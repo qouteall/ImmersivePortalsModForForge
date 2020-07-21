@@ -129,12 +129,19 @@ public class CustomPortalGenManagement {
         if (entity.world.isRemote()) {
             return;
         }
-        if (entity.getThrowerId() != null) {
+        if (entity.getThrowerId() == null) {
+            return;
+        }
+        
+        if (entity.cannotPickup()) {
             Item item = entity.getItem().getItem();
             if (throwItemGen.containsKey(item)) {
                 ModMain.serverTaskList.addTask(() -> {
                     for (CustomPortalGeneration gen : throwItemGen.get(item)) {
-                        boolean result = gen.perform(((ServerWorld) entity.world), entity.func_233580_cy_());
+                        boolean result = gen.perform(
+                            ((ServerWorld) entity.world),
+                            entity.func_233580_cy_()
+                        );
                         if (result) {
                             entity.getItem().shrink(1);
                             break;

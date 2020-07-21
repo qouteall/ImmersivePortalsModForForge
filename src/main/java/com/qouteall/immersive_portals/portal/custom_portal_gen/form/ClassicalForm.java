@@ -2,14 +2,10 @@ package com.qouteall.immersive_portals.portal.custom_portal_gen.form;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import com.qouteall.immersive_portals.my_util.IntBox;
-import com.qouteall.immersive_portals.portal.custom_portal_gen.CustomPortalGeneration;
 import com.qouteall.immersive_portals.portal.nether_portal.BlockPortalShape;
-import com.qouteall.immersive_portals.portal.nether_portal.GeneralBreakablePortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.server.ServerWorld;
 import java.util.function.Predicate;

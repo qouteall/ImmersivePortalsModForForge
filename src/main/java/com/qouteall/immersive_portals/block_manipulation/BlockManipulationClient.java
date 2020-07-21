@@ -144,7 +144,7 @@ public class BlockManipulationClient {
                 /**{@link VoxelShape#rayTrace(Vec3d, Vec3d, BlockPos)}*/
                 //correct the start pos to avoid being considered inside block
                 Vector3d correctedStart = start.subtract(end.subtract(start).scale(0.0015));
-//                Vec3d correctedStart = start;
+//                Vector3d correctedStart = start;
                 VoxelShape solidShape = rayTraceContext.getBlockShape(blockState, world, blockPos);
                 BlockRayTraceResult blockHitResult = world.rayTraceBlocks(
                     correctedStart, end, blockPos, solidShape, blockState
@@ -158,7 +158,7 @@ public class BlockManipulationClient {
                 return d <= e ? blockHitResult : blockHitResult2;
             },
             (rayTraceContext) -> {
-                Vector3d vec3d = rayTraceContext.func_222253_b().subtract(rayTraceContext.func_222250_a());
+                Vector3d Vector3d = rayTraceContext.func_222253_b().subtract(rayTraceContext.func_222250_a());
                 return BlockRayTraceResult.createMiss(
                     rayTraceContext.func_222250_a(),
                     Direction.getFacingFromVector(vec3d.x, vec3d.y, vec3d.z),

@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.floats.FloatConsumer;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.world.World;
+
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;

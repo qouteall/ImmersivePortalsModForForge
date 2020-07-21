@@ -12,7 +12,6 @@ import com.qouteall.immersive_portals.render.MyRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
 import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.MathHelper;
@@ -21,7 +20,7 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameType;
 import net.minecraft.world.World;
-import javax.annotation.Nullable;
+
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -157,20 +156,20 @@ public class RenderStates {
     }
     
     public static void onTotalRenderEnd() {
-        Minecraft mc = Minecraft.getInstance();
+        Minecraft client = Minecraft.getInstance();
         IEGameRenderer gameRenderer = (IEGameRenderer) Minecraft.getInstance().gameRenderer;
         gameRenderer.setLightmapTextureManager(CGlobal.clientWorldLoader
-            .getDimensionRenderHelper(mc.world.func_234923_W_()).lightmapTexture);
+            .getDimensionRenderHelper(client.world.func_234923_W_()).lightmapTexture);
         
         if (getRenderedPortalNum() != 0) {
             //recover chunk renderer dispatcher
-            ((IEWorldRenderer) mc.worldRenderer).getBuiltChunkStorage().updateChunkPositions(
-                mc.renderViewEntity.getPosX(),
-                mc.renderViewEntity.getPosZ()
+            ((IEWorldRenderer) client.worldRenderer).getBuiltChunkStorage().updateChunkPositions(
+                client.renderViewEntity.getPosX(),
+                client.renderViewEntity.getPosZ()
             );
         }
         
-        Vector3d currCameraPos = mc.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d currCameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
         cameraPosDelta = currCameraPos.subtract(lastCameraPos);
         if (cameraPosDelta.lengthSquared() > 1) {
             cameraPosDelta = Vector3d.ZERO;

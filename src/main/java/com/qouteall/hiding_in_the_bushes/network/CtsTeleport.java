@@ -4,7 +4,10 @@ import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ModMain;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkEvent;
 
@@ -12,11 +15,11 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public class CtsTeleport {
-    DimensionType dimensionBefore;
-    Vec3d posBefore;
+    RegistryKey<World> dimensionBefore;
+    Vector3d posBefore;
     UUID portalEntityId;
     
-    public CtsTeleport(DimensionType dimensionBefore, Vec3d posBefore, UUID portalEntityId) {
+    public CtsTeleport(RegistryKey<World> dimensionBefore, Vector3d posBefore, UUID portalEntityId) {
         this.dimensionBefore = dimensionBefore;
         this.posBefore = posBefore;
         this.portalEntityId = portalEntityId;

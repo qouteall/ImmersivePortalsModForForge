@@ -17,7 +17,6 @@ import net.minecraft.util.Tuple;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceContext;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.vector.Vector3d;
@@ -290,12 +289,6 @@ public class Helper {
     
     public interface CallableWithoutException<T> {
         public T run();
-    }
-    
-    public static Vector3d interpolatePos(Entity entity, float partialTicks) {
-        Vector3d currPos = entity.getPositionVec();
-        Vector3d lastTickPos = McHelper.lastTickPosOf(entity);
-        return lastTickPos.add(currPos.subtract(lastTickPos).scale(partialTicks));
     }
     
     public static Runnable noException(Callable func) {
@@ -714,17 +707,17 @@ public class Helper {
     @OnlyIn(Dist.CLIENT)
     private static <T> T withSwitchedContextClient(ClientWorld world, Supplier<T> func) {
         boolean wasContextSwitched = BlockManipulationClient.isContextSwitched;
-        Minecraft mc = Minecraft.getInstance();
-        ClientWorld lastWorld = mc.world;
+        Minecraft client = Minecraft.getInstance();
+        ClientWorld lastWorld = client.world;
         
         try {
             BlockManipulationClient.isContextSwitched = true;
-            mc.world = world;
+            client.world = world;
             
             return func.get();
         }
         finally {
-            mc.world = lastWorld;
+            client.world = lastWorld;
             BlockManipulationClient.isContextSwitched = wasContextSwitched;
         }
     }

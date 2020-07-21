@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ServerPlayerEntity.class)
 public class MixinServerPlayerEntity {
     // update chunk visibility data
-    @Inject(method = "Lnet/minecraft/entity/player/ServerPlayerEntity;teleportKeepLoaded(DDD)V", at = @At("HEAD"))
+    @Inject(method = "Lnet/minecraft/entity/player/ServerPlayerEntity;attemptTeleport(DDDZ)Z", at = @At("HEAD"))
     private void onTeleported(
         ServerWorld targetWorld,
         double x,

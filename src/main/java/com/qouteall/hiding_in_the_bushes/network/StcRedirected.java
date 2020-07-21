@@ -12,7 +12,9 @@ import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.PacketDirection;
 import net.minecraft.network.ProtocolType;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.commons.lang3.Validate;
@@ -22,12 +24,12 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class StcRedirected {
-    public DimensionType dimension;
+    public RegistryKey<World> dimension;
     public int packetId;
     public IPacket packet;
     
     public StcRedirected(
-        DimensionType dimensionType,
+        RegistryKey<World> dimensionType,
         IPacket packet
     ) {
         this.dimension = dimensionType;
@@ -67,7 +69,7 @@ public class StcRedirected {
     private static int reportedErrors = 0;
     
     public static void doProcessRedirectedPacket(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         IPacket packet
     ) {
         Minecraft mc = Minecraft.getInstance();

@@ -5,7 +5,10 @@ import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -14,10 +17,10 @@ import net.minecraftforge.fml.network.NetworkEvent;
 import java.util.function.Supplier;
 
 public class StcSpawnLoadingIndicator {
-    DimensionType dimensionType;
-    Vec3d pos;
+    RegistryKey<World> dimensionType;
+    Vector3d pos;
     
-    public StcSpawnLoadingIndicator(DimensionType dimensionType, Vec3d pos) {
+    public StcSpawnLoadingIndicator(RegistryKey<World> dimensionType, Vector3d pos) {
         this.dimensionType = dimensionType;
         this.pos = pos;
     }

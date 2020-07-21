@@ -14,8 +14,9 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkHooks;
 
@@ -29,7 +30,7 @@ public class MyNetwork {
     }
     
     public static IPacket createRedirectedMessage(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         IPacket packet
     ) {
         return NetworkMain.channel.toVanillaPacket(
@@ -39,8 +40,8 @@ public class MyNetwork {
     }
     
     public static IPacket createStcDimensionConfirm(
-        DimensionType dimensionType,
-        Vec3d pos
+        RegistryKey<World> dimensionType,
+        Vector3d pos
     ) {
         return NetworkMain.channel.toVanillaPacket(
             new StcDimensionConfirm(dimensionType, pos),
@@ -58,7 +59,7 @@ public class MyNetwork {
             new StcSpawnEntity(
                 EntityType.getKey(entity.getType()).toString(),
                 entity.getEntityId(),
-                entity.world.dimension.getType(),
+                entity.world.func_234923_W_(),
                 tag
             ),
             NetworkDirection.PLAY_TO_CLIENT
@@ -71,7 +72,7 @@ public class MyNetwork {
         return NetworkMain.channel.toVanillaPacket(
             new StcUpdateGlobalPortals(
                 storage.write(new CompoundNBT()),
-                storage.world.get().dimension.getType()
+                storage.world.get().func_234923_W_()
             ),
             NetworkDirection.PLAY_TO_CLIENT
         );
@@ -79,7 +80,7 @@ public class MyNetwork {
     
     public static void sendRedirectedMessage(
         ServerPlayerEntity player,
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         IPacket packet
     ) {
         player.connection.sendPacket(createRedirectedMessage(dimension, packet));

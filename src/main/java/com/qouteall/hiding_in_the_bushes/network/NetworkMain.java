@@ -4,7 +4,9 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketDirection;
 import net.minecraft.network.ProtocolType;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkRegistry;
@@ -96,14 +98,14 @@ public class NetworkMain {
     
     public static void sendRedirected(
         ServerPlayerEntity player,
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         IPacket t
     ) {
         sendToPlayer(player, new StcRedirected(dimension, t));
     }
     
     public static IPacket getRedirectedPacket(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         IPacket t
     ) {
         return channel.toVanillaPacket(

@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
 import com.qouteall.immersive_portals.Global;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEChunkTicketManager;
 import com.qouteall.immersive_portals.ducks.IEServerChunkManager;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;

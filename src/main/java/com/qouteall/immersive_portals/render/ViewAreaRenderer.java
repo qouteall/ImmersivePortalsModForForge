@@ -4,7 +4,6 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Global;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.GeometryPortalShape;
@@ -14,7 +13,6 @@ import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.render.context_management.DimensionRenderHelper;
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
-import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
@@ -22,7 +20,6 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.world.World;
 import java.util.function.Consumer;
 
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
@@ -30,7 +27,7 @@ import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 public class ViewAreaRenderer {
     private static void buildPortalViewAreaTrianglesBuffer(
         Vector3d fogColor, Portal portal, BufferBuilder bufferbuilder,
-        Vector3d cameraPos, float partialTicks, float layerWidth
+        Vector3d cameraPos, float tickDelta, float layerWidth
     ) {
         bufferbuilder.begin(GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
         

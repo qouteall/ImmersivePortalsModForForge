@@ -1,7 +1,5 @@
 package com.qouteall.immersive_portals;
 
-import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;

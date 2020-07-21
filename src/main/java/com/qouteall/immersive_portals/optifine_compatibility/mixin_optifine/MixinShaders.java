@@ -6,14 +6,12 @@ import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
 import com.qouteall.immersive_portals.optifine_compatibility.ShaderCullingManager;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
-import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.world.World;
 import net.optifine.shaders.IShaderPack;
 import net.optifine.shaders.Program;
 import net.optifine.shaders.Shaders;
@@ -102,9 +100,9 @@ public abstract class MixinShaders {
     //avoid changing vertex format when rebuilding
     @Inject(method = "loadShaderPack", at = @At("HEAD"))
     private static void onAboutToLoadShaderPack(CallbackInfo ci) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.worldRenderer != null) {
-            mc.worldRenderer.loadRenderers();
+        Minecraft client = Minecraft.getInstance();
+        if (client.worldRenderer != null) {
+            client.worldRenderer.loadRenderers();
         }
     }
     

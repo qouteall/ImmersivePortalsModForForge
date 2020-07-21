@@ -11,15 +11,15 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorld;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.ModList;
@@ -35,7 +35,7 @@ public class O_O {
     
     @OnlyIn(Dist.CLIENT)
     public static void onPlayerChangeDimensionClient(
-        DimensionType from, DimensionType to
+        RegistryKey<World> from, RegistryKey<World> to
     ) {
         ModelDataHacker.updateForgeModelData();
     }
@@ -67,8 +67,8 @@ public class O_O {
     
     public static void onPlayerTravelOnServer(
         ServerPlayerEntity player,
-        DimensionType from,
-        DimensionType to
+        RegistryKey<World> from,
+        RegistryKey<World> to
     ) {
         Global.serverTeleportationManager.isFiringMyChangeDimensionEvent = true;
         net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerChangedDimensionEvent(
@@ -86,16 +86,6 @@ public class O_O {
     }
     
     public static final boolean isReachEntityAttributesPresent = false;
-    
-    public static void registerDimensionsForge() {
-        try {
-            DimensionManager.fireRegister();
-        }
-        catch (Throwable e) {
-            Helper.err("Exception When Registering Dimensions " + e);
-        }
-        
-    }
     
     public static boolean detectOptiFine() {
         try {

@@ -2,7 +2,6 @@ package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Global;
@@ -46,7 +45,6 @@ import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import org.lwjgl.opengl.GL11;
 
-import java.util.Stack;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 

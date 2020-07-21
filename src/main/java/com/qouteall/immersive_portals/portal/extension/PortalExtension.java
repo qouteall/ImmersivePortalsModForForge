@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.portal.extension;
 
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.render.TransformationManager;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;

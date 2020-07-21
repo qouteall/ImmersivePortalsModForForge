@@ -5,7 +5,7 @@ import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.util.ITeleporter;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,7 +19,7 @@ public class MixinServerPlayerEntity_MA {
     
     @Inject(method = "changeDimension", at = @At("HEAD"), remap = false)
     private void onChangeDimensionByVanilla(
-        DimensionType p_changeDimension_1_,
+        ServerWorld p_changeDimension_1_,
         ITeleporter p_changeDimension_2_,
         CallbackInfoReturnable<Entity> cir
     ) {

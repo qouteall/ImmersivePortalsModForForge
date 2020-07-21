@@ -1,14 +1,11 @@
 package com.qouteall.hiding_in_the_bushes;
 
-import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimension;
-import com.qouteall.hiding_in_the_bushes.alternate_dimension.AlternateDimensionEntry;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
 import com.qouteall.immersive_portals.block_manipulation.HandReachTweak;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
-import com.qouteall.immersive_portals.portal.CustomizablePortalGeneration;
 import com.qouteall.immersive_portals.portal.EndPortalEntity;
 import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
 import com.qouteall.immersive_portals.portal.Mirror;
@@ -44,18 +41,14 @@ import net.minecraft.potion.EffectType;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.ModelRegistryEvent;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.ModDimension;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.world.RegisterDimensionsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -178,12 +171,6 @@ public class ModMainForge {
         Global.loadFewerChunks = ConfigServer.instance.loadFewerChunks.get();
         Global.multiThreadedNetherPortalSearching = ConfigServer.instance.multiThreadedNetherPortalSearching.get();
         Global.looseMovementCheck = ConfigServer.instance.looseMovementCheck.get();
-        
-        CustomizablePortalGeneration.onConfigChanged(
-            Arrays.asList(
-                ConfigServer.instance.customPortalFrame.get().split("\n")
-            )
-        );
     }
     
     @SubscribeEvent
@@ -237,64 +224,6 @@ public class ModMainForge {
     }
     
     @SubscribeEvent
-    public void onRegisterDimensionsEvent(RegisterDimensionsEvent event) {
-        ResourceLocation resourceLocation = new ResourceLocation("immersive_portals:alternate1");
-        if (DimensionType.byName(resourceLocation) == null) {
-            DimensionManager.registerDimension(
-                resourceLocation,
-                AlternateDimensionEntry.instance1,
-                null,
-                true
-            );
-        }
-        ModMain.alternate1 = DimensionType.byName(resourceLocation);
-        
-        resourceLocation = new ResourceLocation("immersive_portals:alternate2");
-        if (DimensionType.byName(resourceLocation) == null) {
-            DimensionManager.registerDimension(
-                resourceLocation,
-                AlternateDimensionEntry.instance2,
-                null,
-                true
-            );
-        }
-        ModMain.alternate2 = DimensionType.byName(resourceLocation);
-        
-        resourceLocation = new ResourceLocation("immersive_portals:alternate3");
-        if (DimensionType.byName(resourceLocation) == null) {
-            DimensionManager.registerDimension(
-                resourceLocation,
-                AlternateDimensionEntry.instance3,
-                null,
-                true
-            );
-        }
-        ModMain.alternate3 = DimensionType.byName(resourceLocation);
-        
-        resourceLocation = new ResourceLocation("immersive_portals:alternate4");
-        if (DimensionType.byName(resourceLocation) == null) {
-            DimensionManager.registerDimension(
-                resourceLocation,
-                AlternateDimensionEntry.instance4,
-                null,
-                true
-            );
-        }
-        ModMain.alternate4 = DimensionType.byName(resourceLocation);
-        
-        resourceLocation = new ResourceLocation("immersive_portals:alternate5");
-        if (DimensionType.byName(resourceLocation) == null) {
-            DimensionManager.registerDimension(
-                resourceLocation,
-                AlternateDimensionEntry.instance5,
-                null,
-                true
-            );
-        }
-        ModMain.alternate5 = DimensionType.byName(resourceLocation);
-    }
-    
-    @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (!Global.serverTeleportationManager.isFiringMyChangeDimensionEvent) {
             PlayerEntity player = event.getPlayer();
@@ -317,7 +246,7 @@ public class ModMainForge {
                     .doesNotBlockMovement()
                     .sound(SoundType.GLASS)
                     .hardnessAndResistance(99999, 0)
-                    .lightValue(15)
+                    .func_235838_a_(s -> 15)
             );
             PortalPlaceholderBlock.instance.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_placeholder")
@@ -492,39 +421,6 @@ public class ModMainForge {
                 LoadingIndicatorEntity.entityType.setRegistryName(
                     "immersive_portals:loading_indicator")
             );
-        }
-        
-        @SubscribeEvent
-        public static void onDimensionRegistry(RegistryEvent.Register<ModDimension> event) {
-            AlternateDimensionEntry.instance1 = new AlternateDimensionEntry(
-                AlternateDimension::getChunkGenerator1
-            );
-            AlternateDimensionEntry.instance1.setRegistryName("immersive_portals:alternate1");
-            event.getRegistry().register(AlternateDimensionEntry.instance1);
-            
-            AlternateDimensionEntry.instance2 = new AlternateDimensionEntry(
-                AlternateDimension::getChunkGenerator2
-            );
-            AlternateDimensionEntry.instance2.setRegistryName("immersive_portals:alternate2");
-            event.getRegistry().register(AlternateDimensionEntry.instance2);
-            
-            AlternateDimensionEntry.instance3 = new AlternateDimensionEntry(
-                AlternateDimension::getChunkGenerator3
-            );
-            AlternateDimensionEntry.instance3.setRegistryName("immersive_portals:alternate3");
-            event.getRegistry().register(AlternateDimensionEntry.instance3);
-            
-            AlternateDimensionEntry.instance4 = new AlternateDimensionEntry(
-                AlternateDimension::getChunkGenerator4
-            );
-            AlternateDimensionEntry.instance4.setRegistryName("immersive_portals:alternate4");
-            event.getRegistry().register(AlternateDimensionEntry.instance4);
-            
-            AlternateDimensionEntry.instance5 = new AlternateDimensionEntry(
-                AlternateDimension::getChunkGenerator5
-            );
-            AlternateDimensionEntry.instance5.setRegistryName("immersive_portals:alternate5");
-            event.getRegistry().register(AlternateDimensionEntry.instance5);
         }
         
         @SubscribeEvent

@@ -3,7 +3,6 @@ package com.qouteall.immersive_portals.mixin.altius_world;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.Lifecycle;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.altius_world.AltiusInfo;
 import com.qouteall.immersive_portals.ducks.IELevelProperties;
 import net.minecraft.command.TimerCallbackManager;
@@ -23,7 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.LinkedHashSet;
-import java.util.Objects;
 import java.util.UUID;
 
 @Mixin(ServerWorldInfo.class)
@@ -31,7 +29,7 @@ public class MixinLevelProperties implements IELevelProperties {
     AltiusInfo altiusInfo;
     
     @Inject(
-        method = "<init>(Lcom/mojang/datafixers/DataFixer;ILnet/minecraft/nbt/CompoundNBT;ZIIIJJIIIZIZZZLSerializer;IILjava/util/UUID;Ljava/util/LinkedHashSet;Lnet/minecraft/command/TimerCallbackManager;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/gen/settings/DimensionGeneratorSettings;Lcom/mojang/serialization/Lifecycle;)V",
+        method = "<init>(Lcom/mojang/datafixers/DataFixer;ILnet/minecraft/nbt/CompoundNBT;ZIIIJJIIIZIZZZLnet/minecraft/world/border/WorldBorder$Serializer;IILjava/util/UUID;Ljava/util/LinkedHashSet;Lnet/minecraft/command/TimerCallbackManager;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/gen/settings/DimensionGeneratorSettings;Lcom/mojang/serialization/Lifecycle;)V",
         at = @At("RETURN")
     )
     private void onConstructedFromLevelInfo(

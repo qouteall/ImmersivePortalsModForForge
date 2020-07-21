@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.chunk_loading;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
+
 import java.util.Objects;
 
 

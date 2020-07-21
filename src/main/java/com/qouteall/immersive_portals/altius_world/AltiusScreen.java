@@ -12,6 +12,7 @@ import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
+
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 

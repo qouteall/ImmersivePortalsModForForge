@@ -5,6 +5,8 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.client.CPlayerDiggingPacket;
 import net.minecraft.network.play.client.CPlayerTryUseItemOnBlockPacket;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkEvent;
 
@@ -12,11 +14,11 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 public class CtsRightClick {
-    DimensionType dimension;
+    RegistryKey<World> dimension;
     CPlayerTryUseItemOnBlockPacket packet;
     
     public CtsRightClick(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         CPlayerTryUseItemOnBlockPacket packet
     ) {
         this.dimension = dimension;

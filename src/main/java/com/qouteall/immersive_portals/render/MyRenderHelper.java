@@ -13,8 +13,6 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.shader.Framebuffer;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.MathHelper;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
@@ -242,12 +240,12 @@ public class MyRenderHelper {
     }
     
     public static void restoreViewPort() {
-        Minecraft mc = Minecraft.getInstance();
+        Minecraft client = Minecraft.getInstance();
         GlStateManager.viewport(
             0,
             0,
-            mc.getMainWindow().getFramebufferWidth(),
-            mc.getMainWindow().getFramebufferHeight()
+            client.getMainWindow().getFramebufferWidth(),
+            client.getMainWindow().getFramebufferHeight()
         );
     }
 }

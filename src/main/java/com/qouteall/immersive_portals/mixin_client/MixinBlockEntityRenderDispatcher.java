@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
@@ -21,7 +20,7 @@ public class MixinBlockEntityRenderDispatcher {
         at = @At("HEAD"),
         cancellable = true
     )
-    private <E extends TileEntity> void onRenderTileEntity(
+    private <E extends TileEntity> void onRenderBlockEntity(
         E blockEntity,
         float tickDelta,
         MatrixStack matrix,

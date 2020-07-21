@@ -52,7 +52,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     
     @Inject(method = "Lnet/minecraft/client/renderer/GameRenderer;updateCameraAndRender(FJZ)V", at = @At("HEAD"))
     private void onFarBeforeRendering(
-        float partialTicks,
+        float tickDelta,
         long nanoTime,
         boolean renderWorldIn,
         CallbackInfo ci
@@ -60,7 +60,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         if (mc.world == null) {
             return;
         }
-        RenderStates.updatePreRenderInfo(partialTicks);
+        RenderStates.updatePreRenderInfo(tickDelta);
         CGlobal.clientTeleportationManager.manageTeleportation(RenderStates.tickDelta);
         ModMain.preRenderSignal.emit();
         if (CGlobal.earlyClientLightUpdate) {

@@ -9,7 +9,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -21,13 +23,13 @@ import java.util.function.Supplier;
 public class StcSpawnEntity {
     String entityType;
     int entityId;
-    DimensionType dimension;
+    RegistryKey<World> dimension;
     CompoundNBT tag;
     
     public StcSpawnEntity(
         String entityType,
         int entityId,
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         CompoundNBT tag
     ) {
         this.entityType = entityType;

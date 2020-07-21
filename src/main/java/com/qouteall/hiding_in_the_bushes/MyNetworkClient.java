@@ -12,8 +12,9 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.client.CCustomPayloadPacket;
 import net.minecraft.network.play.client.CPlayerDiggingPacket;
 import net.minecraft.network.play.client.CPlayerTryUseItemOnBlockPacket;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkDirection;
 
 import java.io.IOException;
@@ -21,7 +22,7 @@ import java.util.UUID;
 
 public class MyNetworkClient {
     public static IPacket createCtsPlayerAction(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         CPlayerDiggingPacket packet
     ) {
         return NetworkMain.channel.toVanillaPacket(
@@ -33,7 +34,7 @@ public class MyNetworkClient {
     }
     
     public static IPacket createCtsRightClick(
-        DimensionType dimension,
+        RegistryKey<World> dimension,
         CPlayerTryUseItemOnBlockPacket packet
     ) {
         return NetworkMain.channel.toVanillaPacket(
@@ -45,8 +46,8 @@ public class MyNetworkClient {
     }
     
     public static IPacket createCtsTeleport(
-        DimensionType dimensionBefore,
-        Vec3d posBefore,
+        RegistryKey<World> dimensionBefore,
+        Vector3d posBefore,
         UUID portalEntityId
     ) {
         return NetworkMain.channel.toVanillaPacket(
@@ -65,7 +66,7 @@ public class MyNetworkClient {
         ClientWorld world, IPacket packet
     ) {
         StcRedirected.doProcessRedirectedPacket(
-            world.getDimension().getType(),
+            world.func_234923_W_(),
             packet
         );
     }

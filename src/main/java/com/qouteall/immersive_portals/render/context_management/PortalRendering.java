@@ -2,10 +2,8 @@ package com.qouteall.immersive_portals.render.context_management;
 
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Global;
-import com.qouteall.immersive_portals.ducks.IECamera;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.render.TransformationManager;
 import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Stack;

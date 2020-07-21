@@ -3,7 +3,6 @@ package com.qouteall.immersive_portals.alternate_dimension;
 import com.mojang.serialization.Codec;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.block_manipulation.HandReachTweak;
-import net.fabricmc.fabric.mixin.registry.sync.MixinSimpleRegistry;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
