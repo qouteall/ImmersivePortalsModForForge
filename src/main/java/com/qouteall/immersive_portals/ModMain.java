@@ -48,23 +48,23 @@ public class ModMain {
     );
     
     public static final RegistryKey<World> alternate1 = RegistryKey.func_240903_a_(
-        Registry.DIMENSION,
+        Registry.field_239699_ae_,
         new ResourceLocation("immersive_portals:alternate1")
     );
     public static final RegistryKey<World> alternate2 = RegistryKey.func_240903_a_(
-        Registry.DIMENSION,
+        Registry.field_239699_ae_,
         new ResourceLocation("immersive_portals:alternate2")
     );
     public static final RegistryKey<World> alternate3 = RegistryKey.func_240903_a_(
-        Registry.DIMENSION,
+        Registry.field_239699_ae_,
         new ResourceLocation("immersive_portals:alternate3")
     );
     public static final RegistryKey<World> alternate4 = RegistryKey.func_240903_a_(
-        Registry.DIMENSION,
+        Registry.field_239699_ae_,
         new ResourceLocation("immersive_portals:alternate4")
     );
     public static final RegistryKey<World> alternate5 = RegistryKey.func_240903_a_(
-        Registry.DIMENSION,
+        Registry.field_239699_ae_,
         new ResourceLocation("immersive_portals:alternate5")
     );
     

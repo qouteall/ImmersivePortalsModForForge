@@ -41,10 +41,11 @@ public class MyClientChunkManager extends ClientChunkProvider {
     private final WorldLightManager lightingProvider;
     private final ClientWorld world;
     
-    private final Long2ObjectLinkedOpenHashMap<Chunk> chunkMapNew = new Long2ObjectLinkedOpenHashMap<>();
+    private final Long2ObjectLinkedOpenHashMap<Chunk> chunkMap =
+        new Long2ObjectLinkedOpenHashMap<>();
     
-    public MyClientChunkManager(ClientWorld clientWorld, int int_1) {
-        super(clientWorld, int_1);
+    public MyClientChunkManager(ClientWorld clientWorld, int loadDistance) {
+        super(clientWorld, loadDistance);
         this.world = clientWorld;
         this.emptyChunk = new EmptyChunk(clientWorld, new ChunkPos(0, 0));
         this.lightingProvider = new WorldLightManager(
@@ -62,12 +63,12 @@ public class MyClientChunkManager extends ClientChunkProvider {
     
     @Override
     public void unloadChunk(int int_1, int int_2) {
-        synchronized (chunkMapNew) {
+        synchronized (chunkMap) {
             
             ChunkPos chunkPos = new ChunkPos(int_1, int_2);
-            Chunk worldChunk_1 = chunkMapNew.get(chunkPos.asLong());
+            Chunk worldChunk_1 = chunkMap.get(chunkPos.asLong());
             if (positionEquals(worldChunk_1, int_1, int_2)) {
-                chunkMapNew.remove(chunkPos.asLong());
+                chunkMap.remove(chunkPos.asLong());
                 O_O.postChunkUnloadEventForge(worldChunk_1);
             }
         }
@@ -75,8 +76,8 @@ public class MyClientChunkManager extends ClientChunkProvider {
     
     @Override
     public Chunk getChunk(int int_1, int int_2, ChunkStatus chunkStatus_1, boolean boolean_1) {
-        synchronized (chunkMapNew) {
-            Chunk worldChunk_1 = chunkMapNew.get(ChunkPos.asLong(int_1, int_2));
+        synchronized (chunkMap) {
+            Chunk worldChunk_1 = chunkMap.get(ChunkPos.asLong(int_1, int_2));
             if (positionEquals(worldChunk_1, int_1, int_2)) {
                 return worldChunk_1;
             }
@@ -103,8 +104,8 @@ public class MyClientChunkManager extends ClientChunkProvider {
         long chunkPosLong = ChunkPos.asLong(x, z);
         
         Chunk worldChunk;
-        synchronized (chunkMapNew) {
-            worldChunk = (Chunk) this.chunkMapNew.get(chunkPosLong);
+        synchronized (chunkMap) {
+            worldChunk = (Chunk) this.chunkMap.get(chunkPosLong);
             if (!bl && positionEquals(worldChunk, x, z)) {
                 worldChunk.read(biomeArray, packetByteBuf, compoundTag, k);
             }
@@ -123,7 +124,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
                 
                 worldChunk = new Chunk(this.world, new ChunkPos(x, z), biomeArray);
                 worldChunk.read(biomeArray, packetByteBuf, compoundTag, k);
-                chunkMapNew.put(chunkPosLong, worldChunk);
+                chunkMap.put(chunkPosLong, worldChunk);
             }
         }
         
@@ -159,8 +160,8 @@ public class MyClientChunkManager extends ClientChunkProvider {
     }
     
     public List<Chunk> getCopiedChunkList() {
-        synchronized (chunkMapNew) {
-            return Arrays.asList(chunkMapNew.values().toArray(new Chunk[0]));
+        synchronized (chunkMap) {
+            return Arrays.asList(chunkMap.values().toArray(new Chunk[0]));
         }
     }
     
@@ -181,8 +182,8 @@ public class MyClientChunkManager extends ClientChunkProvider {
     
     @Override
     public int getLoadedChunksCount() {
-        synchronized (chunkMapNew) {
-            return chunkMapNew.size();
+        synchronized (chunkMap) {
+            return chunkMap.size();
         }
     }
     

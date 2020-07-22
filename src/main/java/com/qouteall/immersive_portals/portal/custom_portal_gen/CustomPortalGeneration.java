@@ -26,7 +26,7 @@ import java.util.function.Function;
 
 public class CustomPortalGeneration {
     public static final RegistryKey<World> theSameDimension = RegistryKey.func_240903_a_(
-        Registry.DIMENSION,
+        Registry.field_239699_ae_,
         new ResourceLocation("imm_ptl:the_same_dimension")
     );
     

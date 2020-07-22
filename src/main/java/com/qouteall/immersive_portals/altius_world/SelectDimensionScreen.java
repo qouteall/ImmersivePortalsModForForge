@@ -45,7 +45,7 @@ public class SelectDimensionScreen extends Screen {
         SimpleRegistry<Dimension> dimensionMap = generatorOptions.func_236224_e_();
         
         dimensionMap.keySet().forEach(dimId -> {
-            RegistryKey<World> worldKey = RegistryKey.func_240903_a_(Registry.DIMENSION, dimId);
+            RegistryKey<World> worldKey = RegistryKey.func_240903_a_(Registry.field_239699_ae_, dimId);
             dimListWidget.terms.add(new DimTermWidget(worldKey, dimListWidget, callback));
         });
         

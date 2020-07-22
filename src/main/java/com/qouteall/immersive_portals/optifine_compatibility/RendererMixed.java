@@ -241,7 +241,7 @@ public class RendererMixed extends PortalRenderer {
     
 //    @Override
 //    protected void renderPortalContentWithContextSwitched(
-//        Portal portal, Vector3d oldCameraPos, ClientWorld oldWorld
+//        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
 //    ) {
 //        OFGlobal.shaderContextManager.switchContextAndRun(
 //            () -> {

@@ -49,7 +49,7 @@ public class DimId {
     }
     
     public static RegistryKey<World> idToKey(ResourceLocation identifier) {
-        return RegistryKey.func_240903_a_(Registry.DIMENSION, identifier);
+        return RegistryKey.func_240903_a_(Registry.field_239699_ae_, identifier);
     }
     
     public static RegistryKey<World> idToKey(String str) {

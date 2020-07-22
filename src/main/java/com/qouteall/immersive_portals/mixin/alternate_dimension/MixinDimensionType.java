@@ -75,7 +75,7 @@ public class MixinDimensionType {
             true,
             true,
             256,
-            BlockTags.INFINIBURN_OVERWORLD.func_230234_a_(),
+            BlockTags.field_241277_aC_.func_230234_a_(),
             0
         );
     }

@@ -394,7 +394,7 @@ public class ClientTeleportationManager {
     private void changeMotion(Entity player, Portal portal) {
         Vector3d velocity = player.getMotion();
         player.setMotion(velocity.scale(1 + portal.extension.motionAffinity));
-//        Vector3d velocityOnNormal =
+//        Vec3d velocityOnNormal =
 //            portal.getNormal().multiply(velocity.dotProduct(portal.getNormal()));
 //        player.setVelocity(
 //            velocity.subtract(velocityOnNormal)

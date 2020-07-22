@@ -15,7 +15,7 @@ public class ClassicalPortalConverter {
 //    public static void onPlayerChangeDimension(
 //        ServerPlayerEntity player,
 //        ServerWorld oldWorld,
-//        Vector3d oldPos
+//        Vec3d oldPos
 //    ) {
 //        BlockPos playerPos = new BlockPos(oldPos);
 //        Iterator<BlockPos> iterator = BlockPos.stream(

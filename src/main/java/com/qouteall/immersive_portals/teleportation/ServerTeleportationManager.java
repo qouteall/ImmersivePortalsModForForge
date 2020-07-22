@@ -69,6 +69,9 @@ public class ServerTeleportationManager {
         if (entity.removed) {
             return;
         }
+        if(!entity.isNonBoss()){
+            return;
+        }
         //a new born entity may have last tick pos 0 0 0
         double motion = McHelper.lastTickPosOf(entity).squareDistanceTo(entity.getPositionVec());
         if (motion > 20) {

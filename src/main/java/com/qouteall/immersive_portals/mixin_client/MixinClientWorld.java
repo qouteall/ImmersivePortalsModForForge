@@ -61,6 +61,17 @@ public abstract class MixinClientWorld implements IEClientWorld {
         globalTrackedPortals = arg;
     }
     
+//    @Redirect(
+//        method = "<init>",
+//        at = @At(
+//            value = "NEW",
+//            target = "net/minecraft/client/world/ClientChunkManager"
+//        )
+//    )
+//    private ClientChunkManager replaceChunkManager(ClientWorld world, int loadDistance) {
+//        return new MyClientChunkManager(world, loadDistance);
+//    }
+    
     //use my client chunk manager
     @Inject(
         method = "<init>",

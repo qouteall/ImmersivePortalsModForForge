@@ -5,9 +5,6 @@ import com.google.common.collect.HashBiMap;
 import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import net.fabricmc.fabric.impl.registry.sync.RegistrySyncManager;
-import net.fabricmc.fabric.impl.registry.sync.RemappableRegistry;
-import net.fabricmc.fabric.mixin.registry.sync.MixinLevelStorageSession;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.INBT;
@@ -148,7 +145,7 @@ public class DimensionIdManagement {
     }
     
     /**
-     * {@link MixinLevelStorageSession}
+     * MixinLevelStorageSession
      */
     @Nullable
     private static DimensionIdRecord getFabricRecord() {
@@ -180,7 +177,7 @@ public class DimensionIdManagement {
     }
     
     /**
-     * {@link RegistrySyncManager#apply(CompoundTag, RemappableRegistry.RemapMode)}
+     * RegistrySyncManager#apply(CompoundTag, RemappableRegistry.RemapMode)
      */
     private static DimensionIdRecord readIdsFromFabricRegistryRecord(CompoundNBT fabricRegistryRecord) {
         CompoundNBT dimensionTypeTag = fabricRegistryRecord.getCompound("minecraft:dimension_type");

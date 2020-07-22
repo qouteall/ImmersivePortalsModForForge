@@ -111,7 +111,7 @@ public class CrossPortalThirdPersonView {
         return 4.0d;
     }
 
-//    private static Vector3d getThirdPersonCameraPos(Portal portalHit, Camera resuableCamera) {
+//    private static Vec3d getThirdPersonCameraPos(Portal portalHit, Camera resuableCamera) {
 //        return CHelper.withWorldSwitched(
 //            client.cameraEntity,
 //            portalHit,

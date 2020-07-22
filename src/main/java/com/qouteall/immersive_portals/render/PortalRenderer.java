@@ -153,8 +153,8 @@ public abstract class PortalRenderer {
         
         Entity cameraEntity = client.renderViewEntity;
         
-//        Vector3d newEyePos = portal.transformPoint(McHelper.getEyePos(cameraEntity));
-//        Vector3d newLastTickEyePos = portal.transformPoint(McHelper.getLastTickEyePos(cameraEntity));
+//        Vec3d newEyePos = portal.transformPoint(McHelper.getEyePos(cameraEntity));
+//        Vec3d newLastTickEyePos = portal.transformPoint(McHelper.getLastTickEyePos(cameraEntity));
         
         ClientWorld newWorld = CGlobal.clientWorldLoader.getWorld(portal.dimensionTo);
         
@@ -194,7 +194,7 @@ public abstract class PortalRenderer {
     private boolean isOutOfDistance(Portal portal) {
         
         return false;
-//        Vector3d cameraPos = client.gameRenderer.getCamera().getPos();
+//        Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
 //        if (portal.getDistanceToNearestPointInPortal(cameraPos) > getRenderRange()) {
 //            return true;
 //        }
