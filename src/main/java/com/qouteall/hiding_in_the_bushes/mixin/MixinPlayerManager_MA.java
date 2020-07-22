@@ -1,6 +1,5 @@
 package com.qouteall.hiding_in_the_bushes.mixin;
 
-import com.qouteall.hiding_in_the_bushes.DimensionSyncManager;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;

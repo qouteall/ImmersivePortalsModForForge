@@ -3,6 +3,7 @@ package com.qouteall.hiding_in_the_bushes.network;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
+import com.qouteall.immersive_portals.dimension_sync.DimId;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import net.minecraft.client.Minecraft;
@@ -15,7 +16,6 @@ import net.minecraft.network.ProtocolType;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.commons.lang3.Validate;
 
@@ -44,25 +44,14 @@ public class StcRedirected {
     }
     
     public StcRedirected(PacketBuffer buf) {
-        int dimensionId = buf.readInt();
+        dimension = DimId.readWorldId(buf, true);
         packetId = buf.readInt();
-        dimension = DimensionType.getById(dimensionId);
         packet = NetworkMain.createEmptyPacketByType(packetId);
         try {
             packet.readPacketData(buf);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(e);
-        }
-        
-        if (dimension == null) {
-            Helper.err(String.format(
-                "Invalid redirected packet %s %s \nRegistered dimensions %s",
-                dimensionId, packet,
-                Registry.DIMENSION_TYPE.stream().map(
-                    dim -> dim.toString() + " " + dim.getId()
-                ).collect(Collectors.joining("\n"))
-            ));
         }
     }
     
@@ -109,7 +98,7 @@ public class StcRedirected {
     }
     
     public void encode(PacketBuffer buf) {
-        buf.writeInt(dimension.getId());
+        DimId.writeWorldId(buf, dimension, false);
         buf.writeInt(packetId);
         
         try {

@@ -178,16 +178,16 @@ public class ModMainForge {
     
     }
     
-    @SubscribeEvent
-    @OnlyIn(Dist.CLIENT)
-    public void onGuiOpen(GuiOpenEvent event) {
-        if (event.getGui() instanceof MainMenuScreen) {
-            if (!isMixinInClasspath()) {
-                Minecraft.getInstance().displayGuiScreen(new MissingMixinScreen());
-                event.setCanceled(true);
-            }
-        }
-    }
+//    @SubscribeEvent
+//    @OnlyIn(Dist.CLIENT)
+//    public void onGuiOpen(GuiOpenEvent event) {
+//        if (event.getGui() instanceof MainMenuScreen) {
+//            if (!isMixinInClasspath()) {
+//                Minecraft.getInstance().displayGuiScreen(new MissingMixinScreen());
+//                event.setCanceled(true);
+//            }
+//        }
+//    }
     
     public static void checkMixinState() {
         if (!isServerMixinApplied) {

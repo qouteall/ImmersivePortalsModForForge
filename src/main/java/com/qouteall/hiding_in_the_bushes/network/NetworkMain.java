@@ -7,7 +7,6 @@ import net.minecraft.network.ProtocolType;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.PacketDistributor;
@@ -57,13 +56,6 @@ public class NetworkMain {
             StcUpdateGlobalPortals::encode,
             StcUpdateGlobalPortals::new,
             StcUpdateGlobalPortals::handle
-        );
-        channel.registerMessage(
-            5,
-            StcDimensionInfo.class,
-            StcDimensionInfo::encode,
-            StcDimensionInfo::new,
-            StcDimensionInfo::handle
         );
         channel.registerMessage(
             6,

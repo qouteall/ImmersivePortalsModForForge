@@ -37,7 +37,7 @@ public class DimensionIdRecord {
         Integer result = idMap.get(dim);
         if (result == null) {
             throw new RuntimeException(
-                "Missing Dimension Integer Id " + dim
+                "Missing DimensionId " + dim
             );
         }
         return result;

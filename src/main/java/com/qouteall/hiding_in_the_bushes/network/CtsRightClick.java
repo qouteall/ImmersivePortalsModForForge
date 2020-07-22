@@ -1,13 +1,13 @@
 package com.qouteall.hiding_in_the_bushes.network;
 
 import com.qouteall.immersive_portals.block_manipulation.BlockManipulationServer;
+import com.qouteall.immersive_portals.dimension_sync.DimId;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.client.CPlayerDiggingPacket;
 import net.minecraft.network.play.client.CPlayerTryUseItemOnBlockPacket;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.io.IOException;
@@ -26,7 +26,7 @@ public class CtsRightClick {
     }
     
     public CtsRightClick(PacketBuffer buf) {
-        dimension = DimensionType.getById(buf.readInt());
+        dimension = DimId.readWorldId(buf, false);
         packet = new CPlayerTryUseItemOnBlockPacket();
         try {
             packet.readPacketData(buf);
@@ -37,7 +37,7 @@ public class CtsRightClick {
     }
     
     public void encode(PacketBuffer buf) {
-        buf.writeInt(dimension.getId());
+        DimId.writeWorldId(buf, dimension, true);
         try {
             packet.writePacketData(buf);
         }
@@ -55,4 +55,5 @@ public class CtsRightClick {
         });
         context.get().setPacketHandled(true);
     }
+    
 }

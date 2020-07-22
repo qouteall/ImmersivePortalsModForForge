@@ -2,9 +2,12 @@ package com.qouteall.hiding_in_the_bushes;
 
 import com.qouteall.hiding_in_the_bushes.network.NetworkMain;
 import com.qouteall.hiding_in_the_bushes.network.StcDimensionConfirm;
+import com.qouteall.hiding_in_the_bushes.network.StcDimensionSync;
 import com.qouteall.hiding_in_the_bushes.network.StcRedirected;
 import com.qouteall.hiding_in_the_bushes.network.StcSpawnEntity;
 import com.qouteall.hiding_in_the_bushes.network.StcUpdateGlobalPortals;
+import com.qouteall.immersive_portals.dimension_sync.DimensionIdRecord;
+import com.qouteall.immersive_portals.dimension_sync.DimensionTypeSync;
 import com.qouteall.immersive_portals.my_util.ICustomStcPacket;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import io.netty.buffer.ByteBuf;
@@ -19,6 +22,7 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkHooks;
+import org.apache.commons.lang3.Validate;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -84,5 +88,18 @@ public class MyNetwork {
         IPacket packet
     ) {
         player.connection.sendPacket(createRedirectedMessage(dimension, packet));
+    }
+    
+    public static IPacket createDimSync() {
+        Validate.notNull(DimensionIdRecord.serverRecord);
+        
+        CompoundNBT idMapTag = DimensionIdRecord.recordToTag(DimensionIdRecord.serverRecord);
+        
+        CompoundNBT typeMapTag = DimensionTypeSync.createTagFromServerWorldInfo();
+        
+        return NetworkMain.channel.toVanillaPacket(
+            new StcDimensionSync(idMapTag, typeMapTag),
+            NetworkDirection.PLAY_TO_CLIENT
+        );
     }
 }

@@ -2,6 +2,7 @@ package com.qouteall.hiding_in_the_bushes.network;
 
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.dimension_sync.DimId;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
@@ -10,9 +11,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.RegistryKey;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
@@ -42,7 +41,7 @@ public class StcSpawnEntity {
         entityType = buf.readString();
         entityId = buf.readInt();
         int dimensionIdInt = buf.readInt();
-        dimension = DimensionType.getById(dimensionIdInt);
+        dimension = DimId.readWorldId(buf, true);
         tag = buf.readCompoundTag();
         
         if (dimension == null) {
@@ -53,7 +52,7 @@ public class StcSpawnEntity {
     public void encode(PacketBuffer buf) {
         buf.writeString(entityType);
         buf.writeInt(entityId);
-        buf.writeInt(dimension.getId());
+        DimId.writeWorldId(buf,dimension,false);
         buf.writeCompoundTag(tag);
     }
     
