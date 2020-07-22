@@ -4,16 +4,10 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "imm_ptl.refmap.json",
   "mixins": [
-    "alternate_dimension/MixinMobSpawnerLogic",
-    "alternate_dimension/MixinServerPlayNetworkHandler_A",
-    "altius_world/MixinChunkStatus",
     "block_manipulation/MixinItem",
     "block_manipulation/MixinServerPlayerInteractionManager",
     "block_manipulation/MixinServerPlayNetworkHandler_B",
     "MixinContainerMinecartEntity",
-    "MixinDimensionType",
-    "MixinForgeDimensionManager",
-    "MixinForgeNetworkHooks",
     "MixinMinecraftServer_MA",
     "MixinPlayerManager_MA",
     "MixinServerPlayerEntity_MA"

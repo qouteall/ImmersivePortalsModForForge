@@ -15,7 +15,7 @@ public class MixinLightmapTextureManager {
         method = "Lnet/minecraft/client/renderer/LightTexture;updateLightmap(F)V",
         at = @At(
             value = "FIELD",
-            target = "Lnet/minecraft/client/MinecraftClient;world:Lnet/minecraft/client/world/ClientWorld;"
+            target = "Lnet/minecraft/client/Minecraft;world:Lnet/minecraft/client/world/ClientWorld;"
         )
     )
     ClientWorld redirectWorldInUpdate(Minecraft client) {

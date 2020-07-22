@@ -224,7 +224,7 @@ public abstract class MixinShaders {
         method = "beginRender",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/render/entity/EntityRenderDispatcher;getLight(Lnet/minecraft/entity/Entity;F)I",
+            target = "Lnet/minecraft/client/renderer/entity/EntityRendererManager;getPackedLight(Lnet/minecraft/entity/Entity;F)I",
             remap = true
         )
     )

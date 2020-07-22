@@ -532,7 +532,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V",
         at = @At(
             value = "FIELD",
-            target = "Lnet/minecraft/client/render/WorldRenderer;SUN:Lnet/minecraft/util/Identifier;"
+            target = "Lnet/minecraft/client/renderer/WorldRenderer;SUN_TEXTURES:Lnet/minecraft/util/ResourceLocation;"
         )
     )
     private void onStartRenderingSun(MatrixStack matrixStack, float f, CallbackInfo ci) {
@@ -620,7 +620,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     //minecraft has two places rebuilding chunks in render thread
     //one in updateChunks() one in setupTerrain()
     @ModifyConstant(
-        method = "setupTerrain",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;setupTerrain(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
         constant = @Constant(doubleValue = 768.0D)
     )
     private double modifyRebuildRange(double original) {
@@ -694,7 +694,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     //fix cloud fog abnormal with OptiFine and fog disabled
     @Inject(
-        method = "renderClouds(Lnet/minecraft/client/util/math/MatrixStack;FDDD)V",
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;renderClouds(Lcom/mojang/blaze3d/matrix/MatrixStack;FDDD)V",
         at = @At(
             value = "INVOKE",
             target = "Lcom/mojang/blaze3d/systems/RenderSystem;enableFog()V",

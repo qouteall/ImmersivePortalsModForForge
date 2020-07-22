@@ -44,7 +44,7 @@ public class MixinShaders_DimensionRedirect {
         method = "setCameraShadow",
         at = @At(
             value = "FIELD",
-            target = "Lnet/minecraft/client/MinecraftClient;world:Lnet/minecraft/client/world/ClientWorld;",
+            target = "Lnet/minecraft/client/Minecraft;world:Lnet/minecraft/client/world/ClientWorld;",
             remap = true
         ),
         remap = false
@@ -61,7 +61,7 @@ public class MixinShaders_DimensionRedirect {
         method = "beginRender",
         at = @At(
             value = "FIELD",
-            target = "Lnet/minecraft/client/MinecraftClient;world:Lnet/minecraft/client/world/ClientWorld;",
+            target = "Lnet/minecraft/client/Minecraft;world:Lnet/minecraft/client/world/ClientWorld;",
             ordinal = 1,
             remap = true
         ),

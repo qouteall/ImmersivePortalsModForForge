@@ -1,6 +1,7 @@
 package com.qouteall.hiding_in_the_bushes.mixin;
 
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.chunk_loading.ChunkDataSyncManager;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.Entity;
@@ -30,11 +31,12 @@ public class MixinServerPlayerEntity_MA {
     
     //NOTE this does not create a new player entity
     @Inject(
-        method = "teleport",
+        method = "Lnet/minecraft/entity/player/ServerPlayerEntity;teleport(Lnet/minecraft/world/server/ServerWorld;DDDFF)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/world/server/ServerWorld;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;Z)V"
-        )
+        ),
+        remap = false
     )
     private void onForgeTeleport(
         ServerWorld serverWorld,
@@ -49,8 +51,8 @@ public class MixinServerPlayerEntity_MA {
         
         //fix issue with good nights sleep
         player.clearBedPosition();
-        
-        NewChunkTrackingGraph.forceRemovePlayer(player);
+    
+        Global.chunkDataSyncManager.onPlayerRespawn(player);
         
         GlobalPortalStorage.onPlayerLoggedIn(player);
     }

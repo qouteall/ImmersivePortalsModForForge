@@ -40,13 +40,8 @@ public class StcSpawnEntity {
     public StcSpawnEntity(PacketBuffer buf) {
         entityType = buf.readString();
         entityId = buf.readInt();
-        int dimensionIdInt = buf.readInt();
         dimension = DimId.readWorldId(buf, true);
         tag = buf.readCompoundTag();
-        
-        if (dimension == null) {
-            Helper.err("Invalid dimension id for entity spawning " + dimensionIdInt);
-        }
     }
     
     public void encode(PacketBuffer buf) {
