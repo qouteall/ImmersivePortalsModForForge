@@ -38,10 +38,10 @@ public class NetworkMain {
         );
         channel.registerMessage(
             2,
-            StcSpawnLoadingIndicator.class,
-            StcSpawnLoadingIndicator::encode,
-            StcSpawnLoadingIndicator::new,
-            StcSpawnLoadingIndicator::handle
+            StcDimensionSync.class,
+            StcDimensionSync::encode,
+            StcDimensionSync::new,
+            StcDimensionSync::handle
         );
         channel.registerMessage(
             3,
