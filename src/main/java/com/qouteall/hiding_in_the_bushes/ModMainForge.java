@@ -165,7 +165,6 @@ public class ModMainForge {
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
         Global.netherPortalFindingRadius = ConfigServer.instance.portalSearchingRange.get();
-        Global.longerReachInCreative = ConfigServer.instance.longReachInCreative.get();
         Global.activeLoading = ConfigServer.instance.activeLoadRemoteChunks.get();
         Global.teleportationDebugEnabled = ConfigServer.instance.teleportationDebug.get();
         Global.loadFewerChunks = ConfigServer.instance.loadFewerChunks.get();

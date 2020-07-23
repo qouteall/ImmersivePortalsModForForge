@@ -114,12 +114,15 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         float destPitch,
         Set<SPlayerPositionLookPacket.Flags> updates
     ) {
-        Helper.log(String.format("request teleport %s %s (%d %d %d)->(%d %d %d)",
-            player.getName().getUnformattedComponentText(),
-            player.world.func_234923_W_(),
-            (int) player.getPosX(), (int) player.getPosY(), (int) player.getPosZ(),
-            (int) destX, (int) destY, (int) destZ
-        ));
+        if (Global.teleportationDebugEnabled) {
+            new Throwable().printStackTrace();
+            Helper.log(String.format("request teleport %s %s (%d %d %d)->(%d %d %d)",
+                player.getName().getUnformattedComponentText(),
+                player.world.func_234923_W_(),
+                (int) player.getPosX(), (int) player.getPosY(), (int) player.getPosZ(),
+                (int) destX, (int) destY, (int) destZ
+            ));
+        }
         
         double currX = updates.contains(SPlayerPositionLookPacket.Flags.X) ? this.player.getPosX() : 0.0D;
         double currY = updates.contains(SPlayerPositionLookPacket.Flags.Y) ? this.player.getPosY() : 0.0D;
@@ -149,10 +152,6 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         //noinspection ConstantConditions
         ((IEPlayerPositionLookS2CPacket) lookPacket).setPlayerDimension(player.world.func_234923_W_());
         this.player.connection.sendPacket(lookPacket);
-        
-        if (Global.teleportationDebugEnabled) {
-            new Throwable().printStackTrace();
-        }
     }
     
     //server will check the collision when receiving position packet from client

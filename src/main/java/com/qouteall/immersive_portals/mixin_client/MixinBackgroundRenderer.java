@@ -57,7 +57,8 @@ public class MixinBackgroundRenderer {
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/world/ClientWorld;getRainStrength(F)F"
-        )
+        ),
+        require = 0
     )
     private static float redirectGetRainGradient(ClientWorld world, float delta) {
         if (world.func_234923_W_() == World.field_234919_h_) {
@@ -71,7 +72,8 @@ public class MixinBackgroundRenderer {
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/world/ClientWorld;getThunderStrength(F)F"
-        )
+        ),
+        require = 0
     )
     private static float redirectGetThunderGradient(ClientWorld world, float delta) {
         if (world.func_234923_W_() == World.field_234919_h_) {

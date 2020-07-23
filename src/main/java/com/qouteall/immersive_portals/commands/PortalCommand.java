@@ -291,17 +291,7 @@ public class PortalCommand {
                             context, "nbt"
                         );
                         
-                        CompoundNBT portalNbt = portal.writeWithoutTypeId(new CompoundNBT());
-                        
-                        newNbt.keySet().forEach(
-                            key -> portalNbt.put(key, newNbt.get(key))
-                        );
-                        
-                        UUID uuid = portal.getUniqueID();
-                        portal.read(portalNbt);
-                        portal.setUniqueId(uuid);
-                        
-                        reloadPortal(portal);
+                        setPortalNbt(portal, newNbt);
                         
                         sendPortalInfo(context, portal);
                     }
@@ -614,6 +604,20 @@ public class PortalCommand {
         );
     }
     
+    private static void setPortalNbt(Portal portal, CompoundNBT newNbt) {
+        CompoundNBT portalNbt = portal.writeWithoutTypeId(new CompoundNBT());
+        
+        newNbt.keySet().forEach(
+            key -> portalNbt.put(key, newNbt.get(key))
+        );
+        
+        UUID uuid = portal.getUniqueID();
+        portal.read(portalNbt);
+        portal.setUniqueId(uuid);
+        
+        reloadPortal(portal);
+    }
+    
     private static void registerCBPortalCommands(
         LiteralArgumentBuilder<CommandSource> builder
     ) {
@@ -740,6 +744,17 @@ public class PortalCommand {
                                 
                                 return 0;
                             })
+                        )
+                    )
+                )
+            )
+        );
+        builder.then(Commands.literal("cb_set_portal_nbt")
+            .then(Commands.argument("portal", EntityArgument.entities())
+                .then(Commands.argument("nbt", NBTCompoundTagArgument.nbt())
+                    .executes(context -> processPortalArgumentedCommand(
+                        context,
+                        (portal) -> invokeSetPortalNBT(context, portal)
                         )
                     )
                 )
@@ -1114,6 +1129,17 @@ public class PortalCommand {
                 player.getName().getUnformattedComponentText() + " now"
         );
         sendMessage(context, portal.toString());
+    }
+    
+    private static void invokeSetPortalNBT(CommandContext<CommandSource> context, Portal portal) throws CommandSyntaxException {
+        
+        CompoundNBT newNbt = NBTCompoundTagArgument.getNbt(
+            context, "nbt"
+        );
+        
+        setPortalNbt(portal, newNbt);
+        
+        sendPortalInfo(context, portal);
     }
     
     private static void removeMultidestEntry(
