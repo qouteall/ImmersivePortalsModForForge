@@ -1,5 +1,6 @@
 package com.qouteall.hiding_in_the_bushes;
 
+import com.mojang.serialization.Codec;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
@@ -41,6 +42,7 @@ import net.minecraft.potion.EffectType;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.GuiOpenEvent;
@@ -170,6 +172,7 @@ public class ModMainForge {
         Global.loadFewerChunks = ConfigServer.instance.loadFewerChunks.get();
         Global.multiThreadedNetherPortalSearching = ConfigServer.instance.multiThreadedNetherPortalSearching.get();
         Global.looseMovementCheck = ConfigServer.instance.looseMovementCheck.get();
+        Global.enableAlternateDimensions = ConfigServer.instance.enableAlternateDimensions.get();
     }
     
     @SubscribeEvent
@@ -177,22 +180,9 @@ public class ModMainForge {
     
     }
     
-//    @SubscribeEvent
-//    @OnlyIn(Dist.CLIENT)
-//    public void onGuiOpen(GuiOpenEvent event) {
-//        if (event.getGui() instanceof MainMenuScreen) {
-//            if (!isMixinInClasspath()) {
-//                Minecraft.getInstance().displayGuiScreen(new MissingMixinScreen());
-//                event.setCanceled(true);
-//            }
-//        }
-//    }
-    
     public static void checkMixinState() {
         if (!isServerMixinApplied) {
-            String message =
-                "Mixin is NOT loaded. Install MixinBootstrap." +
-                    " https://www.curseforge.com/minecraft/mc-mods/immersive-portals-for-forge";
+            String message = "Mixin is missing. Install the latest Forge";
             
             try {
                 Class.forName("org.spongepowered.asm.launch.Phases");

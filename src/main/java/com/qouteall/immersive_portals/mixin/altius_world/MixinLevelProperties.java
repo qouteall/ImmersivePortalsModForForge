@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.mixin.altius_world;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.Lifecycle;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.altius_world.AltiusInfo;
 import com.qouteall.immersive_portals.ducks.IELevelProperties;
 import net.minecraft.command.TimerCallbackManager;
@@ -15,7 +16,10 @@ import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraft.world.storage.ServerWorldInfo;
 import net.minecraft.world.storage.VersionData;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -26,6 +30,10 @@ import java.util.UUID;
 
 @Mixin(ServerWorldInfo.class)
 public class MixinLevelProperties implements IELevelProperties {
+    @Shadow
+    @Final
+    @Mutable
+    private Lifecycle field_237344_d_;
     AltiusInfo altiusInfo;
     
     @Inject(
@@ -64,6 +72,11 @@ public class MixinLevelProperties implements IELevelProperties {
         CallbackInfo ci
     ) {
         altiusInfo = ((IELevelProperties) (Object) levelInfo).getAltiusInfo();
+        
+        // TODO use more appropriate way to get rid of the warning screen
+        if (Global.enableAlternateDimensions && generatorOptions.func_236224_e_().keySet().size() == 8) {
+            field_237344_d_ = Lifecycle.stable();
+        }
     }
     
     @Inject(

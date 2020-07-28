@@ -37,7 +37,7 @@ Vertical Dimension Connection.
 Alternate Dimensions.
 '''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
-[[dependencies.examplemod]] #optional
+[[dependencies.immersive_portals]] #optional
     # the modid of the dependencyr
     modId="forge" #mandatory
     # Does this dependency have to exist - if not, ordering below must be specified

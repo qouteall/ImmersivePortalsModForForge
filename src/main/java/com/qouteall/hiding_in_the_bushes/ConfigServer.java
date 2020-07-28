@@ -14,6 +14,7 @@ public class ConfigServer {
     public final ForgeConfigSpec.BooleanValue loadFewerChunks;
     public final ForgeConfigSpec.BooleanValue multiThreadedNetherPortalSearching;
     public final ForgeConfigSpec.BooleanValue looseMovementCheck;
+    public final ForgeConfigSpec.BooleanValue enableAlternateDimensions;
     
     public ConfigServer(ForgeConfigSpec.Builder builder) {
         portalSearchingRange = builder
@@ -34,6 +35,9 @@ public class ConfigServer {
         looseMovementCheck = builder
             .comment("Loose Serve Side Anti Hack Movement Check")
             .define("loose_movement_check", false);
+        enableAlternateDimensions = builder
+            .comment("Enable Alternate Dimensions")
+            .define("enable_alternate_dimensions", false);
     }
     
     static {

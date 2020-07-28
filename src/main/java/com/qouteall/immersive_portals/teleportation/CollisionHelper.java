@@ -15,6 +15,8 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
@@ -318,11 +320,15 @@ public class CollisionHelper {
         });
     }
     
+    @OnlyIn(Dist.CLIENT)
     public static void initClient() {
-        ModMain.postClientTickSignal.connect(() -> {
-            for (ClientWorld world : CGlobal.clientWorldLoader.clientWorldMap.values()) {
-                updateGlobalPortalCollidingPortalForWorld(world);
-            }
-        });
+        ModMain.postClientTickSignal.connect(CollisionHelper::updateClientGlobalPortalCollidingPortal);
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    private static void updateClientGlobalPortalCollidingPortal() {
+        for (ClientWorld world : CGlobal.clientWorldLoader.clientWorldMap.values()) {
+            updateGlobalPortalCollidingPortalForWorld(world);
+        }
     }
 }

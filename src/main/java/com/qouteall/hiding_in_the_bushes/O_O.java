@@ -4,9 +4,11 @@ import com.qouteall.hiding_in_the_bushes.fix_model_data.ModelDataHacker;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.portal.nether_portal.BlockPortalShape;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -127,5 +129,11 @@ public class O_O {
                 null
             )
         );
+    }
+    
+    public static ClientChunkProvider createMyClientChunkManager(
+        ClientWorld world, int dis
+    ) {
+        return new MyClientChunkManager(world, dis);
     }
 }
