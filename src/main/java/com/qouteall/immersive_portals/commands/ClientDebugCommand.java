@@ -26,6 +26,7 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.profiler.Profiler;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -44,6 +45,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import java.lang.ref.Reference;
 import java.net.URLClassLoader;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -73,8 +75,8 @@ public class ClientDebugCommand {
                 )
             );
         builder = builder.then(Commands
-            .literal("list_nearby_portals")
-            .executes(context -> listNearbyPortals(context))
+            .literal("list_portals")
+            .executes(context -> listPortals(context))
         );
         builder = builder.then(Commands
             .literal("is_client_chunk_loaded")
@@ -462,6 +464,17 @@ public class ClientDebugCommand {
                 return 0;
             })
         );
+        builder.then(Commands
+            .literal("set_profiler_logging_threshold")
+            .then(Commands.argument("ms", IntegerArgumentType.integer())
+                .executes(context -> {
+                    int ms = IntegerArgumentType.getInteger(context, "ms");
+                    Profiler.WARN_TIME_THRESHOLD = Duration.ofMillis(ms).toNanos();
+                    
+                    return 0;
+                })
+            )
+        );
         registerSwitchCommand(
             builder,
             "render_fewer_on_fast_graphic",
@@ -528,6 +541,11 @@ public class ClientDebugCommand {
             builder,
             "add_custom_ticket_for_direct_loading_delayed",
             cond -> NewChunkTrackingGraph.addCustomTicketForDirectLoadingDelayed = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "server_smooth_loading",
+            cond -> Global.serverSmoothLoading = cond
         );
         
         builder.then(Commands
@@ -653,29 +671,36 @@ public class ClientDebugCommand {
         return 0;
     }
     
-    private static int listNearbyPortals(CommandContext<CommandSource> context) throws CommandSyntaxException {
+    private static int listPortals(CommandContext<CommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity playerServer = context.getSource().asPlayer();
         ClientPlayerEntity playerClient = Minecraft.getInstance().player;
         
-        McHelper.serverLog(playerServer, "Server Portals");
-        McHelper.serverLog(
-            playerServer,
-            Helper.myToString(
-                McHelper.getEntitiesNearby(
-                    playerServer, Portal.class, 64
-                )
-            )
-        );
+        StringBuilder result = new StringBuilder();
         
-        McHelper.serverLog(playerServer, "Client Portals");
-        McHelper.serverLog(
-            playerServer,
-            Helper.myToString(
-                McHelper.getEntitiesNearby(
-                    playerClient, Portal.class, 64
-                )
-            )
-        );
+        result.append("Server Portals\n");
+        
+        playerServer.getServer().getWorlds().forEach(world -> {
+            result.append(world.func_234923_W_().func_240901_a_().toString() + "\n");
+            for (Entity e : world.func_241136_z_()) {
+                if (e instanceof Portal) {
+                    result.append(e.toString());
+                    result.append("\n");
+                }
+            }
+        });
+        
+        result.append("Client Portals\n");
+        CGlobal.clientWorldLoader.clientWorldMap.forEach((dim, world) -> {
+            result.append(world.func_234923_W_().func_240901_a_().toString() + "\n");
+            for (Entity e : world.getAllEntities()) {
+                if (e instanceof Portal) {
+                    result.append(e.toString());
+                    result.append("\n");
+                }
+            }
+        });
+        
+        McHelper.serverLog(playerServer, result.toString());
         
         return 0;
     }

@@ -377,10 +377,6 @@ public class McHelper {
         );
     }
     
-    public static void checkDimension(Entity entity) {
-        //no need in 1.16
-    }
-    
     public static Chunk getServerChunkIfPresent(
         RegistryKey<World> dimension,
         int x, int z
@@ -452,9 +448,6 @@ public class McHelper {
     public static void onClientEntityTick(Entity entity) {
         CrossPortalEntityRenderer.onEntityTickClient(entity);
     }
-    
-   
-    
     
     public static interface ChunkAccessor {
         Chunk getChunk(int x, int z);
@@ -570,7 +563,7 @@ public class McHelper {
     }
     
     public static class MyDecodeException extends RuntimeException {
-    
+        
         public MyDecodeException(String message) {
             super(message);
         }
@@ -635,5 +628,19 @@ public class McHelper {
             
             return true;
         });
+    }
+    
+    public static Iterable<Entity> getWorldEntityList(World world) {
+        if (world.isRemote()) {
+            return CHelper.getWorldEntityList(world);
+        }
+        else {
+            if (world instanceof ServerWorld) {
+                return ((ServerWorld) world).func_241136_z_();
+            }
+            else {
+                return ((Iterable<Entity>) Collections.emptyList().iterator());
+            }
+        }
     }
 }

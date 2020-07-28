@@ -59,9 +59,11 @@ public class Global {
     
     public static boolean smoothLoading = false;
     
-    public static boolean cacheGlBuffer = false;
+    public static boolean cacheGlBuffer = true;
     
-    public static boolean enableAlternateDimensions = true;
+    public static boolean enableAlternateDimensions = false;
+    
+    public static boolean serverSmoothLoading = false;
     
     public static enum RenderMode {
         normal,
@@ -69,4 +71,5 @@ public class Global {
         debug,
         none
     }
+    
 }

@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 public class NewChunkTrackingGraph {
     
+    public static final int updateInterval = 40;
     public static boolean addCustomTicketForDirectLoadingDelayed = true;
     
     public static class PlayerWatchRecord {
@@ -243,11 +244,11 @@ public class NewChunkTrackingGraph {
         
         long gameTime = McHelper.getOverWorldOnServer().getGameTime();
         McHelper.getCopiedPlayerList().forEach(player -> {
-            if (player.getEntityId() % 40 == gameTime % 40) {
+            if (player.getEntityId() % updateInterval == gameTime % updateInterval) {
                 updateForPlayer(player);
             }
         });
-        if (gameTime % 40 == 0) {
+        if (gameTime % updateInterval == 0) {
             updateAndPurge();
         }
         

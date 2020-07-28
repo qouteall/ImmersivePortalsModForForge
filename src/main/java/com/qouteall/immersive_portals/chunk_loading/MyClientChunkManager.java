@@ -37,11 +37,11 @@ import java.util.stream.Stream;
 @OnlyIn(Dist.CLIENT)
 public class MyClientChunkManager extends ClientChunkProvider {
     private static final Logger LOGGER = LogManager.getLogger();
-    private final Chunk emptyChunk;
-    private final WorldLightManager lightingProvider;
-    private final ClientWorld world;
+    protected final Chunk emptyChunk;
+    protected final WorldLightManager lightingProvider;
+    protected final ClientWorld world;
     
-    private final Long2ObjectLinkedOpenHashMap<Chunk> chunkMap =
+    protected final Long2ObjectLinkedOpenHashMap<Chunk> chunkMap =
         new Long2ObjectLinkedOpenHashMap<>();
     
     public MyClientChunkManager(ClientWorld clientWorld, int loadDistance) {
@@ -216,7 +216,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
         );
     }
     
-    private static boolean positionEquals(Chunk worldChunk_1, int int_1, int int_2) {
+    protected static boolean positionEquals(Chunk worldChunk_1, int int_1, int int_2) {
         if (worldChunk_1 == null) {
             return false;
         }

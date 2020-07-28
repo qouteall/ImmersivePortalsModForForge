@@ -11,6 +11,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.IPacket;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
@@ -59,7 +60,7 @@ public class GlobalPortalStorage extends WorldSavedData {
     
     public void onDataChanged() {
         setDirty(true);
-    
+        
         IPacket packet = MyNetwork.createGlobalPortalUpdate(this);
         McHelper.getCopiedPlayerList().forEach(
             player -> player.connection.sendPacket(packet)
@@ -78,6 +79,8 @@ public class GlobalPortalStorage extends WorldSavedData {
         }
         
         data = newData;
+        
+        clearAbnormalPortals();
     }
     
     public static List<GlobalTrackedPortal> getPortalsFromTag(
@@ -112,6 +115,7 @@ public class GlobalPortalStorage extends WorldSavedData {
         if (!(e instanceof GlobalTrackedPortal)) {
             return null;
         }
+        
         
         return (GlobalTrackedPortal) e;
     }
@@ -159,6 +163,17 @@ public class GlobalPortalStorage extends WorldSavedData {
             version = 2;
             setDirty(true);
         }
+    }
+    
+    public void clearAbnormalPortals() {
+        data.removeIf(e -> {
+            RegistryKey<World> dimensionTo = ((GlobalTrackedPortal) e).dimensionTo;
+            if (McHelper.getServer().getWorld(dimensionTo) == null) {
+                Helper.err("Missing Dimension for global portal " + dimensionTo.func_240901_a_());
+                return true;
+            }
+            return false;
+        });
     }
     
     private static void upgradeData(ServerWorld world) {

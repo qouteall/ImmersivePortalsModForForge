@@ -10,7 +10,8 @@
     "MixinShaders",
     "MixinShaders_DimensionRedirect",
     "MixinShaders_Swap",
-    "MixinShadersRender"
+    "MixinShadersRender",
+    "MixinWorldUtils"
   ],
   "injectors": {
     "defaultRequire": 1

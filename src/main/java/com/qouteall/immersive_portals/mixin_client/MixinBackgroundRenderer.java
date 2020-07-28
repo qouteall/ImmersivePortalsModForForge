@@ -2,15 +2,11 @@ package com.qouteall.immersive_portals.mixin_client;
 
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import net.minecraft.client.renderer.FogRenderer;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(FogRenderer.class)
+@Mixin(value = FogRenderer.class, priority = 1100)
 public class MixinBackgroundRenderer {
     @Shadow
     private static float red;
@@ -48,37 +44,5 @@ public class MixinBackgroundRenderer {
             () -> new Vector3d(red, green, blue);
         
         FogRendererContext.init();
-    }
-    
-    // avoid nether fog color being interfered by nether's weather
-    // nether should not be raining. maybe another bug
-    @Redirect(
-        method = "Lnet/minecraft/client/renderer/FogRenderer;updateFogColor(Lnet/minecraft/client/renderer/ActiveRenderInfo;FLnet/minecraft/client/world/ClientWorld;IF)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/world/ClientWorld;getRainStrength(F)F"
-        ),
-        require = 0
-    )
-    private static float redirectGetRainGradient(ClientWorld world, float delta) {
-        if (world.func_234923_W_() == World.field_234919_h_) {
-            return 0.0f;
-        }
-        return world.getRainStrength(delta);
-    }
-    
-    @Redirect(
-        method = "Lnet/minecraft/client/renderer/FogRenderer;updateFogColor(Lnet/minecraft/client/renderer/ActiveRenderInfo;FLnet/minecraft/client/world/ClientWorld;IF)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/world/ClientWorld;getThunderStrength(F)F"
-        ),
-        require = 0
-    )
-    private static float redirectGetThunderGradient(ClientWorld world, float delta) {
-        if (world.func_234923_W_() == World.field_234919_h_) {
-            return 0.0f;
-        }
-        return world.getThunderStrength(delta);
     }
 }

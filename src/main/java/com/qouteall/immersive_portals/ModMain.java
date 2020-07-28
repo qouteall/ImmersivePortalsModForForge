@@ -3,11 +3,13 @@ package com.qouteall.immersive_portals;
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.alternate_dimension.FormulaGenerator;
 import com.qouteall.immersive_portals.chunk_loading.ChunkDataSyncManager;
+import com.qouteall.immersive_portals.chunk_loading.EntitySync;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.chunk_loading.WorldInfoSender;
 import com.qouteall.immersive_portals.my_util.MyTaskList;
 import com.qouteall.immersive_portals.my_util.Signal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
+import com.qouteall.immersive_portals.teleportation.CollisionHelper;
 import com.qouteall.immersive_portals.teleportation.ServerTeleportationManager;
 import net.minecraft.block.Block;
 import net.minecraft.item.BlockItem;
@@ -41,6 +43,10 @@ public class ModMain {
     public static final RegistryKey<Dimension> alternate4Option = RegistryKey.func_240903_a_(
         Registry.field_239700_af_,
         new ResourceLocation("immersive_portals:alternate4")
+    );
+    public static final RegistryKey<Dimension> alternate5Option = RegistryKey.func_240903_a_(
+        Registry.field_239700_af_,
+        new ResourceLocation("immersive_portals:alternate5")
     );
     public static final RegistryKey<DimensionType> surfaceType = RegistryKey.func_240903_a_(
         Registry.field_239698_ad_,
@@ -96,6 +102,10 @@ public class ModMain {
         FormulaGenerator.init();
         
         GlobalPortalStorage.init();
+    
+        EntitySync.init();
+    
+        CollisionHelper.init();
     
     }
     

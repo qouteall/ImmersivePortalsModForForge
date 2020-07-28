@@ -12,6 +12,7 @@ import net.minecraft.nbt.StringNBT;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.IServerConfiguration;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,8 +81,12 @@ public class AltiusInfo {
             Helper.err("Invalid Dimension " + dimsFromTopToDown.get(0));
             return;
         }
-        GlobalPortalStorage gps =
-            GlobalPortalStorage.get(McHelper.getServer().getWorld(topDimension));
+        ServerWorld world = McHelper.getServer().getWorld(topDimension);
+        if (world == null) {
+            Helper.err("Missing Dimension " + topDimension.func_240901_a_());
+            return;
+        }
+        GlobalPortalStorage gps = GlobalPortalStorage.get(world);
         if (gps.data == null || gps.data.isEmpty()) {
             Helper.wrapAdjacentAndMap(
                 dimsFromTopToDown.stream(),

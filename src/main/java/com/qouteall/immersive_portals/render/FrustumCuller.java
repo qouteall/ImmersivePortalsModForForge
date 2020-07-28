@@ -6,7 +6,6 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import java.util.Comparator;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -16,11 +15,6 @@ public class FrustumCuller {
     public static interface BoxPredicate {
         boolean test(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
     }
-    
-    public static interface PosPredicate {
-        boolean test(double x, double y, double z);
-    }
-    
     
     private BoxPredicate canDetermineInvisibleFunc;
     
@@ -228,32 +222,6 @@ public class FrustumCuller {
         );
     }
     
-    @Deprecated
-    private static BatchTestResult testBox_(AxisAlignedBB box, PosPredicate predicate) {
-        boolean firstResult = predicate.test(box.minX, box.minY, box.minZ);
-        if (predicate.test(box.minX, box.minY, box.maxZ) != firstResult) return BatchTestResult.both;
-        if (predicate.test(box.minX, box.maxY, box.minZ) != firstResult) return BatchTestResult.both;
-        if (predicate.test(box.minX, box.maxY, box.maxZ) != firstResult) return BatchTestResult.both;
-        if (predicate.test(box.maxX, box.minY, box.minZ) != firstResult) return BatchTestResult.both;
-        if (predicate.test(box.maxX, box.minY, box.maxZ) != firstResult) return BatchTestResult.both;
-        if (predicate.test(box.maxX, box.maxY, box.minZ) != firstResult) return BatchTestResult.both;
-        if (predicate.test(box.maxX, box.maxY, box.maxZ) != firstResult) return BatchTestResult.both;
-        return firstResult ? BatchTestResult.all_true : BatchTestResult.all_false;
-    }
-    
-    @Deprecated
-    private static boolean testBoxAllTrue_(AxisAlignedBB box, PosPredicate predicate) {
-        if (!predicate.test(box.minX, box.minY, box.minZ)) return false;
-        if (!predicate.test(box.minX, box.minY, box.maxZ)) return false;
-        if (!predicate.test(box.minX, box.maxY, box.minZ)) return false;
-        if (!predicate.test(box.minX, box.maxY, box.maxZ)) return false;
-        if (!predicate.test(box.maxX, box.minY, box.minZ)) return false;
-        if (!predicate.test(box.maxX, box.minY, box.maxZ)) return false;
-        if (!predicate.test(box.maxX, box.maxY, box.minZ)) return false;
-        if (!predicate.test(box.maxX, box.maxY, box.maxZ)) return false;
-        return true;
-    }
-    
     private static boolean isInFrontOf(double x, double y, double z, Vector3d planeNormal) {
         return x * planeNormal.x + y * planeNormal.y + z * planeNormal.z >= 0;
     }
@@ -301,43 +269,6 @@ public class FrustumCuller {
         return false;
     }
     
-    @Deprecated
-    private static boolean isFullyOutsideFrustum_(
-        AxisAlignedBB boxInLocalCoordinate,
-        Vector3d leftPlane,
-        Vector3d rightPlane,
-        Vector3d upPlane,
-        Vector3d downPlane
-    ) {
-        BatchTestResult left = testBox_(
-            boxInLocalCoordinate, (x, y, z) -> isInFrontOf(x, y, z, leftPlane)
-        );
-        BatchTestResult right = testBox_(
-            boxInLocalCoordinate, (x, y, z) -> isInFrontOf(x, y, z, rightPlane)
-        );
-        if (left == BatchTestResult.all_false && right == BatchTestResult.all_true) {
-            return true;
-        }
-        if (left == BatchTestResult.all_true && right == BatchTestResult.all_false) {
-            return true;
-        }
-        
-        BatchTestResult up = testBox_(
-            boxInLocalCoordinate, (x, y, z) -> isInFrontOf(x, y, z, upPlane)
-        );
-        BatchTestResult down = testBox_(
-            boxInLocalCoordinate, (x, y, z) -> isInFrontOf(x, y, z, downPlane)
-        );
-        if (up == BatchTestResult.all_false && down == BatchTestResult.all_true) {
-            return true;
-        }
-        if (up == BatchTestResult.all_true && down == BatchTestResult.all_false) {
-            return true;
-        }
-        
-        return false;
-    }
-    
     private static boolean isFullyInFrustum(
         double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
         Vector3d leftPlane,
@@ -353,23 +284,6 @@ public class FrustumCuller {
             == BatchTestResult.all_true
             && testBoxTwoVertices(minX, minY, minZ, maxX, maxY, maxZ, downPlane)
             == BatchTestResult.all_true;
-    }
-    
-    @Deprecated
-    private static boolean isFullyInFrustum_(
-        AxisAlignedBB boxInLocalCoordinate,
-        Vector3d leftPlane,
-        Vector3d rightPlane,
-        Vector3d upPlane,
-        Vector3d downPlane
-    ) {
-        return testBoxAllTrue_(
-            boxInLocalCoordinate,
-            (x, y, z) -> isInFrontOf(x, y, z, leftPlane)
-        ) &&
-            testBoxAllTrue_(boxInLocalCoordinate, (x, y, z) -> isInFrontOf(x, y, z, rightPlane)) &&
-            testBoxAllTrue_(boxInLocalCoordinate, (x, y, z) -> isInFrontOf(x, y, z, upPlane)) &&
-            testBoxAllTrue_(boxInLocalCoordinate, (x, y, z) -> isInFrontOf(x, y, z, downPlane));
     }
     
     private static Portal getCurrentNearestVisibleCullablePortal() {

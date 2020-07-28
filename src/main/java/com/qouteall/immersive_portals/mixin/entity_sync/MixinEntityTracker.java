@@ -11,9 +11,9 @@ import net.minecraft.network.IPacket;
 import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.SectionPos;
-import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.TrackedEntity;
 import net.minecraft.world.server.ChunkHolder;
+import net.minecraft.world.server.ServerWorld;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -45,7 +45,8 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
     @Shadow
     public abstract void removeAllTrackers();
     
-    @Shadow protected abstract int func_229843_b_();
+    @Shadow
+    protected abstract int func_229843_b_();
     
     @Redirect(
         method = "Lnet/minecraft/world/server/ChunkManager$EntityTracker;sendToAllTracking(Lnet/minecraft/network/IPacket;)V",
@@ -90,19 +91,17 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
      */
     @Overwrite
     public void updateTrackingState(ServerPlayerEntity player) {
-        updateCameraPosition_(player);
+        updateEntityTrackingStatus(player);
     }
     
     /**
      * @author qouteall
-     * performance may be slowed down
      */
     @Overwrite
-    public void updateTrackingState(List<ServerPlayerEntity> list_1) {
-        //ignore the argument
-        
-        McHelper.getRawPlayerList().forEach(this::updateTrackingState);
-        
+    public void updateTrackingState(List<ServerPlayerEntity> list) {
+        for (ServerPlayerEntity player : McHelper.getRawPlayerList()) {
+            updateEntityTrackingStatus(player);
+        }
     }
     
     @Override
@@ -111,45 +110,45 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
     }
     
     @Override
-    public void updateCameraPosition_(ServerPlayerEntity player) {
-        IEThreadedAnvilChunkStorage storage = McHelper.getIEStorage(entity.world.func_234923_W_());
+    public void updateEntityTrackingStatus(ServerPlayerEntity player) {
+        IEThreadedAnvilChunkStorage storage = (IEThreadedAnvilChunkStorage)
+            ((ServerWorld) entity.world).getChunkProvider().chunkManager;
         
-        if (player != this.entity) {
-            McHelper.checkDimension(this.entity);
-            
-            Vector3d relativePos = (player.getPositionVec()).subtract(this.entry.func_219456_b());
-            int maxWatchDistance = Math.min(
-                this.func_229843_b_(),
-                (storage.getWatchDistance() - 1) * 16
-            );
-            boolean isWatchedNow =
-                NewChunkTrackingGraph.isPlayerWatchingChunkWithinRaidus(
-                    player,
-                    this.entity.world.func_234923_W_(),
-                    this.entity.chunkCoordX,
-                    this.entity.chunkCoordZ,
-                    maxWatchDistance
-                ) &&
-                    this.entity.isSpectatedByPlayer(player);
-            if (isWatchedNow) {
-                boolean shouldTrack = this.entity.forceSpawn;
-                if (!shouldTrack) {
-                    ChunkPos chunkPos_1 = new ChunkPos(this.entity.chunkCoordX, this.entity.chunkCoordZ);
-                    ChunkHolder chunkHolder_1 = storage.getChunkHolder_(chunkPos_1.asLong());
-                    if (chunkHolder_1 != null && chunkHolder_1.getChunkIfComplete() != null) {
-                        shouldTrack = true;
-                    }
-                }
-                
-                if (shouldTrack && this.trackingPlayers.add(player)) {
-                    this.entry.track(player);
-                }
-            }
-            else if (this.trackingPlayers.remove(player)) {
-                this.entry.untrack(player);
-            }
-            
+        if (player == this.entity) {
+            return;
         }
+        
+        int maxWatchDistance = Math.min(
+            this.func_229843_b_(),
+            (storage.getWatchDistance() - 1) * 16
+        );
+        boolean isWatchedNow =
+            NewChunkTrackingGraph.isPlayerWatchingChunkWithinRaidus(
+                player,
+                this.entity.world.func_234923_W_(),
+                this.entity.chunkCoordX,
+                this.entity.chunkCoordZ,
+                maxWatchDistance
+            ) &&
+                this.entity.isSpectatedByPlayer(player);
+        if (isWatchedNow) {
+            boolean shouldTrack = this.entity.forceSpawn;
+            if (!shouldTrack) {
+                ChunkPos chunkPos_1 = new ChunkPos(this.entity.chunkCoordX, this.entity.chunkCoordZ);
+                ChunkHolder chunkHolder_1 = storage.getChunkHolder_(chunkPos_1.asLong());
+                if (chunkHolder_1 != null && chunkHolder_1.getChunkIfComplete() != null) {
+                    shouldTrack = true;
+                }
+            }
+            
+            if (shouldTrack && this.trackingPlayers.add(player)) {
+                this.entry.track(player);
+            }
+        }
+        else if (this.trackingPlayers.remove(player)) {
+            this.entry.untrack(player);
+        }
+        
     }
     
     @Override
@@ -170,5 +169,10 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
     @Override
     public void stopTrackingToAllPlayers_() {
         removeAllTrackers();
+    }
+    
+    @Override
+    public void tickEntry() {
+        entry.tick();
     }
 }

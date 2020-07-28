@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.render;
 
 import com.google.common.collect.Streams;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.my_util.ObjectBuffer;
@@ -59,8 +60,13 @@ public class MyBuiltChunkStorage extends ViewFrustum {
             this, MyBuiltChunkStorage::tick
         );
         
+        int cacheSize = countChunksX * countChunksY * countChunksZ;
+        if (Global.cacheGlBuffer) {
+            cacheSize = cacheSize / 10;
+        }
+        
         builtChunkBuffer = new ObjectBuffer<>(
-            countChunksX * countChunksY * countChunksZ,
+            cacheSize,
             () -> factory.new ChunkRender(),
             ChunkRenderDispatcher.ChunkRender::deleteGlResources
         );

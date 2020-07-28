@@ -1,17 +1,20 @@
 package com.qouteall.immersive_portals.teleportation;
 
+import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
-
+import net.minecraft.world.server.ServerWorld;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
@@ -58,7 +61,7 @@ public class CollisionHelper {
         return new AxisAlignedBB(afterBeingPushed, staticPos);
     }
     
-    private static boolean shouldCollideWithPortal(Entity entity, Portal portal, float tickDelta) {
+    public static boolean shouldCollideWithPortal(Entity entity, Portal portal, float tickDelta) {
         return portal.isTeleportable() &&
             portal.isInFrontOfPortal(entity.getEyePosition(tickDelta));
     }
@@ -219,6 +222,7 @@ public class CollisionHelper {
     //it has a small chance to ignore collided entities
     //this would cause player to fall through floor when halfway though portal
     //use entity.getCollidingPortal() and do not use this
+    @Deprecated
     public static Portal getCollidingPortalUnreliable(Entity entity, float tickDelta) {
         AxisAlignedBB box = entity.getBoundingBox().expand(entity.getMotion());
         
@@ -286,5 +290,39 @@ public class CollisionHelper {
         else {
             return entity.getBoundingBox();
         }
+    }
+    
+    private static void updateGlobalPortalCollidingPortalForWorld(World world) {
+        world.getProfiler().startSection("global_portal_colliding_portal");
+        
+        List<GlobalTrackedPortal> globalPortals = McHelper.getGlobalPortals(world);
+        
+        Iterable<Entity> worldEntityList = McHelper.getWorldEntityList(world);
+        
+        for (GlobalTrackedPortal globalPortal : globalPortals) {
+            for (Entity entity : worldEntityList) {
+                if (shouldCollideWithPortal(entity, globalPortal, 1)) {
+                    ((IEEntity) entity).notifyCollidingWithPortal(globalPortal);
+                }
+            }
+        }
+        
+        world.getProfiler().endSection();
+    }
+    
+    public static void init() {
+        ModMain.postServerTickSignal.connect(() -> {
+            for (ServerWorld world : McHelper.getServer().getWorlds()) {
+                updateGlobalPortalCollidingPortalForWorld(world);
+            }
+        });
+    }
+    
+    public static void initClient() {
+        ModMain.postClientTickSignal.connect(() -> {
+            for (ClientWorld world : CGlobal.clientWorldLoader.clientWorldMap.values()) {
+                updateGlobalPortalCollidingPortalForWorld(world);
+            }
+        });
     }
 }

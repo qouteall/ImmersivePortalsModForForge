@@ -132,10 +132,10 @@ public class RenderStates {
         Vector3d cameraPosVec = cameraEntity.getEyePosition(tickDelta);
         double minPortalDistance = CHelper.getClientNearbyPortals(10)
             .map(portal -> portal.getDistanceToNearestPointInPortal(cameraPosVec))
-            .min(Double::compareTo).orElse(1.0);
-        if (minPortalDistance < 1) {
-            if (minPortalDistance > 0.5) {
-                setViewBobFactor((minPortalDistance - 0.5) * 2);
+            .min(Double::compareTo).orElse(100.0);
+        if (minPortalDistance < 2) {
+            if (minPortalDistance > 1) {
+                setViewBobFactor(minPortalDistance - 1);
             }
             else {
                 setViewBobFactor(0);

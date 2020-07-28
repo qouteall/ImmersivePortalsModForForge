@@ -3,11 +3,13 @@ package com.qouteall.immersive_portals.block_manipulation;
 import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Global;
 import net.minecraft.entity.ai.attributes.Attribute;
+import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
 import net.minecraft.entity.ai.attributes.RangedAttribute;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.potion.Effect;
 import net.minecraft.potion.EffectType;
 import net.minecraft.potion.Potion;
+import org.apache.commons.lang3.Validate;
 
 import java.util.function.BiFunction;
 
@@ -31,7 +33,12 @@ public class HandReachTweak {
         if (O_O.isForge()) {
             return 1;
         }
-        double multiplier = playerEntity.getAttribute(handReachMultiplierAttribute).getValue();
+        Validate.notNull(playerEntity);
+        ModifiableAttributeInstance instance = playerEntity.getAttribute(handReachMultiplierAttribute);
+        if (instance == null) {
+            return 1;
+        }
+        double multiplier = instance.getValue();
         if (Global.longerReachInCreative && playerEntity.isCreative()) {
             return multiplier * 10;
         }

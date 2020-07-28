@@ -6,11 +6,13 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 public interface IEEntityTracker {
     Entity getEntity_();
     
-    void updateCameraPosition_(ServerPlayerEntity player);
+    void updateEntityTrackingStatus(ServerPlayerEntity player);
     
     void onPlayerRespawn(ServerPlayerEntity oldPlayer);
     
     void resendSpawnPacketToTrackers();
     
     void stopTrackingToAllPlayers_();
+    
+    void tickEntry();
 }
