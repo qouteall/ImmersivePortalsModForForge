@@ -3,7 +3,9 @@ package com.qouteall.immersive_portals.chunk_loading;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
+import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.my_util.LimitedLogger;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.SectionPos;
@@ -34,8 +36,11 @@ public class EntitySync {
         for (ServerPlayerEntity player : playerList) {
             ChunkManager storage =
                 ((ServerWorld) player.world).getChunkProvider().chunkManager;
+            Int2ObjectMap<ChunkManager.EntityTracker> entityTrackerMap =
+                ((IEThreadedAnvilChunkStorage) storage).getEntityTrackerMap();
+            
             ChunkManager.EntityTracker playerItselfTracker =
-                storage.entities.get(player.getEntityId());
+                entityTrackerMap.get(player.getEntityId());
             if (playerItselfTracker != null) {
                 if (isDirty(playerItselfTracker)) {
                     dirtyPlayers.add(player);
@@ -50,18 +55,22 @@ public class EntitySync {
         
         server.getWorlds().forEach(world -> {
             ChunkManager storage = world.getChunkProvider().chunkManager;
+            Int2ObjectMap<ChunkManager.EntityTracker> entityTrackerMap =
+                ((IEThreadedAnvilChunkStorage) storage).getEntityTrackerMap();
             
-            for (ChunkManager.EntityTracker tracker : storage.entities.values()) {
+            for (ChunkManager.EntityTracker tracker : entityTrackerMap.values()) {
                 ((IEEntityTracker) tracker).tickEntry();
                 
-                List<ServerPlayerEntity> updatedPlayerList = isDirty(tracker) ?
-                    playerList : dirtyPlayers;
+                boolean dirty = isDirty(tracker);
+                List<ServerPlayerEntity> updatedPlayerList = dirty ? playerList : dirtyPlayers;
                 
                 for (ServerPlayerEntity player : updatedPlayerList) {
                     ((IEEntityTracker) tracker).updateEntityTrackingStatus(player);
                 }
                 
-                markUnDirty(tracker);
+                if (dirty) {
+                    markUnDirty(tracker);
+                }
             }
         });
         
@@ -69,11 +78,12 @@ public class EntitySync {
     }
     
     private static boolean isDirty(ChunkManager.EntityTracker tracker) {
-        SectionPos newPos = SectionPos.from(tracker.entity);
-        return !tracker.pos.equals(newPos);
+        SectionPos newPos = SectionPos.from(((IEEntityTracker) tracker).getEntity_());
+        return !((IEEntityTracker) tracker).getLastCameraPosition().equals(newPos);
     }
     
     private static void markUnDirty(ChunkManager.EntityTracker tracker) {
-        tracker.pos = SectionPos.from(tracker.entity);
+        SectionPos currPos = SectionPos.from(((IEEntityTracker) tracker).getEntity_());
+        ((IEEntityTracker) tracker).setLastCameraPosition(currPos);
     }
 }

@@ -29,7 +29,6 @@ public class MixinServerPlayerEntity_MA {
         
     }
     
-    //NOTE this does not create a new player entity
     @Inject(
         method = "Lnet/minecraft/entity/player/ServerPlayerEntity;teleport(Lnet/minecraft/world/server/ServerWorld;DDDFF)V",
         at = @At(

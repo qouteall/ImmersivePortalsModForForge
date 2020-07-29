@@ -406,10 +406,8 @@ public class ServerTeleportationManager {
                 e.startRiding(newEntity, true);
             });
         }
-        
-        entity.setPosition(
-            newEyePos.x, newEyePos.y, newEyePos.z
-        );
+    
+        McHelper.setEyePos(entity, newEyePos, newEyePos);
         McHelper.updateBoundingBox(entity);
         
         ((ServerWorld) entity.world).chunkCheck(entity);
@@ -417,6 +415,9 @@ public class ServerTeleportationManager {
         entity.setMotion(portal.transformLocalVec(velocity));
         
         portal.onEntityTeleportedOnServer(entity);
+    
+        // a new entity may be created
+        this.lastTeleportGameTime.put(entity, currGameTime);
     }
     
     /**
@@ -424,7 +425,7 @@ public class ServerTeleportationManager {
      * Sometimes resuing the same entity object is problematic
      * because entity's AI related things may have world reference inside
      * These fields should also get changed but it's not easy
-     *
+     * <p>
      * Recreating the entity is the vanilla way.
      * But it requires changing the corresponding entity reference on other places
      */
@@ -439,6 +440,25 @@ public class ServerTeleportationManager {
         entity.detach();
         
         if (recreateEntity) {
+            Entity oldEntity = entity;
+            Entity newEntity;
+            newEntity = entity.getType().create(toWorld);
+            if (newEntity == null) {
+                return oldEntity;
+            }
+            
+            newEntity.copyDataFromOld(oldEntity);
+            McHelper.setEyePos(newEntity, newEyePos, newEyePos);
+            McHelper.updateBoundingBox(newEntity);
+            newEntity.setRotationYawHead(oldEntity.getRotationYawHead());
+            
+            oldEntity.removed = true;
+            
+            toWorld.addFromAnotherDimension(newEntity);
+            
+            return newEntity;
+        }
+        else {
             O_O.segregateServerEntity(fromWorld, entity);
             
             McHelper.setEyePos(entity, newEyePos, newEyePos);
@@ -449,27 +469,6 @@ public class ServerTeleportationManager {
             toWorld.addFromAnotherDimension(entity);
             
             return entity;
-        }
-        else {
-            Entity oldEntity = entity;
-            Entity newEntity;
-            newEntity = entity.getType().create(toWorld);
-            if (newEntity == null) {
-                return oldEntity;
-            }
-            
-            newEntity.copyDataFromOld(oldEntity);
-            newEntity.setLocationAndAngles(
-                oldEntity.getPosX(), oldEntity.getPosY(), oldEntity.getPosZ(),
-                oldEntity.getYaw(1), oldEntity.getPitch(1)
-            );
-            newEntity.setRotationYawHead(oldEntity.getRotationYawHead());
-            
-            oldEntity.removed = true;
-            
-            toWorld.addFromAnotherDimension(newEntity);
-            
-            return newEntity;
         }
         
         

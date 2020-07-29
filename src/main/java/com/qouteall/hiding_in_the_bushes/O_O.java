@@ -131,6 +131,7 @@ public class O_O {
         );
     }
     
+    @OnlyIn(Dist.CLIENT)
     public static ClientChunkProvider createMyClientChunkManager(
         ClientWorld world, int dis
     ) {
