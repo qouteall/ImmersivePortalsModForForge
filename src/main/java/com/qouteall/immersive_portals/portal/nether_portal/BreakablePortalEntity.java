@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import net.minecraft.block.Blocks;
@@ -41,7 +42,7 @@ public abstract class BreakablePortalEntity extends Portal {
         if (compoundTag.contains("netherPortalShape")) {
             blockPortalShape = new BlockPortalShape(compoundTag.getCompound("netherPortalShape"));
         }
-        reversePortalId = Helper.getUuid(compoundTag,"reversePortalId");
+        reversePortalId = Helper.getUuid(compoundTag, "reversePortalId");
         unbreakable = compoundTag.getBoolean("unbreakable");
     }
     
@@ -51,14 +52,11 @@ public abstract class BreakablePortalEntity extends Portal {
         if (blockPortalShape != null) {
             compoundTag.put("netherPortalShape", blockPortalShape.toTag());
         }
-        Helper.putUuid(compoundTag,"reversePortalId", reversePortalId);
+        Helper.putUuid(compoundTag, "reversePortalId", reversePortalId);
         compoundTag.putBoolean("unbreakable", unbreakable);
     }
     
     private void breakPortalOnThisSide() {
-        assert shouldBreakPortal;
-        assert !removed;
-        
         blockPortalShape.area.forEach(
             blockPos -> {
                 if (world.getBlockState(blockPos).getBlock() == PortalPlaceholderBlock.instance) {
@@ -78,7 +76,6 @@ public abstract class BreakablePortalEntity extends Portal {
     }
     
     private BreakablePortalEntity getReversePortal() {
-        assert !world.isRemote;
         
         ServerWorld world = getServer().getWorld(dimensionTo);
         Entity entity = world.getEntityByUuid(reversePortalId);
@@ -106,7 +103,7 @@ public abstract class BreakablePortalEntity extends Portal {
                 if (shouldBreakPortal) {
                     breakPortalOnThisSide();
                 }
-    
+                
                 if (world.getGameTime() % 233 == getEntityId() % 233) {
                     checkPortalIntegrity();
                 }
@@ -128,6 +125,15 @@ public abstract class BreakablePortalEntity extends Portal {
             BreakablePortalEntity reversePortal = getReversePortal();
             if (reversePortal != null) {
                 reversePortal.shouldBreakPortal = true;
+            }
+            else {
+                ModMain.serverTaskList.addTask(() -> {
+                    BreakablePortalEntity reversePortal1 = getReversePortal();
+                    if (reversePortal1 != null) {
+                        reversePortal1.shouldBreakPortal = true;
+                    }
+                    return true;
+                });
             }
         }
     }

@@ -60,7 +60,7 @@ public class CrossPortalEntityRenderer {
         }
     }
     
-    public static void onBeginRenderingEnties(MatrixStack matrixStack) {
+    public static void onBeginRenderingEntities(MatrixStack matrixStack) {
         if (PortalRendering.isRendering()) {
             PixelCuller.updateCullingPlaneInner(
                 matrixStack, PortalRendering.getRenderingPortal(), false
@@ -133,6 +133,9 @@ public class CrossPortalEntityRenderer {
             }
             if (collidingPortal.rotation != null) {
                 //currently cannot render entity projection through a rotating portal
+                return;
+            }
+            if (collidingPortal.hasScaling()) {
                 return;
             }
             RegistryKey<World> projectionDimension = collidingPortal.dimensionTo;

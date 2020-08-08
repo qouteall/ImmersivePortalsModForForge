@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.mixin.position_sync;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.ducks.IEPlayerMoveC2SPacket;
 import com.qouteall.immersive_portals.ducks.IEPlayerPositionLookS2CPacket;
@@ -17,6 +18,7 @@ import net.minecraft.network.play.server.SPlayerPositionLookPacket;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -54,9 +56,11 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     @Shadow
     private double lowestRiddenZ1;
     
-    @Shadow protected abstract boolean func_217264_d();
+    @Shadow
+    protected abstract boolean func_217264_d();
     
-    @Shadow protected abstract boolean func_241163_a_(IWorldReader worldView, AxisAlignedBB box);
+    @Shadow
+    protected abstract boolean func_241163_a_(IWorldReader worldView, AxisAlignedBB box);
     
     //do not process move packet when client dimension and server dimension are not synced
     @Inject(
@@ -71,16 +75,28 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
     private void onProcessMovePacket(CPlayerPacket packet, CallbackInfo ci) {
         RegistryKey<World> packetDimension = ((IEPlayerMoveC2SPacket) packet).getPlayerDimension();
         
-        assert packetDimension != null;
+        if (packetDimension == null) {
+            Helper.err("Player move packet is missing dimension info. Maybe the player client doesn't have IP");
+            ModMain.serverTaskList.addTask(() -> {
+                player.connection.disconnect(new StringTextComponent(
+                    "The client does not have Immersive Portals mod"
+                ));
+                return true;
+            });
+            return;
+        }
         
         if (Global.serverTeleportationManager.isJustTeleported(player, 100)) {
             cancelTeleportRequest();
         }
         
         if (player.world.func_234923_W_() != packetDimension) {
-            Global.serverTeleportationManager.acceptDubiousMovePacket(
-                player, packet, packetDimension
-            );
+            ModMain.serverTaskList.addTask(() -> {
+                Global.serverTeleportationManager.acceptDubiousMovePacket(
+                    player, packet, packetDimension
+                );
+                return true;
+            });
             ci.cancel();
         }
     }
@@ -93,6 +109,9 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         )
     )
     private boolean redirectIsServerOwnerOnPlayerMove(ServerPlayNetHandler serverPlayNetworkHandler) {
+        if (Global.serverTeleportationManager.isJustTeleported(player, 100)) {
+            return true;
+        }
         if (Global.looseMovementCheck) {
             Helper.log("Accepted dubious movement " + player.getName().getString());
             return true;
@@ -114,6 +133,18 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         float destPitch,
         Set<SPlayerPositionLookPacket.Flags> updates
     ) {
+        if (player.removed) {
+            ModMain.serverTaskList.addTask(() -> {
+                doSendTeleportRequest(destX, destY, destZ, destYaw, destPitch, updates);
+                return true;
+            });
+        }
+        else {
+            doSendTeleportRequest(destX, destY, destZ, destYaw, destPitch, updates);
+        }
+    }
+    
+    private void doSendTeleportRequest(double destX, double destY, double destZ, float destYaw, float destPitch, Set<SPlayerPositionLookPacket.Flags> updates) {
         if (Global.teleportationDebugEnabled) {
             new Throwable().printStackTrace();
             Helper.log(String.format("request teleport %s %s (%d %d %d)->(%d %d %d)",
@@ -177,7 +208,7 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         }
         boolean portalsNearby = McHelper.getServerPortalsNearby(
             player,
-            5
+            16
         ).findAny().isPresent();
         if (portalsNearby) {
             return false;

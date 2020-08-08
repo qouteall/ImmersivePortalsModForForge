@@ -153,14 +153,9 @@ public abstract class PortalRenderer {
         
         Entity cameraEntity = client.renderViewEntity;
         
-//        Vec3d newEyePos = portal.transformPoint(McHelper.getEyePos(cameraEntity));
-//        Vec3d newLastTickEyePos = portal.transformPoint(McHelper.getLastTickEyePos(cameraEntity));
-        
         ClientWorld newWorld = CGlobal.clientWorldLoader.getWorld(portal.dimensionTo);
         
         ActiveRenderInfo camera = client.gameRenderer.getActiveRenderInfo();
-        
-        assert cameraEntity.world == client.world;
         
         PortalRendering.onBeginPortalWorldRendering();
         
@@ -178,8 +173,7 @@ public abstract class PortalRenderer {
         
         MyRenderHelper.restoreViewPort();
         
-        MyGameRenderer.updateFogColor();
-        MyGameRenderer.resetFogState();
+        
     }
     
     public void invokeWorldRendering(
@@ -208,6 +202,7 @@ public abstract class PortalRenderer {
 //        return false;
     }
     
+    // Scaling does not interfere camera transformation
     @Nullable
     public static Matrix4f getAdditionalCameraTransformation(Portal portal) {
         if (portal instanceof Mirror) {

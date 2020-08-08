@@ -12,6 +12,7 @@ import com.mojang.datafixers.util.Pair;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.my_util.IntBox;
 import com.qouteall.immersive_portals.portal.GeometryPortalShape;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalManipulation;
@@ -21,6 +22,7 @@ import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPo
 import com.qouteall.immersive_portals.portal.global_portals.WorldWrappingPortal;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
+import net.minecraft.command.arguments.BlockPosArgument;
 import net.minecraft.command.arguments.ColumnPosArgument;
 import net.minecraft.command.arguments.ComponentArgument;
 import net.minecraft.command.arguments.DimensionArgument;
@@ -34,6 +36,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ColumnPos;
 import net.minecraft.util.math.vector.Quaternion;
 import net.minecraft.util.math.vector.Vector3d;
@@ -476,6 +479,20 @@ public class PortalCommand {
             ))
         );
         
+        builder.then(Commands.literal("eradicate_portal_clutter")
+            .executes(context -> processPortalTargetedCommand(
+                context,
+                portal -> {
+                    PortalManipulation.removeConnectedPortals(
+                        portal,
+                        p -> sendMessage(context, "Removed " + p)
+                    );
+                    portal.remove();
+                    sendMessage(context, "Deleted " + portal);
+                }
+            ))
+        );
+        
         
         builder.then(Commands.literal("move_portal")
             .then(Commands.argument("distance", DoubleArgumentType.doubleArg())
@@ -600,6 +617,20 @@ public class PortalCommand {
                     reloadPortal(portal);
                 }
             ))
+        );
+        
+        builder.then(Commands.literal("set_portal_scale")
+            .then(Commands.argument("scale", DoubleArgumentType.doubleArg())
+                .executes(context -> processPortalTargetedCommand(
+                    context, portal -> {
+                        double scale = DoubleArgumentType.getDouble(context, "scale");
+                        
+                        portal.scaling = scale;
+        
+                        reloadPortal(portal);
+                    }
+                ))
+            )
         );
     }
     
@@ -985,7 +1016,75 @@ public class PortalCommand {
                 )
             )
         );
+        
+        builder.then(Commands.literal("create_scaled_box_view")
+            .then(Commands.argument("p1", BlockPosArgument.blockPos())
+                .then(Commands.argument("p2", BlockPosArgument.blockPos())
+                    .then(Commands.argument("scale", DoubleArgumentType.doubleArg())
+                        .then(Commands.argument("placeTargetEntity", EntityArgument.entity())
+                            .then(Commands.argument("biWay", BoolArgumentType.bool())
+                                .executes(context -> {
+                                    BlockPos bp1 = BlockPosArgument.getBlockPos(context, "p1");
+                                    BlockPos bp2 = BlockPosArgument.getBlockPos(context, "p2");
+                                    IntBox intBox = new IntBox(bp1, bp2);
+                                    
+                                    Entity placeTargetEntity = EntityArgument.getEntity(context, "placeTargetEntity");
+                                    
+                                    ServerWorld boxWorld = ((ServerWorld) placeTargetEntity.world);
+                                    Vector3d boxBottomCenter = placeTargetEntity.getPositionVec();
+                                    AxisAlignedBB area = intBox.toRealNumberBox();
+                                    ServerWorld areaWorld = context.getSource().getWorld();
+                                    
+                                    double scale = DoubleArgumentType.getDouble(context, "scale");
+                                    
+                                    boolean biWay = BoolArgumentType.getBool(context, "biWay");
+                                    
+                                    createScaledBoxView(
+                                        areaWorld, area, boxWorld, boxBottomCenter, scale,
+                                        biWay
+                                    );
+                                    
+                                    return 0;
+                                })
+                            
+                            )
+                        
+                        )
+                    )
+                )
+            )
+        );
     }
+    
+    private static void createScaledBoxView(
+        ServerWorld areaWorld, AxisAlignedBB area,
+        ServerWorld boxWorld, Vector3d boxBottomCenter,
+        double scale,
+        boolean biWay
+    ) {
+        Vector3d viewBoxSize = Helper.getBoxSize(area).scale(1.0 / scale);
+        AxisAlignedBB viewBox = new AxisAlignedBB(
+            boxBottomCenter.subtract(viewBoxSize.x / 2, 0, viewBoxSize.z / 2),
+            boxBottomCenter.add(viewBoxSize.x / 2, viewBoxSize.y, viewBoxSize.z / 2)
+        );
+        for (Direction direction : Direction.values()) {
+            Portal portal = PortalManipulation.createOrthodoxPortal(
+                Portal.entityType,
+                areaWorld, boxWorld,
+                direction, Helper.getBoxSurface(viewBox, direction),
+                Helper.getBoxSurface(area, direction).getCenter()
+            );
+            portal.scaling = scale;
+            portal.teleportChangesScale = false;
+            
+            portal.world.addEntity(portal);
+            
+            if (biWay) {
+                PortalManipulation.completeBiWayPortal(portal, Portal.entityType);
+            }
+        }
+    }
+    
     
     private static void addSmallWorldWrappingPortals(AxisAlignedBB box, ServerWorld world, boolean isInward) {
         for (Direction direction : Direction.values()) {
@@ -1094,7 +1193,7 @@ public class PortalCommand {
         PortalManipulation.removeOverlappedPortals(
             McHelper.getServer().getWorld(portal.dimensionTo),
             portal.destination,
-            portal.transformLocalVec(portal.getNormal().scale(-1)),
+            portal.transformLocalVecNonScale(portal.getNormal().scale(-1)),
             p -> Objects.equals(portal.specificPlayerId, p.specificPlayerId),
             p -> sendMessage(context, "Removed " + p)
         );
@@ -1186,6 +1285,10 @@ public class PortalCommand {
         
         newPortal.world.addEntity(newPortal);
         
+        configureBiWayBiFaced(newPortal, biWay, biFaced);
+    }
+    
+    private static void configureBiWayBiFaced(Portal newPortal, boolean biWay, boolean biFaced) {
         if (biFaced && biWay) {
             PortalManipulation.completeBiWayBiFacedPortal(
                 newPortal,
@@ -1343,27 +1446,36 @@ public class PortalCommand {
         PortalConsumerThrowsCommandSyntaxException processCommand
     ) throws CommandSyntaxException {
         CommandSource source = context.getSource();
-        ServerPlayerEntity player = source.asPlayer();
-        if (player == null) {
-            source.sendFeedback(
-                new StringTextComponent("Only player can use this command"),
-                true
-            );
-            return 0;
+        Entity entity = source.getEntity();
+        
+        if (entity instanceof ServerPlayerEntity) {
+            ServerPlayerEntity player = ((ServerPlayerEntity) entity);
+            
+            Portal portal = getPlayerPointingPortal(player);
+            
+            if (portal == null) {
+                source.sendFeedback(
+                    new StringTextComponent("You are not pointing to any portal"),
+                    true
+                );
+                return 0;
+            }
+            else {
+                processCommand.accept(portal);
+            }
         }
-        
-        Portal portal = getPlayerPointingPortal(player);
-        
-        if (portal == null) {
-            source.sendFeedback(
-                new StringTextComponent("You are not pointing to any portal"),
-                true
-            );
-            return 0;
+        else if (entity instanceof Portal) {
+            processCommand.accept(((Portal) entity));
         }
         else {
-            processCommand.accept(portal);
+            source.sendFeedback(
+                new StringTextComponent(
+                    "The command executor should be either a player or a portal entity"
+                ),
+                false
+            );
         }
+        
         return 0;
     }
     

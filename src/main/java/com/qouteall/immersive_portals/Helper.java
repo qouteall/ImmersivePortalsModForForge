@@ -231,10 +231,14 @@ public class Helper {
         return new Vector3d(box.getXSize(), box.getYSize(), box.getZSize());
     }
     
-    public static AxisAlignedBB getBoxSurface(AxisAlignedBB box, Direction direction) {
+    public static AxisAlignedBB getBoxSurfaceInversed(AxisAlignedBB box, Direction direction) {
         double size = getCoordinate(getBoxSize(box), direction.getAxis());
         Vector3d shrinkVec = Vector3d.func_237491_b_(direction.getDirectionVec()).scale(size);
         return box.contract(shrinkVec.x, shrinkVec.y, shrinkVec.z);
+    }
+    
+    public static AxisAlignedBB getBoxSurface(AxisAlignedBB box, Direction direction) {
+        return getBoxSurfaceInversed(box, direction.getOpposite());
     }
     
     public static IntBox expandRectangle(
@@ -901,7 +905,7 @@ public class Helper {
         }
         
         for (Portal hitPortal : hitPortals) {
-            playerLook = hitPortal.transformLocalVec(playerLook);
+            playerLook = hitPortal.transformLocalVecNonScale(playerLook);
         }
         
         Direction lookingDirection = getFacingExcludingAxis(

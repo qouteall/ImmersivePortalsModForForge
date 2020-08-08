@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.render;
 
 import com.mojang.datafixers.util.Pair;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.PehkuiInterface;
 import com.qouteall.immersive_portals.commands.PortalCommand;
 import com.qouteall.immersive_portals.ducks.IECamera;
 import com.qouteall.immersive_portals.portal.Portal;
@@ -42,9 +43,6 @@ public class CrossPortalThirdPersonView {
         );
         Vector3d playerHeadPos = resuableCamera.getProjectedView();
         
-        Vector3d thirdPersonPos = normalCameraPos.subtract(playerHeadPos).normalize()
-            .scale(getThirdPersonMaxDistance()).add(playerHeadPos);
-        
         Pair<Portal, Vector3d> portalHit = PortalCommand.raytracePortals(
             client.world, playerHeadPos, normalCameraPos, true
         ).orElse(null);
@@ -55,6 +53,11 @@ public class CrossPortalThirdPersonView {
         
         Portal portal = portalHit.getFirst();
         Vector3d hitPos = portalHit.getSecond();
+    
+        double distance = getThirdPersonMaxDistance();
+        
+        Vector3d thirdPersonPos = normalCameraPos.subtract(playerHeadPos).normalize()
+            .scale(distance).add(playerHeadPos);
         
         if (!portal.isInteractable()) {
             return false;
@@ -101,14 +104,16 @@ public class CrossPortalThirdPersonView {
         );
         
         if (blockHitResult == null) {
-            return rtStart.add(rtEnd.subtract(rtStart).normalize().scale(getThirdPersonMaxDistance()));
+            return rtStart.add(rtEnd.subtract(rtStart).normalize().scale(
+                getThirdPersonMaxDistance()
+            ));
         }
         
         return blockHitResult.getHitVec();
     }
     
     private static double getThirdPersonMaxDistance() {
-        return 4.0d;
+        return 4.0d * PehkuiInterface.getScale.apply(Minecraft.getInstance().player);
     }
 
 //    private static Vec3d getThirdPersonCameraPos(Portal portalHit, Camera resuableCamera) {

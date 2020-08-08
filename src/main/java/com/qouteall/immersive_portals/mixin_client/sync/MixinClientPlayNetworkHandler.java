@@ -10,6 +10,7 @@ import com.qouteall.immersive_portals.ducks.IEBuiltChunk;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEPlayerPositionLookS2CPacket;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
+import com.qouteall.immersive_portals.network.NetworkAdapt;
 import com.qouteall.immersive_portals.render.MyBuiltChunkStorage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
@@ -61,7 +62,8 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
     @Shadow
     public abstract void handleSetPassengers(SSetPassengersPacket entityPassengersSetS2CPacket_1);
     
-    @Shadow private IDynamicRegistries field_239163_t_;
+    @Shadow
+    private IDynamicRegistries field_239163_t_;
     
     @Override
     public void setWorld(ClientWorld world) {
@@ -110,8 +112,17 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
         SPlayerPositionLookPacket packet,
         CallbackInfo ci
     ) {
+        if (!NetworkAdapt.doesServerHasIP()) {
+            return;
+        }
+        
+        if (!doneLoadingTerrain) {
+            // the first position packet removes the loading gui
+            return;
+        }
+        
         RegistryKey<World> playerDimension = ((IEPlayerPositionLookS2CPacket) packet).getPlayerDimension();
-        assert playerDimension != null;
+        
         ClientWorld world = client.world;
         
         if (world != null) {

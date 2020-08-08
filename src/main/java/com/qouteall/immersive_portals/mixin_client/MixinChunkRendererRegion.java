@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkRenderCache.class)
 public class MixinChunkRendererRegion {
-    //will this avoid that random crash? I don't know.
+    //will this avoid that random crash?
     @Inject(
         method = "Lnet/minecraft/client/renderer/chunk/ChunkRenderCache;generateCache(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/BlockPos;I)Lnet/minecraft/client/renderer/chunk/ChunkRenderCache;",
         at = @At("HEAD"),

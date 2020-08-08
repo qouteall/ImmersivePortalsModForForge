@@ -8,6 +8,7 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3i;
 import org.apache.commons.lang3.Validate;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
@@ -20,8 +21,8 @@ public class IntBox {
     public final BlockPos h;
     
     public IntBox(BlockPos l, BlockPos h) {
-        this.l = l.toImmutable();
-        this.h = h.toImmutable();
+        this.l = Helper.min(l, h);
+        this.h = Helper.max(l, h);
     }
     
     public static IntBox getBoxByBasePointAndSize(
@@ -34,22 +35,7 @@ public class IntBox {
         );
     }
     
-    public IntBox getSorted() {
-        return new IntBox(
-            Helper.min(l, h),
-            Helper.max(l, h)
-        );
-    }
-    
-    public boolean isSorted() {
-        return l.getX() <= h.getX() &&
-            l.getY() <= h.getY() &&
-            l.getZ() <= h.getZ();
-    }
-    
     public IntBox expandOrShrink(Vector3i offset) {
-        assert isSorted();
-        
         return new IntBox(
             l.subtract(offset),
             h.add(offset)
@@ -57,7 +43,7 @@ public class IntBox {
     }
     
     public IntBox getExpanded(Direction.Axis axis, int n) {
-        assert isSorted();
+        
         
         return expandOrShrink(
             Helper.scale(
@@ -85,7 +71,7 @@ public class IntBox {
     }
     
     public Stream<BlockPos> stream() {
-        assert isSorted();
+        
         
         return IntStream.range(l.getX(), h.getX() + 1).boxed().flatMap(
             x -> IntStream.range(l.getY(), h.getY() + 1).boxed().flatMap(
@@ -103,7 +89,7 @@ public class IntBox {
     }
     
     public BlockPos getSize() {
-        assert isSorted();
+        
         
         return h.add(1, 1, 1).subtract(l);
     }
@@ -112,7 +98,7 @@ public class IntBox {
         Direction.Axis axis,
         Direction.AxisDirection axisDirection
     ) {
-        assert isSorted();
+        
         
         if (axisDirection == Direction.AxisDirection.NEGATIVE) {
             IntBox result = new IntBox(
@@ -123,7 +109,7 @@ public class IntBox {
                     (axis == Direction.Axis.Z ? l : h).getZ()
                 )
             );
-            assert result.isSorted();
+            
             return result;
         }
         else {
@@ -135,7 +121,7 @@ public class IntBox {
                 ),
                 h
             );
-            assert result.isSorted();
+            
             return result;
         }
     }
@@ -149,25 +135,25 @@ public class IntBox {
         );
     }
     
-    //@Nullable
+    @Nullable
     public static IntBox getIntersect(
         IntBox a,
         IntBox b
     ) {
-        assert a.isSorted();
-        assert b.isSorted();
-        
-        IntBox intersected = new IntBox(
-            Helper.max(a.l, b.l),
-            Helper.min(a.h, b.h)
-        );
-        
-        if (!intersected.isSorted()) {
+        BlockPos l = Helper.max(a.l, b.l);
+        BlockPos h = Helper.min(a.h, b.h);
+    
+        if (l.getX() > h.getX()) {
             return null;
         }
-        else {
-            return intersected;
+        if (l.getY() > h.getY()) {
+            return null;
         }
+        if (l.getZ() > h.getZ()) {
+            return null;
+        }
+    
+        return new IntBox(l, h);
     }
     
     public IntBox map(
@@ -205,7 +191,7 @@ public class IntBox {
     public Stream<BlockPos> forSixSurfaces(
         Function<Stream<IntBox>, Stream<IntBox>> mapper
     ) {
-        assert isSorted();
+        
         
         IntBox[] array = {
             getSurfaceLayer(Direction.DOWN),
@@ -232,7 +218,7 @@ public class IntBox {
         };
         
         return mapper.apply(
-            Arrays.stream(array).filter(IntBox::isSorted)
+            Arrays.stream(array).filter(intBox -> true)
         ).flatMap(
             IntBox::stream
         );
@@ -249,9 +235,6 @@ public class IntBox {
         IntBox box1,
         IntBox box2
     ) {
-        assert box1.isSorted();
-        assert box2.isSorted();
-        
         return new IntBox(
             Helper.min(
                 box1.l,
@@ -289,7 +272,7 @@ public class IntBox {
     }
     
     public AxisAlignedBB toRealNumberBox() {
-        assert isSorted();
+        
         return new AxisAlignedBB(
             l.getX(),
             l.getY(),
@@ -314,7 +297,7 @@ public class IntBox {
     }
     
     public boolean contains(BlockPos pos) {
-        assert isSorted();
+        
         
         return pos.getX() >= l.getX() &&
             pos.getX() <= h.getX() &&

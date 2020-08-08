@@ -102,11 +102,11 @@ public class ModMain {
         FormulaGenerator.init();
         
         GlobalPortalStorage.init();
-    
+        
         EntitySync.init();
-    
+        
         CollisionHelper.init();
-    
+        
     }
     
 }

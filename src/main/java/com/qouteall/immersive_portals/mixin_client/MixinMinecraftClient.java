@@ -3,15 +3,16 @@ package com.qouteall.immersive_portals.mixin_client;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
+import com.qouteall.immersive_portals.network.CommonNetwork;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
 import com.qouteall.immersive_portals.render.FPSMonitor;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
-import com.qouteall.immersive_portals.render.lag_spike_fix.SmoothLoading;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.profiler.IProfiler;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -21,8 +22,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import javax.annotation.Nullable;
+
 @Mixin(Minecraft.class)
-public class MixinMinecraftClient implements IEMinecraftClient {
+public abstract class MixinMinecraftClient implements IEMinecraftClient {
     @Final
     @Shadow
     @Mutable
@@ -36,7 +39,15 @@ public class MixinMinecraftClient implements IEMinecraftClient {
     @Final
     public WorldRenderer worldRenderer;
     
-    @Shadow private static int debugFPS;
+    @Shadow
+    private static int debugFPS;
+    
+    @Shadow
+    public abstract IProfiler getProfiler();
+    
+    @Shadow
+    @Nullable
+    public ClientWorld world;
     
     @Inject(
         method = "Lnet/minecraft/client/Minecraft;runTick()V",
@@ -69,8 +80,8 @@ public class MixinMinecraftClient implements IEMinecraftClient {
     )
     private void onSetWorld(ClientWorld clientWorld_1, CallbackInfo ci) {
         CGlobal.clientWorldLoader.cleanUp();
+        CGlobal.clientTeleportationManager.disableTeleportFor(40);
         CrossPortalEntityRenderer.cleanUp();
-        SmoothLoading.cleanUp();
     }
     
     //avoid messing up rendering states in fabulous
@@ -80,6 +91,40 @@ public class MixinMinecraftClient implements IEMinecraftClient {
             cir.setReturnValue(false);
         }
     }
+    
+    // when processing redirected message, a mod packet processing may call execute()
+    // then the task gets delayed. keep the hacky redirect after delaying
+    @Inject(
+        method = "Lnet/minecraft/client/Minecraft;wrapTask(Ljava/lang/Runnable;)Ljava/lang/Runnable;",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void onCreateTask(Runnable runnable, CallbackInfoReturnable<Runnable> cir) {
+        Minecraft this_ = (Minecraft) (Object) this;
+        if (this_.isOnExecutionThread()) {
+            if (CommonNetwork.getIsProcessingRedirectedMessage()) {
+                ClientWorld currWorld = this_.world;
+                Runnable newRunnable = () -> {
+                    CommonNetwork.withSwitchedWorld(currWorld, runnable);
+                };
+                cir.setReturnValue(newRunnable);
+            }
+        }
+    }
+
+//    @Inject(
+//        method = "render",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/client/MinecraftClient;runTasks()V",
+//            shift = At.Shift.AFTER
+//        )
+//    )
+//    private void onRunTasks(boolean tick, CallbackInfo ci) {
+//        getProfiler().push("portal_networking");
+//        ClientNetworkingTaskList.processClientNetworkingTasks();
+//        getProfiler().pop();
+//    }
     
     @Override
     public void setFrameBuffer(Framebuffer buffer) {

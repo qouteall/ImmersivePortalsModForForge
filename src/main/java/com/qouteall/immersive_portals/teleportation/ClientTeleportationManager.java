@@ -9,9 +9,9 @@ import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.OFInterface;
+import com.qouteall.immersive_portals.PehkuiInterface;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
-import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.portal.Mirror;
@@ -21,7 +21,6 @@ import com.qouteall.immersive_portals.render.context_management.FogRendererConte
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.client.gui.screen.DownloadTerrainScreen;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.world.ClientWorld;
@@ -46,17 +45,15 @@ public class ClientTeleportationManager {
     public long tickTimeForTeleportation = 0;
     private long lastTeleportGameTime = 0;
     private Vector3d moveStartPoint = null;
-    private long teleportWhileRidingTime = 0;
     private long teleportTickTimeLimit = 0;
     
+    // for debug
     public static boolean isTeleportingTick = false;
+    public static boolean isTeleportingFrame = false;
     
     private static final int teleportLimit = 2;
     
     public ClientTeleportationManager() {
-//        ModMain.preRenderSignal.connectWithWeakRef(
-//            this, ClientTeleportationManager::manageTeleportation
-//        );
         ModMain.postClientTickSignal.connectWithWeakRef(
             this, ClientTeleportationManager::tick
         );
@@ -78,6 +75,10 @@ public class ClientTeleportationManager {
             if (isTeleportingFrequently()) {
                 return;
             }
+            // newly teleported by vanilla means
+            if (client.player.ticksExisted < 200) {
+                return;
+            }
         }
         if (client.player.world.func_234923_W_() != dimension) {
             forceTeleportPlayer(dimension, pos);
@@ -89,6 +90,8 @@ public class ClientTeleportationManager {
         if (Global.disableTeleportation) {
             return;
         }
+        
+        isTeleportingFrame = false;
         
         if (client.world == null || client.player == null) {
             moveStartPoint = null;
@@ -120,8 +123,9 @@ public class ClientTeleportationManager {
     private boolean tryTeleport(float tickDelta) {
         Vector3d newHeadPos = getPlayerHeadPos(tickDelta);
         
-        if (moveStartPoint.squareDistanceTo(newHeadPos) > 100) {
-            Helper.err("The Player is Moving Too Fast!");
+        if (moveStartPoint.squareDistanceTo(newHeadPos) > 400) {
+            Helper.log("The Player is Moving Too Fast!");
+            return false;
         }
         
         Tuple<Portal, Vector3d> pair = CHelper.getClientNearbyPortals(32)
@@ -149,7 +153,7 @@ public class ClientTeleportationManager {
             teleportPlayer(portal);
             
             moveStartPoint = portal.transformPoint(collidingPos)
-                .add(portal.getContentDirection().scale(0.0001));
+                .add(portal.getContentDirection().scale(0.001));
             //avoid teleporting through parallel portal due to floating point inaccuracy
             
             return true;
@@ -207,6 +211,10 @@ public class ClientTeleportationManager {
         McHelper.setEyePos(player, newEyePos, newLastTickEyePos);
         McHelper.updateBoundingBox(player);
         
+        PehkuiInterface.onClientPlayerTeleported.accept(portal);
+        
+        tickAfterTeleportation(player, newEyePos, newLastTickEyePos);
+        
         player.connection.sendPacket(MyNetworkClient.createCtsTeleport(
             fromDimension,
             oldEyePos,
@@ -217,6 +225,7 @@ public class ClientTeleportationManager {
         
         McHelper.adjustVehicle(player);
         
+        // pehkui may change velocity when changing scale
         player.setMotion(portal.transformLocalVec(player.getMotion()));
         
         TransformationManager.onClientPlayerTeleported(portal);
@@ -225,21 +234,20 @@ public class ClientTeleportationManager {
             disableTeleportFor(40);
         }
         
+        //because the teleportation may happen before rendering
+        //but after pre render info being updated
+        RenderStates.updatePreRenderInfo(RenderStates.tickDelta);
+        
         Helper.log(String.format("Client Teleported %s %s", portal, tickTimeForTeleportation));
         
-        //update colliding portal
-        ((IEEntity) player).tickCollidingPortal(RenderStates.tickDelta);
-        
         isTeleportingTick = true;
+        isTeleportingFrame = true;
     }
     
+    
     public boolean isTeleportingFrequently() {
-        if (tickTimeForTeleportation - lastTeleportGameTime <= 20) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return (tickTimeForTeleportation - lastTeleportGameTime <= 20) ||
+            (tickTimeForTeleportation <= teleportTickTimeLimit);
     }
     
     private void forceTeleportPlayer(RegistryKey<World> toDimension, Vector3d destination) {
@@ -288,7 +296,6 @@ public class ClientTeleportationManager {
         
         player.world = toWorld;
         
-        
         McHelper.setEyePos(player, newEyePos, newEyePos);
         McHelper.updateBoundingBox(player);
         
@@ -330,9 +337,6 @@ public class ClientTeleportationManager {
             tickTimeForTeleportation
         ));
         
-        //because the teleportation may happen before rendering
-        //but after pre render info being updated
-        RenderStates.updatePreRenderInfo(RenderStates.tickDelta);
         
         OFInterface.onPlayerTraveled.accept(fromDimension, toDimension);
         
@@ -357,17 +361,25 @@ public class ClientTeleportationManager {
         }
     }
     
+    @Deprecated
     private void getOutOfLoadingScreen(RegistryKey<World> dimension, Vector3d playerPos) {
-        if (((IEMinecraftClient) client).getCurrentScreen() instanceof DownloadTerrainScreen) {
-            Helper.err("Manually getting out of loading screen. The game is in abnormal state.");
-            if (client.player.world.func_234923_W_() != dimension) {
-                Helper.err("Manually fix dimension state while loading terrain");
-                ClientWorld toWorld = CGlobal.clientWorldLoader.getWorld(dimension);
-                changePlayerDimension(client.player, client.world, toWorld, playerPos);
-            }
-            client.player.setPosition(playerPos.x, playerPos.y, playerPos.z);
-            client.displayGuiScreen(null);
-        }
+//        if (((IEMinecraftClient) client).getCurrentScreen() instanceof DownloadingTerrainScreen) {
+//            Helper.err("Manually getting out of loading screen. The game is in abnormal state.");
+//            ClientPlayerEntity player = client.player;
+//            if (player.world.getRegistryKey() != dimension) {
+//                Helper.err("Manually fix dimension state while loading terrain");
+//                ClientWorld toWorld = CGlobal.clientWorldLoader.getWorld(dimension);
+//                changePlayerDimension(player, client.world, toWorld, playerPos);
+//            }
+//            player.updatePosition(playerPos.x, playerPos.y, playerPos.z);
+//
+//            if (client.world.getEntityById(player.getEntityId()) == null) {
+//                Helper.err("Client world does not have player added into");
+//                client.world.addPlayer(player.getEntityId(), player);
+//            }
+//
+//            client.openScreen(null);
+//        }
     }
     
     private void changePlayerMotionIfCollidingWithPortal() {
@@ -394,12 +406,6 @@ public class ClientTeleportationManager {
     private void changeMotion(Entity player, Portal portal) {
         Vector3d velocity = player.getMotion();
         player.setMotion(velocity.scale(1 + portal.extension.motionAffinity));
-//        Vec3d velocityOnNormal =
-//            portal.getNormal().multiply(velocity.dotProduct(portal.getNormal()));
-//        player.setVelocity(
-//            velocity.subtract(velocityOnNormal)
-//                .add(velocityOnNormal.multiply(1 + portal.motionAffinity))
-//        );
     }
     
     //foot pos, not eye pos
@@ -417,5 +423,20 @@ public class ClientTeleportationManager {
     
     public void disableTeleportFor(int ticks) {
         teleportTickTimeLimit = tickTimeForTeleportation + ticks;
+    }
+    
+    private static void tickAfterTeleportation(ClientPlayerEntity player, Vector3d newEyePos, Vector3d newLastTickEyePos) {
+        // update collidingPortal
+        McHelper.findEntitiesByBox(
+            Portal.class,
+            player.world,
+            player.getBoundingBox(),
+            10,
+            portal -> true
+        ).forEach(Portal::tick);
+        
+        player.tick();
+        McHelper.setEyePos(player, newEyePos, newLastTickEyePos);
+        McHelper.updateBoundingBox(player);
     }
 }

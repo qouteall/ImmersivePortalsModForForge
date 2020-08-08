@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.mixin.entity_sync;
 
-import com.qouteall.hiding_in_the_bushes.MyNetwork;
+import com.qouteall.immersive_portals.chunk_loading.EntitySync;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
@@ -26,18 +26,6 @@ public abstract class MixinEntityTrackerEntry {
     @Shadow
     public abstract void sendSpawnPackets(Consumer<IPacket<?>> consumer_1);
     
-    private void sendRedirectedMessage(
-        ServerPlayNetHandler serverPlayNetworkHandler,
-        IPacket<?> packet_1
-    ) {
-        serverPlayNetworkHandler.sendPacket(
-            MyNetwork.createRedirectedMessage(
-                trackedEntity.world.func_234923_W_(),
-                packet_1
-            )
-        );
-    }
-    
     @Redirect(
         method = "Lnet/minecraft/world/TrackedEntity;tick()V",
         at = @At(
@@ -49,7 +37,7 @@ public abstract class MixinEntityTrackerEntry {
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        sendRedirectedMessage(serverPlayNetworkHandler, packet_1);
+        EntitySync.sendRedirectedPacket(serverPlayNetworkHandler, packet_1, trackedEntity.world.func_234923_W_());
     }
     
     @Inject(
@@ -60,7 +48,7 @@ public abstract class MixinEntityTrackerEntry {
         )
     )
     private void injectSendpacketsOnStartTracking(ServerPlayerEntity player, CallbackInfo ci) {
-        this.sendSpawnPackets(packet -> sendRedirectedMessage(player.connection, packet));
+        this.sendSpawnPackets(packet -> EntitySync.sendRedirectedPacket(player.connection, packet, trackedEntity.world.func_234923_W_()));
     }
     
     @Redirect(
@@ -88,6 +76,6 @@ public abstract class MixinEntityTrackerEntry {
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        sendRedirectedMessage(serverPlayNetworkHandler, packet_1);
+        EntitySync.sendRedirectedPacket(serverPlayNetworkHandler, packet_1, trackedEntity.world.func_234923_W_());
     }
 }

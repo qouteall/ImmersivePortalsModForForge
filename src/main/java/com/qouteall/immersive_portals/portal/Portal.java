@@ -24,38 +24,87 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Portal entity. Global portals are also entities but not added into world.
+ */
 public class Portal extends Entity {
     public static EntityType<Portal> entityType;
     
-    //basic properties
+    
+    /**
+     * The portal area length along axisW
+     */
     public double width = 0;
     public double height = 0;
+    
+    /**
+     * axisW and axisH define the orientation of the portal
+     * They should be normalized and should be perpendicular to each other
+     */
     public Vector3d axisW;
     public Vector3d axisH;
+    
+    /**
+     * The destination dimension
+     */
     public RegistryKey<World> dimensionTo;
+    /**
+     * The destination position
+     */
     public Vector3d destination;
     
-    //additional properties
+    /**
+     * If false, cannot teleport entities
+     */
     public boolean teleportable = true;
+    /**
+     * If not null, this portal can only be accessed by one player
+     */
+    @Nullable
     public UUID specificPlayerId;
+    /**
+     * If not null, defines the special shape of the portal
+     * The shape should not exceed the area defined by width and height
+     */
+    @Nullable
     public GeometryPortalShape specialShape;
     
     private AxisAlignedBB boundingBoxCache;
     private Vector3d normal;
     private Vector3d contentDirection;
     
+    /**
+     * For advanced frustum culling
+     */
     public double cullableXStart = 0;
     public double cullableXEnd = 0;
     public double cullableYStart = 0;
     public double cullableYEnd = 0;
     
+    /**
+     * The rotating transformation of the portal
+     */
+    @Nullable
     public Quaternion rotation;
+    
+    /**
+     * The scaling transformation of the portal
+     */
+    public double scaling = 1.0;
+    /**
+     * Whether the entity scale changes after crossing the portal
+     */
+    public boolean teleportChangesScale = true;
     
     private boolean interactable = true;
     
+    /**
+     * Additional things
+     */
     public PortalExtension extension = new PortalExtension();
     
     public static final SignalArged<Portal> clientPortalTickSignal = new SignalArged<>();
@@ -126,6 +175,13 @@ public class Portal extends Entity {
             interactable = compoundTag.getBoolean("interactable");
         }
         
+        if (compoundTag.contains("scale")) {
+            scaling = compoundTag.getDouble("scale");
+        }
+        if (compoundTag.contains("teleportChangesScale")) {
+            teleportChangesScale = compoundTag.getBoolean("teleportChangesScale");
+        }
+        
         extension = new PortalExtension();
         extension.readFromNbt(compoundTag);
     }
@@ -164,6 +220,9 @@ public class Portal extends Entity {
         }
         
         compoundTag.putBoolean("interactable", interactable);
+        
+        compoundTag.putDouble("scale", scaling);
+        compoundTag.putBoolean("teleportChangesScale", teleportChangesScale);
         
         extension.writeToNbt(compoundTag);
     }
@@ -318,7 +377,7 @@ public class Portal extends Entity {
             Entity.class,
             getBoundingBox(),
             e -> !(e instanceof Portal) && CollisionHelper.shouldCollideWithPortal(
-                e,this,1
+                e, this, 1
             )
         );
         
@@ -330,7 +389,7 @@ public class Portal extends Entity {
     @Override
     public String toString() {
         return String.format(
-            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)%s}",
+            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)%s%s}",
             getClass().getSimpleName(),
             getEntityId(),
             Direction.getFacingFromVector(
@@ -338,11 +397,14 @@ public class Portal extends Entity {
             ),
             world.func_234923_W_().func_240901_a_(), (int) getPosX(), (int) getPosY(), (int) getPosZ(),
             dimensionTo.func_240901_a_(), (int) destination.x, (int) destination.y, (int) destination.z,
-            specificPlayerId != null ? (",specificAccessor:" + specificPlayerId.toString()) : ""
+            specificPlayerId != null ? (",specificAccessor:" + specificPlayerId.toString()) : "",
+            hasScaling() ? (",scale:" + scaling) : ""
         );
     }
     
-    //Geometry----------
+    public boolean hasScaling() {
+        return scaling != 1.0;
+    }
     
     public Vector3d getNormal() {
         if (normal == null) {
@@ -353,7 +415,7 @@ public class Portal extends Entity {
     
     public Vector3d getContentDirection() {
         if (contentDirection == null) {
-            contentDirection = transformLocalVec(getNormal().scale(-1));
+            contentDirection = transformLocalVecNonScale(getNormal().scale(-1));
         }
         return contentDirection;
     }
@@ -451,25 +513,30 @@ public class Portal extends Entity {
     }
     
     public Vector3d transformPoint(Vector3d pos) {
-        if (rotation == null) {
-            return transformPointRough(pos);
-        }
-        
         Vector3d localPos = pos.subtract(getPositionVec());
         
-        return transformLocalVec(localPos).add(destination);
+        Vector3d result = transformLocalVec(localPos).add(destination);
+        
+        return result;
+        
     }
     
-    public Vector3d transformLocalVec(Vector3d localVec) {
+    public Vector3d transformLocalVecNonScale(Vector3d localVec) {
         if (rotation == null) {
             return localVec;
         }
         
         Vector3f temp = new Vector3f(localVec);
         temp.transform(rotation);
+        
         return new Vector3d(temp);
     }
     
+    public Vector3d transformLocalVec(Vector3d localVec) {
+        return transformLocalVecNonScale(localVec).scale(scaling);
+    }
+    
+    @Deprecated
     public Vector3d untransformLocalVec(Vector3d localVec) {
         if (rotation == null) {
             return localVec;
@@ -482,8 +549,17 @@ public class Portal extends Entity {
         return new Vector3d(temp);
     }
     
+    @Deprecated
     public Vector3d untransformPoint(Vector3d point) {
         return getPositionVec().add(untransformLocalVec(point.subtract(destination)));
+    }
+    
+    public Vector3d scaleLocalVec(Vector3d localVec) {
+        if (scaling == 1.0) {
+            return localVec;
+        }
+        
+        return localVec.scale(scaling);
     }
     
     public Vector3d getCullingPoint() {

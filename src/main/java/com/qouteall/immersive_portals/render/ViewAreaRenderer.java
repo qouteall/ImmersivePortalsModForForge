@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.render;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
@@ -20,9 +21,13 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.vector.Vector3d;
+import org.lwjgl.opengl.GL32;
+
 import java.util.function.Consumer;
 
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL11.glDisable;
+import static org.lwjgl.opengl.GL11.glEnable;
 
 public class ViewAreaRenderer {
     private static void buildPortalViewAreaTrianglesBuffer(
@@ -45,14 +50,31 @@ public class ViewAreaRenderer {
             bufferbuilder, p, fogColor
         );
         
-        boolean isClose = isCloseToPortal(portal, cameraPos);
+        generateViewAreaTriangles(portal, posInPlayerCoordinate, vertexOutput);
         
+//        double distanceToPlane = portal.getDistanceToPlane(cameraPos);
+//        boolean shouldRenderHood = shouldRenderAdditionalHood(portal, cameraPos, distanceToPlane);
+        
+//        if (shouldRenderHood) {
+//            renderAdditionalBox(portal, cameraPos, vertexOutput);
+//        }
+//
+//        if (distanceToPlane < 0.05) {
+//            generateViewAreaTriangles(
+//                portal,
+//                posInPlayerCoordinate.add(portal.getNormal().multiply(0.05)),
+//                vertexOutput
+//            );
+//        }
+        
+    }
+    
+    private static void generateViewAreaTriangles(Portal portal, Vector3d posInPlayerCoordinate, Consumer<Vector3d> vertexOutput) {
         if (portal.specialShape == null) {
             if (portal instanceof GlobalTrackedPortal) {
                 generateTriangleForGlobalPortal(
                     vertexOutput,
                     portal,
-                    layerWidth,
                     posInPlayerCoordinate
                 );
             }
@@ -60,7 +82,6 @@ public class ViewAreaRenderer {
                 generateTriangleForNormalShape(
                     vertexOutput,
                     portal,
-                    layerWidth,
                     posInPlayerCoordinate
                 );
             }
@@ -69,20 +90,14 @@ public class ViewAreaRenderer {
             generateTriangleForSpecialShape(
                 vertexOutput,
                 portal,
-                layerWidth,
                 posInPlayerCoordinate
             );
-        }
-        
-        if (isClose) {
-            renderAdditionalBox(portal, cameraPos, vertexOutput);
         }
     }
     
     private static void generateTriangleForSpecialShape(
         Consumer<Vector3d> vertexOutput,
         Portal portal,
-        float layerWidth,
         Vector3d posInPlayerCoordinate
     ) {
         generateTriangleSpecial(
@@ -138,7 +153,6 @@ public class ViewAreaRenderer {
     private static void generateTriangleForNormalShape(
         Consumer<Vector3d> vertexOutput,
         Portal portal,
-        float layerWidth,
         Vector3d posInPlayerCoordinate
     ) {
         Vector3d v0 = portal.getPointInPlaneLocal(
@@ -171,7 +185,6 @@ public class ViewAreaRenderer {
     private static void generateTriangleForGlobalPortal(
         Consumer<Vector3d> vertexOutput,
         Portal portal,
-        float layerWidth,
         Vector3d posInPlayerCoordinate
     ) {
         Vector3d cameraPosLocal = posInPlayerCoordinate.scale(-1);
@@ -291,10 +304,14 @@ public class ViewAreaRenderer {
         }
         
         Minecraft.getInstance().getProfiler().startSection("draw");
+        CGlobal.shaderManager.unloadShader();
+        glEnable(GL32.GL_DEPTH_CLAMP);
+        CHelper.checkGlError();
         McHelper.runWithTransformation(
             matrixStack,
-            () -> tessellator.draw()
+            tessellator::draw
         );
+        glDisable(GL32.GL_DEPTH_CLAMP);
         Minecraft.getInstance().getProfiler().endSection();
         
         if (shouldReverseCull) {
@@ -329,11 +346,28 @@ public class ViewAreaRenderer {
     }
     
     
-    private static boolean isCloseToPortal(
+    private static boolean shouldRenderAdditionalHood(
         Portal portal,
-        Vector3d cameraPos
+        Vector3d cameraPos,
+        double distanceToPlane
     ) {
-        return (portal.getDistanceToPlane(cameraPos) < 0.2) &&
+//        double localX = cameraPos.subtract(portal.getPos()).dotProduct(portal.axisW);
+//        double localY = cameraPos.subtract(portal.getPos()).dotProduct(portal.axisH);
+//        if (Math.abs(localX) > 0.9 * portal.width / 2) {
+//            return false;
+//        }
+//        if (Math.abs(localY) > 0.9 * portal.height / 2) {
+//            return false;
+//        }
+        
+        Vector3d cameraRotation = Minecraft.getInstance().renderViewEntity.getLookVec();
+        double cos = cameraRotation.dotProduct(portal.getNormal());
+        double sin = Math.sqrt(1.0 - cos * cos);
+        
+        double threshold = sin * 0.2 + 0.05;
+        
+        
+        return (distanceToPlane < threshold) &&
             portal.isPointInPortalProjection(cameraPos);
     }
     
@@ -345,16 +379,18 @@ public class ViewAreaRenderer {
         Vector3d projected = portal.getPointInPortalProjection(cameraPos).subtract(cameraPos);
         Vector3d normal = portal.getNormal();
         
-        renderHood(portal, vertexOutput, projected, normal, 0.4);
+        renderHood(portal, vertexOutput, projected, normal);
     }
     
     private static void renderHood(
         Portal portal,
         Consumer<Vector3d> vertexOutput,
         Vector3d projected,
-        Vector3d normal,
-        double boxRadius
+        Vector3d normal
     ) {
+        double boxRadius = 0.1 * Math.sqrt(3) * 1.3;//0.4
+        double boxDepth = 0.1 * 1.3;//0.5
+        
         Vector3d dx = portal.axisW.scale(boxRadius);
         Vector3d dy = portal.axisH.scale(boxRadius);
         
@@ -363,7 +399,7 @@ public class ViewAreaRenderer {
         Vector3d c = projected.subtract(dx).subtract(dy);
         Vector3d d = projected.add(dx).subtract(dy);
         
-        Vector3d mid = projected.add(normal.scale(-0.5));
+        Vector3d mid = projected.add(normal.scale(-boxDepth));
         
         vertexOutput.accept(b);
         vertexOutput.accept(mid);

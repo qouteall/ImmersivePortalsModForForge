@@ -155,6 +155,9 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         CallbackInfo ci
     ) {
         CGlobal.renderer.onBeforeTranslucentRendering(matrices);
+        
+        MyGameRenderer.updateFogColor();
+        MyGameRenderer.resetFogState();
     }
     
     @Inject(
@@ -234,7 +237,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         )
     )
     private void onAfterCutoutRendering(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, ActiveRenderInfo camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
-        CrossPortalEntityRenderer.onBeginRenderingEnties(matrices);
+        CrossPortalEntityRenderer.onBeginRenderingEntities(matrices);
     }
     
     @Redirect(
@@ -325,9 +328,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
                             matrixStack, vertexConsumerProvider
                         );
                         CrossPortalEntityRenderer.afterRenderingEntity(entity);
-                    }
-                    else {
-//                        Helper.log("dis");
                     }
                 });
                 return;
@@ -441,7 +441,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         isReloadingOtherWorldRenderers = false;
     }
     
-   
     
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("HEAD"))
     private void onRenderSkyBegin(MatrixStack matrixStack_1, float float_1, CallbackInfo ci) {
@@ -477,10 +476,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("RETURN"))
     private void onRenderSkyEnd(MatrixStack matrixStack_1, float float_1, CallbackInfo ci) {
-
-//        if (client.world.dimension instanceof AlternateDimension) {
-//            AlternateSkyRenderer.renderAlternateSky(matrixStack_1, float_1);
-//        }
         
         if (PortalRendering.isRendering()) {
             //fix sky abnormal with optifine and fog disabled
@@ -523,35 +518,34 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             updateChunks(limitTime);
         }
     }
-    
-    
-    
-    //disable cull when rendering mirror
-    @Redirect(
-        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/IRenderTypeBuffer$Impl;finish(Lnet/minecraft/client/renderer/RenderType;)V"
-        )
-    )
-    private void redirectVertexDraw(IRenderTypeBuffer.Impl immediate, RenderType layer) {
-        RenderStates.shouldForceDisableCull = PortalRendering.isRenderingOddNumberOfMirrors();
-        immediate.finish(layer);
-        RenderStates.shouldForceDisableCull = false;
-    }
-    
-    @Redirect(
-        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/IRenderTypeBuffer$Impl;finish()V"
-        )
-    )
-    private void redirectVertexDraw1(IRenderTypeBuffer.Impl immediate) {
-        RenderStates.shouldForceDisableCull = PortalRendering.isRenderingOddNumberOfMirrors();
-        immediate.finish();
-        RenderStates.shouldForceDisableCull = false;
-    }
+
+
+//    //disable cull when rendering mirror
+//    @Redirect(
+//        method = "render",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;draw(Lnet/minecraft/client/render/RenderLayer;)V"
+//        )
+//    )
+//    private void redirectVertexDraw(VertexConsumerProvider.Immediate immediate, RenderLayer layer) {
+//        RenderStates.shouldForceDisableCull = PortalRendering.isRenderingOddNumberOfMirrors();
+//        immediate.draw(layer);
+//        RenderStates.shouldForceDisableCull = false;
+//    }
+//
+//    @Redirect(
+//        method = "render",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;draw()V"
+//        )
+//    )
+//    private void redirectVertexDraw1(VertexConsumerProvider.Immediate immediate) {
+//        RenderStates.shouldForceDisableCull = PortalRendering.isRenderingOddNumberOfMirrors();
+//        immediate.draw();
+//        RenderStates.shouldForceDisableCull = false;
+//    }
     
     //redirect sky rendering dimension
     @Redirect(
@@ -608,7 +602,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             GL11.glEnable(GL11.GL_FOG);
         }
     }
-    
     
     
     @Override

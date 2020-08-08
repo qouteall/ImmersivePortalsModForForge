@@ -174,8 +174,11 @@ public class ClientWorldLoader {
     
     private void initializeIfNeeded() {
         if (!isInitialized) {
-            assert (client.world != null);
-            assert (client.worldRenderer != null);
+            Validate.isTrue(client.world != null);
+            Validate.isTrue(client.worldRenderer != null);
+            
+            Validate.notNull(client.player);
+            Validate.isTrue(client.player.world == client.world);
             
             RegistryKey<World> playerDimension = client.world.func_234923_W_();
             clientWorldMap.put(playerDimension, client.world);

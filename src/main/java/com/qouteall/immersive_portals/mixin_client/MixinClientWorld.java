@@ -13,6 +13,9 @@ import net.minecraft.profiler.IProfiler;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkStatus;
+import net.minecraft.world.chunk.EmptyChunk;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -20,6 +23,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -60,7 +64,7 @@ public abstract class MixinClientWorld implements IEClientWorld {
     public void setGlobalPortals(List<GlobalTrackedPortal> arg) {
         globalTrackedPortals = arg;
     }
-    
+
 //    @Redirect(
 //        method = "<init>",
 //        at = @At(
@@ -71,7 +75,7 @@ public abstract class MixinClientWorld implements IEClientWorld {
 //    private ClientChunkManager replaceChunkManager(ClientWorld world, int loadDistance) {
 //        return O_O.createMyClientChunkManager(world, loadDistance);
 //    }
-
+    
     //use my client chunk manager
     @Inject(
         method = "<init>",
@@ -96,15 +100,30 @@ public abstract class MixinClientWorld implements IEClientWorld {
         field_239129_E_ = myClientChunkManager;
     }
     
-    //avoid entity duplicate when an entity travels
+    // avoid entity duplicate when an entity travels
     @Inject(
         method = "Lnet/minecraft/client/world/ClientWorld;addEntityImpl(ILnet/minecraft/entity/Entity;)V",
         at = @At("TAIL")
     )
     private void onOnEntityAdded(int entityId, Entity entityIn, CallbackInfo ci) {
-        CGlobal.clientWorldLoader.clientWorldMap.values().stream()
-            .filter(world -> world != (Object) this)
-            .forEach(world -> world.removeEntityFromWorld(entityId));
+        for (ClientWorld world : CGlobal.clientWorldLoader.clientWorldMap.values()) {
+            if (world != (Object) this) {
+                world.removeEntityFromWorld(entityId);
+            }
+        }
+    }
+    
+    /**
+     * If the player goes into a portal when the other side chunk is not yet loaded
+     * freeze the player so the player won't drop
+     * {@link ClientPlayerEntity#tick()}
+     */
+    @Inject(method = "Lnet/minecraft/client/world/ClientWorld;isBlockLoaded(Lnet/minecraft/util/math/BlockPos;)Z", at = @At("HEAD"), cancellable = true)
+    private void onIsChunkLoaded(int chunkX, int chunkZ, CallbackInfoReturnable<Boolean> cir) {
+        Chunk chunk = field_239129_E_.getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
+        if (chunk == null || chunk instanceof EmptyChunk) {
+            cir.setReturnValue(false);
+        }
     }
     
 }

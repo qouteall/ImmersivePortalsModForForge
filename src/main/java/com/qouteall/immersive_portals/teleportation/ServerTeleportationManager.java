@@ -5,6 +5,7 @@ import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.PehkuiInterface;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEServerPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEServerPlayerEntity;
@@ -116,7 +117,7 @@ public class ServerTeleportationManager {
         
         if (canPlayerTeleport(player, dimensionBefore, oldEyePos, portal)) {
             if (isTeleporting(player)) {
-                Helper.err(player.toString() + "is teleporting frequently");
+                Helper.log(player.toString() + "is teleporting frequently");
             }
             
             RegistryKey<World> dimensionTo = portal.dimensionTo;
@@ -125,6 +126,8 @@ public class ServerTeleportationManager {
             teleportPlayer(player, dimensionTo, newEyePos);
             
             portal.onEntityTeleportedOnServer(player);
+            
+            PehkuiInterface.onServerEntityTeleported.accept(player, portal);
         }
         else {
             Helper.err(String.format(
@@ -329,21 +332,9 @@ public class ServerTeleportationManager {
         long tickTimeNow = McHelper.getServerGameTime();
         ArrayList<ServerPlayerEntity> copiedPlayerList =
             McHelper.getCopiedPlayerList();
-        if (tickTimeNow % 10 == 7) {
+        if (tickTimeNow % 30 == 7) {
             for (ServerPlayerEntity player : copiedPlayerList) {
-                if (!player.queuedEndExit) {
-                    Long lastTeleportGameTime =
-                        this.lastTeleportGameTime.getOrDefault(player, 0L);
-                    if (tickTimeNow - lastTeleportGameTime > 60) {
-                        sendPositionConfirmMessage(player);
-                        
-                        //for vanilla nether portal cooldown to work normally
-                        player.clearInvulnerableDimensionChange();
-                    }
-                    else {
-                        ((IEServerPlayNetworkHandler) player.connection).cancelTeleportRequest();
-                    }
-                }
+                updateForPlayer(tickTimeNow, player);
             }
         }
         copiedPlayerList.forEach(player -> {
@@ -365,6 +356,26 @@ public class ServerTeleportationManager {
                     );
             });
         });
+    }
+    
+    private void updateForPlayer(long tickTimeNow, ServerPlayerEntity player) {
+        // teleporting means dimension change
+        // inTeleportationState means syncing position to client
+        if (player.queuedEndExit || player.forceSpawn) {
+            lastTeleportGameTime.put(player, tickTimeNow);
+            return;
+        }
+        Long lastTeleportGameTime =
+            this.lastTeleportGameTime.getOrDefault(player, 0L);
+        if (tickTimeNow - lastTeleportGameTime > 60) {
+            sendPositionConfirmMessage(player);
+            
+            //for vanilla nether portal cooldown to work normally
+            player.clearInvulnerableDimensionChange();
+        }
+        else {
+            ((IEServerPlayNetworkHandler) player.connection).cancelTeleportRequest();
+        }
     }
     
     public boolean isTeleporting(ServerPlayerEntity entity) {
@@ -406,7 +417,7 @@ public class ServerTeleportationManager {
                 e.startRiding(newEntity, true);
             });
         }
-    
+        
         McHelper.setEyePos(entity, newEyePos, newEyePos);
         McHelper.updateBoundingBox(entity);
         
@@ -415,7 +426,9 @@ public class ServerTeleportationManager {
         entity.setMotion(portal.transformLocalVec(velocity));
         
         portal.onEntityTeleportedOnServer(entity);
-    
+        
+        PehkuiInterface.onServerEntityTeleported.accept(entity, portal);
+        
         // a new entity may be created
         this.lastTeleportGameTime.put(entity, currGameTime);
     }
@@ -452,7 +465,7 @@ public class ServerTeleportationManager {
             McHelper.updateBoundingBox(newEntity);
             newEntity.setRotationYawHead(oldEntity.getRotationYawHead());
             
-            oldEntity.removed = true;
+            oldEntity.remove();
             
             toWorld.addFromAnotherDimension(newEntity);
             
@@ -496,6 +509,9 @@ public class ServerTeleportationManager {
         CPlayerPacket packet,
         RegistryKey<World> dimension
     ) {
+        if (player.world.func_234923_W_() == dimension) {
+            return;
+        }
         double x = packet.getX(player.getPosX());
         double y = packet.getY(player.getPosY());
         double z = packet.getZ(player.getPosZ());

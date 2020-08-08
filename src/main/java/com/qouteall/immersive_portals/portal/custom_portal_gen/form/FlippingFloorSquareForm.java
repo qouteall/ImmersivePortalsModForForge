@@ -138,7 +138,8 @@ public class FlippingFloorSquareForm extends PortalGenForm {
                 pos -> {
                     BlockState blockState = toWorld.getBlockState(pos);
                     return !blockState.isOpaqueCube(toWorld, pos) &&
-                        blockState.getBlock() != PortalPlaceholderBlock.instance;
+                        blockState.getBlock() != PortalPlaceholderBlock.instance &&
+                        blockState.getFluidState().isEmpty();
                 }
             ))
             .filter(intBox -> intBox.getSurfaceLayer(Direction.DOWN)
@@ -146,7 +147,7 @@ public class FlippingFloorSquareForm extends PortalGenForm {
                 .stream().allMatch(
                     blockPos -> {
                         BlockState blockState = toWorld.getBlockState(blockPos);
-                        return blockState.isOpaqueCube(toWorld, blockPos) &&
+                        return !blockState.isAir() &&
                             blockState.getBlock() != PortalPlaceholderBlock.instance;
                     }
                 )
@@ -190,10 +191,7 @@ public class FlippingFloorSquareForm extends PortalGenForm {
     }
     
     private boolean checkFromShape(BlockPortalShape shape, ServerWorld fromWorld) {
-        BlockPos areaSize = shape.innerAreaBox.getSize();
-        boolean areaSizeTest = areaSize.getX() == length &&
-            areaSize.getZ() == length &&
-            shape.area.size() == (length * length);
+        boolean areaSizeTest = BlockPortalShape.isSquareShape(shape, length);
         if (!areaSizeTest) {
             return false;
         }
@@ -204,4 +202,5 @@ public class FlippingFloorSquareForm extends PortalGenForm {
             blockPos -> (bottomBlock).test(fromWorld.getBlockState(blockPos.down()))
         );
     }
+    
 }

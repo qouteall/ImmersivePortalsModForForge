@@ -4,9 +4,12 @@ import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEEntity;
+import com.qouteall.immersive_portals.portal.EndPortalEntity;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.Pose;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -72,8 +75,8 @@ public abstract class MixinEntity implements IEEntity {
     )
     private Vector3d redirectHandleCollisions(Entity entity, Vector3d attemptedMove) {
         if (attemptedMove.lengthSquared() > 256) {
-            Helper.err("Entity moving too fast " + entity + attemptedMove);
-            return Vector3d.ZERO;
+            Helper.log("Entity moving too fast " + entity + attemptedMove);
+            return getAllowedMovement(attemptedMove);
         }
         
         if (collidingPortal == null) {
@@ -98,7 +101,7 @@ public abstract class MixinEntity implements IEEntity {
     //so collision may sometimes be incorrect when client teleported but server did not teleport
     @Inject(method = "Lnet/minecraft/entity/Entity;setInLava()V", at = @At("HEAD"), cancellable = true)
     private void onSetInLava(CallbackInfo ci) {
-        if (CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
+        if (getCollidingPortal() instanceof EndPortalEntity) {
             ci.cancel();
         }
     }
@@ -109,36 +112,11 @@ public abstract class MixinEntity implements IEEntity {
         cancellable = true
     )
     private void onIsFireImmune(CallbackInfoReturnable<Boolean> cir) {
-        if (collidingPortal != null) {
+        if (getCollidingPortal() instanceof EndPortalEntity) {
             cir.setReturnValue(true);
             cir.cancel();
         }
     }
-
-//    @Inject(
-//        method = "setOnFireFor",
-//        at = @At("HEAD"),
-//        cancellable = true
-//    )
-//    private void onSetOnFireFor(int int_1, CallbackInfo ci) {
-//        if (CollisionHelper.isNearbyPortal((Entity) (Object) this)) {
-//            ci.cancel();
-//        }
-//    }
-//
-//    @Redirect(
-//        method = "move",
-//        at = @At(
-//            value = "INVOKE",
-//            target = "Lnet/minecraft/entity/Entity;isWet()Z"
-//        )
-//    )
-//    private boolean redirectIsWet(Entity entity) {
-//        if (collidingPortal != null) {
-//            return true;
-//        }
-//        return entity.isWet();
-//    }
     
     @Redirect(
         method = "Lnet/minecraft/entity/Entity;doBlockCollisions()V",
@@ -149,6 +127,14 @@ public abstract class MixinEntity implements IEEntity {
     )
     private AxisAlignedBB redirectBoundingBoxInCheckingBlockCollision(Entity entity) {
         return CollisionHelper.getActiveCollisionBox(entity);
+    }
+    
+    // avoid suffocation when colliding with a portal on wall
+    @Inject(method = "Lnet/minecraft/entity/Entity;isEntityInsideOpaqueBlock()Z", at = @At("HEAD"), cancellable = true)
+    private void onIsInsideWall(CallbackInfoReturnable<Boolean> cir) {
+        if (getCollidingPortal() != null) {
+            cir.setReturnValue(false);
+        }
     }
     
     //for teleportation debug
@@ -176,6 +162,22 @@ public abstract class MixinEntity implements IEEntity {
         }
     }
     
+    // Avoid instant crouching when crossing a scaling portal
+    @Inject(method = "Lnet/minecraft/entity/Entity;setPose(Lnet/minecraft/entity/Pose;)V", at = @At("HEAD"), cancellable = true)
+    private void onSetPose(Pose pose, CallbackInfo ci) {
+        Entity this_ = (Entity) (Object) this;
+        
+        if (this_ instanceof PlayerEntity) {
+            if (this_.getPose() == Pose.STANDING) {
+                if (pose == Pose.CROUCHING || pose == Pose.SWIMMING) {
+                    if (getCollidingPortal() != null) {
+                        ci.cancel();
+                    }
+                }
+            }
+        }
+    }
+    
     @Override
     public Portal getCollidingPortal() {
         return ((Portal) collidingPortal);
@@ -189,7 +191,12 @@ public abstract class MixinEntity implements IEEntity {
             if (collidingPortal.world != world) {
                 collidingPortal = null;
             }
-    
+            else {
+                if (!getBoundingBox().grow(0.5).intersects(collidingPortal.getBoundingBox())) {
+                    collidingPortal = null;
+                }
+            }
+            
             if (Math.abs(world.getGameTime() - collidingPortalActiveTickTime) >= 3) {
                 collidingPortal = null;
             }

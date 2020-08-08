@@ -64,9 +64,9 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         WorldWrappingPortal portal = entityType.create(serverWorld);
         portal.isInward = isInward;
         portal.zoneId = zoneId;
-    
+        
         initWrappingPortal(serverWorld, area, direction, isInward, portal);
-    
+        
         return portal;
     }
     
@@ -82,15 +82,15 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         Tuple<Direction, Direction> axises = Helper.getPerpendicularDirections(
             isInward ? direction : direction.getOpposite()
         );
-        AxisAlignedBB boxSurface = Helper.getBoxSurface(area, direction);
+        AxisAlignedBB boxSurface = Helper.getBoxSurfaceInversed(area, direction);
         Vector3d center = boxSurface.getCenter();
-        AxisAlignedBB oppositeSurface = Helper.getBoxSurface(area, direction.getOpposite());
+        AxisAlignedBB oppositeSurface = Helper.getBoxSurfaceInversed(area, direction.getOpposite());
         Vector3d destination = oppositeSurface.getCenter();
         portal.setPosition(center.x, center.y, center.z);
         portal.destination = destination;
         
-        portal.axisW =  Vector3d.func_237491_b_(axises.getA().getDirectionVec());
-        portal.axisH =  Vector3d.func_237491_b_(axises.getB().getDirectionVec());
+        portal.axisW = Vector3d.func_237491_b_(axises.getA().getDirectionVec());
+        portal.axisH = Vector3d.func_237491_b_(axises.getB().getDirectionVec());
         portal.width = Helper.getCoordinate(areaSize, axises.getA().getAxis());
         portal.height = Helper.getCoordinate(areaSize, axises.getB().getAxis());
         
@@ -149,7 +149,7 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         }
         
         public IntBox getBorderBox() {
-    
+            
             if (!isInwardZone) {
                 return getIntArea();
             }
@@ -226,7 +226,7 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         }
         
         int availableId = getAvailableId(wrappingZones);
-        
+    
         AxisAlignedBB box = new IntBox(new BlockPos(x1, 0, z1), new BlockPos(x2, 255, z2)).toRealNumberBox();
         
         WorldWrappingPortal p1 = createWrappingPortal(
@@ -267,11 +267,11 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         Consumer<ITextComponent> feedbackSender
     ) {
         List<WrappingZone> wrappingZones = getWrappingZones(world);
-    
+        
         WrappingZone zone = wrappingZones.stream()
             .filter(z -> z.getArea().contains(playerPos))
             .findFirst().orElse(null);
-    
+        
         if (zone != null) {
             zone.removeFromWorld();
             feedbackSender.accept(new TranslationTextComponent("imm_ptl.removed_portal", zone.toString()));
@@ -287,11 +287,11 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         Consumer<ITextComponent> feedbackSender
     ) {
         List<WrappingZone> wrappingZones = getWrappingZones(world);
-    
+        
         WrappingZone zone = wrappingZones.stream()
             .filter(wrappingZone -> wrappingZone.id == zoneId)
             .findFirst().orElse(null);
-    
+        
         if (zone != null) {
             zone.removeFromWorld();
             feedbackSender.accept(new TranslationTextComponent("imm_ptl.removed_portal", zone.toString()));

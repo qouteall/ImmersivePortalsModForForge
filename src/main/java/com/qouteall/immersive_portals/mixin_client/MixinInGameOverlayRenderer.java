@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.mixin_client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import net.minecraft.client.Minecraft;
@@ -34,6 +35,9 @@ public class MixinInGameOverlayRenderer {
             if (((IEEntity) player).getCollidingPortal() != null) {
                 ci.cancel();
             }
+        }
+        if (CGlobal.clientTeleportationManager.isTeleportingFrequently()) {
+            ci.cancel();
         }
     }
 }

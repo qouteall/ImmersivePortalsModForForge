@@ -101,6 +101,8 @@ public class CHelper {
         );
     }
     
+    
+    
     public static class Rect {
         public float xMin;
         public float yMin;
@@ -242,4 +244,18 @@ public class CHelper {
         return clientWorld.getAllEntities();
     }
     
+    /**
+     * {@link ReentrantThreadExecutor#shouldExecuteAsync()}
+     * The execution may get deferred on the render thread
+     */
+    public static void executeOnRenderThread(Runnable runnable) {
+        Minecraft client = Minecraft.getInstance();
+        
+        if (client.isOnExecutionThread()) {
+            runnable.run();
+        }
+        else {
+            client.execute(runnable);
+        }
+    }
 }

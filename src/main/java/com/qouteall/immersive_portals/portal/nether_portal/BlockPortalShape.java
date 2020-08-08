@@ -8,6 +8,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.IntNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.util.Direction;
+import net.minecraft.util.Tuple;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3i;
@@ -71,6 +72,7 @@ public class BlockPortalShape {
         
         return result;
     }
+    
     
     public CompoundNBT toTag() {
         CompoundNBT data = new CompoundNBT();
@@ -456,4 +458,35 @@ public class BlockPortalShape {
         );
     }
     
+    public static boolean isSquareShape(BlockPortalShape shape, int length) {
+        BlockPos areaSize = shape.innerAreaBox.getSize();
+        
+        Tuple<Direction.Axis, Direction.Axis> xs = Helper.getAnotherTwoAxis(shape.axis);
+        
+        return Helper.getCoordinate(areaSize, xs.getA()) == length &&
+            Helper.getCoordinate(areaSize, xs.getB()) == length &&
+            shape.area.size() == (length * length);
+    }
+    
+    public static BlockPortalShape getSquareShapeTemplate(
+        Direction.Axis axis,
+        int length
+    ) {
+        Tuple<Direction, Direction> perpendicularDirections = Helper.getPerpendicularDirections(
+            Direction.getFacingFromAxisDirection(axis, Direction.AxisDirection.POSITIVE)
+        );
+        
+        Set<BlockPos> area = new HashSet<>();
+        
+        for (int i = 0; i < length; i++) {
+            for (int j = 0; j < length; j++) {
+                area.add(
+                    BlockPos.ZERO.offset(perpendicularDirections.getA(), i)
+                        .offset(perpendicularDirections.getB(), j)
+                );
+            }
+        }
+        
+        return new BlockPortalShape(area, axis);
+    }
 }

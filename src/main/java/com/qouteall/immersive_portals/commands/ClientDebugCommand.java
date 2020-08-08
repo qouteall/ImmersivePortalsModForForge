@@ -529,11 +529,6 @@ public class ClientDebugCommand {
         );
         registerSwitchCommand(
             builder,
-            "smooth_loading",
-            cond -> Global.smoothLoading = cond
-        );
-        registerSwitchCommand(
-            builder,
             "cache_gl_buffer",
             cond -> Global.cacheGlBuffer = cond
         );
@@ -639,7 +634,7 @@ public class ClientDebugCommand {
                 str.append(String.format(
                     "%s %s\n",
                     world.func_234923_W_(),
-                    world.getForcedChunks().size()
+                    NewChunkTrackingGraph.getLoadedChunkNum(world.func_234923_W_())
                 ));
             }
         );
@@ -759,11 +754,26 @@ public class ClientDebugCommand {
         
         McHelper.serverLog(
             playerMP,
-            "On Server " + playerMP.world.func_234923_W_() + " " + playerMP.getPositionVec()
+            String.format(
+                "On Server %s %s removed:%s added:%s age:%s",
+                playerMP.world.func_234923_W_(),
+                playerMP.getPositionVec(),
+                playerMP.removed,
+                playerMP.world.getEntityByID(playerMP.getEntityId()) != null,
+                playerMP.ticksExisted
+            )
         );
+        
         McHelper.serverLog(
             playerMP,
-            "On Client " + playerSP.world.func_234923_W_() + " " + playerSP.getPositionVec()
+            String.format(
+                "On Client %s %s removed:%s added:%s age:%s",
+                playerSP.world.func_234923_W_(),
+                playerSP.getPositionVec(),
+                playerMP.removed,
+                playerMP.world.getEntityByID(playerMP.getEntityId()) != null,
+                playerMP.ticksExisted
+            )
         );
         return 0;
     }

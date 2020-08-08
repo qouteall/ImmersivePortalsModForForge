@@ -20,15 +20,12 @@ public class MixinPlayerMoveC2SPacket_S implements IEPlayerMoveC2SPacket {
         at = @At("HEAD")
     )
     private void onRead(PacketBuffer buf, CallbackInfo ci) {
-        playerDimension = DimId.readWorldId(buf, false);
-    }
-    
-    @Inject(
-        method = "Lnet/minecraft/network/play/client/CPlayerPacket;writePacketData(Lnet/minecraft/network/PacketBuffer;)V",
-        at = @At("HEAD")
-    )
-    private void onWrite(PacketBuffer buf, CallbackInfo ci) {
-        DimId.writeWorldId(buf, playerDimension, true);
+        try {
+            playerDimension = DimId.readWorldId(buf, false);
+        }
+        catch (IndexOutOfBoundsException e) {
+            //nothing
+        }
     }
     
     @Override

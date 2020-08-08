@@ -1,7 +1,10 @@
 package com.qouteall.immersive_portals.mixin_client.sync;
 
+import com.qouteall.immersive_portals.dimension_sync.DimId;
 import com.qouteall.immersive_portals.ducks.IEPlayerMoveC2SPacket;
+import com.qouteall.immersive_portals.network.NetworkAdapt;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.client.CPlayerPacket;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.world.World;
@@ -20,5 +23,16 @@ public class MixinPlayerMoveC2SPacket_C {
         RegistryKey<World> dimension = Minecraft.getInstance().player.world.func_234923_W_();
         ((IEPlayerMoveC2SPacket) this).setPlayerDimension(dimension);
         assert dimension == Minecraft.getInstance().world.func_234923_W_();
+    }
+    
+    @Inject(
+        method = "Lnet/minecraft/network/play/client/CPlayerPacket;writePacketData(Lnet/minecraft/network/PacketBuffer;)V",
+        at = @At("HEAD")
+    )
+    private void onWrite(PacketBuffer buf, CallbackInfo ci) {
+        if (NetworkAdapt.doesServerHasIP()) {
+            RegistryKey<World> playerDimension = ((IEPlayerMoveC2SPacket) this).getPlayerDimension();
+            DimId.writeWorldId(buf, playerDimension, true);
+        }
     }
 }

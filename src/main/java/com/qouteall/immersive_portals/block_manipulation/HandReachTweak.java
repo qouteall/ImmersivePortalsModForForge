@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.block_manipulation;
 
 import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.PehkuiInterface;
 import net.minecraft.entity.ai.attributes.Attribute;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
 import net.minecraft.entity.ai.attributes.RangedAttribute;
@@ -28,6 +29,9 @@ public class HandReachTweak {
     
     public static double getActualHandReachMultiplier(PlayerEntity playerEntity) {
         if (O_O.isReachEntityAttributesPresent) {
+            return 1;
+        }
+        if (PehkuiInterface.isPehkuiPresent) {
             return 1;
         }
         if (O_O.isForge()) {

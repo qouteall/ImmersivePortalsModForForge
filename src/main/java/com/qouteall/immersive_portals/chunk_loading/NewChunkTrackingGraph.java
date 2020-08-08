@@ -392,4 +392,8 @@ public class NewChunkTrackingGraph {
             }
         });
     }
+    
+    public static int getLoadedChunkNum(RegistryKey<World> dimension) {
+        return getChunkRecordMap(dimension).size();
+    }
 }

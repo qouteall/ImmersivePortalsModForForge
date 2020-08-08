@@ -134,6 +134,9 @@ public class CollisionHelper {
             //handling collision with rotating portal is hard to implement
             return attemptedMove;
         }
+        if (collidingPortal.hasScaling()) {
+            return attemptedMove;
+        }
         
         AxisAlignedBB boxOtherSide = getCollisionBoxOtherSide(
             collidingPortal,
