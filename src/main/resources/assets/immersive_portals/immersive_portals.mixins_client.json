@@ -21,7 +21,9 @@
     "sync.MixinPlayerMoveC2SPacketBoth",
     "sync.MixinPlayerMoveC2SPacketLookOnly",
     "sync.MixinPlayerMoveC2SPacketPositionOnly",
+    "sync.MixinPlayerPositionLookS2CPacket_C",
     "MixinBackgroundRenderer",
+    "MixinBiomeEffectSoundPlayer",
     "MixinBlockEntityRenderDispatcher",
     "MixinBossBarHud",
     "MixinBuiltChunk",
@@ -43,6 +45,7 @@
     "MixinParticleManager",
     "MixinPlayerListEntry",
     "MixinQuaternion",
+    "MixinVertexConsumerProviderImmediate",
     "MixinWorldRenderer",
     "MixinWorldRenderer_Optional",
     "MixinWorldRendererChunkInfo"
