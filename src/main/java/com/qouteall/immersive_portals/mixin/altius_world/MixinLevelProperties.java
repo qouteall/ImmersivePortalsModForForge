@@ -96,7 +96,7 @@ public class MixinLevelProperties implements IELevelProperties {
     
     @Inject(
         method = "Lnet/minecraft/world/storage/ServerWorldInfo;func_237370_a_(Lnet/minecraft/util/registry/DynamicRegistries;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/nbt/CompoundNBT;)V",
-        at = @At("RETURN")
+        at = @At("HEAD")
     )
     private void onUpdateProperties(
         DynamicRegistries dynamicRegistryManager, CompoundNBT compoundTag,

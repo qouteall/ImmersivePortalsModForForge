@@ -5,6 +5,7 @@ import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ModMainClient;
+import com.qouteall.immersive_portals.alternate_dimension.ErrorTerrainGenerator;
 import com.qouteall.immersive_portals.block_manipulation.HandReachTweak;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
 import com.qouteall.immersive_portals.portal.EndPortalEntity;
@@ -129,6 +130,7 @@ public class ModMainForge {
     }
     
     private void setup(final FMLCommonSetupEvent event) {
+        
         ModMain.init();
     }
     
