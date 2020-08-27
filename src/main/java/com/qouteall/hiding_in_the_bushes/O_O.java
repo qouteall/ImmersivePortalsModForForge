@@ -5,6 +5,7 @@ import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
+import com.qouteall.immersive_portals.portal.custom_portal_gen.PortalGenInfo;
 import com.qouteall.immersive_portals.portal.nether_portal.BlockPortalShape;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.block.BlockState;
@@ -117,7 +118,7 @@ public class O_O {
         return FMLEnvironment.dist == Dist.DEDICATED_SERVER;
     }
     
-    public static void postPortalSpawnEventForge(NetherPortalGeneration.Info info) {
+    public static void postPortalSpawnEventForge(PortalGenInfo info) {
         ServerWorld world = McHelper.getServer().getWorld(info.from);
         BlockPortalShape shape = info.fromShape;
     

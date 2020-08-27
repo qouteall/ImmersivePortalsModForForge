@@ -8,7 +8,6 @@ import com.qouteall.hiding_in_the_bushes.network.StcSpawnEntity;
 import com.qouteall.hiding_in_the_bushes.network.StcUpdateGlobalPortals;
 import com.qouteall.immersive_portals.dimension_sync.DimensionIdRecord;
 import com.qouteall.immersive_portals.dimension_sync.DimensionTypeSync;
-import com.qouteall.immersive_portals.my_util.ICustomStcPacket;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

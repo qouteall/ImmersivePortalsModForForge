@@ -21,7 +21,6 @@ import net.minecraft.world.gen.FlatChunkGenerator;
 import net.minecraft.world.gen.FlatGenerationSettings;
 import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraft.world.gen.NoiseChunkGenerator;
-import net.minecraft.world.gen.feature.structure.Structure;
 import net.minecraft.world.gen.settings.DimensionStructuresSettings;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -34,7 +33,7 @@ public class AlternateDimensions {
             seed, false, false, biomeRegistry
         );
         
-        MutableRegistry<DimensionSettings> settingsRegistry = rm.func_243612_b(Registry.NOISE_SETTINGS_WORLDGEN);
+        MutableRegistry<DimensionSettings> settingsRegistry = rm.func_243612_b(Registry.field_243549_ar);
         
         DimensionSettings skylandSetting = settingsRegistry.func_243576_d(DimensionSettings.field_242739_h);
         
@@ -56,7 +55,7 @@ public class AlternateDimensions {
         DimensionStructuresSettings structuresConfig = new DimensionStructuresSettings(
             Optional.of(DimensionStructuresSettings.field_236192_c_),
             Maps.newHashMap(ImmutableMap.of(
-                Structure.VILLAGE, DimensionStructuresSettings.field_236191_b_.get(Structure.VILLAGE)
+//                StructureFeature.VILLAGE, StructuresConfig.DEFAULT_STRUCTURES.get(StructureFeature.VILLAGE)
             ))
         );
         FlatGenerationSettings flatChunkGeneratorConfig = new FlatGenerationSettings(structuresConfig,
