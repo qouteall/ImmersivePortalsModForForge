@@ -8,7 +8,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tags.ITag;
-import net.minecraft.tags.NetworkTagManager;
+import net.minecraft.tags.ITagCollectionSupplier;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
 
@@ -60,15 +60,15 @@ public class SimpleBlockPredicate implements Predicate<BlockState> {
             );
         }
         
-        NetworkTagManager tagManager = server.resourceManager.func_240966_d_();
+        ITagCollectionSupplier tagManager = server.resourceManager.func_244358_d();
         ResourceLocation id = new ResourceLocation(string);
-        ITag<Block> blockTag = tagManager.getBlocks().get(id);
+        ITag<Block> blockTag = tagManager.func_241835_a().get(id);
         
         if (blockTag != null) {
             return DataResult.success(new SimpleBlockPredicate(blockTag), Lifecycle.stable());
         }
         
-        if (Registry.BLOCK.containsKey(id)) {
+        if (Registry.BLOCK.keySet().contains(id)) {
             Block block = Registry.BLOCK.getOrDefault(id);
             return DataResult.success(new SimpleBlockPredicate(block), Lifecycle.stable());
         }
@@ -91,9 +91,9 @@ public class SimpleBlockPredicate implements Predicate<BlockState> {
         
         ITag<Block> tag = predicate.tag;
         
-        NetworkTagManager tagManager = server.resourceManager.func_240966_d_();
+        ITagCollectionSupplier tagManager = server.resourceManager.func_244358_d();
         
-        ResourceLocation id = tagManager.getBlocks().func_232973_a_(tag);
+        ResourceLocation id = tagManager.func_241835_a().func_232975_b_(tag);
         
         if (id == null) {
             throw new RuntimeException(

@@ -5,9 +5,9 @@ import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.StringNBT;
-import net.minecraft.server.IDynamicRegistries;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
@@ -23,10 +23,10 @@ public class DimensionTypeSync {
     public static Map<RegistryKey<World>, RegistryKey<DimensionType>> clientTypeMap;
     
     @OnlyIn(Dist.CLIENT)
-    private static IDynamicRegistries currentDimensionTypeTracker;
+    private static DynamicRegistries currentDimensionTypeTracker;
     
     @OnlyIn(Dist.CLIENT)
-    public static void onGameJoinPacketReceived(IDynamicRegistries tracker) {
+    public static void onGameJoinPacketReceived(DynamicRegistries tracker) {
         currentDimensionTypeTracker = tracker;
     }
     
@@ -60,11 +60,28 @@ public class DimensionTypeSync {
     }
     
     public static CompoundNBT createTagFromServerWorldInfo() {
+        DynamicRegistries registryManager = McHelper.getServer().func_244267_aX();
+        Registry<DimensionType> dimensionTypes = registryManager.func_230520_a_();
         return typeMapToTag(
             Streams.stream(McHelper.getServer().getWorlds()).collect(
-                Collectors.toMap(World::func_234923_W_, World::func_234922_V_)
+                Collectors.toMap(
+                    World::func_234923_W_,
+                    w -> {
+                        DimensionType dimensionType = w.func_230315_m_();
+                        ResourceLocation id = dimensionTypes.getKey(dimensionType);
+                        if (id == null) {
+                            Helper.err("Missing dim type id for " + w.func_234923_W_());
+                            return DimensionType.field_235999_c_;
+                        }
+                        return idToDimType(id);
+                    }
+                )
             )
         );
+    }
+    
+    public static RegistryKey<DimensionType> idToDimType(ResourceLocation id) {
+        return RegistryKey.func_240903_a_(Registry.field_239698_ad_, id);
     }
     
     private static CompoundNBT typeMapToTag(Map<RegistryKey<World>, RegistryKey<DimensionType>> data) {

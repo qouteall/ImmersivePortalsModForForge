@@ -15,8 +15,8 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.PacketDirection;
-import net.minecraft.server.IDynamicRegistries;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
@@ -224,8 +224,8 @@ public class ClientWorldLoader {
                 DimensionTypeSync.getDimensionTypeKey(dimension);
             ClientWorld.ClientWorldInfo currentProperty =
                 (ClientWorld.ClientWorldInfo) ((IEWorld) client.world).myGetProperties();
-            IDynamicRegistries dimensionTracker = mainNetHandler.func_239165_n_();
-            ((IEClientPlayNetworkHandler) newNetworkHandler).portal_setDimensionTracker(
+            DynamicRegistries dimensionTracker = mainNetHandler.func_239165_n_();
+            ((IEClientPlayNetworkHandler) newNetworkHandler).portal_setRegistryManager(
                 dimensionTracker);
             DimensionType dimensionType = dimensionTracker
                 .func_230520_a_().func_230516_a_(dimensionTypeKey);
@@ -239,7 +239,6 @@ public class ClientWorldLoader {
                 newNetworkHandler,
                 properties,
                 dimension,
-                dimensionTypeKey,
                 dimensionType,
                 chunkLoadDistance,
                 () -> client.getProfiler(),
@@ -265,7 +264,7 @@ public class ClientWorldLoader {
         clientWorldMap.put(dimension, newWorld);
         worldRendererMap.put(dimension, worldRenderer);
         
-        Helper.log("Faked World Created " + dimension);
+        Helper.log("Faked World Created " + dimension.func_240901_a_());
         
         isLoadingFakedWorld = false;
         

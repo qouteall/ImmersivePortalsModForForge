@@ -31,6 +31,9 @@ public abstract class PortalGenForm {
         Registry.register(
             registry, new ResourceLocation("imm_ptl:scaling_square"), ScalingSquareForm.codec
         );
+        Registry.register(
+            registry, new ResourceLocation("imm_ptl:flipping_floor_square_new"), FlippingFloorSquareNewForm.codec
+        );
         
         return registry;
     });

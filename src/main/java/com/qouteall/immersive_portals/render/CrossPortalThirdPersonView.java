@@ -32,7 +32,7 @@ public class CrossPortalThirdPersonView {
         resuableCamera.update(
             client.world, cameraEntity,
             true,
-            isInverseView(),
+            isFrontView(),
             RenderStates.tickDelta
         );
         Vector3d normalCameraPos = resuableCamera.getProjectedView();
@@ -79,12 +79,12 @@ public class CrossPortalThirdPersonView {
         return true;
     }
     
-    private static boolean isInverseView() {
-        return client.gameSettings.thirdPersonView == 2;
+    private static boolean isFrontView() {
+        return client.gameSettings.func_243230_g().func_243193_b();
     }
     
     private static boolean isThirdPerson() {
-        return client.gameSettings.thirdPersonView > 0;
+        return !client.gameSettings.func_243230_g().func_243192_a();
     }
     
     /**

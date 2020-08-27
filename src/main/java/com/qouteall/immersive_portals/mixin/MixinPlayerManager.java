@@ -34,7 +34,7 @@ public class MixinPlayerManager {
         method = "Lnet/minecraft/server/management/PlayerList;initializeConnectionToPlayer(Lnet/minecraft/network/NetworkManager;Lnet/minecraft/entity/player/ServerPlayerEntity;)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/network/play/server/SJoinGamePacket;<init>(ILnet/minecraft/world/GameType;Lnet/minecraft/world/GameType;JZLjava/util/Set;Lnet/minecraft/server/IDynamicRegistries$Impl;Lnet/minecraft/util/RegistryKey;Lnet/minecraft/util/RegistryKey;IIZZZZ)V"
+            target = "Lnet/minecraft/network/play/server/SJoinGamePacket;<init>(ILnet/minecraft/world/GameType;Lnet/minecraft/world/GameType;JZLjava/util/Set;Lnet/minecraft/util/registry/DynamicRegistries$Impl;Lnet/minecraft/world/DimensionType;Lnet/minecraft/util/RegistryKey;IIZZZZ)V"
         )
     )
     private void onConnectionEstablished(
@@ -70,51 +70,4 @@ public class MixinPlayerManager {
             ));
         ci.cancel();
     }
-    
-//    /**
-//     * @author qouteall
-//     */
-//    @Overwrite
-//    public void sendWorldInfo(ServerPlayerEntity player, ServerWorld world) {
-//        WorldBorder worldBorder = this.server.getOverworld().getWorldBorder();
-//        RegistryKey<World> dimension = world.getRegistryKey();
-//        player.networkHandler.sendPacket(
-//            MyNetwork.createRedirectedMessage(
-//                dimension,
-//                new WorldBorderS2CPacket(worldBorder, WorldBorderS2CPacket.Type.INITIALIZE)
-//            )
-//        );
-//        player.networkHandler.sendPacket(MyNetwork.createRedirectedMessage(
-//            dimension, new WorldTimeUpdateS2CPacket(
-//                world.getTime(),
-//                world.getTimeOfDay(),
-//                world.getGameRules().getBoolean(
-//                    GameRules.DO_DAYLIGHT_CYCLE)
-//            ))
-//        );
-//        player.networkHandler.sendPacket(MyNetwork.createRedirectedMessage(
-//            dimension, new PlayerSpawnPositionS2CPacket(world.getSpawnPos())
-//        ));
-//        if (world.isRaining()) {
-//            player.networkHandler.sendPacket(MyNetwork.createRedirectedMessage(
-//                dimension, new GameStateChangeS2CPacket(
-//                    GameStateChangeS2CPacket.RAIN_STARTED,
-//                    0.0F
-//                )
-//            ));
-//            player.networkHandler.sendPacket(MyNetwork.createRedirectedMessage(
-//                dimension, new GameStateChangeS2CPacket(
-//                    GameStateChangeS2CPacket.RAIN_GRADIENT_CHANGED,
-//                    world.getRainGradient(1.0F)
-//                )
-//            ));
-//            player.networkHandler.sendPacket(MyNetwork.createRedirectedMessage(
-//                dimension, new GameStateChangeS2CPacket(
-//                    GameStateChangeS2CPacket.THUNDER_GRADIENT_CHANGED,
-//                    world.getThunderGradient(1.0F)
-//                )
-//            ));
-//        }
-//
-//    }
 }

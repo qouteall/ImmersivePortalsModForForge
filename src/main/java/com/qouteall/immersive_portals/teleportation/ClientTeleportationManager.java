@@ -28,7 +28,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.Tuple;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -83,7 +86,6 @@ public class ClientTeleportationManager {
         if (client.player.world.func_234923_W_() != dimension) {
             forceTeleportPlayer(dimension, pos);
         }
-        getOutOfLoadingScreen(dimension, pos);
     }
     
     public void manageTeleportation(float tickDelta) {
@@ -131,7 +133,7 @@ public class ClientTeleportationManager {
         Tuple<Portal, Vector3d> pair = CHelper.getClientNearbyPortals(32)
             .flatMap(portal -> {
                 if (portal.isTeleportable()) {
-                    Vector3d collidingPoint = portal.pick(
+                    Vector3d collidingPoint = portal.rayTrace(
                         moveStartPoint,
                         newHeadPos
                     );
@@ -213,20 +215,24 @@ public class ClientTeleportationManager {
         
         PehkuiInterface.onClientPlayerTeleported.accept(portal);
         
-        tickAfterTeleportation(player, newEyePos, newLastTickEyePos);
-        
         player.connection.sendPacket(MyNetworkClient.createCtsTeleport(
             fromDimension,
             oldEyePos,
             portal.getUniqueID()
         ));
         
+        tickAfterTeleportation(player, newEyePos, newLastTickEyePos);
+        
         amendChunkEntityStatus(player);
         
         McHelper.adjustVehicle(player);
         
-        // pehkui may change velocity when changing scale
-        player.setMotion(portal.transformLocalVec(player.getMotion()));
+        if (portal.teleportChangesScale) {
+            player.setMotion(portal.transformLocalVecNonScale(player.getMotion()));
+        }
+        else {
+            player.setMotion(portal.transformLocalVec(player.getMotion()));
+        }
         
         TransformationManager.onClientPlayerTeleported(portal);
         
@@ -242,6 +248,10 @@ public class ClientTeleportationManager {
         
         isTeleportingTick = true;
         isTeleportingFrame = true;
+        
+        if (portal.extension.adjustPositionAfterTeleport) {
+            adjustPlayerPosition(player);
+        }
     }
     
     
@@ -361,27 +371,6 @@ public class ClientTeleportationManager {
         }
     }
     
-    @Deprecated
-    private void getOutOfLoadingScreen(RegistryKey<World> dimension, Vector3d playerPos) {
-//        if (((IEMinecraftClient) client).getCurrentScreen() instanceof DownloadingTerrainScreen) {
-//            Helper.err("Manually getting out of loading screen. The game is in abnormal state.");
-//            ClientPlayerEntity player = client.player;
-//            if (player.world.getRegistryKey() != dimension) {
-//                Helper.err("Manually fix dimension state while loading terrain");
-//                ClientWorld toWorld = CGlobal.clientWorldLoader.getWorld(dimension);
-//                changePlayerDimension(player, client.world, toWorld, playerPos);
-//            }
-//            player.updatePosition(playerPos.x, playerPos.y, playerPos.z);
-//
-//            if (client.world.getEntityById(player.getEntityId()) == null) {
-//                Helper.err("Client world does not have player added into");
-//                client.world.addPlayer(player.getEntityId(), player);
-//            }
-//
-//            client.openScreen(null);
-//        }
-    }
-    
     private void changePlayerMotionIfCollidingWithPortal() {
         ClientPlayerEntity player = client.player;
         List<Portal> portals = player.world.getEntitiesWithinAABB(
@@ -433,10 +422,62 @@ public class ClientTeleportationManager {
             player.getBoundingBox(),
             10,
             portal -> true
-        ).forEach(Portal::tick);
+        ).forEach(CollisionHelper::notifyCollidingPortals);
+        
+        CollisionHelper.updateClientGlobalPortalCollidingPortal();
         
         player.tick();
         McHelper.setEyePos(player, newEyePos, newLastTickEyePos);
         McHelper.updateBoundingBox(player);
     }
+    
+    private static void adjustPlayerPosition(ClientPlayerEntity player) {
+        AxisAlignedBB boundingBox = player.getBoundingBox();
+        AxisAlignedBB bottomHalfBox = boundingBox.contract(0, boundingBox.getYSize() / 2, 0);
+        Stream<VoxelShape> collisions = player.world.getCollisionShapes(
+            player, bottomHalfBox
+        );
+        double maxCollisionY = collisions.mapToDouble(s -> s.getBoundingBox().maxY)
+            .max().orElse(player.getPosY());
+        
+        double delta = maxCollisionY - player.getPosY();
+        
+        if (delta <= 0) {
+            return;
+        }
+        
+        final int ticks = 5;
+        
+        double originalY = player.getPosY();
+        
+        int[] counter = {0};
+        ModMain.clientTaskList.addTask(() -> {
+            if (player.removed) {
+                return true;
+            }
+            if (player.getPosY() < originalY - 1 || player.getPosY() > maxCollisionY + 1) {
+                return true;
+            }
+            
+            if (counter[0] >= 5) {
+                return true;
+            }
+            
+            counter[0]++;
+            
+            double progress = ((double) counter[0]) / ticks;
+            progress = TransformationManager.mapProgress(progress);
+            double newY = MathHelper.lerp(
+                progress,
+                originalY, maxCollisionY
+            );
+            player.setRawPosition(player.getPosX(), newY, player.getPosZ());
+            McHelper.updateBoundingBox(player);
+            
+            return false;
+        });
+        
+    }
+    
+    
 }

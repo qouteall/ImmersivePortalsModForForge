@@ -27,10 +27,10 @@ import net.minecraft.network.play.server.SPlayerPositionLookPacket;
 import net.minecraft.network.play.server.SSetPassengersPacket;
 import net.minecraft.network.play.server.SUnloadChunkPacket;
 import net.minecraft.profiler.IProfiler;
-import net.minecraft.server.IDynamicRegistries;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.SectionPos;
+import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -62,8 +62,7 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
     @Shadow
     public abstract void handleSetPassengers(SSetPassengersPacket entityPassengersSetS2CPacket_1);
     
-    @Shadow
-    private IDynamicRegistries field_239163_t_;
+    @Shadow private DynamicRegistries field_239163_t_;
     
     @Override
     public void setWorld(ClientWorld world) {
@@ -251,7 +250,7 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
     }
     
     @Override
-    public void portal_setDimensionTracker(IDynamicRegistries arg) {
+    public void portal_setRegistryManager(DynamicRegistries arg) {
         field_239163_t_ = arg;
     }
 }

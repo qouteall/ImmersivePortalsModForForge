@@ -18,16 +18,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Iterator;
 import java.util.Random;
+import java.util.function.Supplier;
 
 @Mixin(NoiseChunkGenerator.class)
-public abstract class MixinSurfaceChunkGenerator extends ChunkGenerator {
+public abstract class MixinNoiseChunkGenerator extends ChunkGenerator {
     
+    @Shadow
+    @Final
+    public Supplier<DimensionSettings> field_236080_h_;
     
-    @Shadow @Final protected DimensionSettings field_236080_h_;
+    @Shadow
+    @Final
+    private int field_236085_x_;
     
-    @Shadow @Final private int field_236085_x_;
-    
-    public MixinSurfaceChunkGenerator(BiomeProvider biomeSource, DimensionStructuresSettings arg) {
+    public MixinNoiseChunkGenerator(BiomeProvider biomeSource, DimensionStructuresSettings arg) {
         super(biomeSource, arg);
     }
     
@@ -47,34 +51,38 @@ public abstract class MixinSurfaceChunkGenerator extends ChunkGenerator {
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         int i = chunk.getPos().getXStart();
         int j = chunk.getPos().getZStart();
-        int k = this.field_236080_h_.func_236118_f_();
-        int l = this.field_236085_x_ - 1 - this.field_236080_h_.func_236117_e_();
+        DimensionSettings chunkGeneratorSettings = (DimensionSettings) this.field_236080_h_.get();
+        int k = chunkGeneratorSettings.func_236118_f_();
+        int l = this.field_236085_x_ - 1 - chunkGeneratorSettings.func_236117_e_();
+        
         boolean bl = l + 4 >= 0 && l < this.field_236085_x_;
         boolean bl2 = k + 4 >= 0 && k < this.field_236085_x_;
         if (bl || bl2) {
-            Iterator var11 = BlockPos.getAllInBoxMutable(i, 0, j, i + 15, 0, j + 15).iterator();
-        
-            while(true) {
+            Iterator var12 = BlockPos.getAllInBoxMutable(i, 0, j, i + 15, 0, j + 15).iterator();
+            
+            while (true) {
                 BlockPos blockPos;
                 int o;
                 do {
-                    if (!var11.hasNext()) {
+                    if (!var12.hasNext()) {
                         return;
                     }
-                
-                    blockPos = (BlockPos)var11.next();
+                    
+                    blockPos = (BlockPos) var12.next();
                     if (bl) {
-                        for(o = 0; o < 5; ++o) {
+                        for (o = 0; o < 5; ++o) {
                             if (o <= random.nextInt(5)) {
-                                chunk.setBlockState(mutable.setPos(blockPos.getX(), l - o, blockPos.getZ()), Blocks.OBSIDIAN.getDefaultState(), false);
+                                chunk.setBlockState(mutable.setPos(blockPos.getX(), l - o, blockPos.getZ()),
+                                    Blocks.OBSIDIAN.getDefaultState(), false);
                             }
                         }
                     }
-                } while(!bl2);
-            
-                for(o = 4; o >= 0; --o) {
+                } while (!bl2);
+                
+                for (o = 4; o >= 0; --o) {
                     if (o <= random.nextInt(5)) {
-                        chunk.setBlockState(mutable.setPos(blockPos.getX(), k + o, blockPos.getZ()), Blocks.OBSIDIAN.getDefaultState(), false);
+                        chunk.setBlockState(mutable.setPos(blockPos.getX(), k + o, blockPos.getZ()),
+                            Blocks.OBSIDIAN.getDefaultState(), false);
                     }
                 }
             }

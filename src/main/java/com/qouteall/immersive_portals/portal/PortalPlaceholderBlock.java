@@ -94,7 +94,7 @@ public class PortalPlaceholderBlock extends Block {
             Direction.Axis axis = thisState.get(AXIS);
             if (direction.getAxis() != axis) {
                 McHelper.getEntitiesNearby(
-                    world.getWorld(),
+                    ((World) world),
                     Vector3d.func_237491_b_(blockPos),
                     Portal.class,
                     20

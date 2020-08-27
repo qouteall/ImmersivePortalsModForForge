@@ -278,17 +278,21 @@ public class Helper {
     
     @Nullable
     public static <T> T getLastSatisfying(Stream<T> stream, Predicate<T> predicate) {
-        SimpleBox<T> box = new SimpleBox<T>(null);
-        stream.filter(curr -> {
-            if (predicate.test(curr)) {
-                box.obj = curr;
-                return false;
+        T last = null;
+        
+        Iterator<T> iterator = stream.iterator();
+        
+        while (iterator.hasNext()) {
+            T obj = iterator.next();
+            if (predicate.test(obj)) {
+                last = obj;
             }
             else {
-                return true;
+                return last;
             }
-        }).findFirst();
-        return box.obj;
+        }
+        
+        return last;
     }
     
     public interface CallableWithoutException<T> {
@@ -685,7 +689,7 @@ public class Helper {
         
         nearby.forEach(portal -> {
             if (filter == null || filter.test(portal)) {
-                Vector3d intersection = portal.pick(start, end);
+                Vector3d intersection = portal.rayTrace(start, end);
                 
                 if (intersection != null) {
                     hits.add(new Tuple<>(portal, intersection));
@@ -757,7 +761,7 @@ public class Helper {
     
     /**
      * @author LoganDark
-     * @see Helper#rayTrace(World, RayTraceContext, boolean)
+     * @see Helper#rayTrace(World, RaycastContext, boolean, List)
      */
     private static Tuple<BlockRayTraceResult, List<Portal>> rayTrace(
         World world,
@@ -963,5 +967,17 @@ public class Helper {
             }
         }
         return -1;
+    }
+    
+    public static List<String> splitStringByLen(String str, int len) {
+        List<String> result = new ArrayList<>();
+        
+        for (int i = 0; i * len < str.length(); i++) {
+            result.add(
+                str.substring(i * len, Math.min(str.length(), (i + 1) * len))
+            );
+        }
+        
+        return result;
     }
 }

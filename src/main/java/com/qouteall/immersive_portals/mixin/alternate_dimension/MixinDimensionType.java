@@ -1,6 +1,15 @@
 package com.qouteall.immersive_portals.mixin.alternate_dimension;
 
+import com.mojang.serialization.Lifecycle;
 import com.qouteall.immersive_portals.ModMain;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.registry.DynamicRegistries;
+import net.minecraft.util.registry.MutableRegistry;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.world.DimensionType;
+import net.minecraft.world.biome.ColumnFuzzedBiomeMagnifier;
+import net.minecraft.world.biome.IBiomeMagnifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.At;
@@ -8,75 +17,46 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.OptionalLong;
-import net.minecraft.server.IDynamicRegistries;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.DimensionType;
 
 @Mixin(DimensionType.class)
 public class MixinDimensionType {
-    
+
     @Invoker("<init>")
     static DimensionType constructor(
-        OptionalLong fixedTime,
-        boolean hasSkylight,
-        boolean hasCeiling,
-        boolean ultrawarm,
-        boolean natural,
-        boolean shrunk,
-        boolean piglinSafe,
-        boolean bedWorks,
-        boolean respawnAnchorWorks,
-        boolean hasRaids,
-        int logicalHeight,
-        ResourceLocation infiniburn,
-        float ambientLight
+        OptionalLong fixedTime, boolean hasSkylight, boolean hasCeiling, boolean ultrawarm,
+        boolean natural, double coordinateScale, boolean hasEnderDragonFight, boolean piglinSafe,
+        boolean bedWorks, boolean respawnAnchorWorks, boolean hasRaids, int logicalHeight,
+        IBiomeMagnifier biomeAccessType,
+        ResourceLocation infiniburn, ResourceLocation skyProperties, float ambientLight
     ) {
         return null;
     }
     
-//    @Inject(
-//        method = "method_28517",
-//        at = @At("RETURN"),
-//        cancellable = true
-//    )
-//    private static void onInitDimensionOptions(
-//        long seed,
-//        CallbackInfoReturnable<SimpleRegistry<DimensionOptions>> cir
-//    ) {
-
-//    }
-    
     @Inject(
-        method = "Lnet/minecraft/world/DimensionType;func_236027_a_(Lnet/minecraft/server/IDynamicRegistries$Impl;)Lnet/minecraft/server/IDynamicRegistries$Impl;",
+        method = "Lnet/minecraft/world/DimensionType;func_236027_a_(Lnet/minecraft/util/registry/DynamicRegistries$Impl;)Lnet/minecraft/util/registry/DynamicRegistries$Impl;",
         at = @At("RETURN"),
         cancellable = true
     )
     private static void onAddRegistryDefaults(
-        IDynamicRegistries.Impl registryTracker,
-        CallbackInfoReturnable<IDynamicRegistries.Impl> cir
+        DynamicRegistries.Impl registryManager,
+        CallbackInfoReturnable<DynamicRegistries.Impl> cir
     ) {
-        registryTracker.func_239774_a_(
+        MutableRegistry<DimensionType> mutableRegistry = registryManager.func_243612_b(Registry.field_239698_ad_);
+        mutableRegistry.register(
             ModMain.surfaceType,
-            ModMain.surfaceTypeObject
+            ModMain.surfaceTypeObject,
+            Lifecycle.stable()
         );
     }
-    
+
     static {
         ModMain.surfaceTypeObject = constructor(
-            OptionalLong.empty(),
-            true,
-            false,
-            false,
-            true,
-            false,
-            false,
-            true,
-            true,
-            true,
-            256,
+            OptionalLong.empty(), true, false,
+            false, true, 1.0D, false,
+            false, true, false, true,
+            256, ColumnFuzzedBiomeMagnifier.INSTANCE,
             BlockTags.field_241277_aC_.func_230234_a_(),
-            0
+            DimensionType.field_242710_a, 0.0F
         );
     }
 }

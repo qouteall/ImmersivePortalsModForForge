@@ -12,18 +12,30 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public class PortalExtension {
     public double motionAffinity = 0;
     
+    public boolean adjustPositionAfterTeleport = false;
+    
     private static class PlayerPortalVisibility {
         public long lastVisibleTime = 0;
-        public int currentCap = 0;
+        public double currentCap = 0;
         public int targetCap = 0;
         
         public void updateEverySecond() {
-            if (targetCap > currentCap) {
-                currentCap++;
+            double targetCapSq = targetCap * targetCap;
+            double currentCapSq = currentCap * currentCap;
+            
+            if (currentCapSq < targetCapSq) {
+                currentCapSq = Math.min(
+                    currentCapSq + (targetCapSq / 12),
+                    targetCapSq
+                );
             }
-            else if (targetCap < currentCap) {
-                currentCap--;
+            else {
+                currentCapSq = Math.max(
+                    currentCapSq - (targetCapSq / 12),
+                    targetCapSq
+                );
             }
+            currentCap = Math.sqrt(currentCapSq);
         }
     }
     
@@ -37,12 +49,16 @@ public class PortalExtension {
         if (compoundTag.contains("motionAffinity")) {
             motionAffinity = compoundTag.getDouble("motionAffinity");
         }
+        if (compoundTag.contains("adjustPositionAfterTeleport")) {
+            adjustPositionAfterTeleport = compoundTag.getBoolean("adjustPositionAfterTeleport");
+        }
     }
     
     public void writeToNbt(CompoundNBT compoundTag) {
         if (motionAffinity != 0) {
             compoundTag.putDouble("motionAffinity", motionAffinity);
         }
+        compoundTag.putBoolean("adjustPositionAfterTeleport", adjustPositionAfterTeleport);
     }
     
     public void tick(Portal portal) {
@@ -87,7 +103,7 @@ public class PortalExtension {
             rec.targetCap = currentCap;
             rec.currentCap = 0;
         }
-        else if (timePassed == dropTimeout) {
+        else if (timePassed == 0) {
             // being checked the second time in this turn
             rec.targetCap = Math.max(rec.targetCap, currentCap);
         }
@@ -96,6 +112,8 @@ public class PortalExtension {
             rec.targetCap = currentCap;
         }
         
-        return rec.currentCap;
+        rec.lastVisibleTime = portal.world.getGameTime();
+        
+        return (int) Math.round(rec.currentCap);
     }
 }

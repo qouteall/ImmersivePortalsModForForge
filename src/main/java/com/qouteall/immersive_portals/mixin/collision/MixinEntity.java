@@ -9,7 +9,6 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.Pose;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -74,16 +73,11 @@ public abstract class MixinEntity implements IEEntity {
         )
     )
     private Vector3d redirectHandleCollisions(Entity entity, Vector3d attemptedMove) {
-        if (attemptedMove.lengthSquared() > 256) {
-            Helper.log("Entity moving too fast " + entity + attemptedMove);
-            return getAllowedMovement(attemptedMove);
-        }
-        
-        if (collidingPortal == null) {
-            return getAllowedMovement(attemptedMove);
-        }
-        
-        if (entity.isBeingRidden() || entity.isPassenger()) {
+        if (attemptedMove.lengthSquared() > 256 ||
+            collidingPortal == null ||
+            entity.isBeingRidden() ||
+            entity.isPassenger()
+        ) {
             return getAllowedMovement(attemptedMove);
         }
         
@@ -97,15 +91,6 @@ public abstract class MixinEntity implements IEEntity {
     }
     
     //don't burn when jumping into end portal
-    //teleportation is instant and accurate in client but not in server
-    //so collision may sometimes be incorrect when client teleported but server did not teleport
-    @Inject(method = "Lnet/minecraft/entity/Entity;setInLava()V", at = @At("HEAD"), cancellable = true)
-    private void onSetInLava(CallbackInfo ci) {
-        if (getCollidingPortal() instanceof EndPortalEntity) {
-            ci.cancel();
-        }
-    }
-    
     @Inject(
         method = "Lnet/minecraft/entity/Entity;func_230279_az_()Z",
         at = @At("HEAD"),
@@ -167,10 +152,12 @@ public abstract class MixinEntity implements IEEntity {
     private void onSetPose(Pose pose, CallbackInfo ci) {
         Entity this_ = (Entity) (Object) this;
         
-        if (this_ instanceof PlayerEntity) {
+        if (this_ instanceof ServerPlayerEntity) {
             if (this_.getPose() == Pose.STANDING) {
                 if (pose == Pose.CROUCHING || pose == Pose.SWIMMING) {
-                    if (getCollidingPortal() != null) {
+                    if (getCollidingPortal() != null ||
+                        Global.serverTeleportationManager.isJustTeleported(this_, 20)
+                    ) {
                         ci.cancel();
                     }
                 }
@@ -212,4 +199,16 @@ public abstract class MixinEntity implements IEEntity {
         collidingPortal = portal;
         collidingPortalActiveTickTime = world.getGameTime();
     }
+    
+//    @Inject(
+//        method = "setVelocity(Lnet/minecraft/util/math/Vec3d;)V",
+//        at = @At("HEAD")
+//    )
+//    private void debug(Vec3d velocity, CallbackInfo ci) {
+//        if (((Object) this) instanceof ClientPlayerEntity) {
+//            if (velocity.z != 0) {
+//                new Throwable().printStackTrace();
+//            }
+//        }
+//    }
 }

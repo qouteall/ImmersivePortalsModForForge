@@ -165,9 +165,9 @@ public class AltiusScreen extends Screen {
         }
         
         super.func_230430_a_(matrixStack, mouseY, i, f);
-    
+        
         FontRenderer textRenderer = Minecraft.getInstance().fontRenderer;
-        textRenderer.func_238407_a_(
+        textRenderer.func_243246_a(
             matrixStack, this.field_230704_d_,
             20, 20, -1
         );
@@ -188,11 +188,14 @@ public class AltiusScreen extends Screen {
     
     private void onAddDimension() {
         DimTermWidget selected = dimListWidget.func_230958_g_();
-        if (selected == null) {
-            return;
-        }
         
-        int position = dimListWidget.terms.indexOf(selected);
+        int position;
+        if (selected == null) {
+            position = 0;
+        }
+        else {
+            position = dimListWidget.terms.indexOf(selected);
+        }
         
         if (position < 0 || position > dimListWidget.terms.size()) {
             position = -1;

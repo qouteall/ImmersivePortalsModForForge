@@ -70,7 +70,7 @@ public class TransformationManager {
         );
     }
     
-    private static double mapProgress(double progress) {
+    public static double mapProgress(double progress) {
 //        return progress;
         return Math.sin(progress * (Math.PI / 2));
 //        return Math.sqrt(1 - (1 - progress) * (1 - progress));
@@ -135,8 +135,8 @@ public class TransformationManager {
         camera.update(
             client.world,
             client.player,
-            client.gameSettings.thirdPersonView > 0,
-            client.gameSettings.thirdPersonView == 2,
+            !client.gameSettings.func_243230_g().func_243192_a(),
+            client.gameSettings.func_243230_g().func_243193_b(),
             RenderStates.tickDelta
         );
     }

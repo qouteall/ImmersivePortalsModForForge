@@ -40,6 +40,7 @@ import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.gen.ChunkGenerator;
+import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -57,9 +58,6 @@ public class ClientDebugCommand {
     public static void register(
         CommandDispatcher<CommandSource> dispatcher
     ) {
-        //for composite command arguments, put into then() 's bracket
-        //for parallel command arguments, put behind then()
-        
         LiteralArgumentBuilder<CommandSource> builder = Commands
             .literal("immersive_portals_debug")
             .requires(commandSource -> true)
@@ -457,9 +455,13 @@ public class ClientDebugCommand {
                     Helper.log(McHelper.serializeToJson(generator, ChunkGenerator.field_235948_a_));
                     Helper.log(McHelper.serializeToJson(
                         world.func_230315_m_(),
-                        DimensionType.field_235997_a_.codec()
+                        DimensionType.field_235997_a_.stable()
                     ));
                 });
+                
+                DimensionGeneratorSettings options = McHelper.getServer().func_240793_aU_().func_230418_z_();
+                
+                Helper.log(McHelper.serializeToJson(options, DimensionGeneratorSettings.field_236201_a_));
                 
                 return 0;
             })
@@ -561,8 +563,10 @@ public class ClientDebugCommand {
             for (int z = 0; z < 16; z++) {
                 for (int y = yStart; y < yEnd; y++) {
                     world.setBlockState(
-                        chunkPos.getBlock(
-                            x, y, z
+                        new BlockPos(
+                            chunkPos.getXStart() + x,
+                            y,
+                            chunkPos.getZStart() + z
                         ),
                         Blocks.AIR.getDefaultState()
                     );

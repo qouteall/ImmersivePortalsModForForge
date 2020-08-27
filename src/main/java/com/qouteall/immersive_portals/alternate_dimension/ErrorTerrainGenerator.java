@@ -16,16 +16,14 @@ import net.minecraft.world.Blockreader;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeManager;
+import net.minecraft.world.biome.provider.BiomeProvider;
 import net.minecraft.world.chunk.ChunkPrimer;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.gen.ChunkGenerator;
-import net.minecraft.world.gen.GenerationStage;
 import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.gen.PerlinNoiseGenerator;
 import net.minecraft.world.gen.WorldGenRegion;
-import net.minecraft.world.gen.carver.ConfiguredCarver;
 import net.minecraft.world.gen.feature.structure.EndCityStructure;
 import net.minecraft.world.gen.feature.structure.MineshaftStructure;
 import net.minecraft.world.gen.feature.structure.OceanMonumentStructure;
@@ -35,9 +33,6 @@ import net.minecraft.world.gen.feature.structure.StructureManager;
 import net.minecraft.world.gen.feature.structure.WoodlandMansionStructure;
 import net.minecraft.world.gen.settings.DimensionStructuresSettings;
 import net.minecraft.world.spawner.WorldEntitySpawner;
-import java.util.BitSet;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -45,14 +40,14 @@ import java.util.stream.Stream;
 public class ErrorTerrainGenerator extends ChunkGenerator {
     public static final Codec<ErrorTerrainGenerator> codec = RecordCodecBuilder.create(instance ->
         instance.group(
-            Codec.LONG.fieldOf("seed").stable().forGetter(g -> g.worldSeed)
+            Codec.LONG.fieldOf("seed").stable().forGetter(g -> g.worldSeed),
+            ChaosBiomeSource.codec.fieldOf("biomeSource").stable().forGetter(o-> ((ChaosBiomeSource) o.getBiomeProvider()))
         ).apply(instance, instance.stable(ErrorTerrainGenerator::new))
     );
     
     private final BlockState air = Blocks.AIR.getDefaultState();
     private final BlockState defaultBlock = Blocks.STONE.getDefaultState();
     private final BlockState defaultFluid = Blocks.WATER.getDefaultState();
-    
     
     public static final int regionChunkNum = 4;
     public static final int averageY = 64;
@@ -79,12 +74,13 @@ public class ErrorTerrainGenerator extends ChunkGenerator {
     
     private final PerlinNoiseGenerator surfaceDepthNoise;
     
-    public ErrorTerrainGenerator(long seed) {
-        super(new ChaosBiomeSource(seed), new DimensionStructuresSettings(true));
+    public ErrorTerrainGenerator(long seed, BiomeProvider biomeSource) {
+        super(biomeSource, new DimensionStructuresSettings(true));
         worldSeed = seed;
         
-        surfaceDepthNoise = new PerlinNoiseGenerator(new SharedSeedRandom(
-            seed), IntStream.rangeClosed(-3, 0));
+        surfaceDepthNoise = new PerlinNoiseGenerator(
+            new SharedSeedRandom(seed), IntStream.rangeClosed(-3, 0));
+        
     }
     
     private static double getProbability(Structure<?> structureFeature) {
@@ -191,7 +187,7 @@ public class ErrorTerrainGenerator extends ChunkGenerator {
     
     @Override
     public ChunkGenerator func_230349_a_(long seed) {
-        return new ErrorTerrainGenerator(seed);
+        return new ErrorTerrainGenerator(seed, getBiomeProvider().func_230320_a_(seed));
     }
     
     @Override
@@ -237,48 +233,7 @@ public class ErrorTerrainGenerator extends ChunkGenerator {
         avoidSandLag(region);
     }
     
-    //carve more
-    @Override
-    public void func_230350_a_(
-        long seed, BiomeManager access, IChunk chunk, GenerationStage.Carving carver
-    ) {
-        BiomeManager biomeAccess = access.copyWithProvider(this.biomeProvider);
-        SharedSeedRandom chunkRandom = new SharedSeedRandom();
-        ChunkPos chunkPos = chunk.getPos();
-        Biome biome = this.biomeProvider.getNoiseBiome(
-            chunkPos.x << 2, 0, chunkPos.z << 2
-        );
-        BitSet bitSet = ((ChunkPrimer) chunk).func_230345_b_(carver);
-        
-        for (int num = 0; num < 4; num++) {
-            for (int cx = chunkPos.x - 8; cx <= chunkPos.x + 8; ++cx) {
-                for (int cz = chunkPos.z - 8; cz <= chunkPos.z + 8; ++cz) {
-                    List<ConfiguredCarver<?>> list = biome.getCarvers(carver);
-                    ListIterator listIterator = list.listIterator();
-                    
-                    while (listIterator.hasNext()) {
-                        int n = listIterator.nextIndex();
-                        ConfiguredCarver<?> configuredCarver = (ConfiguredCarver) listIterator.next();
-                        chunkRandom.setLargeFeatureSeed(seed + (long) n + num * 2333, cx, cz);
-                        if (configuredCarver.shouldCarve(chunkRandom, cx, cz)) {
-                            configuredCarver.func_227207_a_(
-                                chunk,
-                                biomeAccess::getBiome,
-                                chunkRandom,
-                                this.func_230356_f_(),
-                                cx,
-                                cz,
-                                chunkPos.x,
-                                chunkPos.z,
-                                bitSet
-                            );
-                        }
-                    }
-                }
-            }
-        }
-        
-    }
+    //TODO carve more
     
     private static void avoidSandLag(WorldGenRegion region) {
         IChunk centerChunk = region.getChunk(region.getMainChunkX(), region.getMainChunkZ());

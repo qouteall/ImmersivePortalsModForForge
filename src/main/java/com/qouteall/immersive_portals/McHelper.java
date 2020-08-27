@@ -28,6 +28,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.registry.SimpleRegistry;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
@@ -35,6 +36,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.opengl.GL11;
 
 import java.lang.ref.WeakReference;
@@ -42,7 +44,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
@@ -648,4 +652,59 @@ public class McHelper {
             }
         }
     }
+    
+    /**
+     * It will spawn even if the chunk is not loaded
+     * ServerWorld#addEntity(Entity)
+     */
+    public static void spawnServerEntityToUnloadedArea(Entity entity) {
+        Validate.isTrue(!entity.world.isRemote());
+        
+        entity.forceSpawn = true;
+        
+        entity.world.addEntity(entity);
+        
+        entity.forceSpawn = false;
+    }
+    
+    public static void executeOnServerThread(Runnable runnable) {
+        MinecraftServer server = McHelper.getServer();
+        
+        if (server.isOnExecutionThread()) {
+            runnable.run();
+        }
+        else {
+            server.execute(runnable);
+        }
+    }
+    
+    public static <T> SimpleRegistry<T> filterAndCopyRegistry(
+        SimpleRegistry<T> registry, BiPredicate<RegistryKey<T>, T> predicate
+    ) {
+        SimpleRegistry<T> newRegistry = new SimpleRegistry<>(
+            registry.func_243578_f(),
+            registry.func_241875_b()
+        );
+        
+        for (Map.Entry<RegistryKey<T>, T> entry : registry.func_239659_c_()) {
+            T object = entry.getValue();
+            RegistryKey<T> key = entry.getKey();
+            if (predicate.test(key, object)) {
+                newRegistry.register(
+                    key, object, registry.func_241876_d(object)
+                );
+            }
+        }
+        
+        return newRegistry;
+    }
+    
+    public static ServerWorld getServerWorld(RegistryKey<World> dim){
+        ServerWorld world = McHelper.getServer().getWorld(dim);
+        if (world == null) {
+            throw new RuntimeException("Missing dimension " + dim.func_240901_a_());
+        }
+        return world;
+    }
+    
 }

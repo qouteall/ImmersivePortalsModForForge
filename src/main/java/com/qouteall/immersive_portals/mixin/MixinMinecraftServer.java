@@ -10,12 +10,11 @@ import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.dimension_sync.DimensionIdManagement;
 import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
 import net.minecraft.resources.DataPackRegistries;
-import net.minecraft.resources.ResourcePackInfo;
 import net.minecraft.resources.ResourcePackList;
-import net.minecraft.server.IDynamicRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerProfileCache;
 import net.minecraft.util.FrameTimer;
+import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.world.chunk.listener.IChunkStatusListenerFactory;
 import net.minecraft.world.storage.IServerConfiguration;
 import net.minecraft.world.storage.SaveFormat;
@@ -36,7 +35,6 @@ public class MixinMinecraftServer implements IEMinecraftServer {
     @Final
     private FrameTimer frameTimer;
     
-    @Shadow @Final protected IDynamicRegistries.Impl field_240767_f_;
     private boolean portal_areAllWorldsLoaded;
     
     @Inject(
@@ -44,19 +42,12 @@ public class MixinMinecraftServer implements IEMinecraftServer {
         at = @At("RETURN")
     )
     private void onServerConstruct(
-        Thread thread,
-        IDynamicRegistries.Impl modifiable,
-        SaveFormat.LevelSave session,
-        IServerConfiguration saveProperties,
-        ResourcePackList<ResourcePackInfo> resourcePackManager,
-        Proxy proxy,
-        DataFixer dataFixer,
-        DataPackRegistries serverResourceManager,
-        MinecraftSessionService minecraftSessionService,
-        GameProfileRepository gameProfileRepository,
-        PlayerProfileCache userCache,
-        IChunkStatusListenerFactory worldGenerationProgressListenerFactory,
-        CallbackInfo ci
+        Thread thread, DynamicRegistries.Impl impl,
+        SaveFormat.LevelSave session, IServerConfiguration saveProperties,
+        ResourcePackList resourcePackManager, Proxy proxy, DataFixer dataFixer,
+        DataPackRegistries serverResourceManager, MinecraftSessionService minecraftSessionService,
+        GameProfileRepository gameProfileRepository, PlayerProfileCache userCache,
+        IChunkStatusListenerFactory worldGenerationProgressListenerFactory, CallbackInfo ci
     ) {
         McHelper.refMinecraftServer = new WeakReference<>((MinecraftServer) ((Object) this));
     
@@ -99,10 +90,5 @@ public class MixinMinecraftServer implements IEMinecraftServer {
     @Override
     public boolean portal_getAreAllWorldsLoaded() {
         return portal_areAllWorldsLoaded;
-    }
-    
-    @Override
-    public IDynamicRegistries.Impl portal_getDimensionTracker() {
-        return field_240767_f_;
     }
 }

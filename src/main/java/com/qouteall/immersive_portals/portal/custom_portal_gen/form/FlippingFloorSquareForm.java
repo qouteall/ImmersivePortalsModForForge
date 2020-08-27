@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.portal.custom_portal_gen.form;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.ListCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.IntBox;
 import com.qouteall.immersive_portals.portal.PortalManipulation;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
@@ -97,7 +98,7 @@ public class FlippingFloorSquareForm extends PortalGenForm {
             return false;
         }
         
-        if (!checkFromShape(fromShape, fromWorld)) {
+        if (!checkFromShape(fromWorld, fromShape)) {
             return false;
         }
         
@@ -121,12 +122,29 @@ public class FlippingFloorSquareForm extends PortalGenForm {
         NetherPortalGeneration.fillInPlaceHolderBlocks(fromWorld, fromShape);
         NetherPortalGeneration.fillInPlaceHolderBlocks(toWorld, toShape);
         
-        createPortals(cpg, fromWorld, toWorld, fromShape, toShape);
+        GeneralBreakablePortal[] portals = createPortals(fromWorld, toWorld, fromShape, toShape);
+        
+        for (GeneralBreakablePortal portal : portals) {
+            cpg.onPortalGenerated(portal);
+        }
         
         return true;
     }
     
-    private IntBox findPortalPlacement(ServerWorld toWorld, BlockPos areaSize, BlockPos toPos) {
+    public boolean checkFromShape(ServerWorld fromWorld, BlockPortalShape fromShape) {
+        boolean areaSizeTest = BlockPortalShape.isSquareShape(fromShape, length);
+        if (!areaSizeTest) {
+            return false;
+        }
+        
+        return fromShape.frameAreaWithoutCorner.stream().allMatch(
+            blockPos -> (upFrameBlock).test(fromWorld.getBlockState(blockPos.up()))
+        ) && fromShape.area.stream().allMatch(
+            blockPos -> (bottomBlock).test(fromWorld.getBlockState(blockPos.down()))
+        );
+    }
+    
+    public static IntBox findPortalPlacement(ServerWorld toWorld, BlockPos areaSize, BlockPos toPos) {
         return IntStream.range(toPos.getX() - 8, toPos.getX() + 8).boxed()
             .flatMap(x -> IntStream.range(toPos.getZ() - 8, toPos.getZ() + 8).boxed()
                 .flatMap(z -> IntStream.range(5, toWorld.func_234938_ad_() - 5).map(
@@ -156,8 +174,7 @@ public class FlippingFloorSquareForm extends PortalGenForm {
             .getMoved(Direction.DOWN.getDirectionVec());
     }
     
-    private void createPortals(
-        CustomPortalGeneration cpg,
+    public static GeneralBreakablePortal[] createPortals(
         ServerWorld fromWorld, ServerWorld toWorld,
         BlockPortalShape fromShape, BlockPortalShape toShape
     ) {
@@ -183,24 +200,10 @@ public class FlippingFloorSquareForm extends PortalGenForm {
         pa.extension.motionAffinity = 0.1;
         pb.extension.motionAffinity = 0.1;
         
-        pa.world.addEntity(pa);
-        pb.world.addEntity(pb);
+        McHelper.spawnServerEntityToUnloadedArea(pa);
+        McHelper.spawnServerEntityToUnloadedArea(pb);
         
-        cpg.onPortalGenerated(pa);
-        cpg.onPortalGenerated(pb);
-    }
-    
-    private boolean checkFromShape(BlockPortalShape shape, ServerWorld fromWorld) {
-        boolean areaSizeTest = BlockPortalShape.isSquareShape(shape, length);
-        if (!areaSizeTest) {
-            return false;
-        }
-        
-        return shape.frameAreaWithoutCorner.stream().allMatch(
-            blockPos -> (upFrameBlock).test(fromWorld.getBlockState(blockPos.up()))
-        ) && shape.area.stream().allMatch(
-            blockPos -> (bottomBlock).test(fromWorld.getBlockState(blockPos.down()))
-        );
+        return new GeneralBreakablePortal[]{pa, pb};
     }
     
 }

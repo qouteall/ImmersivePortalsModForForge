@@ -36,16 +36,9 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
     @Shadow
     private boolean invulnerableDimensionChange;
     
-    public MixinServerPlayerEntity(
-        World world,
-        BlockPos blockPos,
-        GameProfile gameProfile
-    ) {
-        super(world, blockPos, gameProfile);
+    public MixinServerPlayerEntity(World world, BlockPos pos, float yaw, GameProfile profile) {
+        super(world, pos, yaw, profile);
     }
-    
-    @Shadow
-    protected abstract void func_213846_b(ServerWorld targetWorld);
     
     @Inject(
         method = "Lnet/minecraft/entity/player/ServerPlayerEntity;sendChunkUnload(Lnet/minecraft/util/math/ChunkPos;)V",
@@ -133,7 +126,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
     
     @Override
     public void updateDimensionTravelAdvancements(ServerWorld fromWorld) {
-        func_213846_b(fromWorld);
+    
     }
     
     @Override

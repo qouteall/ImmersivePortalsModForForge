@@ -45,8 +45,8 @@ public class PortalManipulation {
     
     public static Portal completeBiWayPortal(Portal portal, EntityType<? extends Portal> entityType) {
         Portal newPortal = createReversePortal(portal, entityType);
-        
-        newPortal.world.addEntity(newPortal);
+    
+        McHelper.spawnServerEntityToUnloadedArea(newPortal);
         
         return newPortal;
     }
@@ -91,15 +91,15 @@ public class PortalManipulation {
         return newPortal;
     }
     
-    public static void rotatePortalBody(Portal newPortal, Quaternion rotation) {
-        newPortal.axisW = RotationHelper.getRotated(rotation, newPortal.axisW);
-        newPortal.axisH = RotationHelper.getRotated(rotation, newPortal.axisH);
+    public static void rotatePortalBody(Portal portal, Quaternion rotation) {
+        portal.axisW = RotationHelper.getRotated(rotation, portal.axisW);
+        portal.axisH = RotationHelper.getRotated(rotation, portal.axisH);
     }
     
     public static Portal completeBiFacedPortal(Portal portal, EntityType<Portal> entityType) {
         Portal newPortal = createFlippedPortal(portal, entityType);
-        
-        portal.world.addEntity(newPortal);
+    
+        McHelper.spawnServerEntityToUnloadedArea(newPortal);
         
         return newPortal;
     }
@@ -279,5 +279,6 @@ public class PortalManipulation {
         to.teleportable = from.teleportable;
         to.teleportChangesScale = from.teleportChangesScale;
         to.specificPlayerId = from.specificPlayerId;
+        to.extension.adjustPositionAfterTeleport = from.extension.adjustPositionAfterTeleport;
     }
 }

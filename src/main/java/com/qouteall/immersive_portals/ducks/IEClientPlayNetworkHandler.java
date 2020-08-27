@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.ducks;
 
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.server.IDynamicRegistries;
+import net.minecraft.util.registry.DynamicRegistries;
 import java.util.Map;
 
 public interface IEClientPlayNetworkHandler {
@@ -13,5 +13,5 @@ public interface IEClientPlayNetworkHandler {
     
     void initScreenIfNecessary();
     
-    void portal_setDimensionTracker(IDynamicRegistries arg);
+    void portal_setRegistryManager(DynamicRegistries arg);
 }

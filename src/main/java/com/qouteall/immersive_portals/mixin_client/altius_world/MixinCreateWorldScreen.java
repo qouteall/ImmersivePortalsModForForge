@@ -8,7 +8,8 @@ import net.minecraft.client.gui.screen.CreateWorldScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.WorldOptionsScreen;
 import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.server.IDynamicRegistries;
+import net.minecraft.util.datafix.codec.DatapackCodec;
+import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.WorldSettings;
@@ -34,12 +35,11 @@ public abstract class MixinCreateWorldScreen extends Screen {
     }
     
     @Inject(
-        method = "<init>(Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/client/gui/screen/WorldOptionsScreen;)V",
+        method = "<init>(Lnet/minecraft/client/gui/screen/Screen;Lnet/minecraft/util/datafix/codec/DatapackCodec;Lnet/minecraft/client/gui/screen/WorldOptionsScreen;)V",
         at = @At("RETURN")
     )
     private void onConstructEnded(
-        Screen screen,
-        WorldOptionsScreen moreOptionsDialog,
+        Screen screen, DatapackCodec dataPackSettings, WorldOptionsScreen moreOptionsDialog,
         CallbackInfo ci
     ) {
         altiusScreen = new AltiusScreen((CreateWorldScreen) (Object) this);
@@ -79,20 +79,17 @@ public abstract class MixinCreateWorldScreen extends Screen {
         method = "Lnet/minecraft/client/gui/screen/CreateWorldScreen;createWorld()V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/Minecraft;func_238192_a_(Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/server/IDynamicRegistries$Impl;Lnet/minecraft/world/gen/settings/DimensionGeneratorSettings;)V"
+            target = "Lnet/minecraft/client/Minecraft;func_238192_a_(Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/util/registry/DynamicRegistries$Impl;Lnet/minecraft/world/gen/settings/DimensionGeneratorSettings;)V"
         )
     )
     private void redirectOnCreateLevel(
-        Minecraft client,
-        String string,
-        WorldSettings levelInfo,
-        IDynamicRegistries.Impl modifiable,
-        DimensionGeneratorSettings generatorOptions
+        Minecraft client, String worldName, WorldSettings levelInfo,
+        DynamicRegistries.Impl registryTracker, DimensionGeneratorSettings generatorOptions
     ) {
         AltiusInfo info = altiusScreen.getAltiusInfo();
         ((IELevelProperties) (Object) levelInfo).setAltiusInfo(info);
-        
-        client.func_238192_a_(string, levelInfo, modifiable, generatorOptions);
+    
+        client.func_238192_a_(worldName, levelInfo, registryTracker, generatorOptions);
     }
     
     private void openAltiusScreen() {

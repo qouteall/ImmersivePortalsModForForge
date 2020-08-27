@@ -139,7 +139,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/IRenderTypeBuffer$Impl;finish()V",
-            ordinal = 1,
+            ordinal = 0,
             shift = At.Shift.AFTER
         )
     )
@@ -189,7 +189,12 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             target = "Lnet/minecraft/client/renderer/WorldRenderer;renderBlockLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V"
         )
     )
-    private void onBeforeRenderingLayer(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, ActiveRenderInfo camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+    private void onBeforeRenderingLayer(
+        MatrixStack matrices, float tickDelta, long limitTime,
+        boolean renderBlockOutline, ActiveRenderInfo camera, GameRenderer gameRenderer,
+        LightTexture lightmapTextureManager, Matrix4f matrix4f,
+        CallbackInfo ci
+    ) {
         if (PortalRendering.isRendering()) {
             PixelCuller.updateCullingPlaneInner(
                 matrices,
@@ -211,7 +216,12 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             shift = At.Shift.AFTER
         )
     )
-    private void onAfterRenderingLayer(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, ActiveRenderInfo camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+    private void onAfterRenderingLayer(
+        MatrixStack matrices, float tickDelta, long limitTime,
+        boolean renderBlockOutline, ActiveRenderInfo camera, GameRenderer gameRenderer,
+        LightTexture lightmapTextureManager, Matrix4f matrix4f,
+        CallbackInfo ci
+    ) {
         if (PortalRendering.isRendering()) {
             PixelCuller.endCulling();
             MyRenderHelper.recoverFaceCulling();
@@ -225,7 +235,12 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             target = "Lnet/minecraft/client/renderer/RenderType;getSolid()Lnet/minecraft/client/renderer/RenderType;"
         )
     )
-    private void onBeginRenderingSolid(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, ActiveRenderInfo camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+    private void onBeginRenderingSolid(
+        MatrixStack matrices, float tickDelta, long limitTime,
+        boolean renderBlockOutline, ActiveRenderInfo camera, GameRenderer gameRenderer,
+        LightTexture lightmapTextureManager, Matrix4f matrix4f,
+        CallbackInfo ci
+    ) {
         MyGameRenderer.doPruneVisibleChunks(this.renderInfos);
     }
     
@@ -236,7 +251,12 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             target = "Lnet/minecraft/client/world/DimensionRenderInfo;func_239217_c_()Z"
         )
     )
-    private void onAfterCutoutRendering(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, ActiveRenderInfo camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+    private void onAfterCutoutRendering(
+        MatrixStack matrices, float tickDelta, long limitTime,
+        boolean renderBlockOutline, ActiveRenderInfo camera, GameRenderer gameRenderer,
+        LightTexture lightmapTextureManager, Matrix4f matrix4f,
+        CallbackInfo ci
+    ) {
         CrossPortalEntityRenderer.onBeginRenderingEntities(matrices);
     }
     
@@ -441,7 +461,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         isReloadingOtherWorldRenderers = false;
     }
     
-    
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("HEAD"))
     private void onRenderSkyBegin(MatrixStack matrixStack_1, float float_1, CallbackInfo ci) {
         if (PortalRendering.isRendering()) {
@@ -525,7 +544,8 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
 //        method = "render",
 //        at = @At(
 //            value = "INVOKE",
-//            target = "Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;draw(Lnet/minecraft/client/render/RenderLayer;)V"
+//            target = "Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;draw
+//            (Lnet/minecraft/client/render/RenderLayer;)V"
 //        )
 //    )
 //    private void redirectVertexDraw(VertexConsumerProvider.Immediate immediate, RenderLayer layer) {

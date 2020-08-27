@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.mixin.entity_sync;
 
 import com.google.common.collect.Lists;
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.chunk_loading.EntitySync;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -12,6 +13,7 @@ import net.minecraft.network.play.server.SMountEntityPacket;
 import net.minecraft.network.play.server.SSetPassengersPacket;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.server.ChunkManager;
+import net.minecraft.world.server.ServerWorld;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -30,6 +32,10 @@ public abstract class MixinThreadedAnvilChunkStorage_E implements IEThreadedAnvi
     
     @Shadow
     abstract void setPlayerTracking(ServerPlayerEntity player, boolean added);
+    
+    @Shadow
+    @Final
+    private ServerWorld world;
     
     @Inject(
         method = "Lnet/minecraft/world/server/ChunkManager;untrack(Lnet/minecraft/entity/Entity;)V",
@@ -86,15 +92,20 @@ public abstract class MixinThreadedAnvilChunkStorage_E implements IEThreadedAnvi
             }
         }
         
-        for (Entity entity : attachedEntityList) {
-            player.connection.sendPacket(new SMountEntityPacket(
-                entity, ((MobEntity) entity).getLeashHolder()
-            ));
-        }
-        
-        for (Entity entity : passengerList) {
-            player.connection.sendPacket(new SSetPassengersPacket(entity));
-        }
+        EntitySync.withForceRedirect(
+            world.func_234923_W_(),
+            () -> {
+                for (Entity entity : attachedEntityList) {
+                    player.connection.sendPacket(new SMountEntityPacket(
+                        entity, ((MobEntity) entity).getLeashHolder()
+                    ));
+                }
+                
+                for (Entity entity : passengerList) {
+                    player.connection.sendPacket(new SSetPassengersPacket(entity));
+                }
+            }
+        );
     }
     
     @Override

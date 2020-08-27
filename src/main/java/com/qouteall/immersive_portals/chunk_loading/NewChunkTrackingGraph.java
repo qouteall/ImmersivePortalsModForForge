@@ -104,20 +104,6 @@ public class NewChunkTrackingGraph {
         boolean isIndirectLoading = Helper.indexOf(records, r -> !r.isDirectLoading) != -1;
         
         return isIndirectLoading;
-
-//        if (isIndirectLoading) {
-//            return true;
-//        }
-//
-//        if (addCustomTicketForDirectLoadingDelayed) {
-//            boolean chunkLoaded =
-//                world.isChunkLoaded(ChunkPos.getPackedX(chunkPos), ChunkPos.getPackedZ(chunkPos));
-//
-//            return chunkLoaded;
-//        }
-//        else {
-//            return false;
-//        }
     }
     
     // Every chunk has a list of watching records
@@ -385,7 +371,7 @@ public class NewChunkTrackingGraph {
     // loading tickets of this player. Without this, the chunks nearby player
     // may have no ticket for a short period of time (because the chunk tracking refreshes
     // every 2 seconds) and the chunk may be unloaded and reloaded.
-    public static void onBeforePlayerChangeDimension(ServerPlayerEntity player) {
+    public static void addAdditionalDirectTickets(ServerPlayerEntity player) {
         ChunkVisibilityManager.playerDirectLoader(player).foreachChunkPos((dim, x, z, dis) -> {
             if (isPlayerWatchingChunk(player, dim, x, z)) {
                 MyLoadingTicket.addTicketIfNotLoaded(((ServerWorld) player.world), new ChunkPos(x, z));

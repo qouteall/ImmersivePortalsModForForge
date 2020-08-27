@@ -82,21 +82,14 @@ public abstract class MixinClientWorld implements IEClientWorld {
         at = @At("RETURN")
     )
     void onConstructed(
-        ClientPlayNetHandler clientPlayNetworkHandler,
-        ClientWorld.ClientWorldInfo properties,
-        RegistryKey<World> registryKey,
-        RegistryKey<DimensionType> registryKey2,
-        DimensionType dimensionType,
-        int chunkLoadDistance,
-        Supplier<IProfiler> supplier,
-        WorldRenderer worldRenderer,
-        boolean bl,
-        long l,
-        CallbackInfo ci
+        ClientPlayNetHandler clientPlayNetworkHandler, ClientWorld.ClientWorldInfo properties,
+        RegistryKey<World> registryKey, DimensionType dimensionType, int i,
+        Supplier<IProfiler> supplier, WorldRenderer worldRenderer, boolean bl,
+        long l, CallbackInfo ci
     ) {
         ClientWorld clientWorld = (ClientWorld) (Object) this;
         ClientChunkProvider myClientChunkManager =
-            O_O.createMyClientChunkManager(clientWorld, chunkLoadDistance);
+            O_O.createMyClientChunkManager(clientWorld, i);
         field_239129_E_ = myClientChunkManager;
     }
     

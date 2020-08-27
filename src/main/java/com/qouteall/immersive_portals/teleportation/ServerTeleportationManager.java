@@ -254,7 +254,7 @@ public class ServerTeleportationManager {
         ServerWorld toWorld,
         Vector3d newEyePos
     ) {
-        NewChunkTrackingGraph.onBeforePlayerChangeDimension(player);
+        NewChunkTrackingGraph.addAdditionalDirectTickets(player);
         
         teleportingEntities.add(player);
         
@@ -525,7 +525,7 @@ public class ServerTeleportationManager {
         }
         else {
             Helper.log(String.format("ignored dubious move packet %s %s %s %s %s %s %s",
-                player.world.func_234923_W_(), x, y, z, player.getPosX(), player.getPosY(), player.getPosZ()
+                player.world.func_234923_W_().func_240901_a_(), x, y, z, player.getPosX(), player.getPosY(), player.getPosZ()
             ));
         }
     }

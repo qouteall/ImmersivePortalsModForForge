@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -316,130 +317,136 @@ public class PortalCommand {
             )
         );
         
-        builder.then(Commands.literal("set_portal_rotation")
-            .then(Commands.argument("rotatingAxis", Vec3Argument.vec3(false))
-                .then(Commands.argument("angleDegrees", DoubleArgumentType.doubleArg())
-                    .executes(context -> processPortalTargetedCommand(
-                        context,
-                        portal -> {
-                            try {
-                                Vector3d rotatingAxis = Vec3Argument.getVec3(
-                                    context, "rotatingAxis"
-                                ).normalize();
-                                
-                                double angleDegrees = DoubleArgumentType.getDouble(
-                                    context, "angleDegrees"
-                                );
-                                
-                                if (angleDegrees != 0) {
-                                    portal.rotation = new Quaternion(
-                                        new Vector3f(
-                                            (float) rotatingAxis.x,
-                                            (float) rotatingAxis.y,
-                                            (float) rotatingAxis.z
-                                        ),
-                                        (float) angleDegrees,
-                                        true
-                                    );
-                                }
-                                else {
-                                    portal.rotation = null;
-                                }
-                                
-                                reloadPortal(portal);
-                                
-                                
-                            }
-                            catch (CommandSyntaxException ignored) {
-                                ignored.printStackTrace();
-                            }
-                        }
-                        )
-                    )
-                )
-            )
+        registerPortalTargetedCommandWithRotationArgument(
+            builder, "set_portal_rotation",
+            (p, r) -> {
+                p.rotation = r;
+            }
         );
         
-        builder.then(Commands.literal("rotate_portal_body")
-            .then(Commands.argument("rotatingAxis", Vec3Argument.vec3(false))
-                .then(Commands.argument("angleDegrees", DoubleArgumentType.doubleArg())
-                    .executes(context -> processPortalTargetedCommand(
-                        context,
-                        portal -> {
-                            try {
-                                Vector3d rotatingAxis = Vec3Argument.getVec3(
-                                    context, "rotatingAxis"
-                                ).normalize();
-                                
-                                double angleDegrees = DoubleArgumentType.getDouble(
-                                    context, "angleDegrees"
-                                );
-                                
-                                PortalManipulation.rotatePortalBody(
-                                    portal,
-                                    new Quaternion(
-                                        new Vector3f(rotatingAxis),
-                                        (float) angleDegrees,
-                                        true
-                                    )
-                                );
-                                
-                                reloadPortal(portal);
-                            }
-                            catch (CommandSyntaxException ignored) {
-                                ignored.printStackTrace();
-                            }
-                        }
-                        )
-                    )
-                )
-            )
+        registerPortalTargetedCommandWithRotationArgument(
+            builder, "rotate_portal_body",
+            (p, r) -> {
+                if (r != null) {
+                    PortalManipulation.rotatePortalBody(p, r);
+                }
+            }
         );
         
-        builder.then(Commands.literal("rotate_portal_rotation")
-            .then(Commands.argument("rotatingAxis", Vec3Argument.vec3(false))
-                .then(Commands.argument("angleDegrees", DoubleArgumentType.doubleArg())
-                    .executes(context -> processPortalTargetedCommand(
-                        context,
-                        portal -> {
-                            try {
-                                Vector3d rotatingAxis = Vec3Argument.getVec3(
-                                    context, "rotatingAxis"
-                                ).normalize();
-                                
-                                double angleDegrees = DoubleArgumentType.getDouble(
-                                    context, "angleDegrees"
-                                );
-                                
-                                Quaternion rot = new Quaternion(
-                                    new Vector3f(
-                                        (float) rotatingAxis.x,
-                                        (float) rotatingAxis.y,
-                                        (float) rotatingAxis.z
-                                    ),
-                                    (float) angleDegrees,
-                                    true
-                                );
-                                
-                                if (portal.rotation == null) {
-                                    portal.rotation = rot;
-                                }
-                                else {
-                                    portal.rotation.multiply(rot);
-                                }
-                                
-                                reloadPortal(portal);
-                                
-                            }
-                            catch (CommandSyntaxException ignored) {
-                                ignored.printStackTrace();
-                            }
-                        }
-                        )
-                    )
-                )
-            )
+        registerPortalTargetedCommandWithRotationArgument(
+            builder, "rotate_portal_rotation",
+            (portal, rot) -> {
+                if (rot != null) {
+                    if (portal.rotation == null) {
+                        portal.rotation = rot;
+                    }
+                    else {
+                        portal.rotation.multiply(rot);
+                    }
+                }
+            }
         );
+
+//        builder.then(CommandManager.literal("set_portal_rotation")
+//            .then(CommandManager.argument("rotatingAxis", Vec3ArgumentType.vec3(false))
+//                .then(CommandManager.argument("angleDegrees", DoubleArgumentType.doubleArg())
+//                    .executes(context -> processPortalTargetedCommand(
+//                        context,
+//                        portal -> {
+//                            Vec3d rotatingAxis =
+//                                Vec3ArgumentType.getVec3(context, "rotatingAxis").normalize();
+//
+//                            double angleDegrees =
+//                                DoubleArgumentType.getDouble(context, "angleDegrees");
+//
+//                            setPortalRotation(portal, new Vector3f(rotatingAxis), angleDegrees);
+//                        }
+//                    ))
+//                )
+//            )
+//        );
+//
+//
+//        builder.then(CommandManager.literal("rotate_portal_body")
+//            .then(CommandManager.argument("rotatingAxis", Vec3ArgumentType.vec3(false))
+//                .then(CommandManager.argument("angleDegrees", DoubleArgumentType.doubleArg())
+//                    .executes(context -> processPortalTargetedCommand(
+//                        context,
+//                        portal -> {
+//                            try {
+//                                Vec3d rotatingAxis = Vec3ArgumentType.getVec3(
+//                                    context, "rotatingAxis"
+//                                ).normalize();
+//
+//                                double angleDegrees = DoubleArgumentType.getDouble(
+//                                    context, "angleDegrees"
+//                                );
+//
+//                                PortalManipulation.rotatePortalBody(
+//                                    portal,
+//                                    new Quaternion(
+//                                        new Vector3f(rotatingAxis),
+//                                        (float) angleDegrees,
+//                                        true
+//                                    )
+//                                );
+//
+//                                reloadPortal(portal);
+//                            }
+//                            catch (CommandSyntaxException ignored) {
+//                                ignored.printStackTrace();
+//                            }
+//                        }
+//                        )
+//                    )
+//                )
+//            )
+//        );
+//
+//        builder.then(CommandManager.literal("rotate_portal_rotation")
+//            .then(CommandManager.argument("rotatingAxis", Vec3ArgumentType.vec3(false))
+//                .then(CommandManager.argument("angleDegrees", DoubleArgumentType.doubleArg())
+//                    .executes(context -> processPortalTargetedCommand(
+//                        context,
+//                        portal -> {
+//                            try {
+//                                Vec3d rotatingAxis = Vec3ArgumentType.getVec3(
+//                                    context, "rotatingAxis"
+//                                ).normalize();
+//
+//                                double angleDegrees = DoubleArgumentType.getDouble(
+//                                    context, "angleDegrees"
+//                                );
+//
+//                                Quaternion rot = new Quaternion(
+//                                    new Vector3f(
+//                                        (float) rotatingAxis.x,
+//                                        (float) rotatingAxis.y,
+//                                        (float) rotatingAxis.z
+//                                    ),
+//                                    (float) angleDegrees,
+//                                    true
+//                                );
+//
+//                                if (portal.rotation == null) {
+//                                    portal.rotation = rot;
+//                                }
+//                                else {
+//                                    portal.rotation.hamiltonProduct(rot);
+//                                }
+//
+//                                reloadPortal(portal);
+//
+//                            }
+//                            catch (CommandSyntaxException ignored) {
+//                                ignored.printStackTrace();
+//                            }
+//                        }
+//                        )
+//                    )
+//                )
+//            )
+//        );
         
         builder.then(Commands.literal("complete_bi_way_portal")
             .executes(context -> processPortalTargetedCommand(
@@ -538,7 +545,7 @@ public class PortalCommand {
                             Vector3d offset = Vector3d.func_237491_b_(facing.getDirectionVec()).scale(distance);
                             
                             portal.destination = portal.destination.add(
-                                portal.transformLocalVec(offset)
+                                portal.transformLocalVecNonScale(offset)
                             );
                             reloadPortal(portal);
                         }
@@ -626,12 +633,134 @@ public class PortalCommand {
                         double scale = DoubleArgumentType.getDouble(context, "scale");
                         
                         portal.scaling = scale;
-        
+                        
                         reloadPortal(portal);
                     }
                 ))
             )
         );
+    }
+    
+    private static void registerPortalTargetedCommandWithRotationArgument(
+        LiteralArgumentBuilder<CommandSource> builder,
+        String literal,
+        BiConsumer<Portal, Quaternion> func
+    ) {
+        builder.then(Commands.literal(literal)
+            .then(Commands.argument("rotatingAxis", Vec3Argument.vec3(false))
+                .then(Commands.argument("angleDegrees", DoubleArgumentType.doubleArg())
+                    .executes(context -> processPortalTargetedCommand(
+                        context,
+                        portal -> {
+                            Vector3d rotatingAxis = Vec3Argument.getVec3(
+                                context, "rotatingAxis"
+                            ).normalize();
+                            
+                            double angleDegrees = DoubleArgumentType.getDouble(
+                                context, "angleDegrees"
+                            );
+                            
+                            Quaternion rot = angleDegrees != 0 ? new Quaternion(
+                                new Vector3f(rotatingAxis),
+                                (float) angleDegrees,
+                                true
+                            ) : null;
+                            
+                            func.accept(portal, rot);
+                            
+                            reloadPortal(portal);
+                        }
+                    ))
+                )
+            )
+        );
+        
+        builder.then(Commands.literal(literal + "_along")
+            .then(Commands.literal("x")
+                .then(Commands.argument("angleDegrees", DoubleArgumentType.doubleArg())
+                    .executes(context -> processPortalTargetedCommand(
+                        context,
+                        portal -> {
+                            Vector3f axis = new Vector3f(1, 0, 0);
+                            
+                            double angleDegrees =
+                                DoubleArgumentType.getDouble(context, "angleDegrees");
+    
+                            Quaternion rot = angleDegrees != 0 ? new Quaternion(
+                                axis,
+                                (float) angleDegrees,
+                                true
+                            ) : null;
+                            
+                            func.accept(portal, rot);
+                            
+                            reloadPortal(portal);
+                        }
+                    ))
+                )
+            )
+            .then(Commands.literal("y")
+                .then(Commands.argument("angleDegrees", DoubleArgumentType.doubleArg())
+                    .executes(context -> processPortalTargetedCommand(
+                        context,
+                        portal -> {
+                            Vector3f axis = new Vector3f(0, 1, 0);
+                            
+                            
+                            double angleDegrees =
+                                DoubleArgumentType.getDouble(context, "angleDegrees");
+    
+                            Quaternion rot = angleDegrees != 0 ? new Quaternion(
+                                axis,
+                                (float) angleDegrees,
+                                true
+                            ) : null;
+                            
+                            func.accept(portal, rot);
+                            
+                            reloadPortal(portal);
+                        }
+                    ))
+                )
+            )
+            .then(Commands.literal("z")
+                .then(Commands.argument("angleDegrees", DoubleArgumentType.doubleArg())
+                    .executes(context -> processPortalTargetedCommand(
+                        context,
+                        portal -> {
+                            Vector3f axis = new Vector3f(0, 0, 1);
+                            
+                            
+                            double angleDegrees =
+                                DoubleArgumentType.getDouble(context, "angleDegrees");
+    
+                            Quaternion rot = angleDegrees != 0 ? new Quaternion(
+                                axis,
+                                (float) angleDegrees,
+                                true
+                            ) : null;
+                            
+                            func.accept(portal, rot);
+                            
+                            reloadPortal(portal);
+                        }
+                    ))
+                )
+            )
+        );
+    }
+    
+    private static void setPortalRotation(Portal portal, Vector3f axis, double angleDegrees) {
+        if (angleDegrees != 0) {
+            portal.rotation = new Quaternion(
+                axis, (float) angleDegrees, true
+            );
+        }
+        else {
+            portal.rotation = null;
+        }
+        
+        reloadPortal(portal);
     }
     
     private static void setPortalNbt(Portal portal, CompoundNBT newNbt) {
@@ -671,10 +800,7 @@ public class PortalCommand {
                 .executes(context -> processPortalArgumentedCommand(
                     context,
                     portal -> {
-                        PortalManipulation.removeConnectedPortals(
-                            portal,
-                            p -> sendMessage(context, "Removed " + p)
-                        );
+                        invokeCompleteBiWayPortal(context, portal);
                     }
                 ))
             )
@@ -770,7 +896,7 @@ public class PortalCommand {
                                 portal.axisW = rightVec;
                                 portal.axisH = axisH;
                                 
-                                portal.world.addEntity(portal);
+                                McHelper.spawnServerEntityToUnloadedArea(portal);
                                 
                                 return 0;
                             })
@@ -1028,7 +1154,8 @@ public class PortalCommand {
                                     BlockPos bp2 = BlockPosArgument.getBlockPos(context, "p2");
                                     IntBox intBox = new IntBox(bp1, bp2);
                                     
-                                    Entity placeTargetEntity = EntityArgument.getEntity(context, "placeTargetEntity");
+                                    Entity placeTargetEntity = EntityArgument.getEntity(context,
+                                        "placeTargetEntity");
                                     
                                     ServerWorld boxWorld = ((ServerWorld) placeTargetEntity.world);
                                     Vector3d boxBottomCenter = placeTargetEntity.getPositionVec();
@@ -1070,14 +1197,15 @@ public class PortalCommand {
         for (Direction direction : Direction.values()) {
             Portal portal = PortalManipulation.createOrthodoxPortal(
                 Portal.entityType,
-                areaWorld, boxWorld,
+                boxWorld, areaWorld,
                 direction, Helper.getBoxSurface(viewBox, direction),
                 Helper.getBoxSurface(area, direction).getCenter()
             );
             portal.scaling = scale;
             portal.teleportChangesScale = false;
+            portal.extension.adjustPositionAfterTeleport = true;
             
-            portal.world.addEntity(portal);
+            McHelper.spawnServerEntityToUnloadedArea(portal);
             
             if (biWay) {
                 PortalManipulation.completeBiWayPortal(portal, Portal.entityType);
@@ -1092,7 +1220,7 @@ public class PortalCommand {
             WorldWrappingPortal.initWrappingPortal(
                 world, box, direction, isInward, portal
             );
-            world.addEntity(portal);
+            McHelper.spawnServerEntityToUnloadedArea(portal);
         }
     }
     
@@ -1283,7 +1411,7 @@ public class PortalCommand {
         newPortal.destination = destination;
         newPortal.specificPlayerId = player.getUniqueID();
         
-        newPortal.world.addEntity(newPortal);
+        McHelper.spawnServerEntityToUnloadedArea(newPortal);
         
         configureBiWayBiFaced(newPortal, biWay, biFaced);
     }
@@ -1365,7 +1493,7 @@ public class PortalCommand {
         
         portal.dimensionTo = to;
         portal.destination = dest;
-        portal.world.addEntity(portal);
+        McHelper.spawnServerEntityToUnloadedArea(portal);
         
         context.getSource().sendFeedback(getMakePortalSuccess(portal), true);
         
@@ -1388,7 +1516,8 @@ public class PortalCommand {
         // unsafe to use getContentDirection before the destination is fully set
         portal.dimensionTo = to;
         portal.destination = portal.getPositionVec().add(portal.axisW.crossProduct(portal.axisH).scale(-dist));
-        portal.world.addEntity(portal);
+        
+        McHelper.spawnServerEntityToUnloadedArea(portal);
         
         context.getSource().sendFeedback(getMakePortalSuccess(portal), true);
         
@@ -1513,7 +1642,7 @@ public class PortalCommand {
         }
         return portalStream.map(
             portal -> new Pair<Portal, Vector3d>(
-                portal, portal.pick(from, to)
+                portal, portal.rayTrace(from, to)
             )
         ).filter(
             portalAndHitPos -> portalAndHitPos.getSecond() != null

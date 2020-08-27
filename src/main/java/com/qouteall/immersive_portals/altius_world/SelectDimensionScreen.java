@@ -1,5 +1,7 @@
 package com.qouteall.immersive_portals.altius_world;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+import com.qouteall.immersive_portals.alternate_dimension.AlternateDimensions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
@@ -10,7 +12,9 @@ import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.Dimension;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class SelectDimensionScreen extends Screen {
@@ -23,6 +27,28 @@ public class SelectDimensionScreen extends Screen {
         super(new TranslationTextComponent("imm_ptl.select_dimension"));
         this.parent = parent;
         this.outerCallback = callback;
+    }
+    
+    public List<RegistryKey<World>> getDimensionList() {
+        DimensionGeneratorSettings generatorOptions =
+            parent.parent.field_238934_c_.func_239054_a_(false);
+        
+        SimpleRegistry<Dimension> dimensionMap = generatorOptions.func_236224_e_();
+        
+        // TODO use an appropriate way to detect other mod's dimensions
+        AlternateDimensions.addAlternateDimensions(
+            dimensionMap,
+            parent.parent.field_238934_c_.func_239055_b_(),
+            generatorOptions.func_236221_b_()
+        );
+        
+        ArrayList<RegistryKey<World>> dimList = new ArrayList<>();
+        
+        for (Map.Entry<RegistryKey<Dimension>, Dimension> entry : dimensionMap.func_239659_c_()) {
+            dimList.add(RegistryKey.func_240903_a_(Registry.field_239699_ae_, entry.getKey().func_240901_a_()));
+        }
+        
+        return dimList;
     }
     
     @Override
@@ -39,15 +65,9 @@ public class SelectDimensionScreen extends Screen {
         
         Consumer<DimTermWidget> callback = w -> dimListWidget.func_241215_a_(w);
         
-        DimensionGeneratorSettings generatorOptions =
-            parent.parent.field_238934_c_.func_239054_a_(false);
-        
-        SimpleRegistry<Dimension> dimensionMap = generatorOptions.func_236224_e_();
-        
-        dimensionMap.keySet().forEach(dimId -> {
-            RegistryKey<World> worldKey = RegistryKey.func_240903_a_(Registry.field_239699_ae_, dimId);
-            dimListWidget.terms.add(new DimTermWidget(worldKey, dimListWidget, callback));
-        });
+        for (RegistryKey<World> dim : getDimensionList()) {
+            dimListWidget.terms.add(new DimTermWidget(dim, dimListWidget, callback));
+        }
         
         dimListWidget.update();
         

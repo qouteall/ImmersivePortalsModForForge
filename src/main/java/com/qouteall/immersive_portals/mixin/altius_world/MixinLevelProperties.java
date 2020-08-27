@@ -4,13 +4,15 @@ import com.mojang.datafixers.DataFixer;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.Lifecycle;
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.alternate_dimension.AlternateDimensions;
 import com.qouteall.immersive_portals.altius_world.AltiusInfo;
+import com.qouteall.immersive_portals.ducks.IEGeneratorOptions;
 import com.qouteall.immersive_portals.ducks.IELevelProperties;
 import net.minecraft.command.TimerCallbackManager;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
-import net.minecraft.server.IDynamicRegistries;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
@@ -18,7 +20,6 @@ import net.minecraft.world.storage.ServerWorldInfo;
 import net.minecraft.world.storage.VersionData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -30,52 +31,34 @@ import java.util.UUID;
 
 @Mixin(ServerWorldInfo.class)
 public class MixinLevelProperties implements IELevelProperties {
+    
     @Shadow
     @Final
-    @Mutable
     private Lifecycle field_237344_d_;
+    @Shadow
+    @Final
+    private DimensionGeneratorSettings field_237343_c_;
     AltiusInfo altiusInfo;
     
     @Inject(
-        method = "<init>(Lcom/mojang/datafixers/DataFixer;ILnet/minecraft/nbt/CompoundNBT;ZIIIJJIIIZIZZZLnet/minecraft/world/border/WorldBorder$Serializer;IILjava/util/UUID;Ljava/util/LinkedHashSet;Lnet/minecraft/command/TimerCallbackManager;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/gen/settings/DimensionGeneratorSettings;Lcom/mojang/serialization/Lifecycle;)V",
+        method = "<init>(Lcom/mojang/datafixers/DataFixer;ILnet/minecraft/nbt/CompoundNBT;ZIIIFJJIIIZIZZZLnet/minecraft/world/border/WorldBorder$Serializer;IILjava/util/UUID;Ljava/util/LinkedHashSet;Lnet/minecraft/command/TimerCallbackManager;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/gen/settings/DimensionGeneratorSettings;Lcom/mojang/serialization/Lifecycle;)V",
         at = @At("RETURN")
     )
     private void onConstructedFromLevelInfo(
-        DataFixer dataFixer,
-        int dataVersion,
-        CompoundNBT playerData,
-        boolean modded,
-        int spawnX,
-        int spawnY,
-        int spawnZ,
-        long time,
-        long timeOfDay,
-        int version,
-        int clearWeatherTime,
-        int rainTime,
-        boolean raining,
-        int thunderTime,
-        boolean thundering,
-        boolean initialized,
-        boolean difficultyLocked,
-        WorldBorder.Serializer worldBorder,
-        int wanderingTraderSpawnDelay,
-        int wanderingTraderSpawnChance,
-        UUID wanderingTraderId,
-        LinkedHashSet<String> serverBrands,
-        TimerCallbackManager<MinecraftServer> timer,
-        CompoundNBT compoundTag,
-        CompoundNBT compoundTag2,
-        WorldSettings levelInfo,
-        DimensionGeneratorSettings generatorOptions,
-        Lifecycle lifecycle,
-        CallbackInfo ci
+        DataFixer dataFixer, int dataVersion, CompoundNBT playerData,
+        boolean modded, int spawnX, int spawnY, int spawnZ, float spawnAngle,
+        long time, long timeOfDay, int version, int clearWeatherTime, int rainTime,
+        boolean raining, int thunderTime, boolean thundering, boolean initialized,
+        boolean difficultyLocked, WorldBorder.Serializer worldBorder, int wanderingTraderSpawnDelay,
+        int wanderingTraderSpawnChance, UUID wanderingTraderId, LinkedHashSet<String> serverBrands,
+        TimerCallbackManager<MinecraftServer> scheduledEvents, CompoundNBT customBossEvents, CompoundNBT dragonFight,
+        WorldSettings levelInfo, DimensionGeneratorSettings generatorOptions, Lifecycle lifecycle, CallbackInfo ci
     ) {
         altiusInfo = ((IELevelProperties) (Object) levelInfo).getAltiusInfo();
         
         // TODO use more appropriate way to get rid of the warning screen
         if (Global.enableAlternateDimensions && generatorOptions.func_236224_e_().keySet().size() == 8) {
-            field_237344_d_ = Lifecycle.stable();
+            lifecycle = Lifecycle.stable();
         }
     }
     
@@ -112,17 +95,20 @@ public class MixinLevelProperties implements IELevelProperties {
     }
     
     @Inject(
-        method = "Lnet/minecraft/world/storage/ServerWorldInfo;func_237370_a_(Lnet/minecraft/server/IDynamicRegistries;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/nbt/CompoundNBT;)V",
+        method = "Lnet/minecraft/world/storage/ServerWorldInfo;func_237370_a_(Lnet/minecraft/util/registry/DynamicRegistries;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/nbt/CompoundNBT;)V",
         at = @At("RETURN")
     )
     private void onUpdateProperties(
-        IDynamicRegistries registryTracker,
-        CompoundNBT infoTag,
-        CompoundNBT playerTag,
-        CallbackInfo ci
+        DynamicRegistries dynamicRegistryManager, CompoundNBT compoundTag,
+        CompoundNBT compoundTag2, CallbackInfo ci
     ) {
+        ((IEGeneratorOptions) field_237343_c_).setDimOptionRegistry(
+            AlternateDimensions.getAlternateDimensionsRemoved(
+                field_237343_c_.func_236224_e_()
+            )
+        );
         if (altiusInfo != null) {
-            infoTag.put("altius", altiusInfo.toTag());
+            compoundTag.put("altius", altiusInfo.toTag());
         }
     }
     

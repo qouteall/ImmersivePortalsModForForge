@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
@@ -8,10 +9,15 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.apache.commons.lang3.Validate;
+
+import java.util.List;
 import java.util.UUID;
 
 public abstract class BreakablePortalEntity extends Portal {
@@ -96,16 +102,12 @@ public abstract class BreakablePortalEntity extends Portal {
         }
         else {
             if (!unbreakable) {
-                if (isNotified) {
+                if (isNotified || world.getGameTime() % 233 == getEntityId() % 233) {
                     isNotified = false;
                     checkPortalIntegrity();
                 }
                 if (shouldBreakPortal) {
                     breakPortalOnThisSide();
-                }
-                
-                if (world.getGameTime() % 233 == getEntityId() % 233) {
-                    checkPortalIntegrity();
                 }
             }
         }
@@ -113,33 +115,57 @@ public abstract class BreakablePortalEntity extends Portal {
     }
     
     private void checkPortalIntegrity() {
-        assert !world.isRemote;
+        Validate.isTrue(!world.isRemote);
         
         if (!isPortalValid()) {
             remove();
             return;
         }
-        
+    
         if (!isPortalIntactOnThisSide()) {
-            shouldBreakPortal = true;
-            BreakablePortalEntity reversePortal = getReversePortal();
-            if (reversePortal != null) {
-                reversePortal.shouldBreakPortal = true;
-            }
-            else {
-                ModMain.serverTaskList.addTask(() -> {
-                    BreakablePortalEntity reversePortal1 = getReversePortal();
-                    if (reversePortal1 != null) {
-                        reversePortal1.shouldBreakPortal = true;
-                    }
-                    return true;
-                });
-            }
+            markShouldBreak();
+        }
+        else if (!isPortalPaired()) {
+            Helper.err("Break portal because of abnormal pairing");
+            markShouldBreak();
         }
     }
+    
     
     protected abstract boolean isPortalIntactOnThisSide();
     
     @OnlyIn(Dist.CLIENT)
     protected abstract void addSoundAndParticle();
+    
+    public boolean isPortalPaired() {
+        Validate.isTrue(!world.isRemote());
+        
+        List<BreakablePortalEntity> reversePortal = McHelper.findEntitiesByBox(
+            BreakablePortalEntity.class,
+            getDestinationWorld(),
+            new AxisAlignedBB(new BlockPos(destination)),
+            10,
+            e -> (e.getPositionVec().squareDistanceTo(destination) < 0.01) &&
+                e.getContentDirection().dotProduct(getNormal()) > 0.6
+        );
+        
+        return reversePortal.size() <= 1;
+    }
+    
+    public void markShouldBreak() {
+        shouldBreakPortal = true;
+        BreakablePortalEntity reversePortal = getReversePortal();
+        if (reversePortal != null) {
+            reversePortal.shouldBreakPortal = true;
+        }
+        else {
+            ModMain.serverTaskList.addTask(() -> {
+                BreakablePortalEntity reversePortal1 = getReversePortal();
+                if (reversePortal1 != null) {
+                    reversePortal1.shouldBreakPortal = true;
+                }
+                return true;
+            });
+        }
+    }
 }

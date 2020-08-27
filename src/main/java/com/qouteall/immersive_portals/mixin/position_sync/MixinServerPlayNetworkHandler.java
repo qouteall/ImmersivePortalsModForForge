@@ -31,7 +31,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Set;
 
-@Mixin(ServerPlayNetHandler.class)
+@Mixin(value = ServerPlayNetHandler.class, priority = 900)
 public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetworkHandler {
     @Shadow
     public ServerPlayerEntity player;
@@ -109,14 +109,25 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         )
     )
     private boolean redirectIsServerOwnerOnPlayerMove(ServerPlayNetHandler serverPlayNetworkHandler) {
-        if (Global.serverTeleportationManager.isJustTeleported(player, 100)) {
-            return true;
-        }
-        if (Global.looseMovementCheck) {
-            Helper.log("Accepted dubious movement " + player.getName().getString());
+        if (shouldAcceptDubiousMovement(player)) {
             return true;
         }
         return func_217264_d();
+    }
+    
+    @Redirect(
+        method = "Lnet/minecraft/network/play/ServerPlayNetHandler;processPlayer(Lnet/minecraft/network/play/client/CPlayerPacket;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/entity/player/ServerPlayerEntity;isInvulnerableDimensionChange()Z"
+        ),
+        require = 0 // don't crash with carpet
+    )
+    private boolean redirectIsInTeleportationState(ServerPlayerEntity player) {
+        if (shouldAcceptDubiousMovement(player)) {
+            return true;
+        }
+        return player.isInvulnerableDimensionChange();
     }
     
     /**
@@ -144,7 +155,10 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
         }
     }
     
-    private void doSendTeleportRequest(double destX, double destY, double destZ, float destYaw, float destPitch, Set<SPlayerPositionLookPacket.Flags> updates) {
+    private void doSendTeleportRequest(
+        double destX, double destY, double destZ, float destYaw, float destPitch,
+        Set<SPlayerPositionLookPacket.Flags> updates
+    ) {
         if (Global.teleportationDebugEnabled) {
             new Throwable().printStackTrace();
             Helper.log(String.format("request teleport %s %s (%d %d %d)->(%d %d %d)",
@@ -269,6 +283,23 @@ public abstract class MixinServerPlayNetworkHandler implements IEServerPlayNetwo
             
             ci.cancel();
         }
+    }
+    
+    private static boolean shouldAcceptDubiousMovement(ServerPlayerEntity player) {
+        if (Global.serverTeleportationManager.isJustTeleported(player, 100)) {
+            return true;
+        }
+        if (Global.looseMovementCheck) {
+            return true;
+        }
+        if (((IEEntity) player).getCollidingPortal() != null) {
+            return true;
+        }
+        boolean portalsNearby = McHelper.getServerPortalsNearby(player, 16).findFirst().isPresent();
+        if (portalsNearby) {
+            return true;
+        }
+        return false;
     }
     
     @Override

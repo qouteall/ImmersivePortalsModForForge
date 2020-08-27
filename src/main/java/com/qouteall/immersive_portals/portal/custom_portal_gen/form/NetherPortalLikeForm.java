@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.portal.custom_portal_gen.form;
 
 import com.qouteall.immersive_portals.my_util.IntBox;
 import com.qouteall.immersive_portals.portal.custom_portal_gen.CustomPortalGeneration;
+import com.qouteall.immersive_portals.portal.custom_portal_gen.PortalGenInfo;
 import com.qouteall.immersive_portals.portal.nether_portal.BlockPortalShape;
 import com.qouteall.immersive_portals.portal.nether_portal.BreakablePortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.GeneralBreakablePortal;
@@ -48,13 +49,15 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
         }
         
         // clear the area
-        for (BlockPos areaPos : fromShape.area) {
-            fromWorld.setBlockState(areaPos, Blocks.AIR.getDefaultState());
+        if (generateFrameIfNotFound) {
+            for (BlockPos areaPos : fromShape.area) {
+                fromWorld.setBlockState(areaPos, Blocks.AIR.getDefaultState());
+            }
         }
         
         BlockPos toPos = cpg.mapPosition(fromShape.innerAreaBox.getCenter());
         
-        BlockPortalShape templateToShape = checkAndGetTemplateToShape(fromShape);
+        BlockPortalShape templateToShape = checkAndGetTemplateToShape(fromWorld, fromShape);
         
         if (templateToShape == null) {
             return false;
@@ -73,7 +76,7 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
             },
             info -> {
                 //generate portal entity
-                BreakablePortalEntity[] result = generatePortalEntities(info);
+                BreakablePortalEntity[] result = generatePortalEntitiesAndPlaceholder(info);
                 for (BreakablePortalEntity portal : result) {
                     cpg.onPortalGenerated(portal);
                 }
@@ -84,24 +87,15 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
                     return null;
                 }
                 
-                IntBox airCubePlacement =
-                    NetherPortalGeneration.findAirCubePlacement(
-                        toWorld, toPos,
-                        templateToShape.axis, templateToShape.totalAreaBox.getSize(),
-                        128
-                    );
-                
-                BlockPortalShape toShape = templateToShape.getShapeWithMovedAnchor(
-                    airCubePlacement.l.subtract(
-                        templateToShape.totalAreaBox.l
-                    ).add(templateToShape.anchor)
-                );
+                BlockPortalShape toShape = getNewPortalPlacement(toWorld, toPos, templateToShape);
                 
                 return toShape;
             },
             () -> {
-                //TODO check portal integrity while loading chunk
-                return true;
+                // check portal integrity while loading chunk
+                return fromShape.frameAreaWithoutCorner.stream().allMatch(
+                    bp -> !fromWorld.isAirBlock(bp)
+                );
             },
             //avoid linking to the beginning frame
             s -> fromWorld != toWorld || fromShape.anchor != s.anchor
@@ -110,15 +104,31 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
         return true;
     }
     
-    public BreakablePortalEntity[] generatePortalEntities(NetherPortalGeneration.Info info) {
-        return NetherPortalGeneration.generateBreakablePortalEntities(
+    protected BlockPortalShape getNewPortalPlacement(ServerWorld toWorld, BlockPos toPos,
+                                                     BlockPortalShape templateToShape) {
+        IntBox airCubePlacement =
+            NetherPortalGeneration.findAirCubePlacement(
+                toWorld, toPos,
+                templateToShape.axis, templateToShape.totalAreaBox.getSize(),
+                128
+            );
+        
+        return templateToShape.getShapeWithMovedAnchor(
+            airCubePlacement.l.subtract(
+                templateToShape.totalAreaBox.l
+            ).add(templateToShape.anchor)
+        );
+    }
+    
+    public BreakablePortalEntity[] generatePortalEntitiesAndPlaceholder(PortalGenInfo info) {
+        return NetherPortalGeneration.generateBreakablePortalEntitiesAndPlaceholder(
             info, GeneralBreakablePortal.entityType
         );
     }
     
     // if check fails, return null
     @Nullable
-    public BlockPortalShape checkAndGetTemplateToShape(BlockPortalShape fromShape) {
+    public BlockPortalShape checkAndGetTemplateToShape(ServerWorld world, BlockPortalShape fromShape) {
         return fromShape;
     }
     

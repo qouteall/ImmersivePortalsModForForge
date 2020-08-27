@@ -9,33 +9,47 @@ import com.mojang.serialization.Lifecycle;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.my_util.IntBox;
+import com.qouteall.immersive_portals.my_util.UCoordinate;
 import net.minecraft.entity.item.ItemEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemUseContext;
-import net.minecraft.server.IDynamicRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ActionResultType;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.util.registry.SimpleRegistry;
 import net.minecraft.util.registry.WorldSettingsImport;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.server.ServerWorld;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class CustomPortalGenManagement {
     private static final Multimap<Item, CustomPortalGeneration> useItemGen = HashMultimap.create();
     private static final Multimap<Item, CustomPortalGeneration> throwItemGen = HashMultimap.create();
     
+    private static final ArrayList<CustomPortalGeneration> convGen = new ArrayList<>();
+    private static final Map<UUID, UCoordinate> posBeforeTravel = new HashMap<>();
+    
     public static void onDatapackReload() {
         useItemGen.clear();
         throwItemGen.clear();
+        convGen.clear();
+        posBeforeTravel.clear();
         
         Helper.log("Loading custom portal gen");
         
         MinecraftServer server = McHelper.getServer();
         
-        IDynamicRegistries.Impl registryTracker = new IDynamicRegistries.Impl();
+        DynamicRegistries.Impl registryTracker = new DynamicRegistries.Impl();
         
         WorldSettingsImport<JsonElement> registryOps =
-            WorldSettingsImport.func_240876_a_(JsonOps.INSTANCE,
+            WorldSettingsImport.func_244335_a(
+                JsonOps.INSTANCE,
                 server.resourceManager.func_240970_h_(),
                 registryTracker
             );
@@ -49,7 +63,7 @@ public class CustomPortalGenManagement {
             registryOps.func_241797_a_(
                 emptyRegistry,
                 CustomPortalGeneration.registryRegistryKey,
-                CustomPortalGeneration.codec
+                CustomPortalGeneration.codec.codec()
             );
         
         SimpleRegistry<CustomPortalGeneration> result = dataResult.get().left().orElse(null);
@@ -64,13 +78,15 @@ public class CustomPortalGenManagement {
             return;
         }
         
-        result.stream().forEach(gen -> {
+        result.func_239659_c_().forEach((entry) -> {
+            CustomPortalGeneration gen = entry.getValue();
+            
             if (!gen.initAndCheck()) {
                 Helper.log("Custom Portal Gen Is Not Activated " + gen.toString());
                 return;
             }
             
-            Helper.log("Loaded Custom Portal Gen " + gen.toString());
+            Helper.log("Loaded Custom Portal Gen " + entry.getKey().func_240901_a_() + " " + gen.toString());
             
             load(gen);
             
@@ -93,6 +109,9 @@ public class CustomPortalGenManagement {
                 ((PortalGenTrigger.ThrowItemTrigger) trigger).item,
                 gen
             );
+        }
+        else if (trigger instanceof PortalGenTrigger.ConventionalDimensionChangeTrigger) {
+            convGen.add(gen);
         }
     }
     
@@ -149,6 +168,35 @@ public class CustomPortalGenManagement {
                     }
                     return true;
                 });
+            }
+        }
+    }
+    
+    public static void onBeforeConventionalDimensionChange(
+        ServerPlayerEntity player
+    ) {
+        posBeforeTravel.put(player.getUniqueID(), new UCoordinate(player));
+    }
+    
+    public static void onAfterConventionalDimensionChange(
+        ServerPlayerEntity player
+    ) {
+        UUID uuid = player.getUniqueID();
+        if (posBeforeTravel.containsKey(uuid)) {
+            UCoordinate startCoord = posBeforeTravel.get(uuid);
+            posBeforeTravel.remove(uuid);
+            
+            ServerWorld startWorld = McHelper.getServerWorld(startCoord.dimension);
+            
+            BlockPos startPos = new BlockPos(startCoord.pos);
+            
+            for (CustomPortalGeneration gen : convGen) {
+                IntBox box = new IntBox(startPos.add(-1, -1, -1), startPos.add(1, 1, 1));
+                boolean succeeded = box.stream().anyMatch(pos -> gen.perform(startWorld, pos));
+                
+                if (succeeded) {
+                    return;
+                }
             }
         }
     }
