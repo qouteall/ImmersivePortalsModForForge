@@ -37,7 +37,7 @@ public class ConfigServer {
             .define("loose_movement_check", false);
         enableAlternateDimensions = builder
             .comment("Enable Alternate Dimensions")
-            .define("enable_alternate_dimensions", false);
+            .define("enable_alternate_dimensions", true);
     }
     
     static {

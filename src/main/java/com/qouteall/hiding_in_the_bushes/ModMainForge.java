@@ -28,6 +28,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.MainMenuScreen;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
@@ -42,6 +43,7 @@ import net.minecraft.potion.EffectType;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.World;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -59,12 +61,16 @@ import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.network.FMLPlayMessages.SpawnEntity;
 import net.minecraftforge.registries.IForgeRegistry;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod("immersive_portals")
@@ -269,132 +275,101 @@ public class ModMainForge {
             );
         }
         
+        private static <T extends Entity> void registerEntity(
+            Consumer<EntityType<T>> setEntityType,
+            Supplier<EntityType<T>> getEntityType,
+            String id,
+            EntityType.IFactory<T> constructor,
+            IForgeRegistry<EntityType<?>> registry
+        ) {
+            BiFunction<SpawnEntity, World, T> biFunction = (a, world) -> constructor.create(getEntityType.get(), world);
+            EntityType<T> entityType = EntityType.Builder.create(
+                constructor, EntityClassification.MISC
+            ).size(
+                1, 1
+            ).immuneToFire().setCustomClientFactory(
+                biFunction
+            ).setTrackingRange(96).build(
+                id
+            );
+            setEntityType.accept(entityType);
+            
+            registry.register(entityType.setRegistryName(id));
+        }
+        
         @SubscribeEvent
         public static void onEntityRegistry(RegistryEvent.Register<EntityType<?>> event) {
-            Portal.entityType = EntityType.Builder.create(
-                Portal::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) -> new Portal(
-                    Portal.entityType,
-                    world
-                )
-            ).build(
-                "immersive_portals:portal"
+            
+            IForgeRegistry<EntityType<?>> registry = event.getRegistry();
+            registerEntity(
+                o -> Portal.entityType = o,
+                () -> Portal.entityType,
+                "immersive_portals:portal",
+                Portal::new,
+                registry
             );
-            event.getRegistry().register(
-                Portal.entityType.setRegistryName(
-                    "immersive_portals:portal"
-                )
+            registerEntity(
+                o -> NetherPortalEntity.entityType = o,
+                () -> NetherPortalEntity.entityType,
+                "immersive_portals:nether_portal_new",
+                NetherPortalEntity::new,
+                registry
+            );
+    
+            registerEntity(
+                o -> EndPortalEntity.entityType = o,
+                () -> EndPortalEntity.entityType,
+                "immersive_portals:end_portal",
+                EndPortalEntity::new,
+                registry
             );
             
-            
-            NetherPortalEntity.entityType = EntityType.Builder.create(
-                NetherPortalEntity::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) ->
-                new NetherPortalEntity(NetherPortalEntity.entityType, world)
-            ).build(
-                "immersive_portals:nether_portal_new"
-            );
-            event.getRegistry().register(
-                NetherPortalEntity.entityType.setRegistryName(
-                    "immersive_portals:nether_portal_new")
+            registerEntity(
+                o -> Mirror.entityType = o,
+                () -> Mirror.entityType,
+                "immersive_portals:mirror",
+                Mirror::new,
+                registry
             );
             
-            EndPortalEntity.entityType = EntityType.Builder.create(
-                EndPortalEntity::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) ->
-                new EndPortalEntity(EndPortalEntity.entityType, world)
-            ).build(
-                "immersive_portals:end_portal"
+            registerEntity(
+                o -> BreakableMirror.entityType = o,
+                () -> BreakableMirror.entityType,
+                "immersive_portals:breakable_mirror",
+                BreakableMirror::new,
+                registry
             );
-            event.getRegistry().register(
-                EndPortalEntity.entityType.setRegistryName("immersive_portals:end_portal")
-            );
-            
-            Mirror.entityType = EntityType.Builder.create(
-                Mirror::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) ->
-                new Mirror(Mirror.entityType, world)
-            ).build(
-                "immersive_portals:mirror"
-            );
-            event.getRegistry().register(
-                Mirror.entityType.setRegistryName("immersive_portals:mirror")
+    
+            registerEntity(
+                o -> GlobalTrackedPortal.entityType = o,
+                () -> GlobalTrackedPortal.entityType,
+                "immersive_portals:global_tracked_portal",
+                GlobalTrackedPortal::new,
+                registry
             );
             
-            BreakableMirror.entityType = EntityType.Builder.create(
-                BreakableMirror::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) ->
-                new BreakableMirror(BreakableMirror.entityType, world)
-            ).build(
-                "immersive_portals:breakable_mirror"
+            registerEntity(
+                o -> WorldWrappingPortal.entityType = o,
+                () -> WorldWrappingPortal.entityType,
+                "immersive_portals:border_portal",
+                WorldWrappingPortal::new,
+                registry
             );
-            event.getRegistry().register(
-                BreakableMirror.entityType.setRegistryName("immersive_portals:breakable_mirror")
+    
+            registerEntity(
+                o -> VerticalConnectingPortal.entityType = o,
+                () -> VerticalConnectingPortal.entityType,
+                "immersive_portals:end_floor_portal",
+                VerticalConnectingPortal::new,
+                registry
             );
-            
-            GlobalTrackedPortal.entityType = EntityType.Builder.create(
-                GlobalTrackedPortal::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) ->
-                new GlobalTrackedPortal(GlobalTrackedPortal.entityType, world)
-            ).build(
-                "immersive_portals:global_tracked_portal"
-            );
-            event.getRegistry().register(
-                GlobalTrackedPortal.entityType.setRegistryName(
-                    "immersive_portals:global_tracked_portal")
-            );
-            
-            WorldWrappingPortal.entityType = EntityType.Builder.create(
-                WorldWrappingPortal::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) ->
-                new WorldWrappingPortal(WorldWrappingPortal.entityType, world)
-            ).build(
-                "immersive_portals:border_portal"
-            );
-            event.getRegistry().register(
-                WorldWrappingPortal.entityType.setRegistryName("immersive_portals:border_portal")
-            );
-            
-            VerticalConnectingPortal.entityType = EntityType.Builder.create(
-                VerticalConnectingPortal::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) ->
-                new VerticalConnectingPortal(VerticalConnectingPortal.entityType, world)
-            ).build(
-                "immersive_portals:end_floor_portal"
-            );
-            event.getRegistry().register(
-                VerticalConnectingPortal.entityType.setRegistryName(
-                    "immersive_portals:end_floor_portal")
-            );
-            
-            GeneralBreakablePortal.entityType = EntityType.Builder.create(
-                GeneralBreakablePortal::new, EntityClassification.MISC
-            ).size(
-                1, 1
-            ).immuneToFire().setCustomClientFactory((a, world) ->
-                new GeneralBreakablePortal(GeneralBreakablePortal.entityType, world)
-            ).build(
-                "immersive_portals:general_breakable_portal"
-            );
-            event.getRegistry().register(
-                GeneralBreakablePortal.entityType.setRegistryName(
-                    "immersive_portals:general_breakable_portal")
+    
+            registerEntity(
+                o -> GeneralBreakablePortal.entityType = o,
+                () -> GeneralBreakablePortal.entityType,
+                "immersive_portals:general_breakable_portal",
+                GeneralBreakablePortal::new,
+                registry
             );
             
             LoadingIndicatorEntity.entityType = EntityType.Builder.create(
