@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
-import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.IntBox;
 import com.qouteall.immersive_portals.portal.nether_portal.BlockPortalShape;
 import net.minecraft.client.Minecraft;
@@ -24,7 +23,6 @@ import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import java.util.List;
 import java.util.Random;
 
 public class LoadingIndicatorEntity extends Entity {

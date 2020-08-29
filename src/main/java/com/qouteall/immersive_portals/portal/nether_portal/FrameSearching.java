@@ -7,10 +7,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.gen.WorldGenRegion;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class FrameSearching {
@@ -18,10 +20,8 @@ public class FrameSearching {
         WorldGenRegion region,
         int regionRadius,
         BlockPos centerPoint,
-        BlockPortalShape templateShape,
-        Predicate<BlockState> areaPredicate,
         Predicate<BlockState> framePredicate,
-        Predicate<BlockPortalShape> resultPredicate,
+        Function<BlockPos.Mutable,BlockPortalShape> matchShape,
         Consumer<BlockPortalShape> onFound,
         Runnable onNotFound
     ) {
@@ -30,9 +30,8 @@ public class FrameSearching {
                 try {
                     BlockPortalShape result = searchPortalFrame(
                         region, regionRadius,
-                        centerPoint, templateShape,
-                        areaPredicate, framePredicate,
-                        resultPredicate
+                        centerPoint, framePredicate,
+                        matchShape
                     );
                     McHelper.getServer().execute(() -> {
                         if (result != null) {
@@ -55,14 +54,13 @@ public class FrameSearching {
     
     // Return null for not found
     // After removing the usage of stream API, it becomes 100 times faster!!!
+    @Nullable
     private static BlockPortalShape searchPortalFrame(
         WorldGenRegion region,
         int regionRadius,
         BlockPos centerPoint,
-        BlockPortalShape templateShape,
-        Predicate<BlockState> areaPredicate,
         Predicate<BlockState> framePredicate,
-        Predicate<BlockPortalShape> resultPredicate
+        Function<BlockPos.Mutable, BlockPortalShape> matchShape
     ) {
         ArrayList<IChunk> chunks = getChunksFromNearToFar(
             region, centerPoint, regionRadius
@@ -89,17 +87,13 @@ public class FrameSearching {
                                     int worldY = localY + sectionY * 16;
                                     int worldZ = localZ + chunk.getPos().getZStart();
                                     temp.setPos(worldX, worldY, worldZ);
-                                    BlockPortalShape result = templateShape.matchShapeWithMovedFirstFramePos(
-                                        pos -> areaPredicate.test(region.getBlockState(pos)),
-                                        pos -> framePredicate.test(region.getBlockState(pos)),
-                                        temp,
-                                        temp1
-                                    );
+    
+                                    BlockPortalShape result = matchShape.apply(temp);
                                     if (result != null) {
-                                        if (resultPredicate.test(result)) {
-                                            return result;
-                                        }
+                                        return result;
                                     }
+
+
                                 }
                             }
                         }

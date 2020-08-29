@@ -9,7 +9,6 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.altius_world.AltiusInfo;
 import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
 import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
@@ -45,6 +44,7 @@ import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import java.lang.ref.Reference;
+import java.lang.reflect.Method;
 import java.net.URLClassLoader;
 import java.time.Duration;
 import java.util.Arrays;
@@ -428,7 +428,15 @@ public class ClientDebugCommand {
             .literal("is_altius")
             .executes(context -> {
                 
-                boolean altius = AltiusInfo.isAltius();
+                Object obj = Helper.noError(
+                    () -> {
+                        Class<?> cls = Class.forName("com.qouteall.imm_ptl_peripheral.altius_world.AltiusInfo");
+                        Method method = cls.getDeclaredMethod("isAltius");
+                        return method.invoke(null);
+                    }
+                );
+                
+                boolean altius = ((Boolean) obj);
                 
                 if (altius) {
                     context.getSource().sendFeedback(
