@@ -1,8 +1,5 @@
-package com.qouteall.hiding_in_the_bushes.mixin_client;
+package com.qouteall.hiding_in_the_bushes.mixin.client;
 
-import com.google.common.base.Preconditions;
-import com.qouteall.hiding_in_the_bushes.ModMainForge;
-import com.qouteall.immersive_portals.CGlobal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -11,7 +8,6 @@ import net.minecraftforge.client.model.ModelDataManager;
 import net.minecraftforge.client.model.data.IModelData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

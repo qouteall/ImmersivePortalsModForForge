@@ -78,8 +78,6 @@ public class ModMainForge {
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
     
-    public static boolean isServerMixinApplied = false;
-    
     public static boolean enableModelDataFix = false;
     
     public ModMainForge() {
@@ -188,20 +186,6 @@ public class ModMainForge {
     }
     
     public static void checkMixinState() {
-        if (!isServerMixinApplied) {
-            String message = "Mixin is missing. Install the latest Forge";
-            
-            try {
-                Class.forName("org.spongepowered.asm.launch.Phases");
-                Helper.err("What? Mixin is in classpath???");
-            }
-            catch (ClassNotFoundException e) {
-                Helper.err("Mixin is not in classpath");
-            }
-            
-            Helper.err(message);
-            throw new IllegalStateException(message);
-        }
     }
     
     public static boolean isMixinInClasspath() {

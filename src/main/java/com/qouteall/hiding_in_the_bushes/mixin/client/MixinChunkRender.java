@@ -1,4 +1,4 @@
-package com.qouteall.hiding_in_the_bushes.mixin_client;
+package com.qouteall.hiding_in_the_bushes.mixin.client;
 
 import com.qouteall.hiding_in_the_bushes.ModMainForge;
 import com.qouteall.hiding_in_the_bushes.fix_model_data.IEChunkRender;

@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "package": "com.qouteall.hiding_in_the_bushes.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "imm_ptl.refmap.json",
+  "mixins": [
+    "common.MixinContainerMinecartEntity",
+    "common.MixinPlayerManager_MA",
+    "common.MixinServerPlayerEntity_MA"
+  ],
+  "client": [
+    "client.MixinChunkRender",
+    "client.MixinChunkRenderDispatcher",
+    "client.MixinChunkRenderTask",
+    "client.MixinClientWorld_MA",
+    "client.MixinForgeBlockModelRenderer",
+    "client.MixinForgeModelDataManager",
+    "client.MixinRebuildTask"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

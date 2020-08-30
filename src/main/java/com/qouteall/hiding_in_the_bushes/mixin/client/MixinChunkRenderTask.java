@@ -1,20 +1,13 @@
-package com.qouteall.hiding_in_the_bushes.mixin_client;
+package com.qouteall.hiding_in_the_bushes.mixin.client;
 
 import com.qouteall.hiding_in_the_bushes.ModMainForge;
 import com.qouteall.hiding_in_the_bushes.fix_model_data.IEChunkRenderTask;
-import com.qouteall.hiding_in_the_bushes.fix_model_data.ModelDataHacker;
-import com.qouteall.immersive_portals.Helper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.client.model.data.IModelData;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 

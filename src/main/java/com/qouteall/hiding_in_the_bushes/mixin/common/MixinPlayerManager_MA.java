@@ -1,4 +1,4 @@
-package com.qouteall.hiding_in_the_bushes.mixin;
+package com.qouteall.hiding_in_the_bushes.mixin.common;
 
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;

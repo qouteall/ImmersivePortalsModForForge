@@ -1,4 +1,4 @@
-package com.qouteall.hiding_in_the_bushes.mixin_client;
+package com.qouteall.hiding_in_the_bushes.mixin.client;
 
 import com.qouteall.hiding_in_the_bushes.IEClientWorld_MA;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;

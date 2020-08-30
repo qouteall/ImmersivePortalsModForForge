@@ -1,8 +1,10 @@
-package com.qouteall.hiding_in_the_bushes.mixin;
+package com.qouteall.hiding_in_the_bushes.mixin.common;
 
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.chunk_loading.ChunkDataSyncManager;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
+import com.qouteall.immersive_portals.portal.custom_portal_gen.CustomPortalGenManagement;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -25,7 +27,8 @@ public class MixinServerPlayerEntity_MA {
         CallbackInfoReturnable<Entity> cir
     ) {
         ServerPlayerEntity oldPlayer = (ServerPlayerEntity) (Object) this;
-        Global.chunkDataSyncManager.onPlayerRespawn(oldPlayer);
+    
+        onBeforeTravel(oldPlayer);
         
     }
     
@@ -49,9 +52,17 @@ public class MixinServerPlayerEntity_MA {
         
         //fix issue with good nights sleep
         player.clearBedPosition();
+        
+        onBeforeTravel(player);
+    }
     
+    private static void onBeforeTravel(ServerPlayerEntity player) {
+        CustomPortalGenManagement.onBeforeConventionalDimensionChange(player);
         Global.chunkDataSyncManager.onPlayerRespawn(player);
         
-        GlobalPortalStorage.onPlayerLoggedIn(player);
+        ModMain.serverTaskList.addTask(() -> {
+            CustomPortalGenManagement.onAfterConventionalDimensionChange(player);
+            return true;
+        });
     }
 }

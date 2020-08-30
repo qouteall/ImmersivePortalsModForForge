@@ -1,4 +1,4 @@
-package com.qouteall.hiding_in_the_bushes.mixin;
+package com.qouteall.hiding_in_the_bushes.mixin.common;
 
 import net.minecraft.entity.item.minecart.ContainerMinecartEntity;
 import org.spongepowered.asm.mixin.Mixin;
