@@ -16,6 +16,7 @@ import com.qouteall.immersive_portals.ducks.IEParticleManager;
 import com.qouteall.immersive_portals.ducks.IEPlayerListEntry;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.ducks.IEWorldRendererChunkInfo;
+import com.qouteall.immersive_portals.my_util.LimitedLogger;
 import com.qouteall.immersive_portals.render.context_management.DimensionRenderHelper;
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
@@ -30,6 +31,7 @@ import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.renderer.RenderTypeBuffers;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
@@ -55,6 +57,12 @@ import java.util.function.Predicate;
 public class MyGameRenderer {
     public static Minecraft client = Minecraft.getInstance();
     
+    private static final LimitedLogger limitedLogger = new LimitedLogger(10);
+    
+    // portal rendering and outer world rendering uses different buffer builder storages
+    // theoretically every layer of portal rendering should have its own buffer builder storage
+    // but it's more complex
+    private static RenderTypeBuffers secondaryBufferBuilderStorage = new RenderTypeBuffers();
     
     public static void renderWorldNew(
         RenderInfo renderInfo,
@@ -132,6 +140,8 @@ public class MyGameRenderer {
         ShaderGroup oldTransparencyShader =
             ((IEWorldRenderer) oldWorldRenderer).portal_getTransparencyShader();
         ShaderGroup newTransparencyShader = ((IEWorldRenderer) worldRenderer).portal_getTransparencyShader();
+        RenderTypeBuffers oldBufferBuilder = ((IEWorldRenderer) worldRenderer).getBufferBuilderStorage();
+        RenderTypeBuffers oldClientBufferBuilder = client.getRenderTypeBuffers();
         
         ((IEWorldRenderer) oldWorldRenderer).setVisibleChunks(new ObjectArrayList());
         
@@ -154,6 +164,8 @@ public class MyGameRenderer {
             client.objectMouseOver = BlockManipulationClient.remoteHitResult;
         }
         ieGameRenderer.setCamera(newCamera);
+        ((IEWorldRenderer) worldRenderer).setBufferBuilderStorage(secondaryBufferBuilderStorage);
+        ((IEMinecraftClient) client).setBufferBuilderStorage(secondaryBufferBuilderStorage);
         
         Object newSodiumContext = SodiumInterface.createNewRenderingContext.apply(worldRenderer);
         Object oldSodiumContext = SodiumInterface.switchRenderingContext.apply(worldRenderer, newSodiumContext);
@@ -165,18 +177,22 @@ public class MyGameRenderer {
         if (!RenderStates.isDimensionRendered(newDimension)) {
             helper.lightmapTexture.updateLightmap(0);
         }
-//        helper.lightmapTexture.enable();
         
         //invoke rendering
-        invokeWrapper.accept(() -> {
-            client.getProfiler().startSection("render_portal_content");
-            client.gameRenderer.renderWorld(
-                tickDelta,
-                Util.nanoTime(),
-                new MatrixStack()
-            );
-            client.getProfiler().endSection();
-        });
+        try {
+            invokeWrapper.accept(() -> {
+                client.getProfiler().startSection("render_portal_content");
+                client.gameRenderer.renderWorld(
+                    tickDelta,
+                    Util.nanoTime(),
+                    new MatrixStack()
+                );
+                client.getProfiler().endSection();
+            });
+        }
+        catch (Throwable e) {
+            limitedLogger.invoke(e::printStackTrace);
+        }
         
         //recover
         SodiumInterface.switchRenderingContext.apply(worldRenderer, oldSodiumContext);
@@ -200,6 +216,9 @@ public class MyGameRenderer {
         FogRendererContext.swappingManager.popSwapping();
         
         ((IEWorldRenderer) oldWorldRenderer).setVisibleChunks(oldVisibleChunks);
+        
+        ((IEWorldRenderer) worldRenderer).setBufferBuilderStorage(oldBufferBuilder);
+        ((IEMinecraftClient) client).setBufferBuilderStorage(oldClientBufferBuilder);
         
         if (Global.looseVisibleChunkIteration) {
             client.renderChunksMany = true;
@@ -335,6 +354,7 @@ public class MyGameRenderer {
         }
     }
     
+    // TODO recover
     public static void renderSkyFor(
         RegistryKey<World> dimension,
         MatrixStack matrixStack,

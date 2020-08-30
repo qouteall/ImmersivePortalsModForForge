@@ -25,7 +25,7 @@ public class MixinVertexConsumerProviderImmediate {
     
     @Inject(
         method = "Lnet/minecraft/client/renderer/IRenderTypeBuffer$Impl;finish(Lnet/minecraft/client/renderer/RenderType;)V",
-        at = @At("TAIL")
+        at = @At("RETURN")
     )
     private void onEndDraw(RenderType layer, CallbackInfo ci) {
         RenderStates.shouldForceDisableCull = false;

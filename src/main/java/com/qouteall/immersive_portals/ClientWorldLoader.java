@@ -3,19 +3,23 @@ package com.qouteall.immersive_portals;
 import com.mojang.authlib.GameProfile;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.dimension_sync.DimensionTypeSync;
+import com.qouteall.immersive_portals.ducks.IECamera;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.ducks.IEParticleManager;
 import com.qouteall.immersive_portals.ducks.IEWorld;
+import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.DimensionRenderHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
+import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.PacketDirection;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
@@ -25,8 +29,10 @@ import org.apache.commons.lang3.Validate;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @OnlyIn(Dist.CLIENT)
 public class ClientWorldLoader {
@@ -35,7 +41,7 @@ public class ClientWorldLoader {
     public final Map<RegistryKey<World>, DimensionRenderHelper> renderHelperMap = new HashMap<>();
     private Set<DimensionalChunkPos> unloadedChunks = new HashSet<>();
     
-    private Minecraft client = Minecraft.getInstance();
+    private static final Minecraft client = Minecraft.getInstance();
     
     private boolean isInitialized = false;
     
@@ -96,6 +102,8 @@ public class ClientWorldLoader {
     private static int reportedErrorNum = 0;
     
     private void tickRemoteWorld(ClientWorld newWorld) {
+        List<Portal> nearbyPortals = CHelper.getClientNearbyPortals(10).collect(Collectors.toList());
+        
         ClientWorld oldWorld = client.world;
         
         client.world = newWorld;
@@ -104,6 +112,10 @@ public class ClientWorldLoader {
         try {
             newWorld.tickEntities();
             newWorld.tick(() -> true);
+            
+            if (!client.isGamePaused()) {
+                tickRemoteWorldRandomTicksClient(newWorld, nearbyPortals);
+            }
         }
         catch (Throwable e) {
             if (reportedErrorNum < 200) {
@@ -115,6 +127,29 @@ public class ClientWorldLoader {
             client.world = oldWorld;
             ((IEParticleManager) client.particles).mySetWorld(oldWorld);
         }
+    }
+    
+    // show nether particles through portal
+    private static void tickRemoteWorldRandomTicksClient(
+        ClientWorld newWorld, List<Portal> nearbyPortals
+    ) {
+        nearbyPortals.stream().filter(
+            portal -> portal.dimensionTo == newWorld.func_234923_W_()
+        ).findFirst().ifPresent(portal -> {
+            Vector3d playerPos = client.player.getPositionVec();
+            Vector3d center = portal.transformPoint(playerPos);
+            
+            ActiveRenderInfo camera = client.gameRenderer.getActiveRenderInfo();
+            Vector3d oldCameraPos = camera.getProjectedView();
+            
+            ((IECamera) camera).portal_setPos(center);
+            
+            newWorld.animateTick(
+                (int) center.x, (int) center.y, (int) center.z
+            );
+            
+            ((IECamera) camera).portal_setPos(oldCameraPos);
+        });
     }
     
     public void cleanUp() {

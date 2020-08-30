@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.ducks;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.RenderTypeBuffers;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
@@ -33,4 +34,8 @@ public interface IEWorldRenderer {
     ShaderGroup portal_getTransparencyShader();
     
     void portal_setTransparencyShader(ShaderGroup arg);
+    
+    RenderTypeBuffers getBufferBuilderStorage();
+    
+    void setBufferBuilderStorage(RenderTypeBuffers arg);
 }

@@ -69,6 +69,7 @@ public class CrossPortalEntityRenderer {
         }
     }
     
+    // do not use runWithTransformation here (because matrixStack is changed?)
     public static void onEndRenderingEntities(MatrixStack matrixStack) {
         PixelCuller.endCulling();
         
@@ -174,6 +175,7 @@ public class CrossPortalEntityRenderer {
             }
         }
         else {
+//            client.getFramebuffer().beginWrite(true);
             PixelCuller.updateCullingPlaneInner(matrixStack, collidingPortal, false);
             PixelCuller.startCulling();
             renderEntityRegardingPlayer(entity, collidingPortal, matrixStack);
@@ -230,9 +232,6 @@ public class CrossPortalEntityRenderer {
             double valve = 0.5 + McHelper.lastTickPosOf(entity).distanceTo(entity.getPositionVec());
             if (dis < valve) {
                 return;
-            }
-            else {
-                //Helper.log("wow " + dis + " " + valve);
             }
         }
         

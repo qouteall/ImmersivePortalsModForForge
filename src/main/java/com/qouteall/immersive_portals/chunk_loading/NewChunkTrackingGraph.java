@@ -327,6 +327,7 @@ public class NewChunkTrackingGraph {
     }
     
     public static void forceRemovePlayer(ServerPlayerEntity player) {
+        Helper.log("Chunk Tracking Graph Force Remove " + player.getName().getUnformattedComponentText());
         data.forEach((dim, map) -> map.forEach(
             (chunkPos, records) -> removeInactiveWatchers(
                 records,

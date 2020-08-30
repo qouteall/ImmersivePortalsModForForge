@@ -25,6 +25,7 @@ import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeBuffers;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -134,6 +135,11 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     @Shadow
     private ShaderGroup field_239227_K_;
     
+    @Mutable
+    @Shadow
+    @Final
+    private RenderTypeBuffers renderTypeTextures;
+    
     @Inject(
         method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
         at = @At(
@@ -158,6 +164,8 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         
         MyGameRenderer.updateFogColor();
         MyGameRenderer.resetFogState();
+        
+        CrossPortalEntityRenderer.onEndRenderingEntities(matrices);
     }
     
     @Inject(
@@ -175,11 +183,26 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         Matrix4f matrix4f,
         CallbackInfo ci
     ) {
-        CrossPortalEntityRenderer.onEndRenderingEntities(matrices);
+        
         CGlobal.renderer.onAfterTranslucentRendering(matrices);
         
         //make hand rendering normal
         RenderHelper.setupLevelDiffuseLighting(matrices.getLast().getMatrix());
+    }
+    
+    @Inject(
+        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/GameSettings;getCloudOption()Lnet/minecraft/client/settings/CloudOption;"
+        )
+    )
+    private void onBeginRenderClouds(
+        MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline,
+        ActiveRenderInfo camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager,
+        Matrix4f matrix4f, CallbackInfo ci
+    ) {
+    
     }
     
     @Inject(
@@ -537,35 +560,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             updateChunks(limitTime);
         }
     }
-
-
-//    //disable cull when rendering mirror
-//    @Redirect(
-//        method = "render",
-//        at = @At(
-//            value = "INVOKE",
-//            target = "Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;draw
-//            (Lnet/minecraft/client/render/RenderLayer;)V"
-//        )
-//    )
-//    private void redirectVertexDraw(VertexConsumerProvider.Immediate immediate, RenderLayer layer) {
-//        RenderStates.shouldForceDisableCull = PortalRendering.isRenderingOddNumberOfMirrors();
-//        immediate.draw(layer);
-//        RenderStates.shouldForceDisableCull = false;
-//    }
-//
-//    @Redirect(
-//        method = "render",
-//        at = @At(
-//            value = "INVOKE",
-//            target = "Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;draw()V"
-//        )
-//    )
-//    private void redirectVertexDraw1(VertexConsumerProvider.Immediate immediate) {
-//        RenderStates.shouldForceDisableCull = PortalRendering.isRenderingOddNumberOfMirrors();
-//        immediate.draw();
-//        RenderStates.shouldForceDisableCull = false;
-//    }
     
     //redirect sky rendering dimension
     @Redirect(
@@ -674,6 +668,16 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         field_239227_K_ = arg;
     }
     
+    @Override
+    public RenderTypeBuffers getBufferBuilderStorage() {
+        return renderTypeTextures;
+    }
+    
+    @Override
+    public void setBufferBuilderStorage(RenderTypeBuffers arg) {
+        renderTypeTextures = arg;
+    }
+    
     private void portal_updateChunks() {
         
         ChunkRenderDispatcher chunkBuilder = this.renderDispatcher;
@@ -681,9 +685,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         this.displayListEntitiesDirty |= uploaded;//no short circuit
         
         int limit = 1;
-//        if (CGlobal.renderer.getPortalLayer() > 1) {
-//            limit = 1;
-//        }
         
         int num = 0;
         for (Iterator<ChunkRenderDispatcher.ChunkRender> iterator = chunksToUpdate.iterator(); iterator.hasNext(); ) {

@@ -63,6 +63,8 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
             return false;
         }
         
+        BlockPos.Mutable temp1 = new BlockPos.Mutable();
+        
         NetherPortalGeneration.startGeneratingPortal(
             fromWorld,
             toWorld,
@@ -105,7 +107,7 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
                     temp1
                 );
                 if (result != null) {
-                    if (s -> fromWorld != toWorld || fromShape.anchor != s.anchor.test(result)) {
+                    if (fromWorld != toWorld || fromShape.anchor != result.anchor) {
                         return result;
                     }
                 }
@@ -116,8 +118,10 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
         return true;
     }
     
-    protected BlockPortalShape getNewPortalPlacement(ServerWorld toWorld, BlockPos toPos,
-                                                     BlockPortalShape templateToShape) {
+    protected BlockPortalShape getNewPortalPlacement(
+        ServerWorld toWorld, BlockPos toPos,
+        BlockPortalShape templateToShape
+    ) {
         IntBox airCubePlacement =
             NetherPortalGeneration.findAirCubePlacement(
                 toWorld, toPos,

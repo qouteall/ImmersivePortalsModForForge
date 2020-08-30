@@ -57,6 +57,7 @@ public class CHelper {
         }
     }
     
+    // TODO optimize out the stream
     public static Stream<Portal> getClientNearbyPortals(double range) {
         ClientPlayerEntity player = Minecraft.getInstance().player;
         List<GlobalTrackedPortal> globalPortals = ((IEClientWorld) player.world).getGlobalPortals();

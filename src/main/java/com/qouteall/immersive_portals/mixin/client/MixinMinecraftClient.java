@@ -9,6 +9,7 @@ import com.qouteall.immersive_portals.render.FPSMonitor;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.renderer.RenderTypeBuffers;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.world.ClientWorld;
@@ -48,6 +49,11 @@ public abstract class MixinMinecraftClient implements IEMinecraftClient {
     @Shadow
     @Nullable
     public ClientWorld world;
+    
+    @Mutable
+    @Shadow
+    @Final
+    private RenderTypeBuffers renderTypeBuffers;
     
     @Inject(
         method = "Lnet/minecraft/client/Minecraft;runTick()V",
@@ -139,5 +145,10 @@ public abstract class MixinMinecraftClient implements IEMinecraftClient {
     @Override
     public void setWorldRenderer(WorldRenderer r) {
         worldRenderer = r;
+    }
+    
+    @Override
+    public void setBufferBuilderStorage(RenderTypeBuffers arg) {
+        renderTypeBuffers = arg;
     }
 }
