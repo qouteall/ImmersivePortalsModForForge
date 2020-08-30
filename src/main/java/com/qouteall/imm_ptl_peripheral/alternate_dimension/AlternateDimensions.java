@@ -41,8 +41,8 @@ public class AlternateDimensions {
         
         HashMap<Structure<?>, StructureSeparationSettings> structureMap = new HashMap<>();
         structureMap.putAll(DimensionStructuresSettings.field_236191_b_);
-        structureMap.remove(Structure.MINESHAFT);
-        structureMap.remove(Structure.STRONGHOLD);
+        structureMap.remove(Structure.field_236367_c_);
+        structureMap.remove(Structure.field_236375_k_);
         
         DimensionStructuresSettings structuresConfig = new DimensionStructuresSettings(
             Optional.empty(), structureMap
