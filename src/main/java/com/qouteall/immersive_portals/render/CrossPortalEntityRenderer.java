@@ -61,6 +61,10 @@ public class CrossPortalEntityRenderer {
     }
     
     public static void onBeginRenderingEntities(MatrixStack matrixStack) {
+        if (!Global.correctCrossPortalEntityRendering) {
+            return;
+        }
+        
         if (PortalRendering.isRendering()) {
             PixelCuller.updateCullingPlaneInner(
                 matrixStack, PortalRendering.getRenderingPortal(), false
@@ -71,7 +75,9 @@ public class CrossPortalEntityRenderer {
     
     // do not use runWithTransformation here (because matrixStack is changed?)
     public static void onEndRenderingEntities(MatrixStack matrixStack) {
-        PixelCuller.endCulling();
+        if (!Global.correctCrossPortalEntityRendering) {
+            return;
+        }
         
         renderEntityProjections(matrixStack);
     }
@@ -175,7 +181,10 @@ public class CrossPortalEntityRenderer {
             }
         }
         else {
-//            client.getFramebuffer().beginWrite(true);
+            PixelCuller.endCulling();
+            // don't draw the existing triangles with culling enabled
+            client.getRenderTypeBuffers().getBufferSource().finish();
+            
             PixelCuller.updateCullingPlaneInner(matrixStack, collidingPortal, false);
             PixelCuller.startCulling();
             renderEntityRegardingPlayer(entity, collidingPortal, matrixStack);

@@ -74,7 +74,8 @@ public class MyGameRenderer {
             renderInfo.world,
             renderInfo.cameraPos,
             renderInfo.cameraPos,
-            invokeWrapper
+            invokeWrapper,
+            renderInfo.renderDistance
         );
         
         RenderInfo.popRenderInfo();
@@ -84,7 +85,8 @@ public class MyGameRenderer {
         ClientWorld newWorld,
         Vector3d thisTickCameraPos,
         Vector3d lastTickCameraPos,
-        Consumer<Runnable> invokeWrapper
+        Consumer<Runnable> invokeWrapper,
+        int renderDistance
     ) {
         resetGlStates();
         
@@ -145,6 +147,8 @@ public class MyGameRenderer {
         
         ((IEWorldRenderer) oldWorldRenderer).setVisibleChunks(new ObjectArrayList());
         
+        int oldRenderDistance = ((IEWorldRenderer) worldRenderer).portal_getRenderDistance();
+        
         //switch
         ((IEMinecraftClient) client).setWorldRenderer(worldRenderer);
         client.world = newWorld;
@@ -164,14 +168,18 @@ public class MyGameRenderer {
             client.objectMouseOver = BlockManipulationClient.remoteHitResult;
         }
         ieGameRenderer.setCamera(newCamera);
-        ((IEWorldRenderer) worldRenderer).setBufferBuilderStorage(secondaryBufferBuilderStorage);
-        ((IEMinecraftClient) client).setBufferBuilderStorage(secondaryBufferBuilderStorage);
+        
+        if (Global.useSecondaryEntityVertexConsumer) {
+            ((IEWorldRenderer) worldRenderer).setBufferBuilderStorage(secondaryBufferBuilderStorage);
+            ((IEMinecraftClient) client).setBufferBuilderStorage(secondaryBufferBuilderStorage);
+        }
         
         Object newSodiumContext = SodiumInterface.createNewRenderingContext.apply(worldRenderer);
         Object oldSodiumContext = SodiumInterface.switchRenderingContext.apply(worldRenderer, newSodiumContext);
         
         ((IEWorldRenderer) oldWorldRenderer).portal_setTransparencyShader(null);
         ((IEWorldRenderer) worldRenderer).portal_setTransparencyShader(null);
+        ((IEWorldRenderer) worldRenderer).portal_setRenderDistance(renderDistance);
         
         //update lightmap
         if (!RenderStates.isDimensionRendered(newDimension)) {
@@ -219,6 +227,8 @@ public class MyGameRenderer {
         
         ((IEWorldRenderer) worldRenderer).setBufferBuilderStorage(oldBufferBuilder);
         ((IEMinecraftClient) client).setBufferBuilderStorage(oldClientBufferBuilder);
+        
+        ((IEWorldRenderer) worldRenderer).portal_setRenderDistance(oldRenderDistance);
         
         if (Global.looseVisibleChunkIteration) {
             client.renderChunksMany = true;
@@ -321,15 +331,10 @@ public class MyGameRenderer {
         RenderHelper.func_237533_a_(matrixStack.getLast().getMatrix());
     }
     
-    //render fewer chunks when rendering portal
-    //only active when graphic option is not fancy
-    //NOTE we should not prune these chunks in setupTerrain()
-    //because if it's pruned there these chunks will be rebuilt
-    //then it will generate lag when player cross the portal by building chunks
-    //we want the far chunks to be built but not rendered
-    public static void pruneVisibleChunksInFastGraphics(ObjectList<?> visibleChunks) {
+    public static void pruneVisibleChunks(ObjectList<?> visibleChunks) {
         int renderDistance = client.gameSettings.renderDistanceChunks;
         Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+        
         double range = ((renderDistance * 16) / 3) * ((renderDistance * 16) / 3);
         
         Predicate<ChunkRenderDispatcher.ChunkRender> builtChunkPredicate = (builtChunk) -> {
@@ -343,13 +348,10 @@ public class MyGameRenderer {
         );
     }
     
-    public static void doPruneVisibleChunks(ObjectList<?> visibleChunks) {
+    public static void pruneRenderList(ObjectList<?> visibleChunks) {
         if (PortalRendering.isRendering()) {
-            if (CGlobal.renderFewerInFastGraphic) {
-                //TODO recover
-//                if (!MinecraftClient.getInstance().options.fancyGraphics) {
-//                    MyGameRenderer.pruneVisibleChunksInFastGraphics(visibleChunks);
-//                }
+            if (Global.reducedPortalRendering) {
+//                MyGameRenderer.pruneVisibleChunks(visibleChunks);
             }
         }
     }

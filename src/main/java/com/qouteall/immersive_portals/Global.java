@@ -35,15 +35,11 @@ public class Global {
     
     public static boolean correctCrossPortalEntityRendering = true;
     
-    public static boolean loadFewerChunks = false;
-    
     public static boolean multiThreadedNetherPortalSearching = true;
     
     public static boolean edgelessSky = false;
     
     public static boolean disableTeleportation = false;
-    
-    public static boolean reversibleNetherPortalLinking = false;
     
     public static boolean looseVisibleChunkIteration = true;
     
@@ -66,6 +62,10 @@ public class Global {
     
     public static boolean serverSmoothLoading = true;
     
+    public static boolean reducedPortalRendering = false;
+    
+    public static boolean useSecondaryEntityVertexConsumer = true;
+    
     public static enum RenderMode {
         normal,
         compatibility,
@@ -73,4 +73,21 @@ public class Global {
         none
     }
     
+    // this should not be in core but the config is in core
+    public static enum NetherPortalMode {
+        normal,
+        vanilla,
+        adaptive
+    }
+    
+    public static enum EndPortalMode {
+        normal,
+        toObsidianPlatform,
+        scaledView,
+        vanilla
+    }
+    
+    public static NetherPortalMode netherPortalMode = NetherPortalMode.normal;
+    
+    public static EndPortalMode endPortalMode = EndPortalMode.normal;
 }

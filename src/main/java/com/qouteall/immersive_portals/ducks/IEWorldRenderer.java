@@ -38,4 +38,8 @@ public interface IEWorldRenderer {
     RenderTypeBuffers getBufferBuilderStorage();
     
     void setBufferBuilderStorage(RenderTypeBuffers arg);
+    
+    int portal_getRenderDistance();
+    
+    void portal_setRenderDistance(int arg);
 }

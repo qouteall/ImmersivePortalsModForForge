@@ -1,17 +1,19 @@
 package com.qouteall.immersive_portals.portal.custom_portal_gen.form;
 
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.my_util.IntBox;
+import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.custom_portal_gen.CustomPortalGeneration;
 import com.qouteall.immersive_portals.portal.custom_portal_gen.PortalGenInfo;
 import com.qouteall.immersive_portals.portal.nether_portal.BlockPortalShape;
-import com.qouteall.immersive_portals.portal.nether_portal.BreakablePortalEntity;
 import com.qouteall.immersive_portals.portal.nether_portal.GeneralBreakablePortal;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.gen.WorldGenRegion;
 import net.minecraft.world.server.ServerWorld;
-import javax.annotation.Nullable;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public abstract class NetherPortalLikeForm extends PortalGenForm {
@@ -44,6 +46,10 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
             return false;
         }
         
+        if (!testThisSideShape(fromWorld, fromShape)) {
+            return false;
+        }
+        
         if (NetherPortalGeneration.isOtherGenerationRunning(fromWorld, fromShape.innerAreaBox.getCenterVec())) {
             return false;
         }
@@ -57,28 +63,22 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
         
         BlockPos toPos = cpg.mapPosition(fromShape.innerAreaBox.getCenter());
         
-        BlockPortalShape templateToShape = checkAndGetTemplateToShape(fromWorld, fromShape);
-        
-        if (templateToShape == null) {
-            return false;
-        }
-        
-        BlockPos.Mutable temp1 = new BlockPos.Mutable();
-        
+        Function<WorldGenRegion, Function<BlockPos.Mutable, PortalGenInfo>> frameMatchingFunc =
+            getFrameMatchingFunc(fromWorld, toWorld, fromShape);
         NetherPortalGeneration.startGeneratingPortal(
             fromWorld,
             toWorld,
             fromShape,
             toPos,
-            128,
+            Global.netherPortalFindingRadius,
             otherSideFramePredicate,
             toShape -> {
                 generateNewFrame(fromWorld, fromShape, toWorld, toShape);
             },
             info -> {
                 //generate portal entity
-                BreakablePortalEntity[] result = generatePortalEntitiesAndPlaceholder(info);
-                for (BreakablePortalEntity portal : result) {
+                Portal[] result = generatePortalEntitiesAndPlaceholder(info);
+                for (Portal portal : result) {
                     cpg.onPortalGenerated(portal);
                 }
             },
@@ -88,9 +88,7 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
                     return null;
                 }
                 
-                BlockPortalShape toShape = getNewPortalPlacement(toWorld, toPos, templateToShape);
-                
-                return toShape;
+                return getNewPortalPlacement(toWorld, toPos, fromWorld, fromShape);
             },
             () -> {
                 // check portal integrity while loading chunk
@@ -98,54 +96,64 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
                     bp -> !fromWorld.isAirBlock(bp)
                 );
             },
-            //avoid linking to the beginning frame
-            (region, blockPos) -> {
-                BlockPortalShape result = templateToShape.matchShapeWithMovedFirstFramePos(
-                    pos -> areaPredicate.test(region.getBlockState(pos)),
-                    pos -> otherSideFramePredicate.test(region.getBlockState(pos)),
-                    blockPos,
-                    temp1
-                );
-                if (result != null) {
-                    if (fromWorld != toWorld || fromShape.anchor != result.anchor) {
-                        return result;
-                    }
-                }
-                return null;
-            }
+            frameMatchingFunc
         );
         
         return true;
     }
     
-    protected BlockPortalShape getNewPortalPlacement(
+    public Function<WorldGenRegion, Function<BlockPos.Mutable, PortalGenInfo>> getFrameMatchingFunc(
+        ServerWorld fromWorld, ServerWorld toWorld,
+        BlockPortalShape fromShape
+    ) {
+        Predicate<BlockState> areaPredicate = getAreaPredicate();
+        Predicate<BlockState> otherSideFramePredicate = getOtherSideFramePredicate();
+        BlockPos.Mutable temp2 = new BlockPos.Mutable();
+        return (region) -> (blockPos) -> {
+            BlockPortalShape result = fromShape.matchShapeWithMovedFirstFramePos(
+                pos -> areaPredicate.test(region.getBlockState(pos)),
+                pos -> otherSideFramePredicate.test(region.getBlockState(pos)),
+                blockPos,
+                temp2
+            );
+            if (result != null) {
+                if (fromWorld != toWorld || fromShape.anchor != result.anchor) {
+                    return new PortalGenInfo(
+                        fromWorld.func_234923_W_(),
+                        toWorld.func_234923_W_(),
+                        fromShape, result
+                    );
+                }
+            }
+            return null;
+        };
+    }
+    
+    public PortalGenInfo getNewPortalPlacement(
         ServerWorld toWorld, BlockPos toPos,
-        BlockPortalShape templateToShape
+        ServerWorld fromWorld, BlockPortalShape fromShape
     ) {
         IntBox airCubePlacement =
             NetherPortalGeneration.findAirCubePlacement(
                 toWorld, toPos,
-                templateToShape.axis, templateToShape.totalAreaBox.getSize(),
-                128
+                fromShape.axis, fromShape.totalAreaBox.getSize()
             );
-        
-        return templateToShape.getShapeWithMovedAnchor(
-            airCubePlacement.l.subtract(
-                templateToShape.totalAreaBox.l
-            ).add(templateToShape.anchor)
+    
+        BlockPortalShape placedShape = fromShape.getShapeWithMovedTotalAreaBox(
+            airCubePlacement
+        );
+    
+        return new PortalGenInfo(
+            fromWorld.func_234923_W_(),
+            toWorld.func_234923_W_(),
+            fromShape,
+            placedShape
         );
     }
     
-    public BreakablePortalEntity[] generatePortalEntitiesAndPlaceholder(PortalGenInfo info) {
-        return NetherPortalGeneration.generateBreakablePortalEntitiesAndPlaceholder(
-            info, GeneralBreakablePortal.entityType
-        );
-    }
-    
-    // if check fails, return null
-    @Nullable
-    public BlockPortalShape checkAndGetTemplateToShape(ServerWorld world, BlockPortalShape fromShape) {
-        return fromShape;
+    public Portal[] generatePortalEntitiesAndPlaceholder(PortalGenInfo info) {
+        info.generatePlaceholderBlocks();
+        return info.generateBiWayBiFacedPortal(GeneralBreakablePortal.entityType);
     }
     
     public abstract void generateNewFrame(
@@ -160,4 +168,8 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
     public abstract Predicate<BlockState> getThisSideFramePredicate();
     
     public abstract Predicate<BlockState> getAreaPredicate();
+    
+    public boolean testThisSideShape(ServerWorld fromWorld, BlockPortalShape fromShape) {
+        return true;
+    }
 }

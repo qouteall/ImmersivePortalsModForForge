@@ -33,6 +33,7 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
@@ -385,7 +386,6 @@ public class McHelper {
         RegistryKey<World> dimension,
         int x, int z
     ) {
-        //TODO cleanup
         ChunkHolder chunkHolder_ = getIEStorage(dimension).getChunkHolder_(ChunkPos.asLong(x, z));
         if (chunkHolder_ == null) {
             return null;
@@ -481,7 +481,7 @@ public class McHelper {
         for (int x = chunkXStart; x <= chunkXEnd; x++) {
             for (int z = chunkZStart; z <= chunkZEnd; z++) {
                 Chunk chunk = chunkAccessor.getChunk(x, z);
-                if (chunk != null) {
+                if (chunk != null && !(chunk instanceof EmptyChunk)) {
                     ClassInheritanceMultiMap<Entity>[] entitySections =
                         ((IEWorldChunk) chunk).getEntitySections();
                     for (int i = chunkYStart; i <= chunkYEnd; i++) {
@@ -657,7 +657,7 @@ public class McHelper {
      * It will spawn even if the chunk is not loaded
      * ServerWorld#addEntity(Entity)
      */
-    public static void spawnServerEntityToUnloadedArea(Entity entity) {
+    public static void spawnServerEntity(Entity entity) {
         Validate.isTrue(!entity.world.isRemote());
         
         entity.forceSpawn = true;

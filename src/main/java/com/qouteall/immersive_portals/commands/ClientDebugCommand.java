@@ -487,11 +487,6 @@ public class ClientDebugCommand {
         );
         registerSwitchCommand(
             builder,
-            "render_fewer_on_fast_graphic",
-            cond -> CGlobal.renderFewerInFastGraphic = cond
-        );
-        registerSwitchCommand(
-            builder,
             "gl_check_error",
             cond -> Global.doCheckGlError = cond
         );
@@ -551,6 +546,11 @@ public class ClientDebugCommand {
             builder,
             "server_smooth_loading",
             cond -> Global.serverSmoothLoading = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "secondary_vertex_consumer",
+            cond -> Global.useSecondaryEntityVertexConsumer = cond
         );
         
         builder.then(Commands

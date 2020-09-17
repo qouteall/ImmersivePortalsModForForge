@@ -1,5 +1,6 @@
 package com.qouteall.imm_ptl_peripheral.mixin.common.portal_generation;
 
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.portal.EndPortalEntity;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import net.minecraft.block.Block;
@@ -12,6 +13,7 @@ import net.minecraft.item.ItemUseContext;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,8 +28,10 @@ public class MixinEnderEyeItem {
         ItemUseContext itemUsageContext_1,
         CallbackInfoReturnable<ActionResultType> cir
     ) {
-        cir.setReturnValue(myUseOnBlock(itemUsageContext_1));
-        cir.cancel();
+        if (Global.endPortalMode != Global.EndPortalMode.vanilla) {
+            cir.setReturnValue(myUseOnBlock(itemUsageContext_1));
+            cir.cancel();
+        }
     }
     
     private ActionResultType myUseOnBlock(ItemUseContext itemUsageContext) {
@@ -68,7 +72,7 @@ public class MixinEnderEyeItem {
                     
                     world.playBroadcastSound(1038, blockPos_2.add(1, 0, 1), 0);
                     
-                    EndPortalEntity.onEndPortalComplete(((ServerWorld) world), pattern);
+                    EndPortalEntity.onEndPortalComplete(((ServerWorld) world), Vector3d.func_237491_b_(pattern.getFrontTopLeft()).add(-1.5, 0.5, -1.5));
                 }
                 
                 return ActionResultType.SUCCESS;

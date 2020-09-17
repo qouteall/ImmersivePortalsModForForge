@@ -4,6 +4,7 @@ import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.PehkuiInterface;
 import com.qouteall.immersive_portals.dimension_sync.DimId;
 import com.qouteall.immersive_portals.my_util.SignalArged;
 import com.qouteall.immersive_portals.portal.extension.PortalExtension;
@@ -16,6 +17,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Quaternion;
@@ -23,6 +25,8 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import org.apache.commons.lang3.Validate;
+
 import javax.annotation.Nullable;
 import java.util.UUID;
 
@@ -32,6 +36,7 @@ import java.util.UUID;
 public class Portal extends Entity {
     public static EntityType<Portal> entityType;
     
+    public static final UUID nullUUID = Util.field_240973_b_;
     
     /**
      * The portal area length along axisW
@@ -61,6 +66,7 @@ public class Portal extends Entity {
     public boolean teleportable = true;
     /**
      * If not null, this portal can only be accessed by one player
+     * If it's {@link Portal#nullUUID} the portal can only be accessed by entities
      */
     @Nullable
     public UUID specificPlayerId;
@@ -104,6 +110,9 @@ public class Portal extends Entity {
      * Additional things
      */
     public PortalExtension extension = new PortalExtension();
+    
+    @Nullable
+    public String portalTag;
     
     public static final SignalArged<Portal> clientPortalTickSignal = new SignalArged<>();
     public static final SignalArged<Portal> serverPortalTickSignal = new SignalArged<>();
@@ -179,6 +188,10 @@ public class Portal extends Entity {
         if (compoundTag.contains("teleportChangesScale")) {
             teleportChangesScale = compoundTag.getBoolean("teleportChangesScale");
         }
+    
+        if (compoundTag.contains("portalTag")) {
+            portalTag = compoundTag.getString("portalTag");
+        }
         
         extension = new PortalExtension();
         extension.readFromNbt(compoundTag);
@@ -221,6 +234,10 @@ public class Portal extends Entity {
         
         compoundTag.putDouble("scale", scaling);
         compoundTag.putBoolean("teleportChangesScale", teleportChangesScale);
+    
+        if (portalTag != null) {
+            compoundTag.putString("portalTag", portalTag);
+        }
         
         extension.writeToNbt(compoundTag);
     }
@@ -232,6 +249,8 @@ public class Portal extends Entity {
         return cullableXStart != cullableXEnd;
     }
     
+    // use canTeleportEntity
+    @Deprecated
     public boolean isTeleportable() {
         return teleportable;
     }
@@ -366,6 +385,12 @@ public class Portal extends Entity {
         //nothing
     }
     
+    public void reloadAndSyncToClient() {
+        Validate.isTrue(!world.isRemote());
+        updateCache();
+        McHelper.getIEStorage(this.world.func_234923_W_()).resendSpawnPacketToTrackers(this);
+    }
+    
     @Override
     public String toString() {
         return String.format(
@@ -380,6 +405,36 @@ public class Portal extends Entity {
             specificPlayerId != null ? (",specificAccessor:" + specificPlayerId.toString()) : "",
             hasScaling() ? (",scale:" + scaling) : ""
         );
+    }
+    
+    public void transformVelocity(Entity entity) {
+        if (PehkuiInterface.isPehkuiPresent) {
+            entity.setMotion(transformLocalVecNonScale(entity.getMotion()));
+        }
+        else {
+            entity.setMotion(transformLocalVec(entity.getMotion()));
+        }
+    }
+    
+    public boolean canTeleportEntity(Entity entity) {
+        if (!teleportable) {
+            return false;
+        }
+        if (entity instanceof ServerPlayerEntity) {
+            if (!entity.getUniqueID().equals(specificPlayerId)) {
+                return false;
+            }
+        }
+        else {
+            if (specificPlayerId != null) {
+                if (!specificPlayerId.equals(nullUUID)) {
+                    // it can only be used by the player
+                    return false;
+                }
+            }
+        }
+        
+        return entity.isNonBoss();
     }
     
     public boolean hasScaling() {
@@ -684,16 +739,16 @@ public class Portal extends Entity {
     }
     
     public static boolean isParallelPortal(Portal currPortal, Portal outerPortal) {
-        if (currPortal.world.func_234923_W_() != outerPortal.dimensionTo) {
-            return false;
-        }
-        if (currPortal.dimensionTo != outerPortal.world.func_234923_W_()) {
-            return false;
-        }
-        if (currPortal.getNormal().dotProduct(outerPortal.getContentDirection()) > -0.9) {
-            return false;
-        }
-        return !outerPortal.isInside(currPortal.getPositionVec(), 0.1);
+        return currPortal.world.func_234923_W_() == outerPortal.dimensionTo &&
+            currPortal.dimensionTo == outerPortal.world.func_234923_W_() &&
+            !(currPortal.getNormal().dotProduct(outerPortal.getContentDirection()) > -0.9) &&
+            !outerPortal.isInside(currPortal.getPositionVec(), 0.1);
+    }
+    
+    public static boolean isParallelOrientedPortal(Portal currPortal, Portal outerPortal) {
+        return currPortal.world.func_234923_W_() == outerPortal.dimensionTo &&
+            currPortal.getNormal().dotProduct(outerPortal.getContentDirection()) <= -0.9 &&
+            !outerPortal.isInside(currPortal.getPositionVec(), 0.1);
     }
     
     public static boolean isReversePortal(Portal a, Portal b) {

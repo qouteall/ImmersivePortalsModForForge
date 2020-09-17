@@ -6,6 +6,7 @@ import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.dimension_sync.DimId;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
+import com.qouteall.immersive_portals.network.CommonNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.world.ClientWorld;
@@ -61,40 +62,7 @@ public class StcRedirected {
         RegistryKey<World> dimension,
         IPacket packet
     ) {
-        Minecraft mc = Minecraft.getInstance();
-        
-        ClientWorld packetWorld = CGlobal.clientWorldLoader.getWorld(dimension);
-        
-        assert packetWorld != null;
-        
-        assert packetWorld.getChunkProvider() instanceof MyClientChunkManager;
-        
-        ClientPlayNetHandler netHandler = ((IEClientWorld) packetWorld).getNetHandler();
-        
-        if ((netHandler).getWorld() != packetWorld) {
-            ((IEClientPlayNetworkHandler) netHandler).setWorld(packetWorld);
-            Helper.err("The world field of client net handler is wrong");
-        }
-        
-        ClientWorld originalWorld = mc.world;
-        //some packet handling may use mc.world so switch it
-        mc.world = packetWorld;
-        
-        try {
-            packet.processPacket(netHandler);
-        }
-        catch (Throwable e) {
-            if (reportedErrors < 200) {
-                reportedErrors++;
-                throw new IllegalStateException(
-                    "handling packet in " + dimension,
-                    e
-                );
-            }
-        }
-        finally {
-            mc.world = originalWorld;
-        }
+        CommonNetwork.processRedirectedPacket(dimension, packet);
     }
     
     public void encode(PacketBuffer buf) {

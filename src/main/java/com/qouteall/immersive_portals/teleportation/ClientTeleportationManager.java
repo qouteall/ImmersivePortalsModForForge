@@ -123,6 +123,8 @@ public class ClientTeleportationManager {
     }
     
     private boolean tryTeleport(float tickDelta) {
+        ClientPlayerEntity player = client.player;
+    
         Vector3d newHeadPos = getPlayerHeadPos(tickDelta);
         
         if (moveStartPoint.squareDistanceTo(newHeadPos) > 400) {
@@ -132,7 +134,7 @@ public class ClientTeleportationManager {
         
         Tuple<Portal, Vector3d> pair = CHelper.getClientNearbyPortals(32)
             .flatMap(portal -> {
-                if (portal.isTeleportable()) {
+                if (portal.canTeleportEntity(player)) {
                     Vector3d collidingPoint = portal.rayTrace(
                         moveStartPoint,
                         newHeadPos
@@ -226,14 +228,9 @@ public class ClientTeleportationManager {
         amendChunkEntityStatus(player);
         
         McHelper.adjustVehicle(player);
-        
-        if (portal.teleportChangesScale) {
-            player.setMotion(portal.transformLocalVecNonScale(player.getMotion()));
-        }
-        else {
-            player.setMotion(portal.transformLocalVec(player.getMotion()));
-        }
-        
+    
+        portal.transformVelocity(player);
+    
         TransformationManager.onClientPlayerTeleported(portal);
         
         if (player.getRidingEntity() != null) {

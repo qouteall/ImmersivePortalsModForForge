@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals.mixin.client;
+package com.qouteall.immersive_portals.mixin.client.render;
 
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
@@ -42,7 +42,8 @@ public class MixinWorldRenderer_Optional {
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/RenderType;getTranslucent()Lnet/minecraft/client/renderer/RenderType;",
             ordinal = 0
-        )
+        ),
+        require = 0
     )
     private RenderType redirectGetTranslucent() {
         if (PortalRendering.isRendering()) {
@@ -58,7 +59,8 @@ public class MixinWorldRenderer_Optional {
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher;setRenderPosition(Lnet/minecraft/util/math/vector/Vector3d;)V"
-        )
+        ),
+        require = 0
     )
     private void onBeforeChunkBuilderSetCameraPosition(
         ActiveRenderInfo camera_1,
@@ -82,7 +84,8 @@ public class MixinWorldRenderer_Optional {
     //one in updateChunks() one in setupTerrain()
     @ModifyConstant(
         method = "Lnet/minecraft/client/renderer/WorldRenderer;setupTerrain(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
-        constant = @Constant(doubleValue = 768.0D)
+        constant = @Constant(doubleValue = 768.0D),
+        require = 0
     )
     private double modifyRebuildRange(double original) {
         if (PortalRendering.isRendering()) {
@@ -100,7 +103,8 @@ public class MixinWorldRenderer_Optional {
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher;setRenderPosition(Lnet/minecraft/util/math/vector/Vector3d;)V"
-        )
+        ),
+        require = 0
     )
     private void onSetChunkBuilderCameraPosition(ChunkRenderDispatcher chunkBuilder, Vector3d cameraPosition) {
         if (PortalRendering.isRendering()) {

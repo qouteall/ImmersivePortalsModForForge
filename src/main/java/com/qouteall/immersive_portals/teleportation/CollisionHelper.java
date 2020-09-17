@@ -17,7 +17,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -64,8 +63,14 @@ public class CollisionHelper {
     }
     
     public static boolean shouldCollideWithPortal(Entity entity, Portal portal, float tickDelta) {
-        return portal.isTeleportable() &&
-            portal.isInFrontOfPortal(entity.getEyePosition(tickDelta));
+        if (portal.canTeleportEntity(entity)) {
+            Vector3d cameraPosVec = entity.getEyePosition(tickDelta);
+            if (portal.isInFrontOfPortal(cameraPosVec) &&
+                portal.isPointInPortalProjection(cameraPosVec)) {
+                return true;
+            }
+        }
+        return false;
     }
     
     public static Vector3d handleCollisionHalfwayInPortal(
@@ -221,23 +226,6 @@ public class CollisionHelper {
         else {
             return McHelper.getServer().getWorld(dimension);
         }
-    }
-    
-    //world.getEntities is not reliable
-    //it has a small chance to ignore collided entities
-    //this would cause player to fall through floor when halfway though portal
-    //use entity.getCollidingPortal() and do not use this
-    @Deprecated
-    public static Portal getCollidingPortalUnreliable(Entity entity, float tickDelta) {
-        AxisAlignedBB box = entity.getBoundingBox().expand(entity.getMotion());
-        
-        return getCollidingPortalRough(entity, box).filter(
-            portal -> shouldCollideWithPortal(
-                entity, portal, tickDelta
-            )
-        ).min(
-            Comparator.comparingDouble(p -> p.getPosY())
-        ).orElse(null);
     }
     
     public static Stream<Portal> getCollidingPortalRough(Entity entity, AxisAlignedBB box) {

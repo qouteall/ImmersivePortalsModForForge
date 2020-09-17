@@ -52,21 +52,6 @@ public class ViewAreaRenderer {
         
         generateViewAreaTriangles(portal, posInPlayerCoordinate, vertexOutput);
         
-//        double distanceToPlane = portal.getDistanceToPlane(cameraPos);
-//        boolean shouldRenderHood = shouldRenderAdditionalHood(portal, cameraPos, distanceToPlane);
-        
-//        if (shouldRenderHood) {
-//            renderAdditionalBox(portal, cameraPos, vertexOutput);
-//        }
-//
-//        if (distanceToPlane < 0.05) {
-//            generateViewAreaTriangles(
-//                portal,
-//                posInPlayerCoordinate.add(portal.getNormal().multiply(0.05)),
-//                vertexOutput
-//            );
-//        }
-        
     }
     
     private static void generateViewAreaTriangles(Portal portal, Vector3d posInPlayerCoordinate, Consumer<Vector3d> vertexOutput) {

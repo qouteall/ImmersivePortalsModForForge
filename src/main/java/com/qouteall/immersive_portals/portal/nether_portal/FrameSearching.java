@@ -16,19 +16,21 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class FrameSearching {
-    public static void startSearchingPortalFrameAsync(
+    // T is PortalGenInfo
+    
+    public static <T> void startSearchingPortalFrameAsync(
         WorldGenRegion region,
         int regionRadius,
         BlockPos centerPoint,
         Predicate<BlockState> framePredicate,
-        Function<BlockPos.Mutable,BlockPortalShape> matchShape,
-        Consumer<BlockPortalShape> onFound,
+        Function<BlockPos.Mutable, T> matchShape,
+        Consumer<T> onFound,
         Runnable onNotFound
     ) {
         CompletableFuture<Void> future = CompletableFuture.runAsync(
             () -> {
                 try {
-                    BlockPortalShape result = searchPortalFrame(
+                    T result = searchPortalFrame(
                         region, regionRadius,
                         centerPoint, framePredicate,
                         matchShape
@@ -55,12 +57,12 @@ public class FrameSearching {
     // Return null for not found
     // After removing the usage of stream API, it becomes 100 times faster!!!
     @Nullable
-    private static BlockPortalShape searchPortalFrame(
+    public static <T> T searchPortalFrame(
         WorldGenRegion region,
         int regionRadius,
         BlockPos centerPoint,
         Predicate<BlockState> framePredicate,
-        Function<BlockPos.Mutable, BlockPortalShape> matchShape
+        Function<BlockPos.Mutable, T> matchShape
     ) {
         ArrayList<IChunk> chunks = getChunksFromNearToFar(
             region, centerPoint, regionRadius
@@ -88,12 +90,10 @@ public class FrameSearching {
                                     int worldZ = localZ + chunk.getPos().getZStart();
                                     temp.setPos(worldX, worldY, worldZ);
     
-                                    BlockPortalShape result = matchShape.apply(temp);
+                                    T result = matchShape.apply(temp);
                                     if (result != null) {
                                         return result;
                                     }
-
-
                                 }
                             }
                         }

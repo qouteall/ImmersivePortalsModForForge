@@ -80,20 +80,30 @@ public class CustomPortalGenManagement {
         
         result.func_239659_c_().forEach((entry) -> {
             CustomPortalGeneration gen = entry.getValue();
+            gen.identifier = entry.getKey().func_240901_a_();
             
             if (!gen.initAndCheck()) {
                 Helper.log("Custom Portal Gen Is Not Activated " + gen.toString());
                 return;
             }
             
-            Helper.log("Loaded Custom Portal Gen " + entry.getKey().func_240901_a_() + " " + gen.toString());
+            Helper.log("Loaded Custom Portal Gen " + entry.getKey().func_240901_a_());
             
             load(gen);
             
             if (gen.reversible) {
                 CustomPortalGeneration reverse = gen.getReverse();
-                if (gen.initAndCheck()) {
-                    load(reverse);
+                
+                if (reverse != null) {
+                    reverse.identifier = entry.getKey().func_240901_a_();
+                    if (gen.initAndCheck()) {
+                        load(reverse);
+                    }
+                }
+                else {
+                    McHelper.sendMessageToFirstLoggedPlayer(new StringTextComponent(
+                        "Cannot create reverse generation of " + gen
+                    ));
                 }
             }
         });

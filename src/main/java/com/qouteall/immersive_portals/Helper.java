@@ -268,6 +268,13 @@ public class Helper {
         );
     }
     
+    public static AxisAlignedBB getBoxByBottomPosAndSize(Vector3d boxBottomCenter, Vector3d viewBoxSize) {
+        return new AxisAlignedBB(
+                boxBottomCenter.subtract(viewBoxSize.x / 2, 0, viewBoxSize.z / 2),
+                boxBottomCenter.add(viewBoxSize.x / 2, viewBoxSize.y, viewBoxSize.z / 2)
+            );
+    }
+    
     public static class SimpleBox<T> {
         public T obj;
         
@@ -944,6 +951,7 @@ public class Helper {
         return portal;
     }
     
+    // calculate upon first retrieval and cache it
     public static <T> Supplier<T> cached(Supplier<T> supplier) {
         return new Supplier<T>() {
             T cache = null;

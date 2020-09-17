@@ -21,17 +21,14 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
-@Mixin(ChunkManager.class)
+@Mixin(value = ChunkManager.class, priority = 1100)
 public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvilChunkStorage {
     @Shadow
     private int viewDistance;
@@ -126,20 +123,20 @@ public abstract class MixinThreadedAnvilChunkStorage_C implements IEThreadedAnvi
     }
     
     //cancel vanilla packet sending
-    @Redirect(
-        method = "Lnet/minecraft/world/server/ChunkManager;func_219179_a(Lnet/minecraft/world/server/ChunkHolder;)Ljava/util/concurrent/CompletableFuture;",
-        at = @At(
-            value = "INVOKE",
-            target = "Ljava/util/concurrent/CompletableFuture;thenAcceptAsync(Ljava/util/function/Consumer;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"
-        )
-    )
-    private CompletableFuture<Void> redirectThenAcceptAsync(
-        CompletableFuture completableFuture,
-        Consumer<?> action,
-        Executor executor
-    ) {
-        return null;
-    }
+//    @Redirect(
+//        method = "makeChunkTickable",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Ljava/util/concurrent/CompletableFuture;thenAcceptAsync(Ljava/util/function/Consumer;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"
+//        )
+//    )
+//    private CompletableFuture<Void> redirectThenAcceptAsync(
+//        CompletableFuture completableFuture,
+//        Consumer<?> action,
+//        Executor executor
+//    ) {
+//        return null;
+//    }
     
     //do my packet sending
     @Inject(

@@ -54,6 +54,7 @@ import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.DeferredWorkQueue;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -127,14 +128,14 @@ public class ModMainForge {
     }
     
     private void setup(final FMLCommonSetupEvent event) {
-        
-        ModMain.init();
+        // concurrent init may have issues
+        DeferredWorkQueue.runLater(() -> ModMain.init());
     }
     
     private void doClientStuff(final FMLClientSetupEvent event) {
-        ModMainClient.init();
-        
         Minecraft.getInstance().execute(() -> {
+            ModMainClient.init();
+            
             if (ConfigClient.instance.compatibilityRenderMode.get()) {
                 Global.renderMode = Global.RenderMode.compatibility;
                 Helper.log("Initially Switched to Compatibility Render Mode");

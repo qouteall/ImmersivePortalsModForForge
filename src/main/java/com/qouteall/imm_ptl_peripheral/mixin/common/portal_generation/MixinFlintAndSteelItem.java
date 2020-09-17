@@ -1,8 +1,9 @@
 package com.qouteall.imm_ptl_peripheral.mixin.common.portal_generation;
 
+import com.qouteall.imm_ptl_peripheral.portal_generation.IntrinsicPortalGeneration;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
-import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.FlintAndSteelItem;
@@ -20,6 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(FlintAndSteelItem.class)
 public class MixinFlintAndSteelItem {
+    //TODO make it possible to ignite on horizontal obsidian face
+    
 //    @Inject(
 //        method = "canIgnite",
 //        at = @At("HEAD"),
@@ -46,6 +49,10 @@ public class MixinFlintAndSteelItem {
         ItemUseContext context,
         CallbackInfoReturnable<ActionResultType> cir
     ) {
+        if (Global.netherPortalMode == Global.NetherPortalMode.vanilla) {
+            return;
+        }
+        
         IWorld world = context.getWorld();
         if (!world.isRemote()) {
             BlockPos targetPos = context.getPos();
@@ -60,7 +67,7 @@ public class MixinFlintAndSteelItem {
                 cir.setReturnValue(ActionResultType.SUCCESS);
             }
             else if (targetBlock == ModMain.portalHelperBlock) {
-                boolean result = NetherPortalGeneration.activatePortalHelper(
+                boolean result = IntrinsicPortalGeneration.activatePortalHelper(
                     ((ServerWorld) world),
                     firePos
                 );

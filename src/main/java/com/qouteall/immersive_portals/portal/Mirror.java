@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.Global;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
@@ -31,6 +32,11 @@ public class Mirror extends Portal {
     @Override
     public Vector3d transformLocalVec(Vector3d localVec) {
         return getMirrored(super.transformLocalVec(localVec));
+    }
+    
+    @Override
+    public boolean canTeleportEntity(Entity entity) {
+        return false;
     }
     
     public Vector3d getMirrored(Vector3d vec) {

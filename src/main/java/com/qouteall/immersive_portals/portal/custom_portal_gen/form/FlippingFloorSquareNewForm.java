@@ -11,8 +11,9 @@ import com.qouteall.immersive_portals.portal.nether_portal.BreakablePortalEntity
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.vector.Quaternion;
+import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.world.server.ServerWorld;
-import javax.annotation.Nullable;
 
 public class FlippingFloorSquareNewForm extends HeterogeneousForm {
     public static final Codec<FlippingFloorSquareNewForm> codec = RecordCodecBuilder.create(instance -> {
@@ -43,39 +44,43 @@ public class FlippingFloorSquareNewForm extends HeterogeneousForm {
         );
     }
     
-    @Nullable
     @Override
-    public BlockPortalShape checkAndGetTemplateToShape(ServerWorld world, BlockPortalShape fromShape) {
+    public boolean testThisSideShape(ServerWorld fromWorld, BlockPortalShape fromShape) {
         // only horizontal shape
         if (fromShape.axis != Direction.Axis.Y) {
-            return null;
+            return false;
         }
-        
+    
         IntBox box = fromShape.innerAreaBox;
         BlockPos boxSize = box.getSize();
         // must be square
-        if (boxSize.getX() != boxSize.getZ()) {
-            return null;
-        }
-        if (boxSize.getX() * boxSize.getZ() != fromShape.area.size()) {
-            return null;
-        }
-        
-        return fromShape;
+        return boxSize.getX() == boxSize.getZ() &&
+            boxSize.getX() * boxSize.getZ() == fromShape.area.size();
     }
     
     @Override
-    protected BlockPortalShape getNewPortalPlacement(
+    public PortalGenInfo getNewPortalPlacement(
         ServerWorld toWorld, BlockPos toPos,
-        BlockPortalShape templateToShape
+        ServerWorld fromWorld, BlockPortalShape fromShape
     ) {
         IntBox portalPlacement = FlippingFloorSquareForm.findPortalPlacement(
             toWorld,
-            templateToShape.totalAreaBox.getSize(),
+            fromShape.totalAreaBox.getSize(),
             toPos
         );
+    
+        BlockPortalShape placedShape = fromShape.getShapeWithMovedTotalAreaBox(portalPlacement);
+    
+        return new PortalGenInfo(
+            fromWorld.func_234923_W_(), toWorld.func_234923_W_(),
+            fromShape, placedShape,
+            new Quaternion(
+                new Vector3f(1, 0, 0),
+                180,
+                true
+            ), 1.0
+        );
         
-        return templateToShape.getShapeWithMovedTotalAreaBox(portalPlacement);
     }
     
     @Override

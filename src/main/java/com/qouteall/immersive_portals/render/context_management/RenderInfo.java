@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.render.context_management;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.ducks.IECamera;
 import com.qouteall.immersive_portals.portal.Portal;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.vector.Matrix3f;
@@ -18,6 +19,7 @@ public class RenderInfo {
     public Matrix4f additionalTransformation;
     @Nullable
     public Portal portal;
+    public int renderDistance;
     
     private static final Stack<RenderInfo> renderInfoStack = new Stack<>();
     
@@ -25,10 +27,22 @@ public class RenderInfo {
         ClientWorld world, Vector3d cameraPos,
         Matrix4f additionalTransformation, @Nullable Portal portal
     ) {
+        this(
+            world, cameraPos, additionalTransformation, portal,
+            Minecraft.getInstance().gameSettings.renderDistanceChunks
+        );
+    }
+    
+    public RenderInfo(
+        ClientWorld world, Vector3d cameraPos,
+        @Nullable Matrix4f additionalTransformation,
+        @Nullable Portal portal, int renderDistance
+    ) {
         this.world = world;
         this.cameraPos = cameraPos;
         this.additionalTransformation = additionalTransformation;
         this.portal = portal;
+        this.renderDistance = renderDistance;
     }
     
     public static void pushRenderInfo(RenderInfo renderInfo) {

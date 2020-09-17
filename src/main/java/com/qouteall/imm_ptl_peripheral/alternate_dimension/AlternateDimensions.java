@@ -3,6 +3,7 @@ package com.qouteall.imm_ptl_peripheral.alternate_dimension;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mojang.serialization.Lifecycle;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import net.minecraft.block.Blocks;
@@ -161,6 +162,45 @@ public class AlternateDimensions {
                 key == ModMain.alternate4Option ||
                 key == ModMain.alternate5Option)
         );
+    }
+    
+    // When DFU does not recognize a mod dimension (in level.dat) it will throw an error
+    // then the nether and the end will be swallowed
+    // it's not IP's issue. but I add the fix code because many people encounter the issue
+    public static void addMissingVanillaDimensions(
+        SimpleRegistry<Dimension> registry, DynamicRegistries rm,
+        long seed
+    ) {
+        if (!registry.keySet().contains(Dimension.field_236054_c_.func_240901_a_())) {
+            Helper.err("Missing the nether. This may be caused by DFU. Trying to fix");
+            
+            addDimension(
+                seed,
+                registry,
+                Dimension.field_236054_c_,
+                () -> DimensionType.field_236005_i_,
+                DimensionType.func_242720_b(
+                    rm.func_243612_b(Registry.field_239720_u_),
+                    rm.func_243612_b(Registry.field_243549_ar),
+                    seed
+                )
+            );
+        }
+        
+        if (!registry.keySet().contains(Dimension.field_236055_d_.func_240901_a_())) {
+            Helper.err("Missing the end. This may be caused by DFU. Trying to fix");
+            addDimension(
+                seed,
+                registry,
+                Dimension.field_236055_d_,
+                () -> DimensionType.field_236006_j_,
+                DimensionType.func_242717_a(
+                    rm.func_243612_b(Registry.field_239720_u_),
+                    rm.func_243612_b(Registry.field_243549_ar),
+                    seed
+                )
+            );
+        }
     }
     
 }

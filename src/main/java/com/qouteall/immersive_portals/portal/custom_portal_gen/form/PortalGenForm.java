@@ -34,6 +34,9 @@ public abstract class PortalGenForm {
         Registry.register(
             registry, new ResourceLocation("imm_ptl:flipping_floor_square_new"), FlippingFloorSquareNewForm.codec
         );
+        Registry.register(
+            registry, new ResourceLocation("imm_ptl:try_hard_to_match"), DiligentForm.codec
+        );
         
         return registry;
     });

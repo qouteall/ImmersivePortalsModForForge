@@ -1,4 +1,4 @@
-package com.qouteall.immersive_portals.mixin.client;
+package com.qouteall.immersive_portals.mixin.client.render;
 
 import net.minecraft.client.renderer.chunk.ChunkRenderCache;
 import net.minecraft.util.math.BlockPos;

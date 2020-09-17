@@ -346,107 +346,6 @@ public class PortalCommand {
                 }
             }
         );
-
-//        builder.then(CommandManager.literal("set_portal_rotation")
-//            .then(CommandManager.argument("rotatingAxis", Vec3ArgumentType.vec3(false))
-//                .then(CommandManager.argument("angleDegrees", DoubleArgumentType.doubleArg())
-//                    .executes(context -> processPortalTargetedCommand(
-//                        context,
-//                        portal -> {
-//                            Vec3d rotatingAxis =
-//                                Vec3ArgumentType.getVec3(context, "rotatingAxis").normalize();
-//
-//                            double angleDegrees =
-//                                DoubleArgumentType.getDouble(context, "angleDegrees");
-//
-//                            setPortalRotation(portal, new Vector3f(rotatingAxis), angleDegrees);
-//                        }
-//                    ))
-//                )
-//            )
-//        );
-//
-//
-//        builder.then(CommandManager.literal("rotate_portal_body")
-//            .then(CommandManager.argument("rotatingAxis", Vec3ArgumentType.vec3(false))
-//                .then(CommandManager.argument("angleDegrees", DoubleArgumentType.doubleArg())
-//                    .executes(context -> processPortalTargetedCommand(
-//                        context,
-//                        portal -> {
-//                            try {
-//                                Vec3d rotatingAxis = Vec3ArgumentType.getVec3(
-//                                    context, "rotatingAxis"
-//                                ).normalize();
-//
-//                                double angleDegrees = DoubleArgumentType.getDouble(
-//                                    context, "angleDegrees"
-//                                );
-//
-//                                PortalManipulation.rotatePortalBody(
-//                                    portal,
-//                                    new Quaternion(
-//                                        new Vector3f(rotatingAxis),
-//                                        (float) angleDegrees,
-//                                        true
-//                                    )
-//                                );
-//
-//                                reloadPortal(portal);
-//                            }
-//                            catch (CommandSyntaxException ignored) {
-//                                ignored.printStackTrace();
-//                            }
-//                        }
-//                        )
-//                    )
-//                )
-//            )
-//        );
-//
-//        builder.then(CommandManager.literal("rotate_portal_rotation")
-//            .then(CommandManager.argument("rotatingAxis", Vec3ArgumentType.vec3(false))
-//                .then(CommandManager.argument("angleDegrees", DoubleArgumentType.doubleArg())
-//                    .executes(context -> processPortalTargetedCommand(
-//                        context,
-//                        portal -> {
-//                            try {
-//                                Vec3d rotatingAxis = Vec3ArgumentType.getVec3(
-//                                    context, "rotatingAxis"
-//                                ).normalize();
-//
-//                                double angleDegrees = DoubleArgumentType.getDouble(
-//                                    context, "angleDegrees"
-//                                );
-//
-//                                Quaternion rot = new Quaternion(
-//                                    new Vector3f(
-//                                        (float) rotatingAxis.x,
-//                                        (float) rotatingAxis.y,
-//                                        (float) rotatingAxis.z
-//                                    ),
-//                                    (float) angleDegrees,
-//                                    true
-//                                );
-//
-//                                if (portal.rotation == null) {
-//                                    portal.rotation = rot;
-//                                }
-//                                else {
-//                                    portal.rotation.hamiltonProduct(rot);
-//                                }
-//
-//                                reloadPortal(portal);
-//
-//                            }
-//                            catch (CommandSyntaxException ignored) {
-//                                ignored.printStackTrace();
-//                            }
-//                        }
-//                        )
-//                    )
-//                )
-//            )
-//        );
         
         builder.then(Commands.literal("complete_bi_way_portal")
             .executes(context -> processPortalTargetedCommand(
@@ -547,7 +446,7 @@ public class PortalCommand {
                             portal.destination = portal.destination.add(
                                 portal.transformLocalVecNonScale(offset)
                             );
-                            reloadPortal(portal);
+                            portal.reloadAndSyncToClient();
                         }
                         catch (CommandSyntaxException e) {
                             sendMessage(context, "This command can only be invoked by player");
@@ -621,7 +520,7 @@ public class PortalCommand {
                 context,
                 portal -> {
                     makePortalRound(portal);
-                    reloadPortal(portal);
+                    portal.reloadAndSyncToClient();
                 }
             ))
         );
@@ -634,9 +533,20 @@ public class PortalCommand {
                         
                         portal.scaling = scale;
                         
-                        reloadPortal(portal);
+                        portal.reloadAndSyncToClient();
                     }
                 ))
+            )
+        );
+    
+        builder.then(Commands.literal("set_portal_destination_to")
+            .then(Commands.argument("entity", EntityArgument.entity())
+                .executes(context -> processPortalTargetedCommand(context, portal -> {
+                    Entity entity = EntityArgument.getEntity(context, "entity");
+                    portal.dimensionTo = entity.world.func_234923_W_();
+                    portal.destination = entity.getPositionVec();
+                    portal.reloadAndSyncToClient();
+                }))
             )
         );
     }
@@ -668,7 +578,7 @@ public class PortalCommand {
                             
                             func.accept(portal, rot);
                             
-                            reloadPortal(portal);
+                            portal.reloadAndSyncToClient();
                         }
                     ))
                 )
@@ -685,7 +595,7 @@ public class PortalCommand {
                             
                             double angleDegrees =
                                 DoubleArgumentType.getDouble(context, "angleDegrees");
-    
+                            
                             Quaternion rot = angleDegrees != 0 ? new Quaternion(
                                 axis,
                                 (float) angleDegrees,
@@ -694,7 +604,7 @@ public class PortalCommand {
                             
                             func.accept(portal, rot);
                             
-                            reloadPortal(portal);
+                            portal.reloadAndSyncToClient();
                         }
                     ))
                 )
@@ -709,7 +619,7 @@ public class PortalCommand {
                             
                             double angleDegrees =
                                 DoubleArgumentType.getDouble(context, "angleDegrees");
-    
+                            
                             Quaternion rot = angleDegrees != 0 ? new Quaternion(
                                 axis,
                                 (float) angleDegrees,
@@ -718,7 +628,7 @@ public class PortalCommand {
                             
                             func.accept(portal, rot);
                             
-                            reloadPortal(portal);
+                            portal.reloadAndSyncToClient();
                         }
                     ))
                 )
@@ -733,7 +643,7 @@ public class PortalCommand {
                             
                             double angleDegrees =
                                 DoubleArgumentType.getDouble(context, "angleDegrees");
-    
+                            
                             Quaternion rot = angleDegrees != 0 ? new Quaternion(
                                 axis,
                                 (float) angleDegrees,
@@ -742,7 +652,7 @@ public class PortalCommand {
                             
                             func.accept(portal, rot);
                             
-                            reloadPortal(portal);
+                            portal.reloadAndSyncToClient();
                         }
                     ))
                 )
@@ -760,7 +670,7 @@ public class PortalCommand {
             portal.rotation = null;
         }
         
-        reloadPortal(portal);
+        portal.reloadAndSyncToClient();
     }
     
     private static void setPortalNbt(Portal portal, CompoundNBT newNbt) {
@@ -774,7 +684,7 @@ public class PortalCommand {
         portal.read(portalNbt);
         portal.setUniqueId(uuid);
         
-        reloadPortal(portal);
+        portal.reloadAndSyncToClient();
     }
     
     private static void registerCBPortalCommands(
@@ -896,7 +806,7 @@ public class PortalCommand {
                                 portal.axisW = rightVec;
                                 portal.axisH = axisH;
                                 
-                                McHelper.spawnServerEntityToUnloadedArea(portal);
+                                McHelper.spawnServerEntity(portal);
                                 
                                 return 0;
                             })
@@ -1150,32 +1060,17 @@ public class PortalCommand {
                         .then(Commands.argument("placeTargetEntity", EntityArgument.entity())
                             .then(Commands.argument("biWay", BoolArgumentType.bool())
                                 .executes(context -> {
-                                    BlockPos bp1 = BlockPosArgument.getBlockPos(context, "p1");
-                                    BlockPos bp2 = BlockPosArgument.getBlockPos(context, "p2");
-                                    IntBox intBox = new IntBox(bp1, bp2);
-                                    
-                                    Entity placeTargetEntity = EntityArgument.getEntity(context,
-                                        "placeTargetEntity");
-                                    
-                                    ServerWorld boxWorld = ((ServerWorld) placeTargetEntity.world);
-                                    Vector3d boxBottomCenter = placeTargetEntity.getPositionVec();
-                                    AxisAlignedBB area = intBox.toRealNumberBox();
-                                    ServerWorld areaWorld = context.getSource().getWorld();
-                                    
-                                    double scale = DoubleArgumentType.getDouble(context, "scale");
-                                    
-                                    boolean biWay = BoolArgumentType.getBool(context, "biWay");
-                                    
-                                    createScaledBoxView(
-                                        areaWorld, area, boxWorld, boxBottomCenter, scale,
-                                        biWay
-                                    );
-                                    
+                                    invokeCreateScaledViewCommand(context, false);
                                     return 0;
                                 })
-                            
+                                .then(Commands.argument("teleportChangesScale", BoolArgumentType.bool())
+                                    .executes(context -> {
+                                        boolean teleportChangesScale = BoolArgumentType.getBool(context, "teleportChangesScale");
+                                        invokeCreateScaledViewCommand(context, teleportChangesScale);
+                                        return 0;
+                                    })
+                                )
                             )
-                        
                         )
                     )
                 )
@@ -1183,17 +1078,41 @@ public class PortalCommand {
         );
     }
     
+    private static void invokeCreateScaledViewCommand(
+        CommandContext<CommandSource> context, boolean teleportChangesScale
+    ) throws CommandSyntaxException {
+        BlockPos bp1 = BlockPosArgument.getBlockPos(context, "p1");
+        BlockPos bp2 = BlockPosArgument.getBlockPos(context, "p2");
+        IntBox intBox = new IntBox(bp1, bp2);
+        
+        Entity placeTargetEntity =
+            EntityArgument.getEntity(context, "placeTargetEntity");
+        
+        ServerWorld boxWorld = ((ServerWorld) placeTargetEntity.world);
+        Vector3d boxBottomCenter = placeTargetEntity.getPositionVec();
+        AxisAlignedBB area = intBox.toRealNumberBox();
+        ServerWorld areaWorld = context.getSource().getWorld();
+        
+        double scale = DoubleArgumentType.getDouble(context, "scale");
+        
+        boolean biWay = BoolArgumentType.getBool(context, "biWay");
+        
+        
+        createScaledBoxView(
+            areaWorld, area, boxWorld, boxBottomCenter, scale,
+            biWay, teleportChangesScale
+        );
+    }
+    
     private static void createScaledBoxView(
         ServerWorld areaWorld, AxisAlignedBB area,
         ServerWorld boxWorld, Vector3d boxBottomCenter,
         double scale,
-        boolean biWay
+        boolean biWay,
+        boolean teleportChangesScale
     ) {
         Vector3d viewBoxSize = Helper.getBoxSize(area).scale(1.0 / scale);
-        AxisAlignedBB viewBox = new AxisAlignedBB(
-            boxBottomCenter.subtract(viewBoxSize.x / 2, 0, viewBoxSize.z / 2),
-            boxBottomCenter.add(viewBoxSize.x / 2, viewBoxSize.y, viewBoxSize.z / 2)
-        );
+        AxisAlignedBB viewBox = Helper.getBoxByBottomPosAndSize(boxBottomCenter, viewBoxSize);
         for (Direction direction : Direction.values()) {
             Portal portal = PortalManipulation.createOrthodoxPortal(
                 Portal.entityType,
@@ -1202,10 +1121,10 @@ public class PortalCommand {
                 Helper.getBoxSurface(area, direction).getCenter()
             );
             portal.scaling = scale;
-            portal.teleportChangesScale = false;
+            portal.teleportChangesScale = teleportChangesScale;
             portal.extension.adjustPositionAfterTeleport = true;
             
-            McHelper.spawnServerEntityToUnloadedArea(portal);
+            McHelper.spawnServerEntity(portal);
             
             if (biWay) {
                 PortalManipulation.completeBiWayPortal(portal, Portal.entityType);
@@ -1220,7 +1139,7 @@ public class PortalCommand {
             WorldWrappingPortal.initWrappingPortal(
                 world, box, direction, isInward, portal
             );
-            McHelper.spawnServerEntityToUnloadedArea(portal);
+            McHelper.spawnServerEntity(portal);
         }
     }
     
@@ -1279,7 +1198,7 @@ public class PortalCommand {
             context, "dest"
         );
         
-        reloadPortal(portal);
+        portal.reloadAndSyncToClient();
         
         sendMessage(context, portal.toString());
     }
@@ -1411,7 +1330,7 @@ public class PortalCommand {
         newPortal.destination = destination;
         newPortal.specificPlayerId = player.getUniqueID();
         
-        McHelper.spawnServerEntityToUnloadedArea(newPortal);
+        McHelper.spawnServerEntity(newPortal);
         
         configureBiWayBiFaced(newPortal, biWay, biFaced);
     }
@@ -1445,11 +1364,6 @@ public class PortalCommand {
             context,
             "\n\n" + portal.toString()
         );
-    }
-    
-    public static void reloadPortal(Portal portal) {
-        portal.updateCache();
-        McHelper.getIEStorage(portal.world.func_234923_W_()).resendSpawnPacketToTrackers(portal);
     }
     
     public static void sendMessage(CommandContext<CommandSource> context, String message) {
@@ -1493,7 +1407,7 @@ public class PortalCommand {
         
         portal.dimensionTo = to;
         portal.destination = dest;
-        McHelper.spawnServerEntityToUnloadedArea(portal);
+        McHelper.spawnServerEntity(portal);
         
         context.getSource().sendFeedback(getMakePortalSuccess(portal), true);
         
@@ -1517,7 +1431,7 @@ public class PortalCommand {
         portal.dimensionTo = to;
         portal.destination = portal.getPositionVec().add(portal.axisW.crossProduct(portal.axisH).scale(-dist));
         
-        McHelper.spawnServerEntityToUnloadedArea(portal);
+        McHelper.spawnServerEntity(portal);
         
         context.getSource().sendFeedback(getMakePortalSuccess(portal), true);
         

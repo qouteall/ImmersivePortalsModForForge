@@ -16,7 +16,6 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import com.qouteall.immersive_portals.portal.custom_portal_gen.PortalGenInfo;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
@@ -30,8 +29,6 @@ import net.minecraft.world.gen.WorldGenRegion;
 import net.minecraft.world.server.ServerWorld;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Random;
-import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -41,33 +38,20 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class NetherPortalGeneration {
-    public final static int randomShiftFactor = 20;
-    
-    public static BlockPos getRandomShift() {
-        Random rand = new Random();
-        return new BlockPos(
-            (rand.nextDouble() * 2 - 1) * randomShiftFactor,
-            (rand.nextDouble() * 2 - 1) * randomShiftFactor,
-            (rand.nextDouble() * 2 - 1) * randomShiftFactor
-        );
-    }
     
     public static IntBox findAirCubePlacement(
         ServerWorld toWorld,
         BlockPos mappedPosInOtherDimension,
         Direction.Axis axis,
-        BlockPos neededAreaSize,
-        int findingRadius
+        BlockPos neededAreaSize
     ) {
         IntBox foundAirCube =
             axis == Direction.Axis.Y ?
                 NetherPortalMatcher.findHorizontalPortalPlacement(
-                    neededAreaSize, toWorld, mappedPosInOtherDimension,
-                    findingRadius
+                    neededAreaSize, toWorld, mappedPosInOtherDimension
                 ) :
                 NetherPortalMatcher.findVerticalPortalPlacement(
-                    neededAreaSize, toWorld, mappedPosInOtherDimension,
-                    findingRadius
+                    neededAreaSize, toWorld, mappedPosInOtherDimension
                 );
         
         if (foundAirCube == null) {
@@ -216,185 +200,6 @@ public class NetherPortalGeneration {
         return portalArray;
     }
     
-    //return null for not found
-    //executed on main server thread
-    public static boolean onFireLitOnObsidian(
-        ServerWorld fromWorld,
-        BlockPos firePos
-    ) {
-        RegistryKey<World> fromDimension = fromWorld.func_234923_W_();
-        
-        RegistryKey<World> toDimension = getDestinationDimension(fromDimension);
-        
-        if (toDimension == null) return false;
-        
-        ServerWorld toWorld = McHelper.getServer().getWorld(toDimension);
-        
-        int searchingRadius = Global.netherPortalFindingRadius;
-        
-        if (Global.reversibleNetherPortalLinking) {
-            if (fromDimension == World.field_234918_g_) {
-                searchingRadius /= 8;
-            }
-        }
-        
-        BlockPortalShape thisSideShape = triggerGeneratingPortal(
-            fromWorld,
-            firePos,
-            toWorld,
-            searchingRadius,
-            searchingRadius - 10,
-            (fromPos1) -> mapPosition(
-                fromPos1,
-                fromWorld.func_234923_W_(),
-                toWorld.func_234923_W_()
-            ),
-            //this side area
-            NetherPortalMatcher::isAirOrFire,
-            //this side frame
-            O_O::isObsidian,
-            //other side area
-            BlockState::isAir,
-            //other side frame
-            O_O::isObsidian,
-            (shape) -> embodyNewFrame(toWorld, shape, Blocks.OBSIDIAN.getDefaultState()),
-            info -> generateBreakablePortalEntitiesAndPlaceholder(info, NetherPortalEntity.entityType)
-        );
-        return thisSideShape != null;
-    }
-    
-    public static boolean activatePortalHelper(
-        ServerWorld fromWorld,
-        BlockPos firePos
-    ) {
-        Helper.SimpleBox<BlockPortalShape> thisSideShape = new Helper.SimpleBox<>(null);
-        thisSideShape.obj = triggerGeneratingPortal(
-            fromWorld,
-            firePos,
-            fromWorld,
-            Global.netherPortalFindingRadius,
-            Global.netherPortalFindingRadius,
-            (fromPos1) -> getRandomShift().add(fromPos1),
-            NetherPortalMatcher::isAirOrFire,
-            blockState -> blockState.getBlock() == ModMain.portalHelperBlock,
-            BlockState::isAir,
-            (blockState) -> blockState.getBlock() == ModMain.portalHelperBlock,
-            (toShape) -> {
-                embodyNewFrame(fromWorld, toShape, ModMain.portalHelperBlock.getDefaultState());
-            },
-            info -> {
-                generateHelperPortalEntities(info);
-                info.fromShape.frameAreaWithCorner.forEach(blockPos -> {
-                    if (fromWorld.getBlockState(blockPos).getBlock() == ModMain.portalHelperBlock) {
-                        fromWorld.setBlockState(blockPos, Blocks.AIR.getDefaultState());
-                    }
-                });
-            }
-        );
-        return thisSideShape.obj != null;
-    }
-    
-    public static BlockPortalShape triggerGeneratingPortal(
-        ServerWorld fromWorld,
-        BlockPos startingPos,
-        ServerWorld toWorld,
-        int existingFrameSearchingRadius,
-        int airCubeSearchingRadius,
-        Function<BlockPos, BlockPos> positionMapping,
-        Predicate<BlockState> thisSideAreaPredicate,
-        Predicate<BlockState> thisSideFramePredicate,
-        Predicate<BlockState> otherSideAreaPredicate,
-        Predicate<BlockState> otherSideFramePredicate,
-        Consumer<BlockPortalShape> newFrameGenerateFunc,
-        Consumer<PortalGenInfo> portalEntityGeneratingFunc
-    ) {
-        if (!checkPortalGeneration(fromWorld, startingPos)) {
-            return null;
-        }
-        
-        if (!thisSideAreaPredicate.test(fromWorld.getBlockState(startingPos))) {
-            return null;
-        }
-        
-        BlockPortalShape fromShape =
-            findFrameShape(fromWorld, startingPos, thisSideAreaPredicate, thisSideFramePredicate);
-        
-        if (fromShape == null) {
-            return null;
-        }
-        
-        BlockPos toPos = positionMapping.apply(fromShape.innerAreaBox.getCenter());
-        
-        if (isOtherGenerationRunning(fromWorld, fromShape.innerAreaBox.getCenterVec())) return null;
-        
-        Helper.log(fromShape.totalAreaBox);
-        
-        BlockPos.Mutable temp1 = new BlockPos.Mutable();
-        
-        startGeneratingPortal(
-            fromWorld, toWorld, fromShape,
-            toPos,
-            existingFrameSearchingRadius,
-            otherSideFramePredicate, newFrameGenerateFunc,
-            portalEntityGeneratingFunc,
-            () -> {
-                IntBox airCubePlacement =
-                    findAirCubePlacement(
-                        toWorld, toPos,
-                        fromShape.axis, fromShape.totalAreaBox.getSize(),
-                        airCubeSearchingRadius
-                    );
-                
-                Helper.log("Found Placement " + airCubePlacement);
-                
-                boolean checkAirCube =
-                    airCubePlacement.fastStream().allMatch(b -> toWorld.getBlockState(b).isAir());
-                
-                if (!checkAirCube) {
-                    Helper.err("Invalid portal placement");
-                    airCubePlacement = airCubePlacement.getMoved(
-                        BlockPos.NULL_VECTOR.offset(Direction.UP, airCubePlacement.getSize().getY())
-                    );
-                }
-                
-                if (!fromShape.totalAreaBox.getSize().equals(airCubePlacement.getSize())) {
-                    Helper.err("Portal placement size abnormal");
-                }
-                
-                BlockPortalShape toShape = fromShape.getShapeWithMovedAnchor(
-                    airCubePlacement.l.subtract(
-                        fromShape.totalAreaBox.l
-                    ).add(fromShape.anchor)
-                );
-                
-                return toShape;
-            },
-            () -> {
-                return fromShape.isPortalIntact(
-                    blockPos -> thisSideAreaPredicate.test(fromWorld.getBlockState(blockPos)),
-                    blockPos -> thisSideFramePredicate.test(fromWorld.getBlockState(blockPos))
-                );
-            },
-            //avoid linking to the beginning frame
-            (region, blockPos) -> {
-                BlockPortalShape result = fromShape.matchShapeWithMovedFirstFramePos(
-                    pos -> otherSideAreaPredicate.test(region.getBlockState(pos)),
-                    pos -> otherSideFramePredicate.test(region.getBlockState(pos)),
-                    blockPos,
-                    temp1
-                );
-                if (result != null) {
-                    if (fromWorld != toWorld || fromShape.anchor != result.anchor) {
-                        return result;
-                    }
-                }
-                return null;
-            }
-        );
-        
-        return fromShape;
-    }
-    
     public static void startGeneratingPortal(
         ServerWorld fromWorld, ServerWorld toWorld,
         BlockPortalShape fromShape,
@@ -403,8 +208,11 @@ public class NetherPortalGeneration {
         Predicate<BlockState> otherSideFramePredicate,
         Consumer<BlockPortalShape> newFrameGenerateFunc, Consumer<PortalGenInfo> portalEntityGeneratingFunc,
         //return null for not generate new frame
-        Supplier<BlockPortalShape> newFramePlacer,
-        BooleanSupplier portalIntegrityChecker, BiFunction<WorldGenRegion, BlockPos.Mutable, BlockPortalShape> matchShapeByFramePos
+        Supplier<PortalGenInfo> newFramePlacer,
+        BooleanSupplier portalIntegrityChecker,
+        
+        //currying
+        Function<WorldGenRegion, Function<BlockPos.Mutable, PortalGenInfo>> matchShapeByFramePos
     ) {
         RegistryKey<World> fromDimension = fromWorld.func_234923_W_();
         RegistryKey<World> toDimension = toWorld.func_234923_W_();
@@ -425,17 +233,14 @@ public class NetherPortalGeneration {
                 "imm_ptl.generating_new_frame"
             ));
             
-            BlockPortalShape placedShape = newFramePlacer.get();
+            PortalGenInfo placedShape = newFramePlacer.get();
             
             if (placedShape != null) {
-                newFrameGenerateFunc.accept(placedShape);
+                newFrameGenerateFunc.accept(placedShape.toShape);
                 
-                PortalGenInfo info = new PortalGenInfo(
-                    fromDimension, toWorld.func_234923_W_(), fromShape, placedShape
-                );
-                portalEntityGeneratingFunc.accept(info);
+                portalEntityGeneratingFunc.accept(placedShape);
                 
-                O_O.postPortalSpawnEventForge(info);
+                O_O.postPortalSpawnEventForge(placedShape);
             }
         };
         
@@ -495,12 +300,8 @@ public class NetherPortalGeneration {
                 FrameSearching.startSearchingPortalFrameAsync(
                     chunkRegion, loaderRadius,
                     toPos, otherSideFramePredicate,
-                    (p) -> matchShapeByFramePos.apply(chunkRegion, p),
-                    (shape) -> {
-                        PortalGenInfo info = new PortalGenInfo(
-                            fromDimension, toDimension, fromShape, shape
-                        );
-                        
+                    matchShapeByFramePos.apply(chunkRegion),
+                    (info) -> {
                         portalEntityGeneratingFunc.accept(info);
                         finalizer.run();
                     },
@@ -602,6 +403,7 @@ public class NetherPortalGeneration {
         );
     }
     
+    @Deprecated
     private static void generateHelperPortalEntities(PortalGenInfo info) {
         ServerWorld fromWorld1 = McHelper.getServer().getWorld(info.from);
         ServerWorld toWorld = McHelper.getServer().getWorld(info.to);

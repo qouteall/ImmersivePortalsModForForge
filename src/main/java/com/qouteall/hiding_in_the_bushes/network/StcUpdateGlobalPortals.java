@@ -5,7 +5,6 @@ import com.qouteall.immersive_portals.dimension_sync.DimId;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
@@ -41,20 +40,18 @@ public class StcUpdateGlobalPortals {
     }
     
     public void handle(Supplier<NetworkEvent.Context> context) {
-        clientOnlyHandle();
+        context.get().enqueueWork(this::clientHandle);
         context.get().setPacketHandled(true);
     }
     
     @OnlyIn(Dist.CLIENT)
-    private void clientOnlyHandle() {
-        Minecraft.getInstance().execute(() -> {
-            ClientWorld world =
-                CGlobal.clientWorldLoader.getWorld(dimensionType);
-            
-            List<GlobalTrackedPortal> portals =
-                GlobalPortalStorage.getPortalsFromTag(data, world);
-            
-            ((IEClientWorld) world).setGlobalPortals(portals);
-        });
+    private void clientHandle() {
+        ClientWorld world =
+            CGlobal.clientWorldLoader.getWorld(dimensionType);
+    
+        List<GlobalTrackedPortal> portals =
+            GlobalPortalStorage.getPortalsFromTag(data, world);
+    
+        ((IEClientWorld) world).setGlobalPortals(portals);
     }
 }

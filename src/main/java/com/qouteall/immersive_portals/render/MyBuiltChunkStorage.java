@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals.render;
 
-import com.google.common.collect.Streams;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
@@ -21,11 +20,11 @@ import org.apache.commons.lang3.Validate;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class MyBuiltChunkStorage extends ViewFrustum {
     
@@ -262,21 +261,33 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     }
     
     private Set<ChunkRenderDispatcher.ChunkRender> getAllActiveBuiltChunks() {
-        Stream<ChunkRenderDispatcher.ChunkRender> result;
-        Stream<ChunkRenderDispatcher.ChunkRender> chunksFromPresets = presets.values().stream()
-            .flatMap(
-                preset -> Arrays.stream(preset.data)
-            );
-        if (renderChunks == null) {
-            result = chunksFromPresets;
+        HashSet<ChunkRenderDispatcher.ChunkRender> result = new HashSet<>();
+        
+        presets.forEach((key,preset)->{
+            result.addAll(Arrays.asList(preset.data));
+        });
+    
+        if (renderChunks != null) {
+            result.addAll(Arrays.asList(renderChunks));
         }
-        else {
-            result = Streams.concat(
-                Arrays.stream(renderChunks),
-                chunksFromPresets
-            );
-        }
-        return result.collect(Collectors.toSet());
+    
+        return result;
+        
+//        Stream<ChunkBuilder.BuiltChunk> result;
+//        Stream<ChunkBuilder.BuiltChunk> chunksFromPresets = presets.values().stream()
+//            .flatMap(
+//                preset -> Arrays.stream(preset.data)
+//            );
+//        if (chunks == null) {
+//            result = chunksFromPresets;
+//        }
+//        else {
+//            result = Streams.concat(
+//                Arrays.stream(chunks),
+//                chunksFromPresets
+//            );
+//        }
+//        return result.collect(Collectors.toSet());
     }
     
     public int getManagedChunkNum() {
@@ -308,5 +319,9 @@ public class MyBuiltChunkStorage extends ViewFrustum {
                     builtChunk -> builtChunk.needsUpdate()
                 ).count()
         );
+    }
+    
+    public int getRadius() {
+        return (countChunksX - 1) / 2;
     }
 }

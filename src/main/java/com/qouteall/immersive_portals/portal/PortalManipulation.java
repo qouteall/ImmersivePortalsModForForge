@@ -46,13 +46,14 @@ public class PortalManipulation {
     public static Portal completeBiWayPortal(Portal portal, EntityType<? extends Portal> entityType) {
         Portal newPortal = createReversePortal(portal, entityType);
     
-        McHelper.spawnServerEntityToUnloadedArea(newPortal);
+        McHelper.spawnServerEntity(newPortal);
         
         return newPortal;
     }
     
+    // can also be used in client
     public static <T extends Portal> T createReversePortal(Portal portal, EntityType<T> entityType) {
-        ServerWorld world = McHelper.getServer().getWorld(portal.dimensionTo);
+        World world = portal.getDestinationWorld();
         
         T newPortal = entityType.create(world);
         newPortal.dimensionTo = portal.world.func_234923_W_();
@@ -99,13 +100,13 @@ public class PortalManipulation {
     public static Portal completeBiFacedPortal(Portal portal, EntityType<Portal> entityType) {
         Portal newPortal = createFlippedPortal(portal, entityType);
     
-        McHelper.spawnServerEntityToUnloadedArea(newPortal);
+        McHelper.spawnServerEntity(newPortal);
         
         return newPortal;
     }
     
     public static <T extends Portal> T createFlippedPortal(Portal portal, EntityType<T> entityType) {
-        ServerWorld world = (ServerWorld) portal.world;
+        World world = portal.world;
         T newPortal = entityType.create(world);
         newPortal.dimensionTo = portal.dimensionTo;
         newPortal.setPosition(portal.getPosX(), portal.getPosY(), portal.getPosZ());
@@ -140,7 +141,7 @@ public class PortalManipulation {
     
     //the new portal will not be added into world
     public static Portal copyPortal(Portal portal, EntityType<Portal> entityType) {
-        ServerWorld world = (ServerWorld) portal.world;
+        World world = portal.world;
         Portal newPortal = entityType.create(world);
         newPortal.dimensionTo = portal.dimensionTo;
         newPortal.setPosition(portal.getPosX(), portal.getPosY(), portal.getPosZ());
@@ -280,5 +281,6 @@ public class PortalManipulation {
         to.teleportChangesScale = from.teleportChangesScale;
         to.specificPlayerId = from.specificPlayerId;
         to.extension.adjustPositionAfterTeleport = from.extension.adjustPositionAfterTeleport;
+        to.portalTag = from.portalTag;
     }
 }

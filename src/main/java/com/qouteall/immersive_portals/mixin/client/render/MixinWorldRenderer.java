@@ -1,10 +1,11 @@
-package com.qouteall.immersive_portals.mixin.client;
+package com.qouteall.immersive_portals.mixin.client.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
@@ -16,6 +17,7 @@ import com.qouteall.immersive_portals.render.PixelCuller;
 import com.qouteall.immersive_portals.render.TransformationManager;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
+import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
@@ -140,6 +142,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     @Final
     private RenderTypeBuffers renderTypeTextures;
     
+    // important rendering hooks
     @Inject(
         method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
         at = @At(
@@ -160,10 +163,22 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         Matrix4f matrix4f,
         CallbackInfo ci
     ) {
+        // draw the entity vertices before rendering portal
+        // because there is only one additional buffer builder for portal rendering
+        /**{@link MyGameRenderer#secondaryBufferBuilderStorage}*/
+        if (RenderInfo.isRendering()) {
+            mc.getRenderTypeBuffers().getBufferSource().finish();
+        }
+        
         CGlobal.renderer.onBeforeTranslucentRendering(matrices);
         
         MyGameRenderer.updateFogColor();
         MyGameRenderer.resetFogState();
+        
+        //is it necessary?
+        MyGameRenderer.resetDiffuseLighting(matrices);
+        
+        PixelCuller.endCulling();
         
         CrossPortalEntityRenderer.onEndRenderingEntities(matrices);
     }
@@ -264,7 +279,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         LightTexture lightmapTextureManager, Matrix4f matrix4f,
         CallbackInfo ci
     ) {
-        MyGameRenderer.doPruneVisibleChunks(this.renderInfos);
+        MyGameRenderer.pruneRenderList(this.renderInfos);
     }
     
     @Inject(
@@ -319,21 +334,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
                 chunkBuilder_1, world_1, int_1, worldRenderer_1
             );
         }
-    }
-    
-    //to let the player be rendered when rendering portal
-    @Redirect(
-        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/ActiveRenderInfo;isThirdPerson()Z"
-        )
-    )
-    private boolean redirectIsThirdPerson(ActiveRenderInfo camera) {
-        if (CrossPortalEntityRenderer.shouldRenderPlayerItself()) {
-            return true;
-        }
-        return camera.isThirdPerson();
     }
     
     //render player itself when rendering portal
@@ -456,11 +456,22 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     private static boolean isReloadingOtherWorldRenderers = false;
     
+    // sometimes we change renderDistance but we don't want to reload it
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;loadRenderers()V", at = @At("HEAD"), cancellable = true)
+    private void onReloadStarted(CallbackInfo ci) {
+        if (RenderInfo.isRendering()) {
+            ci.cancel();
+        }
+    }
+    
     //reload other world renderers when the main world renderer is reloaded
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;loadRenderers()V", at = @At("TAIL"))
-    private void onReload(CallbackInfo ci) {
+    private void onReloadFinished(CallbackInfo ci) {
         ClientWorldLoader clientWorldLoader = CGlobal.clientWorldLoader;
         WorldRenderer this_ = (WorldRenderer) (Object) this;
+        
+        Helper.log("WorldRenderer reloaded " + world.func_234923_W_().func_240901_a_());
+        
         if (isReloadingOtherWorldRenderers) {
             return;
         }
@@ -684,7 +695,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         boolean uploaded = chunkBuilder.runChunkUploads();
         this.displayListEntitiesDirty |= uploaded;//no short circuit
         
-        int limit = 1;
+        int limit = Math.max(1, (chunksToUpdate.size() / 1000));
         
         int num = 0;
         for (Iterator<ChunkRenderDispatcher.ChunkRender> iterator = chunksToUpdate.iterator(); iterator.hasNext(); ) {
@@ -708,4 +719,27 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         
     }
     
+    @Override
+    public int portal_getRenderDistance() {
+        return renderDistanceChunks;
+    }
+    
+    @Override
+    public void portal_setRenderDistance(int arg) {
+        renderDistanceChunks = arg;
+        
+        if (viewFrustum instanceof MyBuiltChunkStorage) {
+            int radius = ((MyBuiltChunkStorage) viewFrustum).getRadius();
+            
+            if (radius < arg) {
+                Helper.log("Resizing built chunk storage to " + arg);
+                
+                viewFrustum.deleteGlResources();
+                
+                viewFrustum = new MyBuiltChunkStorage(
+                    renderDispatcher, world, arg, ((WorldRenderer) (Object) this)
+                );
+            }
+        }
+    }
 }

@@ -11,7 +11,6 @@ import net.minecraft.network.play.ServerPlayNetHandler;
 import net.minecraft.network.play.server.SDestroyEntitiesPacket;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
@@ -38,15 +37,6 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements IE
     
     public MixinServerPlayerEntity(World world, BlockPos pos, float yaw, GameProfile profile) {
         super(world, pos, yaw, profile);
-    }
-    
-    @Inject(
-        method = "Lnet/minecraft/entity/player/ServerPlayerEntity;sendChunkUnload(Lnet/minecraft/util/math/ChunkPos;)V",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private void onSendUnloadChunkPacket(ChunkPos chunkPos_1, CallbackInfo ci) {
-        ci.cancel();
     }
     
     @Inject(

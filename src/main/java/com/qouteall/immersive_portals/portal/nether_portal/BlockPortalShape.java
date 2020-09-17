@@ -33,7 +33,7 @@ public class BlockPortalShape {
     public Set<BlockPos> frameAreaWithoutCorner;
     public Set<BlockPos> frameAreaWithCorner;
     
-    private BlockPos firstFramePos;
+    public BlockPos firstFramePos;
     
     public BlockPortalShape(
         Set<BlockPos> area, Direction.Axis axis
@@ -505,11 +505,12 @@ public class BlockPortalShape {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BlockPortalShape that = (BlockPortalShape) o;
-        return area.equals(that.area);
+        return area.equals(that.area) &&
+            axis == that.axis;
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(area);
+        return Objects.hash(area, axis);
     }
 }

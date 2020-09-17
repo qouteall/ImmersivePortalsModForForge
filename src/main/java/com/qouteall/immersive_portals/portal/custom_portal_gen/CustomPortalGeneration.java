@@ -20,6 +20,7 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.SimpleRegistry;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -28,6 +29,11 @@ public class CustomPortalGeneration {
     public static final RegistryKey<World> theSameDimension = RegistryKey.func_240903_a_(
         Registry.field_239699_ae_,
         new ResourceLocation("imm_ptl:the_same_dimension")
+    );
+    
+    public static final RegistryKey<World> anyDimension = RegistryKey.func_240903_a_(
+        Registry.field_239699_ae_,
+        new ResourceLocation("imm_ptl:any_dimension")
     );
     
     public static final Codec<List<RegistryKey<World>>> dimensionListCodec =
@@ -80,6 +86,8 @@ public class CustomPortalGeneration {
     public final PortalGenTrigger trigger;
     public final List<String> postInvokeCommands;
     
+    public ResourceLocation identifier = null;
+    
     public CustomPortalGeneration(
         List<RegistryKey<World>> fromDimensions, RegistryKey<World> toDimension,
         int spaceRatioFrom, int spaceRatioTo, boolean reversible,
@@ -96,6 +104,7 @@ public class CustomPortalGeneration {
         this.postInvokeCommands = postInvokeCommands;
     }
     
+    @Nullable
     public CustomPortalGeneration getReverse() {
         if (toDimension == theSameDimension) {
             return new CustomPortalGeneration(
@@ -110,7 +119,7 @@ public class CustomPortalGeneration {
             );
         }
         
-        if (fromDimensions.size() == 1) {
+        if (!fromDimensions.isEmpty()) {
             return new CustomPortalGeneration(
                 Lists.newArrayList(toDimension),
                 fromDimensions.get(0),
@@ -145,6 +154,10 @@ public class CustomPortalGeneration {
             return false;
         }
         
+        if (fromDimensions.isEmpty()) {
+            return false;
+        }
+        
         return true;
     }
     
@@ -158,7 +171,9 @@ public class CustomPortalGeneration {
     
     public boolean perform(ServerWorld world, BlockPos startPos) {
         if (!fromDimensions.contains(world.func_234923_W_())) {
-            return false;
+            if (fromDimensions.get(0) != anyDimension) {
+                return false;
+            }
         }
         
         if (!world.isBlockLoaded(startPos)) {
@@ -186,6 +201,10 @@ public class CustomPortalGeneration {
     }
     
     public void onPortalGenerated(Portal portal) {
+        if (identifier != null) {
+            portal.portalTag = identifier.toString();
+        }
+        
         if (postInvokeCommands.isEmpty()) {
             return;
         }

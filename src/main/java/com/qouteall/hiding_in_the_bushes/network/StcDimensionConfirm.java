@@ -39,13 +39,13 @@ public class StcDimensionConfirm {
     }
     
     public void handle(Supplier<NetworkEvent.Context> context) {
-        clientHandle();
+        clientHandle(context);
         context.get().setPacketHandled(true);
     }
     
     @OnlyIn(Dist.CLIENT)
-    private void clientHandle() {
-        Minecraft.getInstance().execute(() -> {
+    private void clientHandle(Supplier<NetworkEvent.Context> context) {
+        context.get().enqueueWork(() -> {
             CGlobal.clientTeleportationManager.acceptSynchronizationDataFromServer(
                 dimensionType, pos,
                 false

@@ -55,7 +55,7 @@ public class ServerTeleportationManager {
     
     public static boolean shouldEntityTeleport(Portal portal, Entity entity) {
         return entity.world == portal.world &&
-            portal.isTeleportable() &&
+            portal.canTeleportEntity(entity) &&
             portal.isMovedThroughPortal(
                 entity.getEyePosition(0),
                 entity.getEyePosition(1).add(entity.getMotion())
@@ -192,7 +192,7 @@ public class ServerTeleportationManager {
         }
         return McHelper.getServerPortalsNearby(player, 20)
             .filter(portal -> portal.dimensionTo == dimension)
-            .map(portal -> portal.transformPointRough(playerPos))
+            .map(portal -> portal.transformPoint(playerPos))
             .anyMatch(mappedPos -> mappedPos.squareDistanceTo(pos) < 256);
     }
     
@@ -315,7 +315,7 @@ public class ServerTeleportationManager {
         ((IEServerPlayerEntity) player).updateDimensionTravelAdvancements(fromWorld);
         
         
-        GlobalPortalStorage.onPlayerLoggedIn(player);
+        
     }
     
     private void sendPositionConfirmMessage(ServerPlayerEntity player) {
@@ -423,7 +423,7 @@ public class ServerTeleportationManager {
         
         ((ServerWorld) entity.world).chunkCheck(entity);
         
-        entity.setMotion(portal.transformLocalVec(velocity));
+        portal.transformVelocity(entity);
         
         portal.onEntityTeleportedOnServer(entity);
         
