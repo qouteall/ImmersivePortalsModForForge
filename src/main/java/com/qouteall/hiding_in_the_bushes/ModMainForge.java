@@ -175,7 +175,6 @@ public class ModMainForge {
         Global.netherPortalFindingRadius = ConfigServer.instance.portalSearchingRange.get();
         Global.activeLoading = ConfigServer.instance.activeLoadRemoteChunks.get();
         Global.teleportationDebugEnabled = ConfigServer.instance.teleportationDebug.get();
-        Global.loadFewerChunks = ConfigServer.instance.loadFewerChunks.get();
         Global.multiThreadedNetherPortalSearching = ConfigServer.instance.multiThreadedNetherPortalSearching.get();
         Global.looseMovementCheck = ConfigServer.instance.looseMovementCheck.get();
         Global.enableAlternateDimensions = ConfigServer.instance.enableAlternateDimensions.get();

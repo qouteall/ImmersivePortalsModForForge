@@ -1,7 +1,6 @@
 package com.qouteall.immersive_portals;
 
 import com.mojang.authlib.GameProfile;
-import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.dimension_sync.DimensionTypeSync;
 import com.qouteall.immersive_portals.ducks.IECamera;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
@@ -28,10 +27,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.commons.lang3.Validate;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @OnlyIn(Dist.CLIENT)
@@ -39,15 +36,12 @@ public class ClientWorldLoader {
     public final Map<RegistryKey<World>, ClientWorld> clientWorldMap = new HashMap<>();
     public final Map<RegistryKey<World>, WorldRenderer> worldRendererMap = new HashMap<>();
     public final Map<RegistryKey<World>, DimensionRenderHelper> renderHelperMap = new HashMap<>();
-    private Set<DimensionalChunkPos> unloadedChunks = new HashSet<>();
     
     private static final Minecraft client = Minecraft.getInstance();
     
     private boolean isInitialized = false;
     
-    private boolean isLoadingFakedWorld = false;
-    
-    private boolean isHardCore = false;
+    private boolean isCreatingClientWorld = false;
     
     public boolean isClientRemoteTicking = false;
     
@@ -57,8 +51,8 @@ public class ClientWorldLoader {
         ModMain.postClientTickSignal.connectWithWeakRef(this, ClientWorldLoader::tick);
     }
     
-    public boolean getIsLoadingFakedWorld() {
-        return isLoadingFakedWorld;
+    public boolean getIsCreatingClientWorld() {
+        return isCreatingClientWorld;
     }
     
     private void tick() {
@@ -223,8 +217,6 @@ public class ClientWorldLoader {
                 new DimensionRenderHelper(client.world)
             );
             
-            isHardCore = client.world.getWorldInfo().isHardcore();
-            
             isInitialized = true;
         }
     }
@@ -233,7 +225,7 @@ public class ClientWorldLoader {
     private ClientWorld createFakedClientWorld(RegistryKey<World> dimension) {
         Validate.isTrue(client.player.world.func_234923_W_() != dimension);
         
-        isLoadingFakedWorld = true;
+        isCreatingClientWorld = true;
         
         client.getProfiler().startSection("create_world");
         
@@ -283,7 +275,7 @@ public class ClientWorldLoader {
         }
         catch (Exception e) {
             throw new IllegalStateException(
-                "Creating Faked World " + dimension + " " + clientWorldMap.keySet(),
+                "Creating Client World " + dimension + " " + clientWorldMap.keySet(),
                 e
             );
         }
@@ -298,9 +290,9 @@ public class ClientWorldLoader {
         clientWorldMap.put(dimension, newWorld);
         worldRendererMap.put(dimension, worldRenderer);
         
-        Helper.log("Faked World Created " + dimension.func_240901_a_());
+        Helper.log("Client World Created " + dimension.func_240901_a_());
         
-        isLoadingFakedWorld = false;
+        isCreatingClientWorld = false;
         
         client.getProfiler().endSection();
         
