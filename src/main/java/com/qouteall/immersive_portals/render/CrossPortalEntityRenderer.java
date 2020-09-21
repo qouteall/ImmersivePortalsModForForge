@@ -8,7 +8,7 @@ import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
-import com.qouteall.immersive_portals.optifine_compatibility.ShaderCullingManager;
+import com.qouteall.immersive_portals.optifine_compatibility.ShaderClippingManager;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
@@ -66,10 +66,10 @@ public class CrossPortalEntityRenderer {
         }
         
         if (PortalRendering.isRendering()) {
-            PixelCuller.updateCullingPlaneInner(
+            FrontClipping.updateClippingPlaneInner(
                 matrixStack, PortalRendering.getRenderingPortal(), false
             );
-            PixelCuller.startCulling();
+            FrontClipping.enableClipping();
         }
     }
     
@@ -97,13 +97,13 @@ public class CrossPortalEntityRenderer {
                 //draw already built triangles
                 client.getRenderTypeBuffers().getBufferSource().finish();
                 
-                PixelCuller.updateCullingPlaneOuter(
+                FrontClipping.updateClippingPlaneOuter(
                     matrixStack,
                     collidingPortal
                 );
-                PixelCuller.startCulling();
+                FrontClipping.enableClipping();
                 if (OFInterface.isShaders.getAsBoolean()) {
-                    ShaderCullingManager.update();
+                    ShaderClippingManager.update();
                 }
             }
         }
@@ -117,7 +117,7 @@ public class CrossPortalEntityRenderer {
             if (collidedEntities.containsKey(entity)) {
                 //draw it with culling in a separate draw call
                 client.getRenderTypeBuffers().getBufferSource().finish();
-                PixelCuller.endCulling();
+                FrontClipping.disableClipping();
             }
         }
     }
@@ -181,14 +181,14 @@ public class CrossPortalEntityRenderer {
             }
         }
         else {
-            PixelCuller.endCulling();
+            FrontClipping.disableClipping();
             // don't draw the existing triangles with culling enabled
             client.getRenderTypeBuffers().getBufferSource().finish();
             
-            PixelCuller.updateCullingPlaneInner(matrixStack, collidingPortal, false);
-            PixelCuller.startCulling();
+            FrontClipping.updateClippingPlaneInner(matrixStack, collidingPortal, false);
+            FrontClipping.enableClipping();
             renderEntityRegardingPlayer(entity, collidingPortal, matrixStack);
-            PixelCuller.endCulling();
+            FrontClipping.disableClipping();
         }
     }
     

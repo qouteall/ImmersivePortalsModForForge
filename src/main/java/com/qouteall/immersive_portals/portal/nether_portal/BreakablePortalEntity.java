@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.portal.nether_portal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.my_util.LimitedLogger;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import net.minecraft.block.Blocks;
@@ -11,6 +12,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
@@ -121,7 +123,7 @@ public abstract class BreakablePortalEntity extends Portal {
             remove();
             return;
         }
-    
+        
         if (!isPortalIntactOnThisSide()) {
             markShouldBreak();
         }
@@ -137,19 +139,39 @@ public abstract class BreakablePortalEntity extends Portal {
     @OnlyIn(Dist.CLIENT)
     protected abstract void addSoundAndParticle();
     
+    private static final LimitedLogger limitedLogger = new LimitedLogger(20);
+    
     public boolean isPortalPaired() {
         Validate.isTrue(!world.isRemote());
         
-        List<BreakablePortalEntity> reversePortal = McHelper.findEntitiesByBox(
+        if (!isOtherSideChunkLoaded()) {
+            return true;
+        }
+        
+        List<BreakablePortalEntity> revs = McHelper.findEntitiesByBox(
             BreakablePortalEntity.class,
             getDestinationWorld(),
             new AxisAlignedBB(new BlockPos(destination)),
             10,
-            e -> (e.getPositionVec().squareDistanceTo(destination) < 0.01) &&
+            e -> (e.getPositionVec().squareDistanceTo(destination) < 0.1) &&
                 e.getContentDirection().dotProduct(getNormal()) > 0.6
         );
-        
-        return reversePortal.size() <= 1;
+        if (revs.size() == 1) {
+            BreakablePortalEntity reversePortal = revs.get(0);
+            if (reversePortal.destination.squareDistanceTo(getPositionVec()) > 1) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+        else if (revs.size() > 1) {
+            return false;
+        }
+        else {
+            limitedLogger.err("Missing Reverse Portal " + this);
+            return true;
+        }
     }
     
     public void markShouldBreak() {
@@ -159,13 +181,23 @@ public abstract class BreakablePortalEntity extends Portal {
             reversePortal.shouldBreakPortal = true;
         }
         else {
+            int[] counter = {30};
             ModMain.serverTaskList.addTask(() -> {
                 BreakablePortalEntity reversePortal1 = getReversePortal();
                 if (reversePortal1 != null) {
                     reversePortal1.shouldBreakPortal = true;
+                    return true;
                 }
-                return true;
+                counter[0]--;
+                return counter[0] >= 0;
             });
         }
+    }
+    
+    private boolean isOtherSideChunkLoaded() {
+        ChunkPos destChunkPos = new ChunkPos(new BlockPos(destination));
+        return McHelper.getServerChunkIfPresent(
+            dimensionTo, destChunkPos.x, destChunkPos.z
+        ) != null;
     }
 }

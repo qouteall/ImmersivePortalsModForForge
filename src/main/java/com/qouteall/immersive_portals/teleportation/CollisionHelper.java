@@ -62,7 +62,7 @@ public class CollisionHelper {
         return new AxisAlignedBB(afterBeingPushed, staticPos);
     }
     
-    public static boolean shouldCollideWithPortal(Entity entity, Portal portal, float tickDelta) {
+    public static boolean canCollideWithPortal(Entity entity, Portal portal, float tickDelta) {
         if (portal.canTeleportEntity(entity)) {
             Vector3d cameraPosVec = entity.getEyePosition(tickDelta);
             if (portal.isInFrontOfPortal(cameraPosVec) &&
@@ -292,9 +292,12 @@ public class CollisionHelper {
         Iterable<Entity> worldEntityList = McHelper.getWorldEntityList(world);
         
         for (GlobalTrackedPortal globalPortal : globalPortals) {
+            AxisAlignedBB globalPortalBoundingBox = globalPortal.getBoundingBox();
             for (Entity entity : worldEntityList) {
-                if (shouldCollideWithPortal(entity, globalPortal, 1)) {
-                    ((IEEntity) entity).notifyCollidingWithPortal(globalPortal);
+                if (entity.getBoundingBox().intersects(globalPortalBoundingBox)) {
+                    if (canCollideWithPortal(entity, globalPortal, 1)) {
+                        ((IEEntity) entity).notifyCollidingWithPortal(globalPortal);
+                    }
                 }
             }
         }
@@ -353,7 +356,7 @@ public class CollisionHelper {
                 if (!entityBoxStretched.intersects(portalBoundingBox)) {
                     return false;
                 }
-                return shouldCollideWithPortal(entity, portal, 1);
+                return canCollideWithPortal(entity, portal, 1);
             }
         );
         

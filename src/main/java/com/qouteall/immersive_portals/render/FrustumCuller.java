@@ -6,12 +6,15 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import java.util.Comparator;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class FrustumCuller {
+   
+    
     public static interface BoxPredicate {
         boolean test(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
     }
@@ -143,7 +146,7 @@ public class FrustumCuller {
         };
     }
     
-    private static enum BatchTestResult {
+    public static enum BatchTestResult {
         all_true,
         all_false,
         both
@@ -295,5 +298,17 @@ public class FrustumCuller {
         ).min(
             Comparator.comparingDouble(portal -> portal.getDistanceToNearestPointInPortal(cameraPos))
         ).orElse(null);
+    }
+    
+    public static boolean isFullyInsideContentArea(Portal renderingPortal, AxisAlignedBB boundingBox) {
+        Vector3d planeNormal = renderingPortal.getContentDirection();
+        Vector3d planePos = renderingPortal.destination;
+        BatchTestResult batchTestResult = testBoxTwoVertices(
+            boundingBox.minX, boundingBox.minY, boundingBox.minZ,
+            boundingBox.maxX, boundingBox.maxY, boundingBox.maxZ,
+            planeNormal.x, planeNormal.y, planeNormal.z,
+            planePos.x, planePos.y, planePos.z
+        );
+        return batchTestResult != BatchTestResult.all_false;
     }
 }

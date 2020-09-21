@@ -1,8 +1,10 @@
 package com.qouteall.imm_ptl_peripheral.mixin.client.altius_world;
 
+import com.qouteall.imm_ptl_peripheral.altius_world.AltiusGameRule;
 import com.qouteall.imm_ptl_peripheral.altius_world.AltiusInfo;
+import com.qouteall.imm_ptl_peripheral.altius_world.AltiusManagement;
 import com.qouteall.imm_ptl_peripheral.altius_world.AltiusScreen;
-import com.qouteall.imm_ptl_peripheral.ducks.IELevelProperties;
+import com.qouteall.immersive_portals.Helper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.CreateWorldScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -12,6 +14,7 @@ import net.minecraft.util.datafix.codec.DatapackCodec;
 import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import org.spongepowered.asm.mixin.Mixin;
@@ -87,8 +90,17 @@ public abstract class MixinCreateWorldScreen extends Screen {
         DynamicRegistries.Impl registryTracker, DimensionGeneratorSettings generatorOptions
     ) {
         AltiusInfo info = altiusScreen.getAltiusInfo();
-        ((IELevelProperties) (Object) levelInfo).setAltiusInfo(info);
-    
+//        ((IELevelProperties) (Object) levelInfo).setAltiusInfo(info);
+        
+        AltiusManagement.dimensionStackPortalsToGenerate = info;
+        
+        GameRules.BooleanValue rule = levelInfo.func_234957_f_().get(AltiusGameRule.dimensionStackKey);
+        rule.set(true, null);
+        
+        if (info != null) {
+            Helper.log("Generating dimension stack world");
+        }
+        
         client.func_238192_a_(worldName, levelInfo, registryTracker, generatorOptions);
     }
     

@@ -18,8 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// Mostly deprecated
 public class AltiusInfo {
-    //store identifier because forge
+    
     private List<ResourceLocation> dimsFromTopToDown;
     
     public AltiusInfo(List<RegistryKey<World>> dimsFromTopToDown) {
@@ -67,6 +68,14 @@ public class AltiusInfo {
         return ((IELevelProperties) saveProperties).getAltiusInfo();
     }
     
+    public static void removeAltius() {
+        IServerConfiguration saveProperties = McHelper.getServer().func_240793_aU_();
+        
+        ((IELevelProperties) saveProperties).setAltiusInfo(null);
+    }
+    
+    // use AltiusGameRule
+    @Deprecated
     public static boolean isAltius() {
         return getInfoFromServer() != null;
     }
@@ -81,12 +90,12 @@ public class AltiusInfo {
             Helper.err("Invalid Dimension " + dimsFromTopToDown.get(0));
             return;
         }
-        ServerWorld world = McHelper.getServer().getWorld(topDimension);
-        if (world == null) {
+        ServerWorld topWorld = McHelper.getServer().getWorld(topDimension);
+        if (topWorld == null) {
             Helper.err("Missing Dimension " + topDimension.func_240901_a_());
             return;
         }
-        GlobalPortalStorage gps = GlobalPortalStorage.get(world);
+        GlobalPortalStorage gps = GlobalPortalStorage.get(topWorld);
         if (gps.data == null || gps.data.isEmpty()) {
             Helper.wrapAdjacentAndMap(
                 dimsFromTopToDown.stream(),
