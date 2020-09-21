@@ -9,9 +9,9 @@ public class ConfigServer {
     public static final ConfigServer instance;
     public static final ForgeConfigSpec spec;
     public final ForgeConfigSpec.IntValue portalSearchingRange;
+    public final ForgeConfigSpec.IntValue indirectLoadingRadiusCap;
     public final ForgeConfigSpec.BooleanValue activeLoadRemoteChunks;
     public final ForgeConfigSpec.BooleanValue teleportationDebug;
-    public final ForgeConfigSpec.BooleanValue loadFewerChunks;
     public final ForgeConfigSpec.BooleanValue multiThreadedNetherPortalSearching;
     public final ForgeConfigSpec.BooleanValue looseMovementCheck;
     public final ForgeConfigSpec.BooleanValue enableAlternateDimensions;
@@ -20,15 +20,15 @@ public class ConfigServer {
         portalSearchingRange = builder
             .comment("The Range of Existing Frame Searching When Generating Nether Portal")
             .defineInRange("portal_searching_range", 128, 32, 1000);
+        indirectLoadingRadiusCap = builder
+            .comment("Indirect Loading Radius Cap")
+            .defineInRange("indirect_loading_radius_cap", 8, 3, 20);
         activeLoadRemoteChunks = builder
             .comment("Load Remote Chunks Actively")
             .define("actively_load_remote_chunks", true);
         teleportationDebug = builder
             .comment("Teleportation Debug")
             .define("teleportation_debug", false);
-        loadFewerChunks = builder
-            .comment("Load Fewer Chunks")
-            .define("load_fewer_chunks", false);
         multiThreadedNetherPortalSearching = builder
             .comment("Multi Threaded Nether Portal Searching")
             .define("multi_threaded_nether_portal_searching", true);

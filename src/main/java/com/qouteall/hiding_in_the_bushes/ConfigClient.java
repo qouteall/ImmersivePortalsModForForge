@@ -18,7 +18,7 @@ public class ConfigClient {
     public final ForgeConfigSpec.IntValue maxPortalLayer;
     public final ForgeConfigSpec.BooleanValue renderYourselfInPortal;
     public final ForgeConfigSpec.BooleanValue correctCrossPortalEntityRendering;
-    public final ForgeConfigSpec.BooleanValue edgelessSky;
+    public final ForgeConfigSpec.BooleanValue reducedPortalRendering;
     public final ForgeConfigSpec.BooleanValue pureMirror;
     public final ForgeConfigSpec.BooleanValue lagAttackProof;
     public final ForgeConfigSpec.BooleanValue modelDataFix;
@@ -32,10 +32,13 @@ public class ConfigClient {
     
     public ConfigClient(ForgeConfigSpec.Builder builder) {
         compatibilityRenderMode = builder
-            .comment("With this you can't see portal-in-portal")
+            .comment("Used for debugging")
             .define("compatibility_render_mode", false);
+        reducedPortalRendering = builder.
+            comment("Reduced Portal Rendering")
+            .define("reduced_portal_rendering", false);
         doCheckGlError = builder
-            .comment("With this the performance may drop")
+            .comment("Used for debugging")
             .define("check_gl_error", false);
         maxPortalLayer = builder
             .comment("Max Portal-in-portal Render Layer")
@@ -44,11 +47,8 @@ public class ConfigClient {
             .comment("Render Yourself In Portal")
             .define("render_yourself_in_portal", true);
         correctCrossPortalEntityRendering = builder
-            .comment("This May Decrease FPS")
+            .comment("...")
             .define("correct_cross_portal_entity_rendering", true);
-        edgelessSky = builder
-            .comment("Remove Sky Edge in Dimension Stack")
-            .define("edgeless_sky", false);
         pureMirror = builder
             .comment("Remove the glass texture on mirrors")
             .define("pure_mirror", false);
@@ -56,10 +56,10 @@ public class ConfigClient {
             .comment("Render Fewer Portals When Laggy")
             .define("lag_attack_proof", true);
         modelDataFix = builder
-            .comment("Fix Compatibility with Other Mod's Block Model. May Decrease FPS")
+            .comment("(Fix Compatibility with Other Mod's Block Model. May Decrease FPS")
             .define("model_data_fix", false);
         renderDimensionRedirect = builder.comment(
-            "See the Wiki to Know How to Configure it"
+            "..."
         ).define(
             "dimension_render_redirect",
             defaultDimRedirect

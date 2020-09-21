@@ -135,25 +135,26 @@ public class ModMainForge {
     private void doClientStuff(final FMLClientSetupEvent event) {
         Minecraft.getInstance().execute(() -> {
             ModMainClient.init();
-            
-            if (ConfigClient.instance.compatibilityRenderMode.get()) {
+    
+            ConfigClient instance = ConfigClient.instance;
+            if (instance.compatibilityRenderMode.get()) {
                 Global.renderMode = Global.RenderMode.compatibility;
                 Helper.log("Initially Switched to Compatibility Render Mode");
             }
-            Global.doCheckGlError = ConfigClient.instance.doCheckGlError.get();
+            Global.doCheckGlError = instance.doCheckGlError.get();
             Helper.log("Do Check Gl Error: " + Global.doCheckGlError);
-            Global.renderYourselfInPortal = ConfigClient.instance.renderYourselfInPortal.get();
-            Global.maxPortalLayer = ConfigClient.instance.maxPortalLayer.get();
+            Global.renderYourselfInPortal = instance.renderYourselfInPortal.get();
+            Global.maxPortalLayer = instance.maxPortalLayer.get();
             Global.correctCrossPortalEntityRendering =
-                ConfigClient.instance.correctCrossPortalEntityRendering.get();
-            Global.edgelessSky = ConfigClient.instance.edgelessSky.get();
-            Global.pureMirror = ConfigClient.instance.pureMirror.get();
-            Global.lagAttackProof = ConfigClient.instance.lagAttackProof.get();
-            enableModelDataFix = ConfigClient.instance.modelDataFix.get();
+                instance.correctCrossPortalEntityRendering.get();
+            Global.reducedPortalRendering = instance.reducedPortalRendering.get();
+            Global.pureMirror = instance.pureMirror.get();
+            Global.lagAttackProof = instance.lagAttackProof.get();
+            enableModelDataFix = instance.modelDataFix.get();
             RenderDimensionRedirect.updateIdMap(
                 ConfigClient.listToMap(
                     Arrays.asList(
-                        ConfigClient.instance.renderDimensionRedirect.get().split("\n")
+                        instance.renderDimensionRedirect.get().split("\n")
                     )
                 )
             );
@@ -172,12 +173,14 @@ public class ModMainForge {
     
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
-        Global.netherPortalFindingRadius = ConfigServer.instance.portalSearchingRange.get();
-        Global.activeLoading = ConfigServer.instance.activeLoadRemoteChunks.get();
-        Global.teleportationDebugEnabled = ConfigServer.instance.teleportationDebug.get();
-        Global.multiThreadedNetherPortalSearching = ConfigServer.instance.multiThreadedNetherPortalSearching.get();
-        Global.looseMovementCheck = ConfigServer.instance.looseMovementCheck.get();
-        Global.enableAlternateDimensions = ConfigServer.instance.enableAlternateDimensions.get();
+        ConfigServer instance = ConfigServer.instance;
+        Global.netherPortalFindingRadius = instance.portalSearchingRange.get();
+        Global.indirectLoadingRadiusCap = instance.indirectLoadingRadiusCap.get();
+        Global.activeLoading = instance.activeLoadRemoteChunks.get();
+        Global.teleportationDebugEnabled = instance.teleportationDebug.get();
+        Global.multiThreadedNetherPortalSearching = instance.multiThreadedNetherPortalSearching.get();
+        Global.looseMovementCheck = instance.looseMovementCheck.get();
+        Global.enableAlternateDimensions = instance.enableAlternateDimensions.get();
     }
     
     @SubscribeEvent
