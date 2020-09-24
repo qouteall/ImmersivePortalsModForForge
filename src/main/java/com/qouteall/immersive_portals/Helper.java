@@ -25,6 +25,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.BufferUtils;
@@ -961,6 +962,7 @@ public class Helper {
                 if (cache == null) {
                     cache = supplier.get();
                 }
+                Validate.notNull(cache);
                 return cache;
             }
         };

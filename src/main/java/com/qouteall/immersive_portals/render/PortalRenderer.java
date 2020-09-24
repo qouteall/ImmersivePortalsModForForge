@@ -72,7 +72,12 @@ public abstract class PortalRenderer {
         
         List<Portal> portalsToRender = new ArrayList<>();
         List<GlobalTrackedPortal> globalPortals = McHelper.getGlobalPortals(client.world);
-        portalsToRender.addAll(globalPortals);
+        for (GlobalTrackedPortal globalPortal : globalPortals) {
+            if (!shouldSkipRenderingPortal(globalPortal, frustumSupplier)) {
+                portalsToRender.add(globalPortal);
+            }
+        }
+        
         client.world.getAllEntities().forEach(e -> {
             if (e instanceof Portal) {
                 Portal portal = (Portal) e;
@@ -163,15 +168,7 @@ public abstract class PortalRenderer {
         
         PortalRendering.onBeginPortalWorldRendering();
         
-        int renderDistance = client.gameSettings.renderDistanceChunks;
-        if (portal.scaling > 2) {
-            renderDistance *= (int) (Math.min(portal.scaling, 4));
-            renderDistance = Math.min(renderDistance, 32);
-            
-        }
-        if (Global.reducedPortalRendering) {
-            renderDistance = client.gameSettings.renderDistanceChunks / 3;
-        }
+        int renderDistance = getPortalRenderDistance(portal);
         
         invokeWorldRendering(new RenderInfo(
             newWorld,
@@ -189,6 +186,18 @@ public abstract class PortalRenderer {
         MyRenderHelper.restoreViewPort();
         
         
+    }
+    
+    private static int getPortalRenderDistance(Portal portal) {
+        if (portal.scaling > 2) {
+            double radiusBlocks = portal.getDestAreaRadius() * 1.4;
+            
+            return (int) (radiusBlocks / 16);
+        }
+        if (Global.reducedPortalRendering) {
+            return client.gameSettings.renderDistanceChunks / 3;
+        }
+        return client.gameSettings.renderDistanceChunks;
     }
     
     public void invokeWorldRendering(

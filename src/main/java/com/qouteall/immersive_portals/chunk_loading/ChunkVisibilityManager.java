@@ -121,7 +121,7 @@ public class ChunkVisibilityManager {
         Portal portal, ServerPlayerEntity player, int targetLoadingDistance
     ) {
         int cap = Global.indirectLoadingRadiusCap;
-    
+        
         // load more for scaling portal
         if (portal.scaling > 2) {
             cap *= 2;
@@ -148,7 +148,7 @@ public class ChunkVisibilityManager {
         
         // load more for up scaling portal
         if (portal.scaling > 2 && distance < 5) {
-            renderDistance = (renderDistance * 2) + 5;
+            renderDistance = (int) ((portal.getDestAreaRadius() * 1.4) / 16);
         }
         
         return new ChunkLoader(

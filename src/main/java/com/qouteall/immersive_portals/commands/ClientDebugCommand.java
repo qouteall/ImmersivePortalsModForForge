@@ -626,18 +626,18 @@ public class ClientDebugCommand {
         CGlobal.clientWorldLoader.clientWorldMap.values().forEach(world -> {
             str.append(String.format(
                 "%s %s\n",
-                world.func_234923_W_(),
+                world.func_234923_W_().func_240901_a_(),
                 ((MyClientChunkManager) world.getChunkProvider()).getLoadedChunksCount()
             ));
         });
         
         
-        str.append("Chunk Renderers:\n");
+        str.append("Chunk Mesh Sections:\n");
         CGlobal.clientWorldLoader.worldRendererMap.forEach(
             (dimension, worldRenderer) -> {
                 str.append(String.format(
                     "%s %s\n",
-                    dimension,
+                    dimension.func_240901_a_(),
                     ((MyBuiltChunkStorage) ((IEWorldRenderer) worldRenderer)
                         .getBuiltChunkStorage()
                     ).getManagedChunkNum()
@@ -650,7 +650,7 @@ public class ClientDebugCommand {
             world -> {
                 str.append(String.format(
                     "%s %s\n",
-                    world.func_234923_W_(),
+                    world.func_234923_W_().func_240901_a_(),
                     NewChunkTrackingGraph.getLoadedChunkNum(world.func_234923_W_())
                 ));
             }

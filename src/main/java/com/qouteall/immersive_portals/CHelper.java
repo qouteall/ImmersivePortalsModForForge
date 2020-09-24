@@ -4,7 +4,6 @@ import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
@@ -21,7 +20,6 @@ import org.lwjgl.opengl.GL11;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -58,31 +56,7 @@ public class CHelper {
     }
     
     public static Stream<Portal> getClientNearbyPortals(double range) {
-        return getClientNearbyPortalList(range, e -> true).stream();
-    }
-    
-    public static List<Portal> getClientNearbyPortalList(double range, Predicate<Portal> predicate) {
-        ClientPlayerEntity player = Minecraft.getInstance().player;
-        List<GlobalTrackedPortal> globalPortals = ((IEClientWorld) player.world).getGlobalPortals();
-        List<Portal> nearbyPortals = McHelper.findEntitiesRough(
-            Portal.class,
-            player.world,
-            player.getPositionVec(),
-            (int) (range / 16),
-            predicate
-        );
-        
-        if (globalPortals != null) {
-            for (GlobalTrackedPortal globalPortal : globalPortals) {
-                if (globalPortal.getDistanceToNearestPointInPortal(player.getPositionVec()) < range * 2) {
-                    if (predicate.test(globalPortal)) {
-                        nearbyPortals.add(globalPortal);
-                    }
-                }
-            }
-        }
-        
-        return nearbyPortals;
+        return McHelper.getNearbyPortals(Minecraft.getInstance().player, range);
     }
     
     public static void checkGlError() {
@@ -105,7 +79,6 @@ public class CHelper {
             new StringTextComponent(str)
         );
     }
-    
     
     public static class Rect {
         public float xMin;
