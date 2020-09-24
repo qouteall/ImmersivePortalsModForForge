@@ -1,6 +1,7 @@
 package com.qouteall.hiding_in_the_bushes;
 
 import com.mojang.serialization.Codec;
+import com.qouteall.imm_ptl_peripheral.PeripheralModMain;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
@@ -129,7 +130,10 @@ public class ModMainForge {
     
     private void setup(final FMLCommonSetupEvent event) {
         // concurrent init may have issues
-        DeferredWorkQueue.runLater(() -> ModMain.init());
+        DeferredWorkQueue.runLater(() -> {
+            ModMain.init();
+            PeripheralModMain.init();
+        });
     }
     
     private void doClientStuff(final FMLClientSetupEvent event) {
@@ -181,6 +185,8 @@ public class ModMainForge {
         Global.multiThreadedNetherPortalSearching = instance.multiThreadedNetherPortalSearching.get();
         Global.looseMovementCheck = instance.looseMovementCheck.get();
         Global.enableAlternateDimensions = instance.enableAlternateDimensions.get();
+        Global.netherPortalMode = instance.netherPortalMode.get();
+        Global.endPortalMode = instance.endPortalMode.get();
     }
     
     @SubscribeEvent

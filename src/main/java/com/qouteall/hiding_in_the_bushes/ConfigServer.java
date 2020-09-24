@@ -1,5 +1,6 @@
 package com.qouteall.hiding_in_the_bushes;
 
+import com.qouteall.immersive_portals.Global;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
@@ -15,6 +16,8 @@ public class ConfigServer {
     public final ForgeConfigSpec.BooleanValue multiThreadedNetherPortalSearching;
     public final ForgeConfigSpec.BooleanValue looseMovementCheck;
     public final ForgeConfigSpec.BooleanValue enableAlternateDimensions;
+    public final ForgeConfigSpec.EnumValue<Global.NetherPortalMode> netherPortalMode;
+    public final ForgeConfigSpec.EnumValue<Global.EndPortalMode> endPortalMode;
     
     public ConfigServer(ForgeConfigSpec.Builder builder) {
         portalSearchingRange = builder
@@ -38,6 +41,12 @@ public class ConfigServer {
         enableAlternateDimensions = builder
             .comment("Enable Alternate Dimensions")
             .define("enable_alternate_dimensions", true);
+        netherPortalMode = builder
+            .comment("Nether Portal Mode")
+            .defineEnum("nether_portal_mode", Global.NetherPortalMode.normal);
+        endPortalMode = builder
+            .comment("End Portal Mode")
+            .defineEnum("end_portal_mode", Global.EndPortalMode.normal);
     }
     
     static {
