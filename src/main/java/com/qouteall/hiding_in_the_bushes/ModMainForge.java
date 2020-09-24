@@ -27,6 +27,8 @@ import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.MainMenuScreen;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.entity.Entity;
@@ -139,7 +141,7 @@ public class ModMainForge {
     private void doClientStuff(final FMLClientSetupEvent event) {
         Minecraft.getInstance().execute(() -> {
             ModMainClient.init();
-    
+            
             ConfigClient instance = ConfigClient.instance;
             if (instance.compatibilityRenderMode.get()) {
                 Global.renderMode = Global.RenderMode.compatibility;
@@ -162,6 +164,9 @@ public class ModMainForge {
                     )
                 )
             );
+            
+            Validate.notNull(ModMain.portalHelperBlock);
+            RenderTypeLookup.setRenderLayer(ModMain.portalHelperBlock, RenderType.getCutout());
         });
         
         initPortalRenderers();
@@ -309,7 +314,7 @@ public class ModMainForge {
                 NetherPortalEntity::new,
                 registry
             );
-    
+            
             registerEntity(
                 o -> EndPortalEntity.entityType = o,
                 () -> EndPortalEntity.entityType,
@@ -333,7 +338,7 @@ public class ModMainForge {
                 BreakableMirror::new,
                 registry
             );
-    
+            
             registerEntity(
                 o -> GlobalTrackedPortal.entityType = o,
                 () -> GlobalTrackedPortal.entityType,
@@ -349,7 +354,7 @@ public class ModMainForge {
                 WorldWrappingPortal::new,
                 registry
             );
-    
+            
             registerEntity(
                 o -> VerticalConnectingPortal.entityType = o,
                 () -> VerticalConnectingPortal.entityType,
@@ -357,7 +362,7 @@ public class ModMainForge {
                 VerticalConnectingPortal::new,
                 registry
             );
-    
+            
             registerEntity(
                 o -> GeneralBreakablePortal.entityType = o,
                 () -> GeneralBreakablePortal.entityType,
