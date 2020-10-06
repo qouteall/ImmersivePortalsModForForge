@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: "..."
+about: 'Note: The Forge version is being provided but not supported.'
 title: ''
 labels: ''
 assignees: ''
