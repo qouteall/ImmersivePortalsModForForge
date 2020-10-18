@@ -46,12 +46,6 @@ public class StcUpdateGlobalPortals {
     
     @OnlyIn(Dist.CLIENT)
     private void clientHandle() {
-        ClientWorld world =
-            CGlobal.clientWorldLoader.getWorld(dimensionType);
-    
-        List<GlobalTrackedPortal> portals =
-            GlobalPortalStorage.getPortalsFromTag(data, world);
-    
-        ((IEClientWorld) world).setGlobalPortals(portals);
+        GlobalPortalStorage.receiveGlobalPortalSync(dimensionType, data);
     }
 }
