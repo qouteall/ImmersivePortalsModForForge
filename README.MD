@@ -3,7 +3,11 @@ It's a minecraft mod.
 
 https://www.curseforge.com/minecraft/mc-mods/immersive-portals-for-forge
 
-All code under `com.qouteall.immersive_portals` package is remapped from the [Fabric version](https://github.com/qouteall/ImmersivePortalsMod)
+The Forge version is not supported now. Only the [Fabric version](https://github.com/qouteall/ImmersivePortalsMod)
+ is still being supported.
+
+The most code is remapped from
+ the [Fabric version](https://github.com/qouteall/ImmersivePortalsMod)
 
 ## How to run this code
 ```gradlew genIntellijRuns``` or ```gradlew genEclipseRuns```
