@@ -300,7 +300,7 @@ public class FrustumCuller {
         ).orElse(null);
     }
     
-    public static boolean isFullyInsideContentArea(Portal renderingPortal, AxisAlignedBB boundingBox) {
+    public static boolean isTouchingInsideContentArea(Portal renderingPortal, AxisAlignedBB boundingBox) {
         Vector3d planeNormal = renderingPortal.getContentDirection();
         Vector3d planePos = renderingPortal.destination;
         BatchTestResult batchTestResult = testBoxTwoVertices(

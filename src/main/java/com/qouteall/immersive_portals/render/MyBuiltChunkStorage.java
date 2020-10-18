@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.render;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.ducks.IEBuiltChunk;
 import com.qouteall.immersive_portals.my_util.ObjectBuffer;
 import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkNeighborFix;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
@@ -21,10 +22,9 @@ import org.apache.commons.lang3.Validate;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 public class MyBuiltChunkStorage extends ViewFrustum {
     
@@ -47,13 +47,13 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     private ObjectBuffer<ChunkRenderDispatcher.ChunkRender> builtChunkBuffer;
     
     public MyBuiltChunkStorage(
-        ChunkRenderDispatcher chunkBuilder_1,
-        World world_1,
-        int int_1,
-        WorldRenderer worldRenderer_1
+        ChunkRenderDispatcher chunkBuilder,
+        World world,
+        int r,
+        WorldRenderer worldRenderer
     ) {
-        super(chunkBuilder_1, world_1, int_1, worldRenderer_1);
-        factory = chunkBuilder_1;
+        super(chunkBuilder, world, r, worldRenderer);
+        factory = chunkBuilder;
         
         ModMain.postClientTickSignal.connectWithWeakRef(
             this, MyBuiltChunkStorage::tick
@@ -179,8 +179,8 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     }
     
     //copy because private
-    private int getChunkIndex(int int_1, int int_2, int int_3) {
-        return (int_3 * this.countChunksY + int_2) * this.countChunksX + int_1;
+    private int getChunkIndex(int x, int y, int z) {
+        return (z * this.countChunksY + y) * this.countChunksX + x;
     }
     
     private static BlockPos getBasePos(BlockPos blockPos) {
@@ -238,24 +238,20 @@ public class MyBuiltChunkStorage extends ViewFrustum {
             return currentTime - preset.lastActiveTime > Helper.secondToNano(20);
         });
         
-        Set<ChunkRenderDispatcher.ChunkRender> activeBuiltChunks = getAllActiveBuiltChunks();
+        foreachActiveBuiltChunks(builtChunk -> {
+            ((IEBuiltChunk) builtChunk).setMark(currentTime);
+        });
         
-        List<ChunkRenderDispatcher.ChunkRender> chunksToDelete = builtChunkMap
-            .values().stream().filter(
-                builtChunk -> !activeBuiltChunks.contains(builtChunk)
-            ).collect(Collectors.toList());
-        
-        chunksToDelete.forEach(
-            builtChunk -> {
-                builtChunkBuffer.returnObject(builtChunk);
-                //builtChunk.delete();
-                ChunkRenderDispatcher.ChunkRender removed =
-                    builtChunkMap.remove(builtChunk.getPosition());
-                if (removed == null) {
-                    Helper.err("Chunk Renderer Abnormal " + builtChunk.getPosition());
-                }
+        builtChunkMap.entrySet().removeIf(entry -> {
+            ChunkRenderDispatcher.ChunkRender chunk = entry.getValue();
+            if (((IEBuiltChunk) chunk).getMark() != currentTime) {
+                builtChunkBuffer.returnObject(chunk);
+                return true;
             }
-        );
+            else {
+                return false;
+            }
+        });
         
         Minecraft.getInstance().getProfiler().endSection();
     }
@@ -263,31 +259,29 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     private Set<ChunkRenderDispatcher.ChunkRender> getAllActiveBuiltChunks() {
         HashSet<ChunkRenderDispatcher.ChunkRender> result = new HashSet<>();
         
-        presets.forEach((key,preset)->{
+        presets.forEach((key, preset) -> {
             result.addAll(Arrays.asList(preset.data));
         });
-    
+        
         if (renderChunks != null) {
             result.addAll(Arrays.asList(renderChunks));
         }
-    
-        return result;
         
-//        Stream<ChunkBuilder.BuiltChunk> result;
-//        Stream<ChunkBuilder.BuiltChunk> chunksFromPresets = presets.values().stream()
-//            .flatMap(
-//                preset -> Arrays.stream(preset.data)
-//            );
-//        if (chunks == null) {
-//            result = chunksFromPresets;
-//        }
-//        else {
-//            result = Streams.concat(
-//                Arrays.stream(chunks),
-//                chunksFromPresets
-//            );
-//        }
-//        return result.collect(Collectors.toSet());
+        return result;
+    }
+    
+    private void foreachActiveBuiltChunks(Consumer<ChunkRenderDispatcher.ChunkRender> func) {
+        if (renderChunks != null) {
+            for (ChunkRenderDispatcher.ChunkRender chunk : renderChunks) {
+                func.accept(chunk);
+            }
+        }
+        
+        for (Preset value : presets.values()) {
+            for (ChunkRenderDispatcher.ChunkRender chunk : value.data) {
+                func.accept(chunk);
+            }
+        }
     }
     
     public int getManagedChunkNum() {

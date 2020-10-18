@@ -26,12 +26,10 @@ import net.minecraft.command.Commands;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.profiler.Profiler;
-import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.SectionPos;
-import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
@@ -40,7 +38,6 @@ import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import java.lang.ref.Reference;
@@ -122,10 +119,6 @@ public class ClientDebugCommand {
                     )
                 )
             )
-        );
-        builder = builder.then(Commands
-            .literal("add_portal")
-            .executes(context -> addPortal(context))
         );
         builder = builder.then(Commands
             .literal("report_player_status")
@@ -557,6 +550,21 @@ public class ClientDebugCommand {
             "cull_sections_behind",
             cond -> Global.cullSectionsBehind = cond
         );
+        registerSwitchCommand(
+            builder,
+            "offset_occlusion_query",
+            cond -> Global.offsetOcclusionQuery = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "cloud_optimization",
+            cond -> Global.cloudOptimization = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "cross_portal_collision",
+            cond -> Global.crossPortalCollision = cond
+        );
         
         builder.then(Commands
             .literal("print_class_path")
@@ -714,52 +722,6 @@ public class ClientDebugCommand {
         
         McHelper.serverLog(playerServer, result.toString());
         
-        return 0;
-    }
-    
-    private static Consumer<ServerPlayerEntity> originalAddPortalFunctionality;
-    private static Consumer<ServerPlayerEntity> addPortalFunctionality;
-    
-    static {
-        originalAddPortalFunctionality = (player) -> {
-            Vector3d fromPos = player.getPositionVec();
-            Vector3d fromNormal = player.getLookVec().scale(-1);
-            ServerWorld fromWorld = ((ServerWorld) player.world);
-            
-            addPortalFunctionality = (playerEntity) -> {
-                Vector3d toPos = playerEntity.getPositionVec();
-                RegistryKey<World> toDimension = player.world.func_234923_W_();
-                
-                Portal portal = new Portal(Portal.entityType, fromWorld);
-                portal.setRawPosition(fromPos.x, fromPos.y, fromPos.z);
-                
-                portal.axisH = new Vector3d(0, 1, 0);
-                portal.axisW = portal.axisH.crossProduct(fromNormal).normalize();
-                
-                portal.dimensionTo = toDimension;
-                portal.destination = toPos;
-                
-                portal.width = 4;
-                portal.height = 4;
-                
-                assert portal.isPortalValid();
-                
-                fromWorld.addEntity(portal);
-                
-                addPortalFunctionality = originalAddPortalFunctionality;
-            };
-        };
-        
-        addPortalFunctionality = originalAddPortalFunctionality;
-    }
-    
-    private static int addPortal(CommandContext<CommandSource> context) {
-        try {
-            addPortalFunctionality.accept(context.getSource().asPlayer());
-        }
-        catch (CommandSyntaxException e) {
-            e.printStackTrace();
-        }
         return 0;
     }
     

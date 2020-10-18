@@ -32,9 +32,6 @@ import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
-import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.renderer.vertex.VertexBuffer;
-import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -69,15 +66,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     private Minecraft mc;
     
     @Shadow
-    private double prevRenderSortX;
-    
-    @Shadow
-    private double prevRenderSortY;
-    
-    @Shadow
-    private double prevRenderSortZ;
-    
-    @Shadow
     private ViewFrustum viewFrustum;
     
     @Shadow
@@ -110,20 +98,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     
     @Shadow
     private boolean displayListEntitiesDirty;
-    
-    @Shadow
-    private VertexBuffer skyVBO;
-    
-    @Shadow
-    @Final
-    private VertexFormat skyVertexFormat;
-    
-    @Shadow
-    @Final
-    private TextureManager textureManager;
-    
-    @Shadow
-    private VertexBuffer sky2VBO;
     
     @Shadow
     private ChunkRenderDispatcher renderDispatcher;
@@ -217,7 +191,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         ActiveRenderInfo camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager,
         Matrix4f matrix4f, CallbackInfo ci
     ) {
-    
+        
     }
     
     @Inject(
@@ -306,7 +280,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         )
     )
     private void redirectClearing(int int_1, boolean boolean_1) {
-        if (!CGlobal.renderer.shouldSkipClearing()) {
+        if (!CGlobal.renderer.replaceFrameBufferClearing()) {
             RenderSystem.clear(int_1, boolean_1);
         }
     }
@@ -630,7 +604,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         }
     }
     
-    
     @Override
     public EntityRendererManager getEntityRenderDispatcher() {
         return renderManager;
@@ -744,4 +717,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             }
         }
     }
+    
+    
 }

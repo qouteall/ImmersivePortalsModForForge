@@ -7,7 +7,7 @@ import net.minecraft.world.GameRules;
 
 public class AltiusGameRule {
     public static GameRules.RuleKey<GameRules.BooleanValue> dimensionStackKey;
-    
+
 //    private static boolean isDimensionStackCache = false;
     
     private static boolean doUpgradeOldDimensionStack = false;

@@ -138,13 +138,13 @@ public class CrossPortalEntityRenderer {
                 //no need to render entity projection for mirrors
                 return;
             }
-            if (collidingPortal.rotation != null) {
-                //currently cannot render entity projection through a rotating portal
-                return;
-            }
-            if (collidingPortal.hasScaling()) {
-                return;
-            }
+//            if (collidingPortal.rotation != null) {
+//                //currently cannot render entity projection through a rotating portal
+//                return;
+//            }
+//            if (collidingPortal.hasScaling()) {
+//                return;
+//            }
             RegistryKey<World> projectionDimension = collidingPortal.dimensionTo;
             if (client.world.func_234923_W_() == projectionDimension) {
                 renderProjectedEntity(entity, collidingPortal, matrixStack);
@@ -239,6 +239,9 @@ public class CrossPortalEntityRenderer {
             //avoid rendering player too near and block view
             double dis = newEyePos.distanceTo(cameraPos);
             double valve = 0.5 + McHelper.lastTickPosOf(entity).distanceTo(entity.getPositionVec());
+            if (transformingPortal.scaling > 1) {
+                valve *= transformingPortal.scaling;
+            }
             if (dis < valve) {
                 return;
             }
@@ -253,6 +256,11 @@ public class CrossPortalEntityRenderer {
         entity.world = newWorld;
         
         isRendering = true;
+        matrixStack.push();
+        setupEntityProjectionRenderingTransformation(
+            transformingPortal, entity, matrixStack
+        );
+        
         OFInterface.updateEntityTypeForShader.accept(entity);
         IRenderTypeBuffer.Impl consumers = client.getRenderTypeBuffers().getBufferSource();
         ((IEWorldRenderer) client.worldRenderer).myRenderEntity(
@@ -263,12 +271,37 @@ public class CrossPortalEntityRenderer {
         );
         //immediately invoke draw call
         consumers.finish();
+        
+        matrixStack.pop();
         isRendering = false;
         
         McHelper.setEyePos(
             entity, oldEyePos, oldLastTickEyePos
         );
         entity.world = oldWorld;
+    }
+    
+    private static void setupEntityProjectionRenderingTransformation(
+        Portal portal, Entity entity, MatrixStack matrixStack
+    ) {
+        if (portal.scaling == 1.0 && portal.rotation == null) {
+            return;
+        }
+        
+        Vector3d cameraPos = McHelper.getCurrentCameraPos();
+        
+        Vector3d anchor = entity.getEyePosition(RenderStates.tickDelta).subtract(cameraPos);
+        
+        matrixStack.translate(anchor.x, anchor.y, anchor.z);
+        
+        float scaling = (float) portal.scaling;
+        matrixStack.scale(scaling, scaling, scaling);
+        
+        if (portal.rotation != null) {
+            matrixStack.rotate(portal.rotation);
+        }
+        
+        matrixStack.translate(-anchor.x, -anchor.y, -anchor.z);
     }
     
     public static boolean shouldRenderPlayerItself() {

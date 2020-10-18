@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
@@ -148,7 +149,6 @@ public class NewChunkTrackingGraph {
     }
     
     private static void updateAndPurge() {
-        long unloadTimeValve = getUnloadTimeValve();
         long currTime = McHelper.getOverWorldOnServer().getGameTime();
         data.forEach((dimension, chunkRecords) -> {
             chunkRecords.long2ObjectEntrySet().removeIf(entry -> {
@@ -158,8 +158,8 @@ public class NewChunkTrackingGraph {
                 
                 removeInactiveWatchers(
                     records,
-                    (r) -> {
-                        return currTime - r.lastWatchTime > unloadTimeValve || r.player.removed;
+                    (record) -> {
+                        return shouldUnload(currTime, record);
                     },
                     player -> {
                         if (player.removed) return;
@@ -221,8 +221,11 @@ public class NewChunkTrackingGraph {
         });
     }
     
-    private static long getUnloadTimeValve() {
-        return 15 * 20;
+    private static boolean shouldUnload(long currTime, PlayerWatchRecord record) {
+        if (record.player.removed) {
+            return true;
+        }
+        return currTime - record.lastWatchTime > (long) Global.chunkUnloadDelayTicks;
     }
     
     private static void tick() {
@@ -375,6 +378,7 @@ public class NewChunkTrackingGraph {
     public static void addAdditionalDirectTickets(ServerPlayerEntity player) {
         ChunkVisibilityManager.playerDirectLoader(player).foreachChunkPos((dim, x, z, dis) -> {
             if (isPlayerWatchingChunk(player, dim, x, z)) {
+                
                 MyLoadingTicket.addTicketIfNotLoaded(((ServerWorld) player.world), new ChunkPos(x, z));
             }
         });

@@ -71,15 +71,11 @@ public class AlternateDimensions {
         
         DimensionStructuresSettings structuresConfig = new DimensionStructuresSettings(
             Optional.of(DimensionStructuresSettings.field_236192_c_),
-            Maps.newHashMap(ImmutableMap.of(
-//                StructureFeature.VILLAGE, StructuresConfig.DEFAULT_STRUCTURES.get(StructureFeature.VILLAGE)
-            ))
+            Maps.newHashMap(ImmutableMap.of())
         );
-        FlatGenerationSettings flatChunkGeneratorConfig = new FlatGenerationSettings(structuresConfig,
-            biomeRegistry);
-        flatChunkGeneratorConfig.getFlatLayers().add(new FlatLayerInfo(1, Blocks.BEDROCK));
-        flatChunkGeneratorConfig.getFlatLayers().add(new FlatLayerInfo(2, Blocks.DIRT));
-        flatChunkGeneratorConfig.getFlatLayers().add(new FlatLayerInfo(1, Blocks.GRASS_BLOCK));
+        FlatGenerationSettings flatChunkGeneratorConfig =
+            new FlatGenerationSettings(structuresConfig, biomeRegistry);
+        flatChunkGeneratorConfig.getFlatLayers().add(new FlatLayerInfo(1, Blocks.AIR));
         flatChunkGeneratorConfig.updateLayers();
         
         return new FlatChunkGenerator(flatChunkGeneratorConfig);

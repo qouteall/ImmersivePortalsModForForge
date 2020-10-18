@@ -33,25 +33,27 @@ public abstract class PortalRenderer {
     public static final Minecraft client = Minecraft.getInstance();
     
     
-    //this WILL be called when rendering portal
+    // this WILL be called when rendering portal
     public abstract void onBeforeTranslucentRendering(MatrixStack matrixStack);
     
-    //this WILL be called when rendering portal
+    // this WILL be called when rendering portal
     public abstract void onAfterTranslucentRendering(MatrixStack matrixStack);
     
-    //this WILL be called when rendering portal
+    // this WILL be called when rendering portal
     public abstract void onRenderCenterEnded(MatrixStack matrixStack);
     
-    //this will NOT be called when rendering portal
+    // this will NOT be called when rendering portal
     public abstract void prepareRendering();
     
-    //this will NOT be called when rendering portal
+    // this will NOT be called when rendering portal
     public abstract void finishRendering();
     
-    //this will be called when rendering portal entities
+    // this will be called when rendering portal entities
     public abstract void renderPortalInEntityRenderer(Portal portal);
     
-    public abstract boolean shouldSkipClearing();
+    // return true to skip framebuffer clear
+    // this will also be called in outer world rendering
+    public abstract boolean replaceFrameBufferClearing();
     
     protected void renderPortals(MatrixStack matrixStack) {
         Validate.isTrue(client.renderViewEntity.world == client.world);
@@ -125,7 +127,7 @@ public abstract class PortalRenderer {
         
         if (CGlobal.earlyFrustumCullingPortal) {
             ClippingHelper frustum = frustumSupplier.get();
-            if (!frustum.isBoundingBoxInFrustum(portal.getBoundingBox())) {
+            if (!frustum.isBoundingBoxInFrustum(portal.getExactBoundingBox())) {
                 return true;
             }
         }
@@ -191,8 +193,8 @@ public abstract class PortalRenderer {
     private static int getPortalRenderDistance(Portal portal) {
         if (portal.scaling > 2) {
             double radiusBlocks = portal.getDestAreaRadius() * 1.4;
-            
-            return (int) (radiusBlocks / 16);
+    
+            return Math.max((int) (radiusBlocks / 16), client.gameSettings.renderDistanceChunks);
         }
         if (Global.reducedPortalRendering) {
             return client.gameSettings.renderDistanceChunks / 3;
@@ -222,19 +224,36 @@ public abstract class PortalRenderer {
     // Scaling does not interfere camera transformation
     @Nullable
     public static Matrix4f getAdditionalCameraTransformation(Portal portal) {
-        if (portal instanceof Mirror) {
-            return TransformationManager.getMirrorTransformation(portal.getNormal());
+        
+        Matrix4f rot = getPortalRotationMatrix(portal);
+        
+        Matrix4f mirror = portal instanceof Mirror ?
+            TransformationManager.getMirrorTransformation(portal.getNormal()) : null;
+        
+        return combineNullable(rot, mirror);
+    }
+    
+    @Nullable
+    private static Matrix4f getPortalRotationMatrix(Portal portal) {
+        if (portal.rotation == null) {
+            return null;
         }
-        else {
-            if (portal.rotation != null) {
-                Quaternion rot = portal.rotation.copy();
-                rot.conjugate();
-                return new Matrix4f(rot);
-            }
-            else {
-                return null;
-            }
+        
+        Quaternion rot = portal.rotation.copy();
+        rot.conjugate();
+        return new Matrix4f(rot);
+    }
+    
+    @Nullable
+    private static Matrix4f combineNullable(@Nullable Matrix4f a, @Nullable Matrix4f b) {
+        if (a == null) {
+            return b;
         }
+        if (b == null) {
+            return a;
+        }
+        a.mul(b);
+        return a;
     }
     
 }

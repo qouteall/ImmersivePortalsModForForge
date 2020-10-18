@@ -6,6 +6,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ducks.IEFrameBuffer;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import net.minecraft.client.Minecraft;
@@ -26,8 +27,14 @@ import static org.lwjgl.opengl.GL11.GL_STENCIL_TEST;
 public class RendererUsingStencil extends PortalRenderer {
     
     @Override
-    public boolean shouldSkipClearing() {
-        return PortalRendering.isRendering();
+    public boolean replaceFrameBufferClearing() {
+        boolean skipClearing = PortalRendering.isRendering();
+        if (skipClearing) {
+            RenderSystem.depthMask(false);
+            MyRenderHelper.renderScreenTriangle(FogRendererContext.getCurrentFogColor.get());
+            RenderSystem.depthMask(true);
+        }
+        return skipClearing;
     }
     
     @Override
@@ -96,9 +103,11 @@ public class RendererUsingStencil extends PortalRenderer {
         int outerPortalStencilValue = PortalRendering.getPortalLayer();
         
         client.getProfiler().startSection("render_view_area");
-        boolean anySamplePassed = QueryManager.renderAndGetDoesAnySamplePassed(() -> {
+        
+        boolean anySamplePassed = PortalPresentation.renderAndDecideVisibility(portal, () -> {
             renderPortalViewAreaToStencil(portal, matrixStack);
         });
+        
         client.getProfiler().endSection();
         
         if (!anySamplePassed) {
@@ -214,6 +223,10 @@ public class RendererUsingStencil extends PortalRenderer {
         GL11.glDepthMask(true);
         
         GL20.glUseProgram(0);
+    
+        int originalDepthFunc = GL11.glGetInteger(GL_DEPTH_FUNC);
+    
+        GL11.glDepthFunc(GL_ALWAYS);
         
         GlStateManager.enableDepthTest();
         
@@ -224,6 +237,8 @@ public class RendererUsingStencil extends PortalRenderer {
         GlStateManager.enableTexture();
         
         GL11.glColorMask(true, true, true, true);
+    
+        GL11.glDepthFunc(originalDepthFunc);
     }
     
     public static void clampStencilValue(

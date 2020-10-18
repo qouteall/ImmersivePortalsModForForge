@@ -23,15 +23,15 @@ public class Mirror extends Portal {
     public boolean isInteractable() {
         return Global.mirrorInteractableThroughPortal && super.isInteractable();
     }
+
+//    @Override
+//    public Vec3d getContentDirection() {
+//        return getNormal();
+//    }
     
     @Override
-    public Vector3d getContentDirection() {
-        return getNormal();
-    }
-    
-    @Override
-    public Vector3d transformLocalVec(Vector3d localVec) {
-        return getMirrored(super.transformLocalVec(localVec));
+    public Vector3d transformLocalVecNonScale(Vector3d localVec) {
+        return getMirrored(super.transformLocalVecNonScale(localVec));
     }
     
     @Override
@@ -45,7 +45,7 @@ public class Mirror extends Portal {
     }
     
     @Override
-    public Vector3d untransformLocalVec(Vector3d localVec) {
-        return getMirrored(super.untransformLocalVec(localVec));
+    public Vector3d inverseTransformLocalVecNonScale(Vector3d localVec) {
+        return super.inverseTransformLocalVecNonScale(getMirrored(localVec));
     }
 }

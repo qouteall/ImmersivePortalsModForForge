@@ -138,11 +138,11 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
                 toWorld, toPos,
                 fromShape.axis, fromShape.totalAreaBox.getSize()
             );
-    
+        
         BlockPortalShape placedShape = fromShape.getShapeWithMovedTotalAreaBox(
             airCubePlacement
         );
-    
+        
         return new PortalGenInfo(
             fromWorld.func_234923_W_(),
             toWorld.func_234923_W_(),

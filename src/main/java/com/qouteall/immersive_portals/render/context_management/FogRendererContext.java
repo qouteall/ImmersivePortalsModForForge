@@ -56,6 +56,9 @@ public class FogRendererContext {
         ClientWorld destWorld, Vector3d pos
     ) {
         Minecraft client = Minecraft.getInstance();
+        
+        client.getProfiler().startSection("get_fog_color");
+        
         ClientWorld oldWorld = client.world;
         
         RegistryKey<World> newWorldKey = destWorld.func_234923_W_();
@@ -90,6 +93,8 @@ public class FogRendererContext {
         finally {
             swappingManager.popSwapping();
             client.world = oldWorld;
+            
+            client.getProfiler().endSection();
         }
     }
     

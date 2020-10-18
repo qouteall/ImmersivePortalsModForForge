@@ -43,8 +43,10 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Helper {
@@ -271,9 +273,9 @@ public class Helper {
     
     public static AxisAlignedBB getBoxByBottomPosAndSize(Vector3d boxBottomCenter, Vector3d viewBoxSize) {
         return new AxisAlignedBB(
-                boxBottomCenter.subtract(viewBoxSize.x / 2, 0, viewBoxSize.z / 2),
-                boxBottomCenter.add(viewBoxSize.x / 2, viewBoxSize.y, viewBoxSize.z / 2)
-            );
+            boxBottomCenter.subtract(viewBoxSize.x / 2, 0, viewBoxSize.z / 2),
+            boxBottomCenter.add(viewBoxSize.x / 2, viewBoxSize.y, viewBoxSize.z / 2)
+        );
     }
     
     public static class SimpleBox<T> {
@@ -301,21 +303,6 @@ public class Helper {
         }
         
         return last;
-    }
-    
-    public interface CallableWithoutException<T> {
-        public T run();
-    }
-    
-    public static Runnable noException(Callable func) {
-        return () -> {
-            try {
-                func.call();
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
-        };
     }
     
     public static void doNotEatExceptionMessage(
@@ -480,19 +467,6 @@ public class Helper {
             return func.call();
         }
         catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-    
-    public static interface ExceptionalRunnable {
-        void run() throws Throwable;
-    }
-    
-    public static void noError(ExceptionalRunnable runnable) {
-        try {
-            runnable.run();
-        }
-        catch (Throwable e) {
             throw new IllegalStateException(e);
         }
     }
@@ -824,7 +798,7 @@ public class Helper {
             .setEnd(portal.transformPoint(end));
         
         portals.add(portal);
-        World destWorld = portal.getDestinationWorld(world.isRemote);
+        World destWorld = portal.getDestinationWorld();
         Tuple<BlockRayTraceResult, List<Portal>> recursion = withSwitchedContext(
             destWorld,
             () -> rayTrace(destWorld, context, includeGlobalPortals, portals)
@@ -937,7 +911,7 @@ public class Helper {
         
         World world = hitPortals.isEmpty()
             ? entity.world
-            : hitPortals.get(hitPortals.size() - 1).getDestinationWorld(false);
+            : hitPortals.get(hitPortals.size() - 1).getDestinationWorld();
         
         Portal portal = new Portal(Portal.entityType, world);
         
@@ -989,5 +963,22 @@ public class Helper {
         }
         
         return result;
+    }
+    
+    // this will expand the box because the box can only be axis aligned
+    public static AxisAlignedBB transformBox(
+        AxisAlignedBB box, Function<Vector3d, Vector3d> function
+    ) {
+        List<Vector3d> result =
+            Arrays.stream(eightVerticesOf(box)).map(function).collect(Collectors.toList());
+        
+        return new AxisAlignedBB(
+            result.stream().mapToDouble(b -> b.x).min().getAsDouble(),
+            result.stream().mapToDouble(b -> b.y).min().getAsDouble(),
+            result.stream().mapToDouble(b -> b.z).min().getAsDouble(),
+            result.stream().mapToDouble(b -> b.x).max().getAsDouble(),
+            result.stream().mapToDouble(b -> b.y).max().getAsDouble(),
+            result.stream().mapToDouble(b -> b.z).max().getAsDouble()
+        );
     }
 }

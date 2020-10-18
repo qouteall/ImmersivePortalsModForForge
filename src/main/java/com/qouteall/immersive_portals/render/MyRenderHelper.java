@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.shader.Framebuffer;
+import net.minecraft.util.math.vector.Vector3d;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
@@ -37,13 +38,13 @@ public class MyRenderHelper {
         MatrixStack matrixStack
     ) {
         ShaderManager shaderManager = CGlobal.shaderManager;
-    
+        
         CHelper.checkGlError();
         McHelper.runWithTransformation(
             matrixStack,
             () -> {
                 shaderManager.loadContentShaderAndShaderVars(0);
-    
+                
                 if (OFInterface.isShaders.getAsBoolean()) {
                     GlStateManager.viewport(
                         0,
@@ -52,29 +53,42 @@ public class MyRenderHelper {
                         PortalRenderer.client.getFramebuffer().framebufferHeight
                     );
                 }
-    
+                
                 GlStateManager.enableTexture();
                 GlStateManager.activeTexture(GL13.GL_TEXTURE0);
-    
+                
                 textureProvider.bindFramebufferTexture();
                 GlStateManager.texParameter(3553, 10241, 9729);
                 GlStateManager.texParameter(3553, 10240, 9729);
                 GlStateManager.texParameter(3553, 10242, 10496);
                 GlStateManager.texParameter(3553, 10243, 10496);
-    
+                
                 ViewAreaRenderer.drawPortalViewTriangle(portal, matrixStack, false, false);
-    
+                
                 shaderManager.unloadShader();
                 
                 textureProvider.unbindFramebufferTexture();
-    
+                
                 OFInterface.resetViewport.run();
             }
         );
         CHelper.checkGlError();
     }
     
-    static void renderScreenTriangle() {
+    public static void renderScreenTriangle() {
+        renderScreenTriangle(255, 255, 255, 255);
+    }
+    
+    public static void renderScreenTriangle(Vector3d color) {
+        renderScreenTriangle(
+            (int) (color.x * 255),
+            (int) (color.y * 255),
+            (int) (color.z * 255),
+            255
+        );
+    }
+    
+    public static void renderScreenTriangle(int r, int g, int b, int a) {
         GlStateManager.matrixMode(GL_MODELVIEW);
         GlStateManager.pushMatrix();
         GlStateManager.loadIdentity();
@@ -95,18 +109,18 @@ public class MyRenderHelper {
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
         
-        bufferbuilder.pos(1, -1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(1, -1, 0).color(r, g, b, a)
             .endVertex();
-        bufferbuilder.pos(1, 1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(1, 1, 0).color(r, g, b, a)
             .endVertex();
-        bufferbuilder.pos(-1, 1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(-1, 1, 0).color(r, g, b, a)
             .endVertex();
         
-        bufferbuilder.pos(-1, 1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(-1, 1, 0).color(r, g, b, a)
             .endVertex();
-        bufferbuilder.pos(-1, -1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(-1, -1, 0).color(r, g, b, a)
             .endVertex();
-        bufferbuilder.pos(1, -1, 0).color(255, 255, 255, 255)
+        bufferbuilder.pos(1, -1, 0).color(r, g, b, a)
             .endVertex();
         
         tessellator.draw();
@@ -130,10 +144,10 @@ public class MyRenderHelper {
         boolean doEnableModifyAlpha
     ) {
         CHelper.checkGlError();
-    
+        
         int int_1 = textureProvider.framebufferWidth;
         int int_2 = textureProvider.framebufferHeight;
-    
+        
         RenderSystem.assertThread(RenderSystem::isOnRenderThread);
         if (doEnableModifyAlpha) {
             GlStateManager.colorMask(true, true, true, true);
@@ -200,12 +214,12 @@ public class MyRenderHelper {
         textureProvider.unbindFramebufferTexture();
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
-    
+        
         GlStateManager.matrixMode(GL_PROJECTION);
         GlStateManager.popMatrix();
         GlStateManager.matrixMode(GL_MODELVIEW);
         GlStateManager.popMatrix();
-    
+        
         CHelper.checkGlError();
     }
     

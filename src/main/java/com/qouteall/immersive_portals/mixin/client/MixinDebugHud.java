@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.mixin.client;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.render.QueryManager;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,7 +20,7 @@ public class MixinDebugHud {
     @Inject(method = "Lnet/minecraft/client/gui/overlay/DebugOverlayGui;getDebugInfoRight()Ljava/util/List;", at = @At("RETURN"), cancellable = true)
     private void onGetRightText(CallbackInfoReturnable<List<String>> cir) {
         List<String> returnValue = cir.getReturnValue();
-        returnValue.add("Rendered Portal Num: " + RenderStates.lastPortalRenderInfos.size());
+        returnValue.add("Rendered Portals: " + RenderStates.lastPortalRenderInfos.size());
         
         ClientPlayerEntity player = Minecraft.getInstance().player;
         if (player != null) {
@@ -29,6 +30,8 @@ public class MixinDebugHud {
                 returnValue.addAll(Helper.splitStringByLen(text, 50));
             }
         }
+        
+        returnValue.add("Occlusion Query Stall: " + QueryManager.queryStallCounter);
         
         if (RenderStates.debugText != null && !RenderStates.debugText.isEmpty()) {
             returnValue.add("Debug: " + RenderStates.debugText);

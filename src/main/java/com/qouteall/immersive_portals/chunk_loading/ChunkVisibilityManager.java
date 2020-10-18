@@ -11,10 +11,7 @@ import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.gen.WorldGenRegion;
 import net.minecraft.world.server.ServerWorld;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -56,23 +53,12 @@ public class ChunkVisibilityManager {
             }
         }
         
-        public WorldGenRegion createChunkRegion() {
+        public LenientChunkRegion createChunkRegion() {
             ServerWorld world = McHelper.getServer().getWorld(center.dimension);
-            
-            int width = radius * 2 + 1;
-            List<IChunk> chunks = new ArrayList<>();
-            
-            for (int z = center.z - radius; z <= center.z + radius; z++) {
-                for (int x = center.x - radius; x <= center.x + radius; x++) {
-                    chunks.add(world.getChunk(x, z));
-                }
-            }
-            
-            return new WorldGenRegion(
-                world, chunks
-            );
+    
+            return LenientChunkRegion.createLenientChunkRegion(center, radius, world);
         }
-        
+    
         @Override
         public String toString() {
             return "{" +

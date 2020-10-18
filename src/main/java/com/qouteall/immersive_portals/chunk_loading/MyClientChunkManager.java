@@ -29,8 +29,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
-//this class is modified based on ClientChunkManager
-//re-write this class upon updating mod
+// allow storing chunks that are far away from the player
 @OnlyIn(Dist.CLIENT)
 public class MyClientChunkManager extends ClientChunkProvider {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -59,27 +58,29 @@ public class MyClientChunkManager extends ClientChunkProvider {
     }
     
     @Override
-    public void unloadChunk(int int_1, int int_2) {
+    public void unloadChunk(int x, int z) {
         synchronized (chunkMap) {
             
-            ChunkPos chunkPos = new ChunkPos(int_1, int_2);
-            Chunk worldChunk_1 = chunkMap.get(chunkPos.asLong());
-            if (positionEquals(worldChunk_1, int_1, int_2)) {
+            ChunkPos chunkPos = new ChunkPos(x, z);
+            Chunk chunk = chunkMap.get(chunkPos.asLong());
+            if (positionEquals(chunk, x, z)) {
                 chunkMap.remove(chunkPos.asLong());
-                O_O.postChunkUnloadEventForge(worldChunk_1);
+                O_O.postChunkUnloadEventForge(chunk);
+                world.onChunkUnloaded(chunk);
             }
         }
     }
     
     @Override
-    public Chunk getChunk(int int_1, int int_2, ChunkStatus chunkStatus_1, boolean boolean_1) {
+    public Chunk getChunk(int x, int z, ChunkStatus chunkStatus, boolean create) {
+        // the profiler shows that this is not a hot spot
         synchronized (chunkMap) {
-            Chunk worldChunk_1 = chunkMap.get(ChunkPos.asLong(int_1, int_2));
-            if (positionEquals(worldChunk_1, int_1, int_2)) {
-                return worldChunk_1;
+            Chunk chunk = chunkMap.get(ChunkPos.asLong(x, z));
+            if (positionEquals(chunk, x, z)) {
+                return chunk;
             }
             
-            return boolean_1 ? this.emptyChunk : null;
+            return create ? this.emptyChunk : null;
         }
     }
     
@@ -95,16 +96,16 @@ public class MyClientChunkManager extends ClientChunkProvider {
         BiomeContainer biomeArray,
         PacketBuffer packetByteBuf,
         CompoundNBT compoundTag,
-        int k,
-        boolean bl
+        int mask,
+        boolean forceCreate
     ) {
         long chunkPosLong = ChunkPos.asLong(x, z);
         
         Chunk worldChunk;
         synchronized (chunkMap) {
             worldChunk = (Chunk) this.chunkMap.get(chunkPosLong);
-            if (!bl && positionEquals(worldChunk, x, z)) {
-                worldChunk.read(biomeArray, packetByteBuf, compoundTag, k);
+            if (!forceCreate && positionEquals(worldChunk, x, z)) {
+                worldChunk.read(biomeArray, packetByteBuf, compoundTag, mask);
             }
             else {
                 if (biomeArray == null) {
@@ -116,7 +117,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
                 }
                 
                 worldChunk = new Chunk(this.world, new ChunkPos(x, z), biomeArray);
-                worldChunk.read(biomeArray, packetByteBuf, compoundTag, k);
+                worldChunk.read(biomeArray, packetByteBuf, compoundTag, mask);
                 chunkMap.put(chunkPosLong, worldChunk);
             }
         }
@@ -125,10 +126,10 @@ public class MyClientChunkManager extends ClientChunkProvider {
         WorldLightManager lightingProvider = this.getLightManager();
         lightingProvider.enableLightSources(new ChunkPos(x, z), true);
         
-        for (int m = 0; m < chunkSections.length; ++m) {
-            ChunkSection chunkSection = chunkSections[m];
+        for (int cy = 0; cy < chunkSections.length; ++cy) {
+            ChunkSection chunkSection = chunkSections[cy];
             lightingProvider.updateSectionStatus(
-                SectionPos.of(x, m, z),
+                SectionPos.of(x, cy, z),
                 ChunkSection.isEmpty(chunkSection)
             );
         }
@@ -141,13 +142,13 @@ public class MyClientChunkManager extends ClientChunkProvider {
     }
     
     public static void updateLightStatus(Chunk chunk) {
-        ChunkSection[] chunkSections_1 = chunk.getSections();
         WorldLightManager lightingProvider = chunk.getWorld().getLightManager();
-        for (int int_5 = 0; int_5 < chunkSections_1.length; ++int_5) {
-            ChunkSection chunkSection_1 = chunkSections_1[int_5];
+        ChunkSection[] chunkSections = chunk.getSections();
+        for (int cy = 0; cy < chunkSections.length; ++cy) {
+            ChunkSection chunkSection = chunkSections[cy];
             lightingProvider.updateSectionStatus(
-                SectionPos.of(chunk.getPos().x, int_5, chunk.getPos().z),
-                ChunkSection.isEmpty(chunkSection_1)
+                SectionPos.of(chunk.getPos().x, cy, chunk.getPos().z),
+                ChunkSection.isEmpty(chunkSection)
             );
         }
     }
@@ -159,12 +160,12 @@ public class MyClientChunkManager extends ClientChunkProvider {
     }
     
     @Override
-    public void setCenter(int int_1, int int_2) {
+    public void setCenter(int x, int z) {
         //do nothing
     }
     
     @Override
-    public void setViewDistance(int int_1) {
+    public void setViewDistance(int r) {
         //do nothing
     }
     
@@ -181,41 +182,41 @@ public class MyClientChunkManager extends ClientChunkProvider {
     }
     
     @Override
-    public void markLightChanged(LightType lightType_1, SectionPos chunkSectionPos_1) {
+    public void markLightChanged(LightType lightType, SectionPos chunkSectionPos) {
         CGlobal.clientWorldLoader.getWorldRenderer(
             world.func_234923_W_()
         ).markForRerender(
-            chunkSectionPos_1.getSectionX(),
-            chunkSectionPos_1.getSectionY(),
-            chunkSectionPos_1.getSectionZ()
+            chunkSectionPos.getSectionX(),
+            chunkSectionPos.getSectionY(),
+            chunkSectionPos.getSectionZ()
         );
     }
     
     @Override
-    public boolean canTick(BlockPos blockPos_1) {
-        return this.chunkExists(blockPos_1.getX() >> 4, blockPos_1.getZ() >> 4);
+    public boolean canTick(BlockPos blockPos) {
+        return this.chunkExists(blockPos.getX() >> 4, blockPos.getZ() >> 4);
     }
     
     @Override
-    public boolean isChunkLoaded(ChunkPos chunkPos_1) {
-        return this.chunkExists(chunkPos_1.x, chunkPos_1.z);
+    public boolean isChunkLoaded(ChunkPos chunkPos) {
+        return this.chunkExists(chunkPos.x, chunkPos.z);
     }
     
     @Override
-    public boolean isChunkLoaded(Entity entity_1) {
+    public boolean isChunkLoaded(Entity entity) {
         return this.chunkExists(
-            MathHelper.floor(entity_1.getPosX()) >> 4,
-            MathHelper.floor(entity_1.getPosZ()) >> 4
+            MathHelper.floor(entity.getPosX()) >> 4,
+            MathHelper.floor(entity.getPosZ()) >> 4
         );
     }
     
-    protected static boolean positionEquals(Chunk worldChunk_1, int int_1, int int_2) {
-        if (worldChunk_1 == null) {
+    protected static boolean positionEquals(Chunk worldChunk, int x, int z) {
+        if (worldChunk == null) {
             return false;
         }
         else {
-            ChunkPos chunkPos_1 = worldChunk_1.getPos();
-            return chunkPos_1.x == int_1 && chunkPos_1.z == int_2;
+            ChunkPos chunkPos = worldChunk.getPos();
+            return chunkPos.x == x && chunkPos.z == z;
         }
     }
     

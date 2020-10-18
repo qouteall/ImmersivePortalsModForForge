@@ -1,10 +1,13 @@
 package com.qouteall.immersive_portals.portal.global_portals;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
+import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
+import com.qouteall.immersive_portals.ducks.IEClientWorld;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -17,6 +20,8 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.WorldSavedData;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.commons.lang3.Validate;
 
 import java.lang.ref.WeakReference;
@@ -27,11 +32,13 @@ public class GlobalPortalStorage extends WorldSavedData {
     public List<GlobalTrackedPortal> data;
     public WeakReference<ServerWorld> world;
     private int version = 1;
+    private boolean shouldReSync = false;
     
     public static void init() {
         ModMain.postServerTickSignal.connect(() -> {
             McHelper.getServer().getWorlds().forEach(world1 -> {
-                GlobalPortalStorage.get(world1).upgradeDataIfNecessary();
+                GlobalPortalStorage gps = GlobalPortalStorage.get(world1);
+                gps.tick();
             });
         });
     }
@@ -61,6 +68,12 @@ public class GlobalPortalStorage extends WorldSavedData {
     public void onDataChanged() {
         setDirty(true);
         
+        shouldReSync = true;
+        
+        
+    }
+    
+    private void syncToAllPlayers() {
         IPacket packet = MyNetwork.createGlobalPortalUpdate(this);
         McHelper.getCopiedPlayerList().forEach(
             player -> player.connection.sendPacket(packet)
@@ -83,7 +96,7 @@ public class GlobalPortalStorage extends WorldSavedData {
         clearAbnormalPortals();
     }
     
-    public static List<GlobalTrackedPortal> getPortalsFromTag(
+    private static List<GlobalTrackedPortal> getPortalsFromTag(
         CompoundNBT tag,
         World currWorld
     ) {
@@ -105,7 +118,7 @@ public class GlobalPortalStorage extends WorldSavedData {
         return newData;
     }
     
-    public static GlobalTrackedPortal readPortalFromTag(World currWorld, CompoundNBT compoundTag) {
+    private static GlobalTrackedPortal readPortalFromTag(World currWorld, CompoundNBT compoundTag) {
         ResourceLocation entityId = new ResourceLocation(compoundTag.getString("entity_type"));
         EntityType<?> entityType = Registry.ENTITY_TYPE.getOrDefault(entityId);
         
@@ -157,7 +170,12 @@ public class GlobalPortalStorage extends WorldSavedData {
         );
     }
     
-    public void upgradeDataIfNecessary() {
+    public void tick() {
+        if (shouldReSync) {
+            syncToAllPlayers();
+            shouldReSync = false;
+        }
+        
         if (version <= 1) {
             upgradeData(world.get());
             version = 2;
@@ -178,5 +196,26 @@ public class GlobalPortalStorage extends WorldSavedData {
     
     private static void upgradeData(ServerWorld world) {
         //removed
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    public static void receiveGlobalPortalSync(RegistryKey<World> dimension, CompoundNBT compoundTag) {
+        ClientWorld world = CGlobal.clientWorldLoader.getWorld(dimension);
+        
+        List<GlobalTrackedPortal> oldGlobalPortals = ((IEClientWorld) world).getGlobalPortals();
+        if (oldGlobalPortals != null) {
+            for (GlobalTrackedPortal p : oldGlobalPortals) {
+                p.removed = true;
+            }
+        }
+        
+        List<GlobalTrackedPortal> newPortals = getPortalsFromTag(compoundTag, world);
+        for (GlobalTrackedPortal p : newPortals) {
+            p.removed = false;
+        }
+        
+        ((IEClientWorld) world).setGlobalPortals(newPortals);
+        
+        Helper.log("Global Portals Updated " + dimension.func_240901_a_());
     }
 }

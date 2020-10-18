@@ -31,7 +31,7 @@ public class RendererDeferred extends PortalRenderer {
     private MatrixStack modelView = new MatrixStack();
     
     @Override
-    public boolean shouldSkipClearing() {
+    public boolean replaceFrameBufferClearing() {
         return false;
     }
     
@@ -135,7 +135,7 @@ public class RendererDeferred extends PortalRenderer {
         client.gameRenderer.resetProjectionMatrix(RenderStates.projectionMatrix);
         
         deferredBuffer.fb.bindFramebuffer(true);
-        return QueryManager.renderAndGetDoesAnySamplePassed(() -> {
+        return QueryManager.renderAndGetDoesAnySamplePass(() -> {
             GlStateManager.enableDepthTest();
             
             GlStateManager.disableTexture();

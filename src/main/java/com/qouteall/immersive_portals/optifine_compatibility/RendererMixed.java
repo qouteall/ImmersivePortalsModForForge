@@ -41,34 +41,38 @@ public class RendererMixed extends PortalRenderer {
     //OptiFine messes up with transformations so store it
     private MatrixStack modelView = new MatrixStack();
     
+    private boolean portalRenderingNeeded = false;
+    private boolean nextFramePortalRenderingNeeded = false;
+    
     @Override
-    public boolean shouldSkipClearing() {
+    public boolean replaceFrameBufferClearing() {
         return false;
     }
     
     @Override
     public void onRenderCenterEnded(MatrixStack matrixStack) {
-        int portalLayer = PortalRendering.getPortalLayer();
-        
-        initStencilForLayer(portalLayer);
-        
-        deferredFbs[portalLayer].fb.bindFramebuffer(true);
-        
-        glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_EQUAL, portalLayer, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        
-        Framebuffer mcFrameBuffer = client.getFramebuffer();
-    
-//        if (OFHelper.isChocapicShader()) {
-        
+        // avoid this thing needs to be invoked when no portal is rendered
+        // it may cost performance
+        if (portalRenderingNeeded) {
+            int portalLayer = PortalRendering.getPortalLayer();
+            
+            initStencilForLayer(portalLayer);
+            
+            deferredFbs[portalLayer].fb.bindFramebuffer(true);
+            
+            glEnable(GL_STENCIL_TEST);
+            glStencilFunc(GL_EQUAL, portalLayer, 0xFF);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+            
+            Framebuffer mcFrameBuffer = client.getFramebuffer();
+            
             MyRenderHelper.clearAlphaTo1(mcFrameBuffer);
-//        }
-        
-        deferredFbs[portalLayer].fb.bindFramebuffer(true);
-        MyRenderHelper.myDrawFrameBuffer(mcFrameBuffer, false, true);
-        
-        glDisable(GL_STENCIL_TEST);
+            
+            deferredFbs[portalLayer].fb.bindFramebuffer(true);
+            MyRenderHelper.myDrawFrameBuffer(mcFrameBuffer, false, true);
+            
+            glDisable(GL_STENCIL_TEST);
+        }
         
         MatrixStack effectiveTransformation = this.modelView;
         modelView = new MatrixStack();
@@ -101,10 +105,12 @@ public class RendererMixed extends PortalRenderer {
     
     @Override
     public void onAfterTranslucentRendering(MatrixStack matrixStack) {
-        OFHelper.copyFromShaderFbTo(
-            deferredFbs[PortalRendering.getPortalLayer()].fb,
-            GL_DEPTH_BUFFER_BIT
-        );
+        if (portalRenderingNeeded) {
+            OFHelper.copyFromShaderFbTo(
+                deferredFbs[PortalRendering.getPortalLayer()].fb,
+                GL_DEPTH_BUFFER_BIT
+            );
+        }
         
         modelView.push();
         modelView.getLast().getMatrix().mul(matrixStack.getLast().getMatrix());
@@ -141,6 +147,9 @@ public class RendererMixed extends PortalRenderer {
         }
         
         OFGlobal.bindToShaderFrameBuffer.run();
+    
+        portalRenderingNeeded = nextFramePortalRenderingNeeded;
+        nextFramePortalRenderingNeeded = false;
     }
     
     @Override
@@ -149,6 +158,10 @@ public class RendererMixed extends PortalRenderer {
         Shaders.useProgram(Shaders.ProgramNone);
         
         if (RenderStates.getRenderedPortalNum() == 0) {
+            return;
+        }
+        
+        if (!portalRenderingNeeded) {
             return;
         }
         
@@ -162,6 +175,12 @@ public class RendererMixed extends PortalRenderer {
     
     @Override
     protected void doRenderPortal(Portal portal, MatrixStack matrixStack) {
+        nextFramePortalRenderingNeeded = true;
+        
+        if (!portalRenderingNeeded) {
+            return;
+        }
+        
         //reset projection matrix
         client.gameRenderer.resetProjectionMatrix(RenderStates.projectionMatrix);
         
@@ -169,14 +188,14 @@ public class RendererMixed extends PortalRenderer {
         if (!tryRenderViewAreaInDeferredBufferAndIncreaseStencil(portal, matrixStack)) {
             return;
         }
-    
+        
         PortalRendering.pushPortalLayer(portal);
         
         OFGlobal.bindToShaderFrameBuffer.run();
         renderPortalContent(portal);
         
         int innerLayer = PortalRendering.getPortalLayer();
-    
+        
         PortalRendering.popPortalLayer();
         
         int outerLayer = PortalRendering.getPortalLayer();
@@ -211,7 +230,7 @@ public class RendererMixed extends PortalRenderer {
         
         GlStateManager.enableDepthTest();
         
-        boolean result = QueryManager.renderAndGetDoesAnySamplePassed(() -> {
+        boolean result = QueryManager.renderAndGetDoesAnySamplePass(() -> {
             ViewAreaRenderer.drawPortalViewTriangle(
                 portal, matrixStack, true, true
             );
@@ -231,25 +250,13 @@ public class RendererMixed extends PortalRenderer {
         MyGameRenderer.renderWorldNew(
             renderInfo,
             runnable -> {
-                OFGlobal.shaderContextManager.switchContextAndRun(()->{
+                OFGlobal.shaderContextManager.switchContextAndRun(() -> {
                     OFGlobal.bindToShaderFrameBuffer.run();
                     runnable.run();
                 });
             }
         );
     }
-    
-//    @Override
-//    protected void renderPortalContentWithContextSwitched(
-//        Portal portal, Vec3d oldCameraPos, ClientWorld oldWorld
-//    ) {
-//        OFGlobal.shaderContextManager.switchContextAndRun(
-//            () -> {
-//                OFGlobal.bindToShaderFrameBuffer.run();
-//                super.renderPortalContentWithContextSwitched(portal, oldCameraPos, oldWorld);
-//            }
-//        );
-//    }
     
     @Override
     public void renderPortalInEntityRenderer(Portal portal) {

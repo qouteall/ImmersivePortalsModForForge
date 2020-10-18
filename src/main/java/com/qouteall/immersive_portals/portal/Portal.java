@@ -77,6 +77,7 @@ public class Portal extends Entity {
     @Nullable
     public GeometryPortalShape specialShape;
     
+    private AxisAlignedBB exactBoundingBoxCache;
     private AxisAlignedBB boundingBoxCache;
     private Vector3d normal;
     private Vector3d contentDirection;
@@ -99,11 +100,16 @@ public class Portal extends Entity {
      * The scaling transformation of the portal
      */
     public double scaling = 1.0;
+    
     /**
      * Whether the entity scale changes after crossing the portal
      */
     public boolean teleportChangesScale = true;
     
+    
+    /**
+     * Whether the player can place and break blocks across the portal
+     */
     private boolean interactable = true;
     
     /**
@@ -157,6 +163,11 @@ public class Portal extends Entity {
             cullableXEnd = compoundTag.getDouble("cullableXEnd");
             cullableYStart = compoundTag.getDouble("cullableYStart");
             cullableYEnd = compoundTag.getDouble("cullableYEnd");
+    
+            cullableXEnd = Math.min(cullableXEnd, width / 2);
+            cullableXStart = Math.max(cullableXStart, -width / 2);
+            cullableYEnd = Math.min(cullableYEnd, height / 2);
+            cullableYStart = Math.max(cullableYStart, -height / 2);
         }
         else {
             if (specialShape != null) {
@@ -195,6 +206,8 @@ public class Portal extends Entity {
         
         extension = new PortalExtension();
         extension.readFromNbt(compoundTag);
+        
+        updateCache();
     }
     
     @Override
@@ -276,6 +289,7 @@ public class Portal extends Entity {
     
     public void updateCache() {
         boundingBoxCache = null;
+        exactBoundingBoxCache = null;
         normal = null;
         contentDirection = null;
         getBoundingBox();
@@ -342,9 +356,37 @@ public class Portal extends Entity {
             return new AxisAlignedBB(0, 0, 0, 0, 0, 0);
         }
         if (boundingBoxCache == null) {
-            boundingBoxCache = getPortalCollisionBox();
+            boundingBoxCache = new AxisAlignedBB(
+                getPointInPlane(width / 2, height / 2)
+                    .add(getNormal().scale(0.2)),
+                getPointInPlane(-width / 2, -height / 2)
+                    .add(getNormal().scale(-0.2))
+            ).union(new AxisAlignedBB(
+                getPointInPlane(-width / 2, height / 2)
+                    .add(getNormal().scale(0.2)),
+                getPointInPlane(width / 2, -height / 2)
+                    .add(getNormal().scale(-0.2))
+            ));
         }
         return boundingBoxCache;
+    }
+    
+    public AxisAlignedBB getExactBoundingBox() {
+        if (exactBoundingBoxCache == null) {
+            exactBoundingBoxCache = new AxisAlignedBB(
+                getPointInPlane(width / 2, height / 2)
+                    .add(getNormal().scale(0.02)),
+                getPointInPlane(-width / 2, -height / 2)
+                    .add(getNormal().scale(-0.02))
+            ).union(new AxisAlignedBB(
+                getPointInPlane(-width / 2, height / 2)
+                    .add(getNormal().scale(0.02)),
+                getPointInPlane(width / 2, -height / 2)
+                    .add(getNormal().scale(-0.02))
+            ));
+        }
+        
+        return exactBoundingBoxCache;
     }
     
     @Override
@@ -394,7 +436,7 @@ public class Portal extends Entity {
     @Override
     public String toString() {
         return String.format(
-            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)%s%s}",
+            "%s{%s,%s,(%s %s %s %s)->(%s %s %s %s)%s%s%s}",
             getClass().getSimpleName(),
             getEntityId(),
             Direction.getFacingFromVector(
@@ -403,13 +445,19 @@ public class Portal extends Entity {
             world.func_234923_W_().func_240901_a_(), (int) getPosX(), (int) getPosY(), (int) getPosZ(),
             dimensionTo.func_240901_a_(), (int) destination.x, (int) destination.y, (int) destination.z,
             specificPlayerId != null ? (",specificAccessor:" + specificPlayerId.toString()) : "",
-            hasScaling() ? (",scale:" + scaling) : ""
+            hasScaling() ? (",scale:" + scaling) : "",
+            portalTag != null ? "," + portalTag : ""
         );
     }
     
     public void transformVelocity(Entity entity) {
         if (PehkuiInterface.isPehkuiPresent) {
-            entity.setMotion(transformLocalVecNonScale(entity.getMotion()));
+            if (teleportChangesScale) {
+                entity.setMotion(transformLocalVecNonScale(entity.getMotion()));
+            }
+            else {
+                entity.setMotion(transformLocalVec(entity.getMotion()));
+            }
         }
         else {
             entity.setMotion(transformLocalVec(entity.getMotion()));
@@ -421,8 +469,10 @@ public class Portal extends Entity {
             return false;
         }
         if (entity instanceof ServerPlayerEntity) {
-            if (!entity.getUniqueID().equals(specificPlayerId)) {
-                return false;
+            if (specificPlayerId != null) {
+                if (!entity.getUniqueID().equals(specificPlayerId)) {
+                    return false;
+                }
             }
         }
         else {
@@ -571,8 +621,7 @@ public class Portal extends Entity {
         return transformLocalVecNonScale(localVec).scale(scaling);
     }
     
-    @Deprecated
-    public Vector3d untransformLocalVec(Vector3d localVec) {
+    public Vector3d inverseTransformLocalVecNonScale(Vector3d localVec) {
         if (rotation == null) {
             return localVec;
         }
@@ -584,9 +633,12 @@ public class Portal extends Entity {
         return new Vector3d(temp);
     }
     
-    @Deprecated
-    public Vector3d untransformPoint(Vector3d point) {
-        return getPositionVec().add(untransformLocalVec(point.subtract(destination)));
+    public Vector3d inverseTransformLocalVec(Vector3d localVec) {
+        return inverseTransformLocalVecNonScale(localVec).scale(1.0 / scaling);
+    }
+    
+    public Vector3d inverseTransformPoint(Vector3d point) {
+        return getPositionVec().add(inverseTransformLocalVec(point.subtract(destination)));
     }
     
     public Vector3d scaleLocalVec(Vector3d localVec) {
@@ -599,20 +651,6 @@ public class Portal extends Entity {
     
     public Vector3d getCullingPoint() {
         return destination;
-    }
-    
-    private AxisAlignedBB getPortalCollisionBox() {
-        return new AxisAlignedBB(
-            getPointInPlane(width / 2, height / 2)
-                .add(getNormal().scale(0.2)),
-            getPointInPlane(-width / 2, -height / 2)
-                .add(getNormal().scale(-0.2))
-        ).union(new AxisAlignedBB(
-            getPointInPlane(-width / 2, height / 2)
-                .add(getNormal().scale(0.2)),
-            getPointInPlane(width / 2, -height / 2)
-                .add(getNormal().scale(-0.2))
-        ));
     }
     
     public AxisAlignedBB getThinAreaBox() {
@@ -726,10 +764,7 @@ public class Portal extends Entity {
         return getDestinationWorld(world.isRemote());
     }
     
-    /**
-     * @return The {@link World} of this portal's {@link #dimensionTo}.
-     */
-    public World getDestinationWorld(boolean isClient) {
+    private World getDestinationWorld(boolean isClient) {
         if (isClient) {
             return CHelper.getClientWorld(dimensionTo);
         }

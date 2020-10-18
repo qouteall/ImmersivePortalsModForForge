@@ -19,7 +19,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 public class CollisionHelper {
     
@@ -135,38 +134,57 @@ public class CollisionHelper {
         Function<Vector3d, Vector3d> handleCollisionFunc,
         AxisAlignedBB originalBoundingBox
     ) {
-        if (collidingPortal.rotation != null) {
-            //handling collision with rotating portal is hard to implement
-            return attemptedMove;
-        }
-        if (collidingPortal.hasScaling()) {
-            return attemptedMove;
-        }
+        Vector3d transformedAttemptedMove = collidingPortal.transformLocalVec(attemptedMove);
         
         AxisAlignedBB boxOtherSide = getCollisionBoxOtherSide(
             collidingPortal,
             originalBoundingBox,
-            attemptedMove
+            transformedAttemptedMove
         );
         if (boxOtherSide == null) {
             return attemptedMove;
         }
+
+//        if (collidingPortal.hasScaling() || collidingPortal.rotation != null) {
+//            boxOtherSide = boxOtherSide.expand(0.05);
+//        }
         
         //switch world and check collision
         World oldWorld = entity.world;
         Vector3d oldPos = entity.getPositionVec();
         Vector3d oldLastTickPos = McHelper.lastTickPosOf(entity);
         
-        entity.world = getWorld(entity.world.isRemote, collidingPortal.dimensionTo);
+        entity.world = collidingPortal.getDestinationWorld();
         entity.setBoundingBox(boxOtherSide);
         
-        Vector3d move2 = handleCollisionFunc.apply(attemptedMove);
+        Vector3d collided = handleCollisionFunc.apply(transformedAttemptedMove);
+        Vector3d result = collidingPortal.inverseTransformLocalVec(collided);
         
         entity.world = oldWorld;
         McHelper.setPosAndLastTickPos(entity, oldPos, oldLastTickPos);
         entity.setBoundingBox(originalBoundingBox);
         
-        return move2;
+        double finalX = correctCoordinate(attemptedMove.x, result.x);
+        double finalY = correctCoordinate(attemptedMove.y, result.y);
+        double finalZ = correctCoordinate(attemptedMove.z, result.z);
+        
+        return new Vector3d(finalX, finalY, finalZ);
+    }
+    
+    // floating point deviation may cause collision issues
+    private static double correctCoordinate(double attemptedMove, double result) {
+        //rotation may cause a free move to reduce a little bit and the game think that it's collided
+        if (Math.abs(attemptedMove - result) < 0.001) {
+            return attemptedMove;
+        }
+        
+        //0 may become 0.0000001 after rotation. avoid falling through floor
+        if (Math.abs(result) < 0.0001) {
+            return 0;
+        }
+        
+        //1 may become 0.999999 after rotation. avoid going into wall
+        return result * 0.999;
     }
     
     private static Vector3d getThisSideMove(
@@ -211,12 +229,31 @@ public class CollisionHelper {
         AxisAlignedBB originalBox,
         Vector3d attemptedMove
     ) {
-        Vector3d teleportation = portal.destination.subtract(portal.getPositionVec());
-        return clipBox(
-            originalBox.offset(teleportation),
-            portal.destination.subtract(attemptedMove),
-            portal.getNormal().scale(-1)
+        AxisAlignedBB otherSideBox = transformBox(portal, originalBox);
+        final AxisAlignedBB box = clipBox(
+            otherSideBox,
+            portal.destination,
+            portal.getContentDirection()
         );
+        
+        if (box == null) {
+            return clipBox(
+                otherSideBox,
+                portal.destination.subtract(attemptedMove),
+                portal.getContentDirection()
+            );
+        }
+        
+        return box;
+    }
+    
+    private static AxisAlignedBB transformBox(Portal portal, AxisAlignedBB originalBox) {
+        if (portal.rotation == null && portal.scaling == 1) {
+            return originalBox.offset(portal.destination.subtract(portal.getPositionVec()));
+        }
+        else {
+            return Helper.transformBox(originalBox, portal::transformPoint);
+        }
     }
     
     public static World getWorld(boolean isClient, RegistryKey<World> dimension) {
@@ -228,41 +265,8 @@ public class CollisionHelper {
         }
     }
     
-    public static Stream<Portal> getCollidingPortalRough(Entity entity, AxisAlignedBB box) {
-        World world = entity.world;
-        
-        List<GlobalTrackedPortal> globalPortals = McHelper.getGlobalPortals(world);
-        
-        List<Portal> collidingNormalPortals = McHelper.getEntitiesRegardingLargeEntities(
-            world,
-            box,
-            10,
-            Portal.class,
-            p -> true
-        );
-        
-        if (globalPortals.isEmpty()) {
-            return collidingNormalPortals.stream();
-        }
-        
-        return Stream.concat(
-            collidingNormalPortals.stream(),
-            globalPortals.stream()
-                .filter(
-                    p -> p.getBoundingBox().grow(0.5).intersects(box)
-                )
-        );
-    }
-    
     public static boolean isCollidingWithAnyPortal(Entity entity) {
         return ((IEEntity) entity).getCollidingPortal() != null;
-    }
-    
-    public static boolean isNearbyPortal(Entity entity) {
-        return getCollidingPortalRough(
-            entity,
-            entity.getBoundingBox().grow(1)
-        ).findAny().isPresent();
     }
     
     public static AxisAlignedBB getActiveCollisionBox(Entity entity) {
@@ -291,10 +295,11 @@ public class CollisionHelper {
         List<GlobalTrackedPortal> globalPortals = McHelper.getGlobalPortals(world);
         Iterable<Entity> worldEntityList = McHelper.getWorldEntityList(world);
         
-        for (GlobalTrackedPortal globalPortal : globalPortals) {
-            AxisAlignedBB globalPortalBoundingBox = globalPortal.getBoundingBox();
-            for (Entity entity : worldEntityList) {
-                if (entity.getBoundingBox().intersects(globalPortalBoundingBox)) {
+        for (Entity entity : worldEntityList) {
+            AxisAlignedBB entityBoundingBoxStretched = getStretchedBoundingBox(entity);
+            for (GlobalTrackedPortal globalPortal : globalPortals) {
+                AxisAlignedBB globalPortalBoundingBox = globalPortal.getBoundingBox();
+                if (entityBoundingBoxStretched.intersects(globalPortalBoundingBox)) {
                     if (canCollideWithPortal(entity, globalPortal, 1)) {
                         ((IEEntity) entity).notifyCollidingWithPortal(globalPortal);
                     }
@@ -352,7 +357,7 @@ public class CollisionHelper {
                 if (entity instanceof Portal) {
                     return false;
                 }
-                AxisAlignedBB entityBoxStretched = entity.getBoundingBox().expand(entity.getMotion());
+                AxisAlignedBB entityBoxStretched = getStretchedBoundingBox(entity);
                 if (!entityBoxStretched.intersects(portalBoundingBox)) {
                     return false;
                 }
@@ -363,5 +368,9 @@ public class CollisionHelper {
         for (Entity entity : collidingEntities) {
             ((IEEntity) entity).notifyCollidingWithPortal(portal);
         }
+    }
+    
+    private static AxisAlignedBB getStretchedBoundingBox(Entity entity) {
+        return entity.getBoundingBox().expand(entity.getMotion());
     }
 }

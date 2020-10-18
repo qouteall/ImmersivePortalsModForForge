@@ -62,7 +62,8 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
     @Shadow
     public abstract void handleSetPassengers(SSetPassengersPacket entityPassengersSetS2CPacket_1);
     
-    @Shadow private DynamicRegistries field_239163_t_;
+    @Shadow
+    private DynamicRegistries field_239163_t_;
     
     @Override
     public void setWorld(ClientWorld world) {
@@ -184,9 +185,7 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
     private void onOnUnload(SUnloadChunkPacket packet, CallbackInfo ci) {
         if (CGlobal.smoothChunkUnload) {
             DimensionalChunkPos pos = new DimensionalChunkPos(
-                world.func_234923_W_(),
-                packet.getX(),
-                packet.getZ()
+                world.func_234923_W_(), packet.getX(), packet.getZ()
             );
             
             WorldRenderer worldRenderer =
@@ -220,10 +219,13 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
                     return false;
                 }
                 
+                WorldRenderer wr = CGlobal.clientWorldLoader.getWorldRenderer(pos.dimension);
+                
                 IProfiler profiler = Minecraft.getInstance().getProfiler();
                 profiler.startSection("delayed_unload");
                 
                 for (int y = 0; y < 16; ++y) {
+                    wr.markSurroundingsForRerender(pos.x, y, pos.z);
                     world1.getLightManager().updateSectionStatus(
                         SectionPos.of(pos.x, y, pos.z), true
                     );
@@ -236,14 +238,6 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
                 return true;
             });
             ci.cancel();
-        }
-    }
-    
-    @Override
-    public void initScreenIfNecessary() {
-        if (!this.doneLoadingTerrain) {
-            this.doneLoadingTerrain = true;
-            this.client.displayGuiScreen((Screen) null);
         }
     }
     

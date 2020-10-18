@@ -3,15 +3,20 @@ package com.qouteall.immersive_portals.mixin.common;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEServerWorld;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
-import net.minecraft.world.server.ServerChunkProvider;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.storage.DimensionSavedDataManager;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.List;
+import net.minecraft.world.server.ServerChunkProvider;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.storage.DimensionSavedDataManager;
+import net.minecraft.world.storage.IServerWorldInfo;
 
 @Mixin(ServerWorld.class)
 public abstract class MixinServerWorld implements IEServerWorld {
@@ -22,6 +27,7 @@ public abstract class MixinServerWorld implements IEServerWorld {
     @Shadow
     public abstract ServerChunkProvider getChunkProvider();
     
+    @Shadow @Final private IServerWorldInfo field_241103_E_;
     private static LongSortedSet dummy;
     
     static {
@@ -30,19 +36,43 @@ public abstract class MixinServerWorld implements IEServerWorld {
     }
     
     //in vanilla if a dimension has no player and no forced chunks then it will not tick
+//    @Redirect(
+//        method = "tick",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/server/world/ServerWorld;getForcedChunks()Lit/unimi/dsi/fastutil/longs/LongSet;"
+//        )
+//    )
+//    private LongSet redirectGetForcedChunks(ServerWorld world) {
+//        if (NewChunkTrackingGraph.shouldLoadDimension(world.getRegistryKey())) {
+//            return dummy;
+//        }
+//        else {
+//            return world.getForcedChunks();
+//        }
+//    }
+    
+    //in vanilla if a dimension has no player and no forced chunks then it will not tick
     @Redirect(
         method = "Lnet/minecraft/world/server/ServerWorld;tick(Ljava/util/function/BooleanSupplier;)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/server/ServerWorld;getForcedChunks()Lit/unimi/dsi/fastutil/longs/LongSet;"
+            target = "Ljava/util/List;isEmpty()Z"
         )
     )
-    private LongSet redirectGetForcedChunks(ServerWorld world) {
-        if (NewChunkTrackingGraph.shouldLoadDimension(world.func_234923_W_())) {
-            return dummy;
+    private boolean redirectIsEmpty(List list) {
+        final ServerWorld this_ = (ServerWorld) (Object) this;
+        if (NewChunkTrackingGraph.shouldLoadDimension(this_.func_234923_W_())) {
+            return false;
         }
-        else {
-            return world.getForcedChunks();
-        }
+        return list.isEmpty();
+    }
+    
+    // for debug
+    @Inject(method = "Lnet/minecraft/world/server/ServerWorld;toString()Ljava/lang/String;", at = @At("HEAD"), cancellable = true)
+    private void onToString(CallbackInfoReturnable<String> cir) {
+        final ServerWorld this_ = (ServerWorld) (Object) this;
+        cir.setReturnValue("ServerWorld " + this_.func_234923_W_().func_240901_a_() +
+            " " + field_241103_E_.getWorldName());
     }
 }

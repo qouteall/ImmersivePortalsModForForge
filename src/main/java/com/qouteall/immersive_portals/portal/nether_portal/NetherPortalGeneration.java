@@ -1,8 +1,6 @@
 package com.qouteall.immersive_portals.portal.nether_portal;
 
-import com.google.common.collect.Streams;
 import com.qouteall.hiding_in_the_bushes.O_O;
-import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
@@ -12,11 +10,9 @@ import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.my_util.IntBox;
 import com.qouteall.immersive_portals.my_util.LimitedLogger;
 import com.qouteall.immersive_portals.portal.LoadingIndicatorEntity;
-import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import com.qouteall.immersive_portals.portal.custom_portal_gen.PortalGenInfo;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.EntityType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
@@ -34,8 +30,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class NetherPortalGeneration {
     
@@ -45,31 +39,32 @@ public class NetherPortalGeneration {
         Direction.Axis axis,
         BlockPos neededAreaSize
     ) {
+        BlockPos randomShift = new BlockPos(
+            toWorld.getRandom().nextBoolean() ? 1 : -1,
+            0,
+            toWorld.getRandom().nextBoolean() ? 1 : -1
+        );
+        
         IntBox foundAirCube =
             axis == Direction.Axis.Y ?
                 NetherPortalMatcher.findHorizontalPortalPlacement(
-                    neededAreaSize, toWorld, mappedPosInOtherDimension
+                    neededAreaSize, toWorld, mappedPosInOtherDimension.add(randomShift)
                 ) :
                 NetherPortalMatcher.findVerticalPortalPlacement(
-                    neededAreaSize, toWorld, mappedPosInOtherDimension
+                    neededAreaSize, toWorld, mappedPosInOtherDimension.add(randomShift)
                 );
         
         if (foundAirCube == null) {
             Helper.log("Cannot find normal portal placement");
             foundAirCube = NetherPortalMatcher.findCubeAirAreaAtAnywhere(
-                neededAreaSize, toWorld, mappedPosInOtherDimension, 10
+                neededAreaSize, toWorld, mappedPosInOtherDimension, 16
             );
             
             if (foundAirCube != null) {
-                foundAirCube = NetherPortalMatcher.levitateBox(toWorld, foundAirCube, 50);
+                if (isFloating(toWorld, foundAirCube)) {
+                    foundAirCube = NetherPortalMatcher.levitateBox(toWorld, foundAirCube, 50);
+                }
             }
-        }
-        
-        if (foundAirCube == null) {
-            Helper.log("Cannot find air cube within 10 blocks");
-            foundAirCube = NetherPortalMatcher.findCubeAirAreaAtAnywhere(
-                neededAreaSize, toWorld, mappedPosInOtherDimension, 16
-            );
         }
         
         if (foundAirCube == null) {
@@ -84,44 +79,10 @@ public class NetherPortalGeneration {
         return foundAirCube;
     }
     
-    public static RegistryKey<World> getDestinationDimension(
-        RegistryKey<World> fromDimension
-    ) {
-        if (fromDimension == World.field_234919_h_) {
-            return World.field_234918_g_;
-        }
-        else if (fromDimension == World.field_234920_i_) {
-            return null;
-        }
-        else {
-            //you can access nether in any other dimension
-            //including alternate dimensions
-            return World.field_234919_h_;
-        }
-    }
-    
-    public static BlockPos mapPosition(
-        BlockPos pos,
-        RegistryKey<World> dimensionFrom,
-        RegistryKey<World> dimensionTo
-    ) {
-        if (dimensionFrom == World.field_234918_g_ && dimensionTo == World.field_234919_h_) {
-            return new BlockPos(
-                Math.round(pos.getX() / 8.0),
-                pos.getY(),
-                Math.round(pos.getZ() / 8.0)
-            );
-        }
-        else if (dimensionFrom == World.field_234919_h_ && dimensionTo == World.field_234918_g_) {
-            return new BlockPos(
-                pos.getX() * 8,
-                pos.getY(),
-                pos.getZ() * 8
-            );
-        }
-        else {
-            return pos;
-        }
+    private static boolean isFloating(ServerWorld toWorld, IntBox foundAirCube) {
+        return foundAirCube.getSurfaceLayer(Direction.DOWN).stream().noneMatch(
+            blockPos -> toWorld.getBlockState(blockPos.down()).getMaterial().isSolid()
+        );
     }
     
     public static void setPortalContentBlock(
@@ -136,68 +97,6 @@ public class NetherPortalGeneration {
             ),
             3
         );
-    }
-    
-    //create portal entity and generate placeholder blocks
-    public static BreakablePortalEntity[] generateBreakablePortalEntitiesAndPlaceholder(
-        PortalGenInfo info,
-        EntityType<? extends BreakablePortalEntity> entityType
-    ) {
-        ServerWorld fromWorld = McHelper.getServer().getWorld(info.from);
-        ServerWorld toWorld = McHelper.getServer().getWorld(info.to);
-        
-        fillInPlaceHolderBlocks(fromWorld, info.fromShape);
-        fillInPlaceHolderBlocks(toWorld, info.toShape);
-        
-        BreakablePortalEntity[] portalArray = new BreakablePortalEntity[]{
-            entityType.create(fromWorld),
-            entityType.create(fromWorld),
-            entityType.create(toWorld),
-            entityType.create(toWorld)
-        };
-        
-        info.fromShape.initPortalPosAxisShape(
-            portalArray[0], false
-        );
-        info.fromShape.initPortalPosAxisShape(
-            portalArray[1], true
-        );
-        info.toShape.initPortalPosAxisShape(
-            portalArray[2], false
-        );
-        info.toShape.initPortalPosAxisShape(
-            portalArray[3], true
-        );
-        
-        portalArray[0].dimensionTo = info.to;
-        portalArray[1].dimensionTo = info.to;
-        portalArray[2].dimensionTo = info.from;
-        portalArray[3].dimensionTo = info.from;
-        
-        Vector3d offset = Vector3d.func_237491_b_(info.toShape.innerAreaBox.l.subtract(
-            info.fromShape.innerAreaBox.l
-        ));
-        portalArray[0].destination = portalArray[0].getPositionVec().add(offset);
-        portalArray[1].destination = portalArray[1].getPositionVec().add(offset);
-        portalArray[2].destination = portalArray[2].getPositionVec().subtract(offset);
-        portalArray[3].destination = portalArray[3].getPositionVec().subtract(offset);
-        
-        portalArray[0].blockPortalShape = info.fromShape;
-        portalArray[1].blockPortalShape = info.fromShape;
-        portalArray[2].blockPortalShape = info.toShape;
-        portalArray[3].blockPortalShape = info.toShape;
-        
-        portalArray[0].reversePortalId = portalArray[2].getUniqueID();
-        portalArray[1].reversePortalId = portalArray[3].getUniqueID();
-        portalArray[2].reversePortalId = portalArray[0].getUniqueID();
-        portalArray[3].reversePortalId = portalArray[1].getUniqueID();
-        
-        fromWorld.addEntity(portalArray[0]);
-        fromWorld.addEntity(portalArray[1]);
-        toWorld.addEntity(portalArray[2]);
-        toWorld.addEntity(portalArray[3]);
-        
-        return portalArray;
     }
     
     public static void startGeneratingPortal(
@@ -233,14 +132,14 @@ public class NetherPortalGeneration {
                 "imm_ptl.generating_new_frame"
             ));
             
-            PortalGenInfo placedShape = newFramePlacer.get();
+            PortalGenInfo info = newFramePlacer.get();
             
-            if (placedShape != null) {
-                newFrameGenerateFunc.accept(placedShape.toShape);
+            if (info != null) {
+                newFrameGenerateFunc.accept(info.toShape);
                 
-                portalEntityGeneratingFunc.accept(placedShape);
+                portalEntityGeneratingFunc.accept(info);
                 
-                O_O.postPortalSpawnEventForge(placedShape);
+                O_O.postPortalSpawnEventForge(info);
             }
         };
         
@@ -304,6 +203,8 @@ public class NetherPortalGeneration {
                     (info) -> {
                         portalEntityGeneratingFunc.accept(info);
                         finalizer.run();
+    
+                        O_O.postPortalSpawnEventForge(info);
                     },
                     () -> {
                         onGenerateNewFrame.run();
@@ -363,25 +264,6 @@ public class NetherPortalGeneration {
             ).findFirst().orElse(null);
     }
     
-    public static Stream<BlockPos> blockPosStreamNaive(
-        ServerWorld toWorld,
-        int x, int z, int raidus
-    ) {
-        Stream<BlockPos> blockPosStream = BlockPos.getAllInBox(
-            new BlockPos(
-                x - raidus,
-                3,
-                z - raidus
-            ),
-            new BlockPos(
-                x + raidus,
-                toWorld.func_234938_ad_() - 3,
-                z + raidus
-            )
-        );
-        return blockPosStream;
-    }
-    
     public static void embodyNewFrame(
         ServerWorld toWorld,
         BlockPortalShape toShape,
@@ -403,91 +285,5 @@ public class NetherPortalGeneration {
         );
     }
     
-    @Deprecated
-    private static void generateHelperPortalEntities(PortalGenInfo info) {
-        ServerWorld fromWorld1 = McHelper.getServer().getWorld(info.from);
-        ServerWorld toWorld = McHelper.getServer().getWorld(info.to);
-        
-        Portal[] portalArray = new Portal[]{
-            Portal.entityType.create(fromWorld1),
-            Portal.entityType.create(fromWorld1),
-            Portal.entityType.create(toWorld),
-            Portal.entityType.create(toWorld)
-        };
-        
-        info.fromShape.initPortalPosAxisShape(
-            portalArray[0], false
-        );
-        info.fromShape.initPortalPosAxisShape(
-            portalArray[1], true
-        );
-        info.toShape.initPortalPosAxisShape(
-            portalArray[2], false
-        );
-        info.toShape.initPortalPosAxisShape(
-            portalArray[3], true
-        );
-        
-        portalArray[0].dimensionTo = info.to;
-        portalArray[1].dimensionTo = info.to;
-        portalArray[2].dimensionTo = info.from;
-        portalArray[3].dimensionTo = info.from;
-        
-        Vector3d offset = Vector3d.func_237491_b_(info.toShape.innerAreaBox.l.subtract(
-            info.fromShape.innerAreaBox.l
-        ));
-        portalArray[0].destination = portalArray[0].getPositionVec().add(offset);
-        portalArray[1].destination = portalArray[1].getPositionVec().add(offset);
-        portalArray[2].destination = portalArray[2].getPositionVec().subtract(offset);
-        portalArray[3].destination = portalArray[3].getPositionVec().subtract(offset);
-        
-        fromWorld1.addEntity(portalArray[0]);
-        fromWorld1.addEntity(portalArray[1]);
-        toWorld.addEntity(portalArray[2]);
-        toWorld.addEntity(portalArray[3]);
-    }
-    
-    public static Stream<BlockPos> fromNearToFarColumned(
-        ServerWorld world,
-        int x,
-        int z,
-        int range
-    ) {
-        if (range < 0) {
-            range = 5;
-        }
-        
-        if (Global.blameOpenJdk) {
-            return blockPosStreamNaive(
-                world, x, z, range
-            );
-        }
-        
-        int height = world.func_234938_ad_();
-        
-        BlockPos.Mutable temp0 = new BlockPos.Mutable();
-        BlockPos.Mutable temp2 = new BlockPos.Mutable();
-        BlockPos.Mutable temp1 = new BlockPos.Mutable();
-        
-        return IntStream.range(0, range).boxed()
-            .flatMap(layer ->
-                Streams.concat(
-                    IntStream.range(0, layer * 2 + 1)
-                        .mapToObj(i -> new BlockPos(layer, 0, i - layer)),
-                    IntStream.range(0, layer * 2 + 1)
-                        .mapToObj(i -> new BlockPos(-layer, 0, i - layer)),
-                    IntStream.range(0, layer * 2 - 1)
-                        .mapToObj(i -> new BlockPos(i - layer + 1, 0, layer)),
-                    IntStream.range(0, layer * 2 - 1)
-                        .mapToObj(i -> new BlockPos(i - layer + 1, 0, -layer))
-                ).map(
-                    columnPos_ -> new BlockPos(columnPos_.getX() + x, 0, columnPos_.getZ() + z)
-                ).flatMap(
-                    columnPos_ ->
-                        IntStream.range(3, height - 3)
-                            .mapToObj(y -> new BlockPos(columnPos_.getX(), y, columnPos_.getZ()))
-                )
-            );
-    }
     
 }

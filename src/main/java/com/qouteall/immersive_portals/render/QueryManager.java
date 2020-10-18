@@ -6,10 +6,12 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL33;
 
 public class QueryManager {
+    public static int queryStallCounter = 0;
+    
     public static boolean isQuerying = false;
     private static int idQueryObject = -1;
     
-    public static boolean renderAndGetDoesAnySamplePassed(Runnable renderingFunc) {
+    public static boolean renderAndGetDoesAnySamplePass(Runnable renderingFunc) {
         if (idQueryObject == -1) {
             idQueryObject = GL15.glGenQueries();
             CHelper.checkGlError();
@@ -33,6 +35,7 @@ public class QueryManager {
         isQuerying = false;
         
         int result = GL15.glGetQueryObjecti(QueryManager.idQueryObject, GL15.GL_QUERY_RESULT);
+        queryStallCounter++;
         
         return result != 0;
     }
@@ -56,6 +59,7 @@ public class QueryManager {
         isQuerying = false;
         
         int result = GL15.glGetQueryObjecti(QueryManager.idQueryObject, GL15.GL_QUERY_RESULT);
+        queryStallCounter++;
         
         return result;
     }

@@ -76,7 +76,8 @@ public abstract class MixinEntity implements IEEntity {
         if (attemptedMove.lengthSquared() > 256 ||
             collidingPortal == null ||
             entity.isBeingRidden() ||
-            entity.isPassenger()
+            entity.isPassenger() ||
+            !Global.crossPortalCollision
         ) {
             return getAllowedMovement(attemptedMove);
         }
@@ -117,7 +118,7 @@ public abstract class MixinEntity implements IEEntity {
     // avoid suffocation when colliding with a portal on wall
     @Inject(method = "Lnet/minecraft/entity/Entity;isEntityInsideOpaqueBlock()Z", at = @At("HEAD"), cancellable = true)
     private void onIsInsideWall(CallbackInfoReturnable<Boolean> cir) {
-        if (getCollidingPortal() != null) {
+        if (isRecentlyCollidingWithPortal()) {
             cir.setReturnValue(false);
         }
     }
@@ -155,7 +156,7 @@ public abstract class MixinEntity implements IEEntity {
         if (this_ instanceof ServerPlayerEntity) {
             if (this_.getPose() == Pose.STANDING) {
                 if (pose == Pose.CROUCHING || pose == Pose.SWIMMING) {
-                    if (getCollidingPortal() != null ||
+                    if (isRecentlyCollidingWithPortal() ||
                         Global.serverTeleportationManager.isJustTeleported(this_, 20)
                     ) {
                         ci.cancel();
@@ -200,15 +201,8 @@ public abstract class MixinEntity implements IEEntity {
         collidingPortalActiveTickTime = world.getGameTime();
     }
     
-//    @Inject(
-//        method = "setVelocity(Lnet/minecraft/util/math/Vec3d;)V",
-//        at = @At("HEAD")
-//    )
-//    private void debug(Vec3d velocity, CallbackInfo ci) {
-//        if (((Object) this) instanceof ClientPlayerEntity) {
-//            if (velocity.z != 0) {
-//                new Throwable().printStackTrace();
-//            }
-//        }
-//    }
+    @Override
+    public boolean isRecentlyCollidingWithPortal() {
+        return (world.getGameTime() - collidingPortalActiveTickTime) < 20;
+    }
 }

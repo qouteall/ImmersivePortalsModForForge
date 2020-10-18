@@ -5,7 +5,7 @@ import com.qouteall.immersive_portals.portal.Portal;
 
 public class RendererDummy extends PortalRenderer {
     @Override
-    public boolean shouldSkipClearing() {
+    public boolean replaceFrameBufferClearing() {
         return false;
     }
     

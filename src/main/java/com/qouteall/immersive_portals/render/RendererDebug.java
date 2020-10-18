@@ -40,7 +40,7 @@ public class RendererDebug extends PortalRenderer {
     }
     
     @Override
-    public boolean shouldSkipClearing() {
+    public boolean replaceFrameBufferClearing() {
         return false;
     }
     
@@ -73,7 +73,7 @@ public class RendererDebug extends PortalRenderer {
         Portal portal,
         MatrixStack matrixStack
     ) {
-        return QueryManager.renderAndGetDoesAnySamplePassed(() -> {
+        return QueryManager.renderAndGetDoesAnySamplePass(() -> {
             GlStateManager.enableDepthTest();
             GlStateManager.depthMask(false);
             //GL20.glUseProgram(0);

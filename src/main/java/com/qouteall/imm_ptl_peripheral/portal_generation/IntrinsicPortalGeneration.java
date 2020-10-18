@@ -78,7 +78,7 @@ public class IntrinsicPortalGeneration {
                     diligentFromNether;
             return gen.perform(fromWorld, firePos);
         }
-    
+        
         return false;
     }
     

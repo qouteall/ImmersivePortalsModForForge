@@ -87,7 +87,12 @@ public class ServerTeleportationManager {
             return;
         }
         ModMain.serverTaskList.addTask(() -> {
-            teleportRegularEntity(entity, portal);
+            try {
+                teleportRegularEntity(entity, portal);
+            }
+            catch (Throwable e) {
+                e.printStackTrace();
+            }
             return true;
         });
     }
@@ -315,7 +320,6 @@ public class ServerTeleportationManager {
         ((IEServerPlayerEntity) player).updateDimensionTravelAdvancements(fromWorld);
         
         
-        
     }
     
     private void sendPositionConfirmMessage(ServerPlayerEntity player) {
@@ -434,7 +438,7 @@ public class ServerTeleportationManager {
     }
     
     /**
-     * {@link Entity#changeDimension(ServerWorld)}
+     * {@link Entity#moveToWorld(ServerWorld)}
      * Sometimes resuing the same entity object is problematic
      * because entity's AI related things may have world reference inside
      * These fields should also get changed but it's not easy
@@ -464,7 +468,7 @@ public class ServerTeleportationManager {
             McHelper.setEyePos(newEntity, newEyePos, newEyePos);
             McHelper.updateBoundingBox(newEntity);
             newEntity.setRotationYawHead(oldEntity.getRotationYawHead());
-    
+            
             // calling remove() will make chest minecart item duplicate
             oldEntity.removed = true;
             

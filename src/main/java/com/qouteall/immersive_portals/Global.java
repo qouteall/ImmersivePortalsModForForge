@@ -43,9 +43,6 @@ public class Global {
     
     public static boolean looseVisibleChunkIteration = true;
     
-    //OpenJdk's stream has issues with MutableBlockPos
-    public static boolean blameOpenJdk = true;
-    
     public static boolean portalPlaceholderPassthrough = true;
     
     public static boolean mirrorInteractableThroughPortal = false;
@@ -67,6 +64,14 @@ public class Global {
     public static boolean useSecondaryEntityVertexConsumer = true;
     
     public static boolean cullSectionsBehind = true;
+    
+    public static boolean offsetOcclusionQuery = true;
+    
+    public static boolean cloudOptimization = true;
+    
+    public static boolean crossPortalCollision = true;
+    
+    public static int chunkUnloadDelayTicks = 15 * 20;
     
     public static enum RenderMode {
         normal,
