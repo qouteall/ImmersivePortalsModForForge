@@ -20,6 +20,7 @@ import net.minecraft.util.RegistryKey;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.vector.Matrix3f;
 import net.minecraft.util.math.vector.Quaternion;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3f;
@@ -163,7 +164,7 @@ public class Portal extends Entity {
             cullableXEnd = compoundTag.getDouble("cullableXEnd");
             cullableYStart = compoundTag.getDouble("cullableYStart");
             cullableYEnd = compoundTag.getDouble("cullableYEnd");
-    
+            
             cullableXEnd = Math.min(cullableXEnd, width / 2);
             cullableXStart = Math.max(cullableXStart, -width / 2);
             cullableYEnd = Math.min(cullableYEnd, height / 2);
@@ -405,7 +406,9 @@ public class Portal extends Entity {
             height != 0 &&
             axisW != null &&
             axisH != null &&
-            destination != null;
+            destination != null &&
+            axisW.lengthSquared() > 0.9 &&
+            axisH.lengthSquared() > 0.9;
         if (valid) {
             if (world instanceof ServerWorld) {
                 ServerWorld destWorld = McHelper.getServer().getWorld(dimensionTo);
@@ -627,7 +630,7 @@ public class Portal extends Entity {
         }
         
         Vector3f temp = new Vector3f(localVec);
-        Quaternion r = rotation.copy();
+        Quaternion r = new Quaternion(rotation);//copy() is client only
         r.conjugate();
         temp.transform(r);
         return new Vector3d(temp);
@@ -809,4 +812,31 @@ public class Portal extends Entity {
         return Math.max(this.width, this.height) * this.scaling;
     }
     
+    public Matrix3f getOuterOrientationMatrix() {
+        //transformation: x*axisW+y*axisH+z*normal
+        final Matrix3f matrix3f = new Matrix3f();
+        matrix3f.func_232605_a_(0, 0, (float) axisW.getX());
+        matrix3f.func_232605_a_(0, 1, (float) axisW.getZ());
+        matrix3f.func_232605_a_(0, 2, (float) axisW.getY());
+        matrix3f.func_232605_a_(1, 0, (float) axisH.getX());
+        matrix3f.func_232605_a_(1, 1, (float) axisH.getY());
+        matrix3f.func_232605_a_(1, 2, (float) axisH.getZ());
+        matrix3f.func_232605_a_(2, 0, (float) getNormal().getX());
+        matrix3f.func_232605_a_(2, 1, (float) getNormal().getY());
+        matrix3f.func_232605_a_(2, 2, (float) getNormal().getZ());
+        return matrix3f;
+    }
+    
+    public Matrix3f getInnerOrientationMatrix() {
+        Matrix3f matrix3f;
+        if (rotation != null) {
+            matrix3f = new Matrix3f(rotation);
+        }
+        else {
+            matrix3f = new Matrix3f();
+            matrix3f.setIdentity();
+        }
+        matrix3f.mul((float) scaling);
+        return matrix3f;
+    }
 }

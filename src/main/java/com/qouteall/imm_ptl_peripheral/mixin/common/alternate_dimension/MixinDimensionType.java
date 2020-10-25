@@ -1,7 +1,7 @@
 package com.qouteall.imm_ptl_peripheral.mixin.common.alternate_dimension;
 
 import com.mojang.serialization.Lifecycle;
-import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.imm_ptl_peripheral.alternate_dimension.AlternateDimensions;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.DynamicRegistries;
@@ -43,14 +43,14 @@ public class MixinDimensionType {
     ) {
         MutableRegistry<DimensionType> mutableRegistry = registryManager.func_243612_b(Registry.field_239698_ad_);
         mutableRegistry.register(
-            ModMain.surfaceType,
-            ModMain.surfaceTypeObject,
+            AlternateDimensions.surfaceType,
+            AlternateDimensions.surfaceTypeObject,
             Lifecycle.stable()
         );
     }
     
     static {
-        ModMain.surfaceTypeObject = constructor(
+        AlternateDimensions.surfaceTypeObject = constructor(
             OptionalLong.empty(), true, false,
             false, true, 1.0D, false,
             false, true, false, true,

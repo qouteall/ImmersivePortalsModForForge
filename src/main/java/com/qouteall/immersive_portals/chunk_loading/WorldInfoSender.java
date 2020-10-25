@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 public class WorldInfoSender {
     public static void init() {
         ModMain.postServerTickSignal.connect(() -> {
+            McHelper.getServer().getProfiler().startSection("portal_send_world_info");
             if (McHelper.getServerGameTime() % 100 == 42) {
                 for (ServerPlayerEntity player : McHelper.getCopiedPlayerList()) {
                     Set<RegistryKey<World>> visibleDimensions = getVisibleDimensions(player);
@@ -30,7 +31,7 @@ public class WorldInfoSender {
                     }
                     
                     McHelper.getServer().getWorlds().forEach(thisWorld -> {
-                        if (ModMain.isAlternateDimension(thisWorld)) {
+                        if (isNonOverworldSurfaceDimension(thisWorld)) {
                             if (visibleDimensions.contains(thisWorld.func_234923_W_())) {
                                 sendWorldInfo(
                                     player,
@@ -42,6 +43,7 @@ public class WorldInfoSender {
                     
                 }
             }
+            McHelper.getServer().getProfiler().endSection();
         });
     }
     
@@ -72,31 +74,26 @@ public class WorldInfoSender {
                     0.0F
                 )
             ));
-            
-            player.connection.sendPacket(MyNetwork.createRedirectedMessage(
-                world.func_234923_W_(),
-                new SChangeGameStatePacket(
-                    SChangeGameStatePacket.field_241771_h_,
-                    world.getRainStrength(1.0F)
-                )
-            ));
-            player.connection.sendPacket(MyNetwork.createRedirectedMessage(
-                world.func_234923_W_(),
-                new SChangeGameStatePacket(
-                    SChangeGameStatePacket.field_241772_i_,
-                    world.getThunderStrength(1.0F)
-                )
-            ));
         }
         else {
-//            player.networkHandler.sendPacket(MyNetwork.createRedirectedMessage(
-//                world.getRegistryKey(),
-//                new GameStateChangeS2CPacket(
-//                    GameStateChangeS2CPacket.RAIN_STOPPED,
-//                    0.0F
-//                )
-//            ));
+            //if the weather is already not raining when the player logs in then no need to sync
+            //if the weather turned to not raining then elsewhere syncs it
         }
+        
+        player.connection.sendPacket(MyNetwork.createRedirectedMessage(
+            world.func_234923_W_(),
+            new SChangeGameStatePacket(
+                SChangeGameStatePacket.field_241771_h_,
+                world.getRainStrength(1.0F)
+            )
+        ));
+        player.connection.sendPacket(MyNetwork.createRedirectedMessage(
+            world.func_234923_W_(),
+            new SChangeGameStatePacket(
+                SChangeGameStatePacket.field_241772_i_,
+                world.getThunderStrength(1.0F)
+            )
+        ));
     }
     
     public static Set<RegistryKey<World>> getVisibleDimensions(ServerPlayerEntity player) {
@@ -110,5 +107,9 @@ public class WorldInfoSender {
                     )
                 ).orElse(Stream.empty())
         ).collect(Collectors.toSet());
+    }
+    
+    public static boolean isNonOverworldSurfaceDimension(World world) {
+        return world.func_230315_m_().hasSkyLight() && world.func_234923_W_() != World.field_234918_g_;
     }
 }

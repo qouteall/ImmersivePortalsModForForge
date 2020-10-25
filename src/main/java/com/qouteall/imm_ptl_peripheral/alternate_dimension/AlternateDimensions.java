@@ -3,9 +3,11 @@ package com.qouteall.imm_ptl_peripheral.alternate_dimension;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mojang.serialization.Lifecycle;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.ducks.IEWorld;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
@@ -15,6 +17,7 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.SimpleRegistry;
 import net.minecraft.world.Dimension;
 import net.minecraft.world.DimensionType;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.provider.OverworldBiomeProvider;
 import net.minecraft.world.gen.ChunkGenerator;
@@ -26,11 +29,90 @@ import net.minecraft.world.gen.NoiseChunkGenerator;
 import net.minecraft.world.gen.feature.structure.Structure;
 import net.minecraft.world.gen.settings.DimensionStructuresSettings;
 import net.minecraft.world.gen.settings.StructureSeparationSettings;
+import net.minecraft.world.server.ServerWorld;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.function.Supplier;
 
 public class AlternateDimensions {
+    public static final RegistryKey<Dimension> alternate1Option = RegistryKey.func_240903_a_(
+        Registry.field_239700_af_,
+        new ResourceLocation("immersive_portals:alternate1")
+    );
+    public static final RegistryKey<Dimension> alternate2Option = RegistryKey.func_240903_a_(
+        Registry.field_239700_af_,
+        new ResourceLocation("immersive_portals:alternate2")
+    );
+    public static final RegistryKey<Dimension> alternate3Option = RegistryKey.func_240903_a_(
+        Registry.field_239700_af_,
+        new ResourceLocation("immersive_portals:alternate3")
+    );
+    public static final RegistryKey<Dimension> alternate4Option = RegistryKey.func_240903_a_(
+        Registry.field_239700_af_,
+        new ResourceLocation("immersive_portals:alternate4")
+    );
+    public static final RegistryKey<Dimension> alternate5Option = RegistryKey.func_240903_a_(
+        Registry.field_239700_af_,
+        new ResourceLocation("immersive_portals:alternate5")
+    );
+    public static final RegistryKey<DimensionType> surfaceType = RegistryKey.func_240903_a_(
+        Registry.field_239698_ad_,
+        new ResourceLocation("immersive_portals:surface_type")
+    );
+    public static final RegistryKey<World> alternate1 = RegistryKey.func_240903_a_(
+        Registry.field_239699_ae_,
+        new ResourceLocation("immersive_portals:alternate1")
+    );
+    public static final RegistryKey<World> alternate2 = RegistryKey.func_240903_a_(
+        Registry.field_239699_ae_,
+        new ResourceLocation("immersive_portals:alternate2")
+    );
+    public static final RegistryKey<World> alternate3 = RegistryKey.func_240903_a_(
+        Registry.field_239699_ae_,
+        new ResourceLocation("immersive_portals:alternate3")
+    );
+    public static final RegistryKey<World> alternate4 = RegistryKey.func_240903_a_(
+        Registry.field_239699_ae_,
+        new ResourceLocation("immersive_portals:alternate4")
+    );
+    public static final RegistryKey<World> alternate5 = RegistryKey.func_240903_a_(
+        Registry.field_239699_ae_,
+        new ResourceLocation("immersive_portals:alternate5")
+    );
+    public static DimensionType surfaceTypeObject;
+    
+    public static boolean isAlternateDimension(World world) {
+        final RegistryKey<World> key = world.func_234923_W_();
+        return key == alternate1 ||
+            key == alternate2 ||
+            key == alternate3 ||
+            key == alternate4 ||
+            key == alternate5;
+    }
+    
+    public static void init() {
+        ModMain.postServerTickSignal.connect(() -> {
+            if (!Global.enableAlternateDimensions) {
+                return;
+            }
+            
+            ServerWorld overworld = McHelper.getServerWorld(World.field_234918_g_);
+            
+            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate1), overworld);
+            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate2), overworld);
+            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate3), overworld);
+            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate4), overworld);
+            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate5), overworld);
+        });
+    }
+    
+    private static void syncWithOverworldTimeWeather(ServerWorld world, ServerWorld overworld) {
+        ((IEWorld) world).portal_setWeather(
+            overworld.getRainStrength(1), overworld.getRainStrength(1),
+            overworld.getThunderStrength(1), overworld.getThunderStrength(1)
+        );
+    }
+    
     public static ChunkGenerator createSkylandGenerator(long seed, DynamicRegistries rm) {
         
         MutableRegistry<Biome> biomeRegistry = rm.func_243612_b(Registry.field_239720_u_);
@@ -104,43 +186,47 @@ public class AlternateDimensions {
         SimpleRegistry<Dimension> registry, DynamicRegistries rm,
         long seed
     ) {
+        if (!Global.enableAlternateDimensions) {
+            return;
+        }
+        
         addDimension(
             seed,
             registry,
-            ModMain.alternate1Option,
-            () -> ModMain.surfaceTypeObject,
+            alternate1Option,
+            () -> surfaceTypeObject,
             createSkylandGenerator(seed, rm)
         );
         
         addDimension(
             seed,
             registry,
-            ModMain.alternate2Option,
-            () -> ModMain.surfaceTypeObject,
+            alternate2Option,
+            () -> surfaceTypeObject,
             createSkylandGenerator(seed, rm)
         );
         
         addDimension(
             seed,
             registry,
-            ModMain.alternate3Option,
-            () -> ModMain.surfaceTypeObject,
+            alternate3Option,
+            () -> surfaceTypeObject,
             createErrorTerrainGenerator(seed, rm)
         );
         
         addDimension(
             seed,
             registry,
-            ModMain.alternate4Option,
-            () -> ModMain.surfaceTypeObject,
+            alternate4Option,
+            () -> surfaceTypeObject,
             createErrorTerrainGenerator(seed, rm)
         );
         
         addDimension(
             seed,
             registry,
-            ModMain.alternate5Option,
-            () -> ModMain.surfaceTypeObject,
+            alternate5Option,
+            () -> surfaceTypeObject,
             createVoidGenerator(rm)
         );
     }
@@ -152,11 +238,11 @@ public class AlternateDimensions {
     ) {
         return McHelper.filterAndCopyRegistry(
             registry,
-            (key, obj) -> !(key == ModMain.alternate1Option ||
-                key == ModMain.alternate2Option ||
-                key == ModMain.alternate3Option ||
-                key == ModMain.alternate4Option ||
-                key == ModMain.alternate5Option)
+            (key, obj) -> !(key == alternate1Option ||
+                key == alternate2Option ||
+                key == alternate3Option ||
+                key == alternate4Option ||
+                key == alternate5Option)
         );
     }
     

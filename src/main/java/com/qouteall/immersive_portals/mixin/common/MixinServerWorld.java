@@ -1,9 +1,8 @@
 package com.qouteall.immersive_portals.mixin.common;
 
+import com.qouteall.immersive_portals.chunk_loading.EntitySync;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEServerWorld;
-import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSortedSet;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -13,6 +12,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
+import net.minecraft.network.IPacket;
+import net.minecraft.server.management.PlayerList;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.DimensionSavedDataManager;
@@ -27,30 +28,9 @@ public abstract class MixinServerWorld implements IEServerWorld {
     @Shadow
     public abstract ServerChunkProvider getChunkProvider();
     
-    @Shadow @Final private IServerWorldInfo field_241103_E_;
-    private static LongSortedSet dummy;
-    
-    static {
-        dummy = new LongLinkedOpenHashSet();
-        dummy.add(23333);
-    }
-    
-    //in vanilla if a dimension has no player and no forced chunks then it will not tick
-//    @Redirect(
-//        method = "tick",
-//        at = @At(
-//            value = "INVOKE",
-//            target = "Lnet/minecraft/server/world/ServerWorld;getForcedChunks()Lit/unimi/dsi/fastutil/longs/LongSet;"
-//        )
-//    )
-//    private LongSet redirectGetForcedChunks(ServerWorld world) {
-//        if (NewChunkTrackingGraph.shouldLoadDimension(world.getRegistryKey())) {
-//            return dummy;
-//        }
-//        else {
-//            return world.getForcedChunks();
-//        }
-//    }
+    @Shadow
+    @Final
+    private IServerWorldInfo field_241103_E_;
     
     //in vanilla if a dimension has no player and no forced chunks then it will not tick
     @Redirect(
@@ -66,6 +46,23 @@ public abstract class MixinServerWorld implements IEServerWorld {
             return false;
         }
         return list.isEmpty();
+    }
+    
+    @Redirect(
+        method = "Lnet/minecraft/world/server/ServerWorld;tick(Ljava/util/function/BooleanSupplier;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/server/management/PlayerList;sendPacketToAllPlayers(Lnet/minecraft/network/IPacket;)V"
+        )
+    )
+    private void redirectSendToAll(PlayerList playerManager, IPacket<?> packet) {
+        final ServerWorld this_ = (ServerWorld) (Object) this;
+        EntitySync.withForceRedirect(
+            this_.func_234923_W_(),
+            () -> {
+                playerManager.sendPacketToAllPlayers(packet);
+            }
+        );
     }
     
     // for debug

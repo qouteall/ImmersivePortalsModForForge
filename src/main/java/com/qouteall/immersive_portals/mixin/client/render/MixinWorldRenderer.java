@@ -4,11 +4,9 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ClientWorldLoader;
-import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
 import com.qouteall.immersive_portals.render.FrontClipping;
 import com.qouteall.immersive_portals.render.MyBuiltChunkStorage;
@@ -16,9 +14,7 @@ import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.TransformationManager;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
-import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import com.qouteall.immersive_portals.render.context_management.RenderInfo;
-import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -35,7 +31,6 @@ import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.world.World;
 import org.lwjgl.opengl.GL11;
@@ -332,11 +327,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         if (entity == camera.getRenderViewEntity()) {
             if (CrossPortalEntityRenderer.shouldRenderPlayerItself()) {
                 MyGameRenderer.renderPlayerItself(() -> {
-                    double distanceToCamera =
-                        entity.getEyePosition(RenderStates.tickDelta)
-                            .distanceTo(mc.gameRenderer.getActiveRenderInfo().getProjectedView());
-                    //avoid rendering player too near and block view except mirror
-                    if (distanceToCamera > 1 || PortalRendering.isRenderingOddNumberOfMirrors()) {
+                    if (CrossPortalEntityRenderer.shouldRenderPlayerNormally(entity)) {
                         CrossPortalEntityRenderer.beforeRenderingEntity(entity, matrixStack);
                         renderEntity(
                             entity,
@@ -546,39 +537,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         else {
             updateChunks(limitTime);
         }
-    }
-    
-    //redirect sky rendering dimension
-    @Redirect(
-        method = "Lnet/minecraft/client/renderer/WorldRenderer;updateCameraAndRender(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V"
-        )
-    )
-    private void redirectRenderSky(WorldRenderer worldRenderer, MatrixStack matrixStack, float f) {
-        if (Global.edgelessSky) {
-            if (PortalRendering.isRendering()) {
-                if (PortalRendering.getRenderingPortal() instanceof GlobalTrackedPortal) {
-                    MyGameRenderer.renderSkyFor(
-                        RenderDimensionRedirect.getRedirectedDimension(RenderStates.originalPlayerDimension),
-                        matrixStack, f
-                    );
-                    return;
-                }
-            }
-        }
-        
-        if (OFInterface.isShaders.getAsBoolean()) {
-            RegistryKey<World> dim = Minecraft.getInstance().world.func_234923_W_();
-            RegistryKey<World> redirectedDimension = RenderDimensionRedirect.getRedirectedDimension(
-                dim);
-            
-            MyGameRenderer.renderSkyFor(redirectedDimension, matrixStack, f);
-            return;
-        }
-        
-        worldRenderer.renderSky(matrixStack, f);
     }
     
     //fix cloud fog abnormal with OptiFine and fog disabled

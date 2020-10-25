@@ -48,4 +48,12 @@ public abstract class MixinWorld implements IEWorld {
     public ISpawnWorldInfo myGetProperties() {
         return worldInfo;
     }
+    
+    @Override
+    public void portal_setWeather(float rainGradPrev, float rainGrad, float thunderGradPrev, float thunderGrad) {
+        prevRainingStrength = rainGradPrev;
+        rainingStrength = rainGrad;
+        prevThunderingStrength = thunderGradPrev;
+        thunderingStrength = thunderGrad;
+    }
 }

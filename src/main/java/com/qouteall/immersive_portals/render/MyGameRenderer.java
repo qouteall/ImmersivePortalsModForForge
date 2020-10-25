@@ -37,6 +37,7 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
+import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -50,6 +51,7 @@ import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.opengl.GL11;
 
 import java.util.function.Consumer;
@@ -360,43 +362,27 @@ public class MyGameRenderer {
         }
     }
     
-    // TODO recover
-    public static void renderSkyFor(
-        RegistryKey<World> dimension,
-        MatrixStack matrixStack,
-        float tickDelta
+    public static void renderWorldInfoFramebuffer(
+        RenderInfo renderInfo,
+        Framebuffer framebuffer
     ) {
+        CHelper.checkGlError();
         
-        client.worldRenderer.renderSky(matrixStack, tickDelta);
-
-//        ClientWorld newWorld = CGlobal.clientWorldLoader.getWorld(dimension);
-//
-//        if (client.world.getDimension() instanceof AlternateDimension &&
-//            newWorld.getDimension() instanceof OverworldDimension
-//        ) {
-//            //avoid redirecting alternate to overworld
-//            //or sky will be dark when camera pos is low
-//            client.worldRenderer.renderSky(matrixStack, tickDelta);
-//            return;
-//        }
-//
-//        WorldRenderer newWorldRenderer = CGlobal.clientWorldLoader.getWorldRenderer(dimension);
-//
-//        ClientWorld oldWorld = client.world;
-//        WorldRenderer oldWorldRenderer = client.worldRenderer;
-//        FogRendererContext.swappingManager.pushSwapping(dimension);
-//        MyGameRenderer.forceResetFogState();
-//
-//        client.world = newWorld;
-//        ((IEMinecraftClient) client).setWorldRenderer(newWorldRenderer);
-//
-//        newWorldRenderer.renderSky(matrixStack, tickDelta);
-//
-//        client.world = oldWorld;
-//        ((IEMinecraftClient) client).setWorldRenderer(oldWorldRenderer);
-//        FogRendererContext.swappingManager.popSwapping();
-//        MyGameRenderer.forceResetFogState();
+        Framebuffer mcFb = client.getFramebuffer();
+        
+        Validate.isTrue(mcFb != framebuffer);
+        
+        ((IEMinecraftClient) client).setFrameBuffer(framebuffer);
+        
+        framebuffer.bindFramebuffer(true);
+        
+        CGlobal.renderer.invokeWorldRendering(renderInfo);
+        
+        ((IEMinecraftClient) client).setFrameBuffer(mcFb);
+        
+        mcFb.bindFramebuffer(true);
+        
+        CHelper.checkGlError();
     }
-    
     
 }

@@ -1,8 +1,9 @@
 package com.qouteall.imm_ptl_peripheral.altius_world;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.qouteall.imm_ptl_peripheral.alternate_dimension.AlternateDimensions;
 import com.qouteall.immersive_portals.CHelper;
-import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.Global;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.CreateWorldScreen;
@@ -71,12 +72,14 @@ public class AltiusScreen extends Screen {
         );
         
         Consumer<DimTermWidget> callback = getElementSelectCallback();
-        dimListWidget.terms.add(
-            new DimTermWidget(ModMain.alternate4, dimListWidget, callback)
-        );
-        dimListWidget.terms.add(
-            new DimTermWidget(ModMain.alternate2, dimListWidget, callback)
-        );
+        if (Global.enableAlternateDimensions) {
+            dimListWidget.terms.add(
+                new DimTermWidget(AlternateDimensions.alternate5, dimListWidget, callback)
+            );
+            dimListWidget.terms.add(
+                new DimTermWidget(AlternateDimensions.alternate2, dimListWidget, callback)
+            );
+        }
         dimListWidget.terms.add(
             new DimTermWidget(World.field_234918_g_, dimListWidget, callback)
         );

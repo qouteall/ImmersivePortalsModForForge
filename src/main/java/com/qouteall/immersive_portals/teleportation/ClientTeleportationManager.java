@@ -12,6 +12,7 @@ import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.PehkuiInterface;
 import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
+import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.portal.Mirror;
@@ -124,7 +125,7 @@ public class ClientTeleportationManager {
     
     private boolean tryTeleport(float tickDelta) {
         ClientPlayerEntity player = client.player;
-    
+        
         Vector3d newHeadPos = getPlayerHeadPos(tickDelta);
         
         if (moveStartPoint.squareDistanceTo(newHeadPos) > 400) {
@@ -228,9 +229,9 @@ public class ClientTeleportationManager {
         amendChunkEntityStatus(player);
         
         McHelper.adjustVehicle(player);
-    
+        
         portal.transformVelocity(player);
-    
+        
         TransformationManager.onClientPlayerTeleported(portal);
         
         if (player.getRidingEntity() != null) {
@@ -468,7 +469,19 @@ public class ClientTeleportationManager {
                 progress,
                 originalY, maxCollisionY
             );
-            player.setRawPosition(player.getPosX(), newY, player.getPosZ());
+            
+            Vector3d newPos = new Vector3d(player.getPosX(), newY, player.getPosZ());
+            
+            Portal collidingPortal = ((IEEntity) player).getCollidingPortal();
+            if (collidingPortal != null) {
+                Vector3d eyePos = McHelper.getEyePos(player);
+                Vector3d newEyePos = newPos.add(0, player.getEyeHeight(), 0);
+                if (collidingPortal.rayTrace(eyePos, newEyePos) != null) {
+                    return true;//avoid going back into the portal
+                }
+            }
+            
+            player.setRawPosition(newPos.x, newPos.y, newPos.z);
             McHelper.updateBoundingBox(player);
             
             return false;
