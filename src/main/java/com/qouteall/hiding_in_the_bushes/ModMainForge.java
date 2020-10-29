@@ -385,48 +385,6 @@ public class ModMainForge {
                     "immersive_portals:loading_indicator")
             );
         }
-        
-        @SubscribeEvent
-        public static void onEffectRegistry(RegistryEvent.Register<Effect> event) {
-            Effect.class.hashCode();
-            
-            if (HandReachTweak.statusEffectConstructor == null) {
-                Helper.err("Status Effect Constructor is null");
-                return;
-            }
-            
-            HandReachTweak.longerReachEffect = HandReachTweak.statusEffectConstructor
-                .apply(EffectType.BENEFICIAL, 0)
-                .addAttributesModifier(
-                    HandReachTweak.handReachMultiplierAttribute,
-                    "91AEAA56-2333-2333-2333-2F7F68070635",
-                    0.5,
-                    AttributeModifier.Operation.MULTIPLY_TOTAL
-                );
-            Registry.register(
-                Registry.EFFECTS,
-                new ResourceLocation("immersive_portals", "longer_reach"),
-                HandReachTweak.longerReachEffect
-            );
-        }
-        
-        @SubscribeEvent
-        public static void onPotionRegistry(RegistryEvent.Register<Potion> event) {
-            if (HandReachTweak.longerReachEffect == null) {
-                return;
-            }
-            
-            HandReachTweak.longerReachPotion = new Potion(
-                new EffectInstance(
-                    HandReachTweak.longerReachEffect, 7200, 1
-                )
-            );
-            Registry.register(
-                Registry.POTION,
-                new ResourceLocation("immersive_portals", "longer_reach_potion"),
-                HandReachTweak.longerReachPotion
-            );
-        }
     }
     
 }
