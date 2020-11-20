@@ -63,7 +63,7 @@ public class EndPortalEntity extends Portal {
         
         portal.setPosition(portalCenter.x, portalCenter.y, portalCenter.z);
         
-        portal.destination = destination;
+        portal.setDestination(destination);
         
         portal.dimensionTo = World.field_234920_i_;
         
@@ -100,7 +100,7 @@ public class EndPortalEntity extends Portal {
             );
             portal.scaling = scale;
             portal.teleportChangesScale = false;
-            portal.extension.adjustPositionAfterTeleport = true;
+            PortalExtension.get(portal).adjustPositionAfterTeleport = true;
             portal.portalTag = "view_box";
             //creating a new entity type needs registering
             //it's easier to discriminate it by portalTag
@@ -139,7 +139,7 @@ public class EndPortalEntity extends Portal {
                     }
                 }
             }
-            if (player.world == this.world && player.getPositionVec().squareDistanceTo(getPositionVec()) < 10 * 10) {
+            if (player.world == this.world && player.getPositionVec().squareDistanceTo(getOriginPos()) < 10 * 10) {
                 if (clientFakedReversePortal == null) {
                     // client only faked portal
                     clientFakedReversePortal =
@@ -210,6 +210,12 @@ public class EndPortalEntity extends Portal {
             return false;
         }
         return super.canTeleportEntity(entity);
+    }
+    
+    // avoid cannot enter the scaled view end portal
+    @Override
+    public boolean hasCrossPortalCollision() {
+        return false;
     }
     
     private boolean shouldAddSlowFalling(Entity entity) {

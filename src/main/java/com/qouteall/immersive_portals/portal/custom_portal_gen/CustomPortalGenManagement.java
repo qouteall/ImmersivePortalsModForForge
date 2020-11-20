@@ -45,7 +45,8 @@ public class CustomPortalGenManagement {
         
         MinecraftServer server = McHelper.getServer();
         
-        DynamicRegistries.Impl registryTracker = new DynamicRegistries.Impl();
+        DynamicRegistries.Impl registryTracker =
+            ((DynamicRegistries.Impl) server.func_244267_aX());
         
         WorldSettingsImport<JsonElement> registryOps =
             WorldSettingsImport.func_244335_a(

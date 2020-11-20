@@ -5,9 +5,10 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
-import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalLike;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
@@ -33,7 +34,7 @@ public class MyRenderHelper {
     public static final Minecraft client = Minecraft.getInstance();
     
     public static void drawFrameBufferUp(
-        Portal portal,
+        PortalLike portal,
         Framebuffer textureProvider,
         MatrixStack matrixStack
     ) {
@@ -224,19 +225,17 @@ public class MyRenderHelper {
     }
     
     public static void earlyUpdateLight() {
-        if (CGlobal.clientWorldLoader == null) {
+        if (!ClientWorldLoader.getIsInitialized()) {
             return;
         }
         
-        CGlobal.clientWorldLoader.clientWorldMap.values().forEach(
-            world -> {
-                if (world != Minecraft.getInstance().world) {
-                    int updateNum = world.getChunkProvider().getLightManager().tick(
-                        1000, true, true
-                    );
-                }
+        ClientWorldLoader.getClientWorlds().forEach(world -> {
+            if (world != Minecraft.getInstance().world) {
+                int updateNum = world.getChunkProvider().getLightManager().tick(
+                    1000, true, true
+                );
             }
-        );
+        });
     }
     
     public static void applyMirrorFaceCulling() {

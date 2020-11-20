@@ -2,14 +2,15 @@ package com.qouteall.immersive_portals.mixin.common.entity_sync;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.chunk_loading.EntitySync;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEEntityTracker;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
+import com.qouteall.immersive_portals.network.CommonNetwork;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.play.ServerPlayNetHandler;
+import net.minecraft.profiler.IProfiler;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.SectionPos;
 import net.minecraft.world.TrackedEntity;
@@ -60,7 +61,7 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        EntitySync.sendRedirectedPacket(serverPlayNetworkHandler, packet_1, entity.world.func_234923_W_());
+        CommonNetwork.sendRedirectedPacket(serverPlayNetworkHandler, packet_1, entity.world.func_234923_W_());
     }
     
     @Redirect(
@@ -74,7 +75,7 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
         ServerPlayNetHandler serverPlayNetworkHandler,
         IPacket<?> packet_1
     ) {
-        EntitySync.sendRedirectedPacket(serverPlayNetworkHandler, packet_1, entity.world.func_234923_W_());
+        CommonNetwork.sendRedirectedPacket(serverPlayNetworkHandler, packet_1, entity.world.func_234923_W_());
     }
     
     /**
@@ -109,6 +110,9 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
             return;
         }
         
+        IProfiler profiler = player.world.getProfiler();
+        profiler.startSection("portal_entity_track");
+        
         int maxWatchDistance = Math.min(
             this.func_229843_b_(),
             (storage.getWatchDistance() - 1) * 16
@@ -132,7 +136,7 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
             }
             
             if (shouldTrack && this.trackingPlayers.add(player)) {
-                EntitySync.withForceRedirect(
+                CommonNetwork.withForceRedirect(
                     entity.world.func_234923_W_(),
                     () -> {
                         this.entry.track(player);
@@ -141,13 +145,15 @@ public abstract class MixinEntityTracker implements IEEntityTracker {
             }
         }
         else if (this.trackingPlayers.remove(player)) {
-            EntitySync.withForceRedirect(
+            CommonNetwork.withForceRedirect(
                 entity.world.func_234923_W_(),
                 () -> {
                     this.entry.untrack(player);
                 }
             );
         }
+        
+        profiler.endSection();
         
     }
     

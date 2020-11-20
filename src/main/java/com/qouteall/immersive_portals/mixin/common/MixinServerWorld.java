@@ -1,8 +1,8 @@
 package com.qouteall.immersive_portals.mixin.common;
 
-import com.qouteall.immersive_portals.chunk_loading.EntitySync;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEServerWorld;
+import com.qouteall.immersive_portals.network.CommonNetwork;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -58,7 +58,7 @@ public abstract class MixinServerWorld implements IEServerWorld {
     )
     private void redirectSendToAll(PlayerList playerManager, IPacket<?> packet) {
         final ServerWorld this_ = (ServerWorld) (Object) this;
-        EntitySync.withForceRedirect(
+        CommonNetwork.withForceRedirect(
             this_.func_234923_W_(),
             () -> {
                 playerManager.sendPacketToAllPlayers(packet);

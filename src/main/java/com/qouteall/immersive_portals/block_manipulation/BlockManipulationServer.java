@@ -3,7 +3,7 @@ package com.qouteall.immersive_portals.block_manipulation;
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -77,7 +77,8 @@ public class BlockManipulationServer {
             20
         ).anyMatch(portal ->
             portal.dimensionTo == dimension &&
-                portal.transformPointRough(playerPos).squareDistanceTo(pos) < distanceSquare
+                portal.transformPointRough(playerPos).squareDistanceTo(pos) <
+                    distanceSquare * portal.getScale() * portal.getScale()
         );
     }
     
@@ -119,11 +120,11 @@ public class BlockManipulationServer {
     ) {
         Direction side = blockHitResult.getFace();
         Vector3d sideVec = Vector3d.func_237491_b_(side.getDirectionVec());
-        Vector3d hitCenter =  Vector3d.func_237489_a_(blockHitResult.getPos());
+        Vector3d hitCenter = Vector3d.func_237489_a_(blockHitResult.getPos());
         
-        List<GlobalTrackedPortal> globalPortals = McHelper.getGlobalPortals(world);
+        List<Portal> globalPortals = McHelper.getGlobalPortals(world);
         
-        GlobalTrackedPortal portal = globalPortals.stream().filter(p ->
+        Portal portal = globalPortals.stream().filter(p ->
             p.getContentDirection().dotProduct(sideVec) > 0.9
                 && p.isPointInPortalProjection(hitCenter)
                 && p.getDistanceToPlane(hitCenter) < 0.6
@@ -133,7 +134,7 @@ public class BlockManipulationServer {
             return new Tuple<>(blockHitResult, world.func_234923_W_());
         }
         
-        Vector3d newCenter = portal.transformPoint(hitCenter.add(sideVec));
+        Vector3d newCenter = portal.transformPoint(hitCenter.add(sideVec.scale(0.501)));
         BlockPos placingBlockPos = new BlockPos(newCenter);
         
         BlockRayTraceResult newHitResult = new BlockRayTraceResult(

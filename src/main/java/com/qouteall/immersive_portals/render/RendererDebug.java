@@ -3,6 +3,7 @@ package com.qouteall.immersive_portals.render;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
 import net.minecraft.client.Minecraft;
@@ -11,12 +12,12 @@ import org.lwjgl.opengl.GL11;
 public class RendererDebug extends PortalRenderer {
     @Override
     public void onBeforeTranslucentRendering(MatrixStack matrixStack) {
-    
+        renderPortals(matrixStack);
     }
     
     @Override
     public void onAfterTranslucentRendering(MatrixStack matrixStack) {
-        renderPortals(matrixStack);
+    
     }
     
     @Override
@@ -45,7 +46,7 @@ public class RendererDebug extends PortalRenderer {
     }
     
     @Override
-    protected void doRenderPortal(Portal portal, MatrixStack matrixStack) {
+    protected void doRenderPortal(PortalLike portal, MatrixStack matrixStack) {
         if (RenderStates.getRenderedPortalNum() != 0) {
             return;
         }
@@ -70,7 +71,7 @@ public class RendererDebug extends PortalRenderer {
     }
     
     private boolean testShouldRenderPortal(
-        Portal portal,
+        PortalLike portal,
         MatrixStack matrixStack
     ) {
         return QueryManager.renderAndGetDoesAnySamplePass(() -> {

@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.optifine_compatibility.mixin_optifine;
 
-import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import net.minecraft.client.Minecraft;
@@ -50,11 +50,9 @@ public class MixinShaders_DimensionRedirect {
         remap = false
     )
     private static ClientWorld redirectWorldForShadowCamera(Minecraft client) {
-        return CGlobal.clientWorldLoader.getWorld(
-            RenderDimensionRedirect.getRedirectedDimension(
+        return ClientWorldLoader.getWorld(RenderDimensionRedirect.getRedirectedDimension(
                 client.world.func_234923_W_()
-            )
-        );
+            ));
     }
     
     @Redirect(
@@ -68,11 +66,9 @@ public class MixinShaders_DimensionRedirect {
         remap = false
     )
     private static ClientWorld redirectWorldInBeginRender(Minecraft client) {
-        return CGlobal.clientWorldLoader.getWorld(
-            RenderDimensionRedirect.getRedirectedDimension(
+        return ClientWorldLoader.getWorld(RenderDimensionRedirect.getRedirectedDimension(
                 client.world.func_234923_W_()
-            )
-        );
+            ));
     }
     
 }

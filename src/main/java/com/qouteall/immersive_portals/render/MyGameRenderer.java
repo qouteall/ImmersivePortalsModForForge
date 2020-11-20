@@ -4,6 +4,7 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
@@ -18,12 +19,13 @@ import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.ducks.IEWorldRendererChunkInfo;
 import com.qouteall.immersive_portals.my_util.LimitedLogger;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.context_management.DimensionRenderHelper;
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
-import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
+import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
@@ -68,20 +70,20 @@ public class MyGameRenderer {
     private static RenderTypeBuffers secondaryBufferBuilderStorage = new RenderTypeBuffers();
     
     public static void renderWorldNew(
-        RenderInfo renderInfo,
+        RenderingHierarchy renderingHierarchy,
         Consumer<Runnable> invokeWrapper
     ) {
-        RenderInfo.pushRenderInfo(renderInfo);
+        RenderingHierarchy.pushRenderInfo(renderingHierarchy);
         
         switchAndRenderTheWorld(
-            renderInfo.world,
-            renderInfo.cameraPos,
-            renderInfo.cameraPos,
+            renderingHierarchy.world,
+            renderingHierarchy.cameraPos,
+            renderingHierarchy.cameraPos,
             invokeWrapper,
-            renderInfo.renderDistance
+            renderingHierarchy.renderDistance
         );
         
-        RenderInfo.popRenderInfo();
+        RenderingHierarchy.popRenderInfo();
     }
     
     private static void switchAndRenderTheWorld(
@@ -107,7 +109,7 @@ public class MyGameRenderer {
         McHelper.setEyePos(cameraEntity, thisTickCameraPos, lastTickCameraPos);
         cameraEntity.world = newWorld;
         
-        WorldRenderer worldRenderer = CGlobal.clientWorldLoader.getWorldRenderer(newDimension);
+        WorldRenderer worldRenderer = ClientWorldLoader.getWorldRenderer(newDimension);
         
         CHelper.checkGlError();
         
@@ -126,7 +128,7 @@ public class MyGameRenderer {
         
         IEGameRenderer ieGameRenderer = (IEGameRenderer) client.gameRenderer;
         DimensionRenderHelper helper =
-            CGlobal.clientWorldLoader.getDimensionRenderHelper(
+            ClientWorldLoader.getDimensionRenderHelper(
                 RenderDimensionRedirect.getRedirectedDimension(newDimension)
             );
         NetworkPlayerInfo playerListEntry = CHelper.getClientPlayerListEntry();
@@ -339,31 +341,35 @@ public class MyGameRenderer {
             if (Global.cullSectionsBehind) {
                 // this thing has no optimization effect -_-
                 
-                Portal renderingPortal = PortalRendering.getRenderingPortal();
-                
-                int firstInsideOne = Helper.indexOf(
-                    visibleChunks,
-                    obj -> {
-                        ChunkRenderDispatcher.ChunkRender builtChunk =
-                            ((IEWorldRendererChunkInfo) obj).getBuiltChunk();
-                        AxisAlignedBB boundingBox = builtChunk.boundingBox;
-                        
-                        return FrustumCuller.isTouchingInsideContentArea(renderingPortal, boundingBox);
+                PortalLike renderingPortal = PortalRendering.getRenderingPortal();
+    
+                if (renderingPortal instanceof Portal) {
+                    int firstInsideOne = Helper.indexOf(
+                        visibleChunks,
+                        obj -> {
+                            ChunkRenderDispatcher.ChunkRender builtChunk =
+                                ((IEWorldRendererChunkInfo) obj).getBuiltChunk();
+                            AxisAlignedBB boundingBox = builtChunk.boundingBox;
+            
+                            return FrustumCuller.isTouchingInsideContentArea(
+                                ((Portal) renderingPortal), boundingBox
+                            );
+                        }
+                    );
+    
+                    if (firstInsideOne != -1) {
+                        visibleChunks.removeElements(0, firstInsideOne);
                     }
-                );
-                
-                if (firstInsideOne != -1) {
-                    visibleChunks.removeElements(0, firstInsideOne);
-                }
-                else {
-                    visibleChunks.clear();
+                    else {
+                        visibleChunks.clear();
+                    }
                 }
             }
         }
     }
     
     public static void renderWorldInfoFramebuffer(
-        RenderInfo renderInfo,
+        RenderingHierarchy renderingHierarchy,
         Framebuffer framebuffer
     ) {
         CHelper.checkGlError();
@@ -376,7 +382,7 @@ public class MyGameRenderer {
         
         framebuffer.bindFramebuffer(true);
         
-        CGlobal.renderer.invokeWorldRendering(renderInfo);
+        CGlobal.renderer.invokeWorldRendering(renderingHierarchy);
         
         ((IEMinecraftClient) client).setFrameBuffer(mcFb);
         

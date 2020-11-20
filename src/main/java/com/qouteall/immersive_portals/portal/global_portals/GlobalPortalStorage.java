@@ -1,12 +1,14 @@
 package com.qouteall.immersive_portals.portal.global_portals;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
-import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.hiding_in_the_bushes.O_O;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
+import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -27,9 +29,10 @@ import org.apache.commons.lang3.Validate;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class GlobalPortalStorage extends WorldSavedData {
-    public List<GlobalTrackedPortal> data;
+    public List<Portal> data;
     public WeakReference<ServerWorld> world;
     private int version = 1;
     private boolean shouldReSync = false;
@@ -40,6 +43,29 @@ public class GlobalPortalStorage extends WorldSavedData {
                 GlobalPortalStorage gps = GlobalPortalStorage.get(world1);
                 gps.tick();
             });
+        });
+        
+        ModMain.serverCleanupSignal.connect(() -> {
+            for (ServerWorld world : McHelper.getServer().getWorlds()) {
+                get(world).onServerClose();
+            }
+        });
+        
+        if (!O_O.isDedicatedServer()) {
+            initClient();
+        }
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    private static void initClient() {
+        ModMain.clientCleanupSignal.connect(() -> {
+            if (ClientWorldLoader.getIsInitialized()) {
+                for (ClientWorld clientWorld : ClientWorldLoader.getClientWorlds()) {
+                    for (Portal globalPortal : McHelper.getGlobalPortals(clientWorld)) {
+                        globalPortal.remove();
+                    }
+                }
+            }
         });
     }
     
@@ -73,6 +99,34 @@ public class GlobalPortalStorage extends WorldSavedData {
         
     }
     
+    public void removePortal(Portal portal) {
+        data.remove(portal);
+        portal.remove();
+        onDataChanged();
+    }
+    
+    public void addPortal(Portal portal) {
+        Validate.isTrue(!data.contains(portal));
+        
+        Validate.isTrue(portal.isPortalValid());
+        
+        portal.isGlobalPortal = true;
+        portal.removed = false;
+        data.add(portal);
+        onDataChanged();
+    }
+    
+    public void removePortals(Predicate<Portal> predicate) {
+        data.removeIf(portal -> {
+            final boolean shouldRemove = predicate.test(portal);
+            if (shouldRemove) {
+                portal.remove();
+            }
+            return shouldRemove;
+        });
+        onDataChanged();
+    }
+    
     private void syncToAllPlayers() {
         IPacket packet = MyNetwork.createGlobalPortalUpdate(this);
         McHelper.getCopiedPlayerList().forEach(
@@ -85,7 +139,7 @@ public class GlobalPortalStorage extends WorldSavedData {
         
         ServerWorld currWorld = world.get();
         Validate.notNull(currWorld);
-        List<GlobalTrackedPortal> newData = getPortalsFromTag(tag, currWorld);
+        List<Portal> newData = getPortalsFromTag(tag, currWorld);
         
         if (tag.contains("version")) {
             version = tag.getInt("version");
@@ -96,18 +150,18 @@ public class GlobalPortalStorage extends WorldSavedData {
         clearAbnormalPortals();
     }
     
-    private static List<GlobalTrackedPortal> getPortalsFromTag(
+    private static List<Portal> getPortalsFromTag(
         CompoundNBT tag,
         World currWorld
     ) {
         /**{@link CompoundTag#getType()}*/
         ListNBT listTag = tag.getList("data", 10);
         
-        List<GlobalTrackedPortal> newData = new ArrayList<>();
+        List<Portal> newData = new ArrayList<>();
         
         for (int i = 0; i < listTag.size(); i++) {
             CompoundNBT compoundTag = listTag.getCompound(i);
-            GlobalTrackedPortal e = readPortalFromTag(currWorld, compoundTag);
+            Portal e = readPortalFromTag(currWorld, compoundTag);
             if (e != null) {
                 newData.add(e);
             }
@@ -118,19 +172,16 @@ public class GlobalPortalStorage extends WorldSavedData {
         return newData;
     }
     
-    private static GlobalTrackedPortal readPortalFromTag(World currWorld, CompoundNBT compoundTag) {
+    private static Portal readPortalFromTag(World currWorld, CompoundNBT compoundTag) {
         ResourceLocation entityId = new ResourceLocation(compoundTag.getString("entity_type"));
         EntityType<?> entityType = Registry.ENTITY_TYPE.getOrDefault(entityId);
         
         Entity e = entityType.create(currWorld);
         e.read(compoundTag);
         
-        if (!(e instanceof GlobalTrackedPortal)) {
-            return null;
-        }
+        ((Portal) e).isGlobalPortal = true;
         
-        
-        return (GlobalTrackedPortal) e;
+        return (Portal) e;
     }
     
     @Override
@@ -143,7 +194,7 @@ public class GlobalPortalStorage extends WorldSavedData {
         ServerWorld currWorld = world.get();
         Validate.notNull(currWorld);
         
-        for (GlobalTrackedPortal portal : data) {
+        for (Portal portal : data) {
             Validate.isTrue(portal.world == currWorld);
             CompoundNBT portalTag = new CompoundNBT();
             portal.writeWithoutTypeId(portalTag);
@@ -185,7 +236,7 @@ public class GlobalPortalStorage extends WorldSavedData {
     
     public void clearAbnormalPortals() {
         data.removeIf(e -> {
-            RegistryKey<World> dimensionTo = ((GlobalTrackedPortal) e).dimensionTo;
+            RegistryKey<World> dimensionTo = ((Portal) e).dimensionTo;
             if (McHelper.getServer().getWorld(dimensionTo) == null) {
                 Helper.err("Missing Dimension for global portal " + dimensionTo.func_240901_a_());
                 return true;
@@ -200,22 +251,58 @@ public class GlobalPortalStorage extends WorldSavedData {
     
     @OnlyIn(Dist.CLIENT)
     public static void receiveGlobalPortalSync(RegistryKey<World> dimension, CompoundNBT compoundTag) {
-        ClientWorld world = CGlobal.clientWorldLoader.getWorld(dimension);
+        ClientWorld world = ClientWorldLoader.getWorld(dimension);
         
-        List<GlobalTrackedPortal> oldGlobalPortals = ((IEClientWorld) world).getGlobalPortals();
+        List<Portal> oldGlobalPortals = ((IEClientWorld) world).getGlobalPortals();
         if (oldGlobalPortals != null) {
-            for (GlobalTrackedPortal p : oldGlobalPortals) {
-                p.removed = true;
+            for (Portal p : oldGlobalPortals) {
+                p.remove();
             }
         }
         
-        List<GlobalTrackedPortal> newPortals = getPortalsFromTag(compoundTag, world);
-        for (GlobalTrackedPortal p : newPortals) {
+        List<Portal> newPortals = getPortalsFromTag(compoundTag, world);
+        for (Portal p : newPortals) {
             p.removed = false;
+            p.isGlobalPortal = true;
+            
+            Validate.isTrue(p.isPortalValid());
+            
+            ClientWorldLoader.getWorld(p.getDestDim());
         }
         
         ((IEClientWorld) world).setGlobalPortals(newPortals);
         
         Helper.log("Global Portals Updated " + dimension.func_240901_a_());
+    }
+    
+    public static void convertNormalPortalIntoGlobalPortal(Portal portal) {
+        Validate.isTrue(!portal.getIsGlobal());
+        Validate.isTrue(!portal.world.isRemote());
+        
+        //global portal can only be square
+        portal.specialShape = null;
+        
+        portal.remove();
+        
+        Portal newPortal = McHelper.copyEntity(portal);
+        
+        get(((ServerWorld) portal.world)).addPortal(newPortal);
+    }
+    
+    public static void convertGlobalPortalIntoNormalPortal(Portal portal) {
+        Validate.isTrue(portal.getIsGlobal());
+        Validate.isTrue(!portal.world.isRemote());
+        
+        get(((ServerWorld) portal.world)).removePortal(portal);
+        
+        Portal newPortal = McHelper.copyEntity(portal);
+        
+        McHelper.spawnServerEntity(newPortal);
+    }
+    
+    private void onServerClose() {
+        for (Portal portal : data) {
+            portal.remove();
+        }
     }
 }

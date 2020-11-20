@@ -2,8 +2,8 @@ package com.qouteall.immersive_portals.teleportation;
 
 import com.qouteall.hiding_in_the_bushes.MyNetworkClient;
 import com.qouteall.hiding_in_the_bushes.O_O;
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
@@ -17,6 +17,7 @@ import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalExtension;
 import com.qouteall.immersive_portals.render.TransformationManager;
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
@@ -61,6 +62,10 @@ public class ClientTeleportationManager {
         ModMain.postClientTickSignal.connectWithWeakRef(
             this, ClientTeleportationManager::tick
         );
+        
+        ModMain.clientCleanupSignal.connectWithWeakRef(this,(this_)->{
+            this_.disableTeleportFor(40);
+        });
     }
     
     private void tick() {
@@ -128,7 +133,7 @@ public class ClientTeleportationManager {
         
         Vector3d newHeadPos = getPlayerHeadPos(tickDelta);
         
-        if (moveStartPoint.squareDistanceTo(newHeadPos) > 400) {
+        if (moveStartPoint.squareDistanceTo(newHeadPos) > 1600) {
             Helper.log("The Player is Moving Too Fast!");
             return false;
         }
@@ -208,7 +213,7 @@ public class ClientTeleportationManager {
         RegistryKey<World> fromDimension = fromWorld.func_234923_W_();
         
         if (fromDimension != toDimension) {
-            ClientWorld toWorld = CGlobal.clientWorldLoader.getWorld(toDimension);
+            ClientWorld toWorld = ClientWorldLoader.getWorld(toDimension);
             
             changePlayerDimension(player, fromWorld, toWorld, newEyePos);
         }
@@ -246,8 +251,8 @@ public class ClientTeleportationManager {
         
         isTeleportingTick = true;
         isTeleportingFrame = true;
-        
-        if (portal.extension.adjustPositionAfterTeleport) {
+    
+        if (PortalExtension.get(portal).adjustPositionAfterTeleport) {
             adjustPlayerPosition(player);
         }
     }
@@ -273,7 +278,7 @@ public class ClientTeleportationManager {
             McHelper.adjustVehicle(player);
         }
         else {
-            ClientWorld toWorld = CGlobal.clientWorldLoader.getWorld(toDimension);
+            ClientWorld toWorld = ClientWorldLoader.getWorld(toDimension);
             
             changePlayerDimension(player, fromWorld, toWorld, destination);
         }
@@ -311,7 +316,7 @@ public class ClientTeleportationManager {
         
         client.world = toWorld;
         ((IEMinecraftClient) client).setWorldRenderer(
-            CGlobal.clientWorldLoader.getWorldRenderer(toDimension)
+            ClientWorldLoader.getWorldRenderer(toDimension)
         );
         
         toWorld.setScoreboard(fromWorld.getScoreboard());
@@ -322,7 +327,7 @@ public class ClientTeleportationManager {
         TileEntityRendererDispatcher.instance.setWorld(toWorld);
         
         IEGameRenderer gameRenderer = (IEGameRenderer) Minecraft.getInstance().gameRenderer;
-        gameRenderer.setLightmapTextureManager(CGlobal.clientWorldLoader
+        gameRenderer.setLightmapTextureManager(ClientWorldLoader
             .getDimensionRenderHelper(toDimension).lightmapTexture);
         
         if (vehicle != null) {
@@ -379,10 +384,10 @@ public class ClientTeleportationManager {
         
         if (!portals.isEmpty()) {
             Portal portal = portals.get(0);
-            if (portal.extension.motionAffinity > 0) {
+            if (PortalExtension.get(portal).motionAffinity > 0) {
                 changeMotion(player, portal);
             }
-            else if (portal.extension.motionAffinity < 0) {
+            else if (PortalExtension.get(portal).motionAffinity < 0) {
                 if (player.getMotion().length() > 0.7) {
                     changeMotion(player, portal);
                 }
@@ -392,7 +397,7 @@ public class ClientTeleportationManager {
     
     private void changeMotion(Entity player, Portal portal) {
         Vector3d velocity = player.getMotion();
-        player.setMotion(velocity.scale(1 + portal.extension.motionAffinity));
+        player.setMotion(velocity.scale(1 + PortalExtension.get(portal).motionAffinity));
     }
     
     //foot pos, not eye pos

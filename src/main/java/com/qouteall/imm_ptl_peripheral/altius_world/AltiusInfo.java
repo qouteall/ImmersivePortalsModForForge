@@ -4,35 +4,46 @@ import com.qouteall.imm_ptl_peripheral.ducks.IELevelProperties;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.dimension_sync.DimId;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.IServerConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-// Mostly deprecated
 public class AltiusInfo {
     
     private List<ResourceLocation> dimsFromTopToDown;
     
-    public AltiusInfo(List<RegistryKey<World>> dimsFromTopToDown) {
+    public final boolean loop;
+    public final boolean respectSpaceRatio;
+    
+    public AltiusInfo(
+        List<RegistryKey<World>> dimsFromTopToDown
+    ) {
+        this(dimsFromTopToDown, false, false);
+    }
+    
+    public AltiusInfo(
+        List<RegistryKey<World>> dimsFromTopToDown, boolean loop, boolean respectSpaceRatio
+    ) {
         this.dimsFromTopToDown = dimsFromTopToDown.stream().map(
             dimensionType -> dimensionType.func_240901_a_()
         ).collect(Collectors.toList());
+        this.loop = loop;
+        this.respectSpaceRatio = respectSpaceRatio;
     }
     
-    public static AltiusInfo getDummy() {
-        return new AltiusInfo(new ArrayList<>());
-    }
-    
+    // deprecated. used for upgrading old dimension stack
     public static AltiusInfo fromTag(CompoundNBT tag) {
         ListNBT listTag = tag.getList("dimensions", 8);
         List<RegistryKey<World>> dimensionTypeList = new ArrayList<>();
@@ -74,42 +85,58 @@ public class AltiusInfo {
         ((IELevelProperties) saveProperties).setAltiusInfo(null);
     }
     
-    // use AltiusGameRule
-    @Deprecated
-    public static boolean isAltius() {
-        return getInfoFromServer() != null;
-    }
-    
     public void createPortals() {
-        if (dimsFromTopToDown.isEmpty()) {
-            Helper.err("Dimension List is empty?");
+        List<ServerWorld> worldsFromTopToDown = dimsFromTopToDown.stream().flatMap(identifier -> {
+            RegistryKey<World> dimension = DimId.idToKey(identifier);
+            ServerWorld world = McHelper.getServer().getWorld(dimension);
+            
+            if (world != null) {
+                return Stream.of(world);
+            }
+            else {
+                McHelper.sendMessageToFirstLoggedPlayer(new StringTextComponent(
+                    "Error: Dimension stack has invalid dimension " + dimension.func_240901_a_()
+                ));
+                
+                return Stream.empty();
+            }
+        }).collect(Collectors.toList());
+        
+        if (worldsFromTopToDown.isEmpty()) {
+            McHelper.sendMessageToFirstLoggedPlayer(new StringTextComponent(
+                "Error: No dimension for dimension stack"
+            ));
             return;
         }
-        RegistryKey<World> topDimension = DimId.idToKey(dimsFromTopToDown.get(0));
-        if (topDimension == null) {
-            Helper.err("Invalid Dimension " + dimsFromTopToDown.get(0));
+        
+        if (!McHelper.getGlobalPortals(worldsFromTopToDown.get(0)).isEmpty()) {
+            Helper.err("There are already global portals when initializing dimension stack");
             return;
         }
-        ServerWorld topWorld = McHelper.getServer().getWorld(topDimension);
-        if (topWorld == null) {
-            Helper.err("Missing Dimension " + topDimension.func_240901_a_());
-            return;
+        
+        Helper.wrapAdjacentAndMap(
+            worldsFromTopToDown.stream(),
+            (top, down) -> {
+                VerticalConnectingPortal.connectMutually(
+                    top.func_234923_W_(), down.func_234923_W_(),
+                    respectSpaceRatio
+                );
+                return null;
+            }
+        ).forEach(k -> {
+        });
+        
+        if (loop) {
+            VerticalConnectingPortal.connectMutually(
+                Helper.lastOf(worldsFromTopToDown).getRegistryKey(),
+                Helper.firstOf(worldsFromTopToDown).getRegistryKey(),
+                respectSpaceRatio
+            );
         }
-        GlobalPortalStorage gps = GlobalPortalStorage.get(topWorld);
-        if (gps.data == null || gps.data.isEmpty()) {
-            Helper.wrapAdjacentAndMap(
-                dimsFromTopToDown.stream(),
-                (top, down) -> {
-                    VerticalConnectingPortal.connectMutually(
-                        DimId.idToKey(top), DimId.idToKey(down),
-                        0, VerticalConnectingPortal.getHeight(DimId.idToKey(down))
-                    );
-                    return null;
-                }
-            ).forEach(k -> {
-            });
-            Helper.log("Initialized Portals For Altius");
-        }
+        
+        McHelper.sendMessageToFirstLoggedPlayer(
+            new TranslationTextComponent("imm_ptl.dim_stack_initialized")
+        );
     }
     
 }

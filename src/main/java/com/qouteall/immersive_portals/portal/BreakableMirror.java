@@ -85,7 +85,7 @@ public class BreakableMirror extends Mirror {
                 isGlass(world, blockPos)
         );
         if (!wallValid) {
-            removed = true;
+            remove();
         }
     }
     
@@ -137,7 +137,7 @@ public class BreakableMirror extends Mirror {
             )
         );
         breakableMirror.setPosition(pos.x, pos.y, pos.z);
-        breakableMirror.destination = pos;
+        breakableMirror.setDestination(pos);
         breakableMirror.dimensionTo = world.func_234923_W_();
         
         Tuple<Direction, Direction> dirs =

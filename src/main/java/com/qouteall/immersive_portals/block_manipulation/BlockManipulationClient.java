@@ -1,6 +1,6 @@
 package com.qouteall.immersive_portals.block_manipulation;
 
-import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.commands.PortalCommand;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
@@ -121,10 +121,8 @@ public class BlockManipulationClient {
             RayTraceContext.FluidMode.NONE,
             client.player
         );
-        
-        ClientWorld world = CGlobal.clientWorldLoader.getWorld(
-            portal.dimensionTo
-        );
+    
+        ClientWorld world = ClientWorldLoader.getWorld(portal.dimensionTo);
         
         remoteHitResult = IBlockReader.func_217300_a(
             context,
@@ -196,7 +194,7 @@ public class BlockManipulationClient {
                 BlockRayTraceResult blockHitResult = (BlockRayTraceResult) remoteHitResult;
                 BlockPos blockPos = blockHitResult.getPos();
                 ClientWorld remoteWorld =
-                    CGlobal.clientWorldLoader.getWorld(remotePointedDim);
+                    ClientWorldLoader.getWorld(remotePointedDim);
                 if (!remoteWorld.getBlockState(blockPos).isAir()) {
                     Direction direction = blockHitResult.getFace();
                     if (myUpdateBlockBreakingProgress(blockPos, direction)) {
@@ -222,7 +220,7 @@ public class BlockManipulationClient {
 //        }
         
         ClientWorld oldWorld = client.world;
-        client.world = CGlobal.clientWorldLoader.getWorld(remotePointedDim);
+        client.world = ClientWorldLoader.getWorld(remotePointedDim);
         isContextSwitched = true;
         
         try {
@@ -239,10 +237,10 @@ public class BlockManipulationClient {
 //        if (remoteHitResult == null) {
 //            return;
 //        }
-        
-        
+    
+    
         ClientWorld targetWorld =
-            CGlobal.clientWorldLoader.getWorld(remotePointedDim);
+            ClientWorldLoader.getWorld(remotePointedDim);
         BlockPos blockPos = ((BlockRayTraceResult) remoteHitResult).getPos();
         
         if (targetWorld.isAirBlock(blockPos)) {
@@ -273,9 +271,9 @@ public class BlockManipulationClient {
 //        if (remoteHitResult == null) {
 //            return;
 //        }
-        
+    
         ClientWorld targetWorld =
-            CGlobal.clientWorldLoader.getWorld(remotePointedDim);
+            ClientWorldLoader.getWorld(remotePointedDim);
         
         ItemStack itemStack = client.player.getHeldItem(hand);
         BlockRayTraceResult blockHitResult = (BlockRayTraceResult) remoteHitResult;
@@ -283,7 +281,7 @@ public class BlockManipulationClient {
         Tuple<BlockRayTraceResult, RegistryKey<World>> result =
             BlockManipulationServer.getHitResultForPlacing(targetWorld, blockHitResult);
         blockHitResult = result.getA();
-        targetWorld = CGlobal.clientWorldLoader.getWorld(result.getB());
+        targetWorld = ClientWorldLoader.getWorld(result.getB());
         remoteHitResult = blockHitResult;
         remotePointedDim = result.getB();
         

@@ -151,14 +151,14 @@ public abstract class BreakablePortalEntity extends Portal {
         List<BreakablePortalEntity> revs = McHelper.findEntitiesByBox(
             BreakablePortalEntity.class,
             getDestinationWorld(),
-            new AxisAlignedBB(new BlockPos(destination)),
+            new AxisAlignedBB(new BlockPos(getDestPos())),
             10,
-            e -> (e.getPositionVec().squareDistanceTo(destination) < 0.1) &&
+            e -> (e.getOriginPos().squareDistanceTo(getDestPos()) < 0.1) &&
                 e.getContentDirection().dotProduct(getNormal()) > 0.6
         );
         if (revs.size() == 1) {
             BreakablePortalEntity reversePortal = revs.get(0);
-            if (reversePortal.destination.squareDistanceTo(getPositionVec()) > 1) {
+            if (reversePortal.getDestPos().squareDistanceTo(getOriginPos()) > 1) {
                 return false;
             }
             else {
@@ -195,7 +195,7 @@ public abstract class BreakablePortalEntity extends Portal {
     }
     
     private boolean isOtherSideChunkLoaded() {
-        ChunkPos destChunkPos = new ChunkPos(new BlockPos(destination));
+        ChunkPos destChunkPos = new ChunkPos(new BlockPos(getDestPos()));
         return McHelper.getServerChunkIfPresent(
             dimensionTo, destChunkPos.x, destChunkPos.z
         ) != null;

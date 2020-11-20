@@ -87,7 +87,7 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         AxisAlignedBB oppositeSurface = Helper.getBoxSurfaceInversed(area, direction.getOpposite());
         Vector3d destination = oppositeSurface.getCenter();
         portal.setPosition(center.x, center.y, center.z);
-        portal.destination = destination;
+        portal.setDestination(destination);
         
         portal.axisW = Vector3d.func_237491_b_(axises.getA().getDirectionVec());
         portal.axisH = Vector3d.func_237491_b_(axises.getB().getDirectionVec());
@@ -125,8 +125,7 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         
         public void removeFromWorld() {
             GlobalPortalStorage gps = GlobalPortalStorage.get(world);
-            portals.forEach(worldWrappingPortal -> gps.data.remove(worldWrappingPortal));
-            gps.onDataChanged();
+            portals.forEach(worldWrappingPortal -> gps.removePortal(worldWrappingPortal));
         }
         
         public AxisAlignedBB getArea() {
@@ -243,11 +242,10 @@ public class WorldWrappingPortal extends GlobalTrackedPortal {
         );
         
         GlobalPortalStorage gps = GlobalPortalStorage.get(world);
-        gps.data.add(p1);
-        gps.data.add(p2);
-        gps.data.add(p3);
-        gps.data.add(p4);
-        gps.onDataChanged();
+        gps.addPortal(p1);
+        gps.addPortal(p2);
+        gps.addPortal(p3);
+        gps.addPortal(p4);
     }
     
     public static void invokeViewWrappingZones(

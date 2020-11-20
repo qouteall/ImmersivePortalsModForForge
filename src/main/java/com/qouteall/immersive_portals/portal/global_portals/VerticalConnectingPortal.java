@@ -1,6 +1,8 @@
 package com.qouteall.immersive_portals.portal.global_portals;
 
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalExtension;
 import net.minecraft.entity.EntityType;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.vector.Vector3d;
@@ -15,13 +17,13 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         ceil, floor
     }
     
-    private static Predicate<GlobalTrackedPortal> getPredicate(ConnectorType connectorType) {
+    private static Predicate<Portal> getPredicate(ConnectorType connectorType) {
         switch (connectorType) {
             case floor:
-                return portal -> portal instanceof VerticalConnectingPortal&& portal.getNormal().y > 0;
+                return portal -> portal instanceof VerticalConnectingPortal && portal.getNormal().y > 0;
             default:
             case ceil:
-                return portal -> portal instanceof VerticalConnectingPortal&& portal.getNormal().y < 0;
+                return portal -> portal instanceof VerticalConnectingPortal && portal.getNormal().y < 0;
         }
     }
     
@@ -38,7 +40,7 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         RegistryKey<World> to
     ) {
         int upY = connectorType == ConnectorType.ceil ? getHeight(from) : getHeight(to);
-        connect(from, connectorType, to, 0, upY);
+        connect(from, connectorType, to, 0, upY, false);
     }
     
     public static void connect(
@@ -46,7 +48,8 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         ConnectorType connectorType,
         RegistryKey<World> to,
         int downY,
-        int upY
+        int upY,
+        boolean respectSpaceRatio
     ) {
         removeConnectingPortal(connectorType, from);
         
@@ -57,24 +60,36 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
             connectorType,
             McHelper.getServer().getWorld(to),
             downY,
-            upY
+            upY,
+            respectSpaceRatio
         );
         
         GlobalPortalStorage storage = GlobalPortalStorage.get(fromWorld);
         
-        storage.data.add(connectingPortal);
-        
-        storage.onDataChanged();
+        storage.addPortal(connectingPortal);
+    }
+    
+    public static void connectMutually(
+        RegistryKey<World> up,
+        RegistryKey<World> down,
+        boolean respectSpaceRatio
+    ) {
+        connectMutually(
+            up, down,
+            0, getHeight(down),
+            respectSpaceRatio
+        );
     }
     
     public static void connectMutually(
         RegistryKey<World> up,
         RegistryKey<World> down,
         int downY,
-        int upY
+        int upY,
+        boolean respectSpaceRatio
     ) {
-        connect(up, ConnectorType.floor, down, downY, upY);
-        connect(down, ConnectorType.ceil, up, downY, upY);
+        connect(up, ConnectorType.floor, down, downY, upY, respectSpaceRatio);
+        connect(down, ConnectorType.ceil, up, downY, upY, respectSpaceRatio);
     }
     
     private static VerticalConnectingPortal createConnectingPortal(
@@ -82,7 +97,8 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         ConnectorType connectorType,
         ServerWorld toWorld,
         int downY,
-        int upY
+        int upY,
+        boolean respectSpaceRatio
     ) {
         VerticalConnectingPortal verticalConnectingPortal = new VerticalConnectingPortal(
             entityType, fromWorld
@@ -92,13 +108,13 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
             case floor:
                 
                 verticalConnectingPortal.setPosition(0, downY, 0);
-                verticalConnectingPortal.destination = new Vector3d(0, upY, 0);
+                verticalConnectingPortal.setDestination(new Vector3d(0, upY, 0));
                 verticalConnectingPortal.axisW = new Vector3d(0, 0, 1);
                 verticalConnectingPortal.axisH = new Vector3d(1, 0, 0);
                 break;
             case ceil:
                 verticalConnectingPortal.setPosition(0, upY, 0);
-                verticalConnectingPortal.destination = new Vector3d(0, downY, 0);
+                verticalConnectingPortal.setDestination(new Vector3d(0, downY, 0));
                 verticalConnectingPortal.axisW = new Vector3d(1, 0, 0);
                 verticalConnectingPortal.axisH = new Vector3d(0, 0, 1);
                 break;
@@ -107,6 +123,14 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         verticalConnectingPortal.dimensionTo = toWorld.func_234923_W_();
         verticalConnectingPortal.width = 23333333333.0d;
         verticalConnectingPortal.height = 23333333333.0d;
+        
+        if (respectSpaceRatio) {
+            verticalConnectingPortal.scaling =
+                fromWorld.func_230315_m_().func_242724_f() / toWorld.func_230315_m_().func_242724_f();
+            verticalConnectingPortal.teleportChangesScale = false;
+            PortalExtension.get(verticalConnectingPortal).adjustPositionAfterTeleport = false;
+        }
+        
         return verticalConnectingPortal;
     }
     
@@ -118,16 +142,14 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
     }
     
     private static void removeConnectingPortal(
-        Predicate<GlobalTrackedPortal> predicate, RegistryKey<World> dimension
+        Predicate<Portal> predicate, RegistryKey<World> dimension
     ) {
         ServerWorld endWorld = McHelper.getServer().getWorld(dimension);
         GlobalPortalStorage storage = GlobalPortalStorage.get(endWorld);
         
-        storage.data.removeIf(
+        storage.removePortals(
             portal -> portal instanceof VerticalConnectingPortal && predicate.test(portal)
         );
-        
-        storage.onDataChanged();
     }
     
     public static VerticalConnectingPortal getConnectingPortal(

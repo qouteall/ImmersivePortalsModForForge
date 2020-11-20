@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.mixin.client.sync;
 
 import com.mojang.authlib.GameProfile;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
@@ -189,7 +190,7 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
             );
             
             WorldRenderer worldRenderer =
-                CGlobal.clientWorldLoader.getWorldRenderer(world.func_234923_W_());
+                ClientWorldLoader.getWorldRenderer(world.func_234923_W_());
             ViewFrustum storage = ((IEWorldRenderer) worldRenderer).getBuiltChunkStorage();
             if (storage instanceof MyBuiltChunkStorage) {
                 for (int y = 0; y < 16; ++y) {
@@ -208,7 +209,7 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
             int[] counter = new int[1];
             counter[0] = (int) (Math.random() * 200);
             ModMain.clientTaskList.addTask(() -> {
-                ClientWorld world1 = CGlobal.clientWorldLoader.getWorld(pos.dimension);
+                ClientWorld world1 = ClientWorldLoader.getWorld(pos.dimension);
                 
                 if (world1.getChunkProvider().chunkExists(pos.x, pos.z)) {
                     return true;
@@ -219,7 +220,7 @@ public abstract class MixinClientPlayNetworkHandler implements IEClientPlayNetwo
                     return false;
                 }
                 
-                WorldRenderer wr = CGlobal.clientWorldLoader.getWorldRenderer(pos.dimension);
+                WorldRenderer wr = ClientWorldLoader.getWorldRenderer(pos.dimension);
                 
                 IProfiler profiler = Minecraft.getInstance().getProfiler();
                 profiler.startSection("delayed_unload");

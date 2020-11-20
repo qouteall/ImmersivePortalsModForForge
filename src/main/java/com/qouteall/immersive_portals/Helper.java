@@ -49,6 +49,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+// helper methods
 public class Helper {
     
     private static final Logger LOGGER = LogManager.getLogger("Portal");
@@ -471,8 +472,11 @@ public class Helper {
         }
     }
     
-    //ObjectList does not override removeIf() so its complexity is O(n^2)
-    //this is O(n)
+    /**
+     * {@link ObjectList} does not override removeIf() so it's O(n^2)
+     * {@link ArrayList#removeIf(Predicate)} uses a bitset to ensure integrity
+     * in case of exception thrown but introduces performance overhead
+     */
     public static <T> void removeIf(ObjectList<T> list, Predicate<T> predicate) {
         int placingIndex = 0;
         for (int i = 0; i < list.size(); i++) {
@@ -857,75 +861,6 @@ public class Helper {
             .orElse(null);
     }
     
-    /**
-     * Places a portal based on {@code entity}'s looking direction. Does not set the portal destination or add it to the
-     * world, you will have to do that yourself.
-     *
-     * @param width  The width of the portal.
-     * @param height The height of the portal.
-     * @param entity The entity to place this portal as.
-     * @return The placed portal, with no destination set.
-     * @author LoganDark
-     */
-    public static Portal placePortal(double width, double height, Entity entity) {
-        Vector3d playerLook = entity.getLookVec();
-        
-        Tuple<BlockRayTraceResult, List<Portal>> rayTrace =
-            rayTrace(
-                entity.world,
-                new RayTraceContext(
-                    entity.getEyePosition(1.0f),
-                    entity.getEyePosition(1.0f).add(playerLook.scale(100.0)),
-                    RayTraceContext.BlockMode.OUTLINE,
-                    RayTraceContext.FluidMode.NONE,
-                    entity
-                ),
-                true
-            );
-        
-        BlockRayTraceResult hitResult = rayTrace.getA();
-        List<Portal> hitPortals = rayTrace.getB();
-        
-        if (hitResultIsMissedOrNull(hitResult)) {
-            return null;
-        }
-        
-        for (Portal hitPortal : hitPortals) {
-            playerLook = hitPortal.transformLocalVecNonScale(playerLook);
-        }
-        
-        Direction lookingDirection = getFacingExcludingAxis(
-            playerLook,
-            hitResult.getFace().getAxis()
-        );
-        
-        // this should never happen...
-        if (lookingDirection == null) {
-            return null;
-        }
-        
-        Vector3d axisH = Vector3d.func_237491_b_(hitResult.getFace().getDirectionVec());
-        Vector3d axisW = axisH.crossProduct(Vector3d.func_237491_b_(lookingDirection.getOpposite().getDirectionVec()));
-        Vector3d pos = Vector3d.func_237489_a_(hitResult.getPos())
-            .add(axisH.scale(0.5 + height / 2));
-        
-        World world = hitPortals.isEmpty()
-            ? entity.world
-            : hitPortals.get(hitPortals.size() - 1).getDestinationWorld();
-        
-        Portal portal = new Portal(Portal.entityType, world);
-        
-        portal.setRawPosition(pos.x, pos.y, pos.z);
-        
-        portal.axisW = axisW;
-        portal.axisH = axisH;
-        
-        portal.width = width;
-        portal.height = height;
-        
-        return portal;
-    }
-    
     // calculate upon first retrieval and cache it
     public static <T> Supplier<T> cached(Supplier<T> supplier) {
         return new Supplier<T>() {
@@ -981,4 +916,38 @@ public class Helper {
             result.stream().mapToDouble(b -> b.z).max().getAsDouble()
         );
     }
+    
+    private static double getDistanceToRange(double start, double end, double pos) {
+        Validate.isTrue(end >= start);
+        if (pos >= start) {
+            if (pos <= end) {
+                return 0;
+            }
+            else {
+                return pos - end;
+            }
+        }
+        else {
+            return start - pos;
+        }
+    }
+    
+    public static double getDistanceToBox(AxisAlignedBB box, Vector3d point) {
+        double dx = getDistanceToRange(box.minX, box.maxX, point.x);
+        double dy = getDistanceToRange(box.minY, box.maxY, point.y);
+        double dz = getDistanceToRange(box.minZ, box.maxZ, point.z);
+        
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+    
+    public static <T> T firstOf(List<T> list) {
+        Validate.isTrue(!list.isEmpty());
+        return list.get(0);
+    }
+    
+    public static <T> T lastOf(List<T> list) {
+        Validate.isTrue(!list.isEmpty());
+        return list.get(list.size() - 1);
+    }
+    
 }

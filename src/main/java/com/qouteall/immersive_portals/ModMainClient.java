@@ -6,11 +6,12 @@ import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkNeighbo
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
 import com.qouteall.immersive_portals.optifine_compatibility.OFInterfaceInitializer;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
-import com.qouteall.immersive_portals.render.PortalPresentation;
+import com.qouteall.immersive_portals.render.PortalRenderInfo;
 import com.qouteall.immersive_portals.render.PortalRenderer;
 import com.qouteall.immersive_portals.render.RendererUsingFrameBuffer;
 import com.qouteall.immersive_portals.render.RendererUsingStencil;
 import com.qouteall.immersive_portals.render.ShaderManager;
+import com.qouteall.immersive_portals.render.context_management.CloudContext;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.lag_spike_fix.GlBufferCache;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
@@ -70,12 +71,13 @@ public class ModMainClient {
         
         MyNetworkClient.init();
         
+        ClientWorldLoader.init();
+        
         Minecraft.getInstance().execute(() -> {
             CGlobal.rendererUsingStencil = new RendererUsingStencil();
             CGlobal.rendererUsingFrameBuffer = new RendererUsingFrameBuffer();
             
             CGlobal.renderer = CGlobal.rendererUsingStencil;
-            CGlobal.clientWorldLoader = new ClientWorldLoader();
             CGlobal.clientTeleportationManager = new ClientTeleportationManager();
             
             if (CGlobal.shaderManager == null) {
@@ -93,7 +95,9 @@ public class ModMainClient {
         
         CollisionHelper.initClient();
         
-        PortalPresentation.init();
+        PortalRenderInfo.init();
+    
+        CloudContext.init();
         
         OFInterface.isOptifinePresent = O_O.detectOptiFine();
         if (OFInterface.isOptifinePresent) {

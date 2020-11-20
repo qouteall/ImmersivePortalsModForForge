@@ -14,11 +14,11 @@ import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
 import com.qouteall.immersive_portals.ducks.IEWorldChunk;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.RegistryKey;
@@ -54,6 +54,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+// mc related helper methods
 public class McHelper {
     
     public static WeakReference<MinecraftServer> refMinecraftServer =
@@ -89,6 +90,7 @@ public class McHelper {
         ServerPlayerEntity player,
         String text
     ) {
+        Helper.log(text);
         player.sendStatusMessage(new StringTextComponent(text), false);
     }
     
@@ -294,8 +296,8 @@ public class McHelper {
     }
     
     @Nonnull
-    public static List<GlobalTrackedPortal> getGlobalPortals(World world) {
-        List<GlobalTrackedPortal> result;
+    public static List<Portal> getGlobalPortals(World world) {
+        List<Portal> result;
         if (world.isRemote()) {
             result = CHelper.getClientGlobalPortal(world);
         }
@@ -309,7 +311,7 @@ public class McHelper {
     }
     
     public static Stream<Portal> getNearbyPortals(Entity center, double range) {
-        List<GlobalTrackedPortal> globalPortals = getGlobalPortals(center.world);
+        List<Portal> globalPortals = getGlobalPortals(center.world);
         Stream<Portal> nearbyPortals = McHelper.getServerEntitiesNearbyWithoutLoadingChunk(
             center.world,
             center.getPositionVec(),
@@ -442,6 +444,15 @@ public class McHelper {
         CrossPortalEntityRenderer.onEntityTickClient(entity);
     }
     
+    public static Portal copyEntity(Portal portal) {
+        Portal newPortal = ((Portal) portal.getType().create(portal.world));
+        
+        Validate.notNull(newPortal);
+        
+        newPortal.read(portal.writeWithoutTypeId(new CompoundNBT()));
+        return newPortal;
+    }
+    
     public static interface ChunkAccessor {
         Chunk getChunk(int x, int z);
     }
@@ -467,6 +478,34 @@ public class McHelper {
         Predicate<T> predicate
     ) {
         ArrayList<T> result = new ArrayList<>();
+    
+        foreachEntities(
+            entityClass, chunkAccessor,
+            chunkXStart, chunkXEnd, chunkYStart, chunkYEnd, chunkZStart, chunkZEnd,
+            entity -> {
+                if (predicate.test(entity)) {
+                    result.add(entity);
+                }
+            }
+        );
+        return result;
+    }
+    
+    public static <T extends Entity> void foreachEntities(
+        Class<T> entityClass, ChunkAccessor chunkAccessor,
+        int chunkXStart, int chunkXEnd,
+        int chunkYStart, int chunkYEnd,
+        int chunkZStart, int chunkZEnd,
+        Consumer<T> consumer
+    ) {
+        Validate.isTrue(chunkXEnd >= chunkXStart);
+        Validate.isTrue(chunkYEnd >= chunkYStart);
+        Validate.isTrue(chunkZEnd >= chunkZStart);
+        Validate.isTrue(chunkYStart >= 0);
+        Validate.isTrue(chunkYEnd < 16);
+        Validate.isTrue(chunkXEnd - chunkXStart < 1000, "too big");
+        Validate.isTrue(chunkZEnd - chunkZStart < 1000, "too big");
+        
         for (int x = chunkXStart; x <= chunkXEnd; x++) {
             for (int z = chunkZStart; z <= chunkZEnd; z++) {
                 Chunk chunk = chunkAccessor.getChunk(x, z);
@@ -476,15 +515,12 @@ public class McHelper {
                     for (int i = chunkYStart; i <= chunkYEnd; i++) {
                         ClassInheritanceMultiMap<Entity> entitySection = entitySections[i];
                         for (T entity : entitySection.getByClass(entityClass)) {
-                            if (predicate.test(entity)) {
-                                result.add(entity);
-                            }
+                            consumer.accept(entity);
                         }
                     }
                 }
             }
         }
-        return result;
     }
     
     //faster
@@ -521,6 +557,27 @@ public class McHelper {
         double maxEntityRadius,
         Predicate<T> predicate
     ) {
+        ArrayList<T> result = new ArrayList<>();
+        
+        foreachEntitiesByBox(entityClass, world, box, maxEntityRadius, predicate, result::add);
+        return result;
+    }
+    
+    public static <T extends Entity> void foreachEntitiesByBox(
+        Class<T> entityClass, World world, AxisAlignedBB box,
+        double maxEntityRadius, Predicate<T> predicate, Consumer<T> consumer
+    ) {
+        
+        foreachEntitiesByBoxApproximateRegions(entityClass, world, box, maxEntityRadius, entity -> {
+            if (entity.getBoundingBox().intersects(box) && predicate.test(entity)) {
+                consumer.accept(entity);
+            }
+        });
+    }
+    
+    public static <T extends Entity> void foreachEntitiesByBoxApproximateRegions(
+        Class<T> entityClass, World world, AxisAlignedBB box, double maxEntityRadius, Consumer<T> consumer
+    ) {
         int xMin = (int) Math.floor(box.minX - maxEntityRadius);
         int yMin = (int) Math.floor(box.minY - maxEntityRadius);
         int zMin = (int) Math.floor(box.minZ - maxEntityRadius);
@@ -528,16 +585,12 @@ public class McHelper {
         int yMax = (int) Math.ceil(box.maxY + maxEntityRadius);
         int zMax = (int) Math.ceil(box.maxZ + maxEntityRadius);
         
-        return findEntities(
-            entityClass,
-            getChunkAccessor(world),
-            xMin >> 4,
-            xMax >> 4,
-            Math.max(0, yMin >> 4),
-            Math.min(15, yMax >> 4),
-            zMin >> 4,
-            zMax >> 4,
-            e -> e.getBoundingBox().intersects(box) && predicate.test(e)
+        foreachEntities(
+            entityClass, getChunkAccessor(world),
+            xMin >> 4, xMax >> 4,
+            Math.max(0, yMin >> 4), Math.min(15, yMax >> 4),
+            zMin >> 4, zMax >> 4,
+            consumer
         );
     }
     

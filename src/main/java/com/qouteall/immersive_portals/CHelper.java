@@ -2,7 +2,6 @@ package com.qouteall.immersive_portals;
 
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
@@ -43,10 +42,10 @@ public class CHelper {
     //do not inline this
     //or it will crash in server
     public static World getClientWorld(RegistryKey<World> dimension) {
-        return CGlobal.clientWorldLoader.getWorld(dimension);
+        return ClientWorldLoader.getWorld(dimension);
     }
     
-    public static List<GlobalTrackedPortal> getClientGlobalPortal(World world) {
+    public static List<Portal> getClientGlobalPortal(World world) {
         if (world instanceof ClientWorld) {
             return ((IEClientWorld) world).getGlobalPortals();
         }

@@ -7,6 +7,7 @@ import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.PortalRenderer;
@@ -15,8 +16,8 @@ import com.qouteall.immersive_portals.render.SecondaryFrameBuffer;
 import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.render.ViewAreaRenderer;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
-import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
+import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import org.lwjgl.opengl.GL11;
@@ -71,7 +72,7 @@ public class RendererDeferred extends PortalRenderer {
     }
     
     @Override
-    protected void doRenderPortal(Portal portal, MatrixStack matrixStack) {
+    protected void doRenderPortal(PortalLike portal, MatrixStack matrixStack) {
         if (PortalRendering.isRendering()) {
             //currently only support one-layer portal
             return;
@@ -112,10 +113,10 @@ public class RendererDeferred extends PortalRenderer {
     
     @Override
     public void invokeWorldRendering(
-        RenderInfo renderInfo
+        RenderingHierarchy renderingHierarchy
     ) {
         MyGameRenderer.renderWorldNew(
-            renderInfo,
+            renderingHierarchy,
             runnable -> {
                 OFGlobal.shaderContextManager.switchContextAndRun(() -> {
                     OFGlobal.bindToShaderFrameBuffer.run();
@@ -130,7 +131,7 @@ public class RendererDeferred extends PortalRenderer {
     
     }
     
-    private boolean testShouldRenderPortal(Portal portal, MatrixStack matrixStack) {
+    private boolean testShouldRenderPortal(PortalLike portal, MatrixStack matrixStack) {
         //reset projection matrix
         client.gameRenderer.resetProjectionMatrix(RenderStates.projectionMatrix);
         

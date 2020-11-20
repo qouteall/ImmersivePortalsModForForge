@@ -1,13 +1,12 @@
 package com.qouteall.immersive_portals.teleportation;
 
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.RegistryKey;
@@ -96,45 +95,12 @@ public class CollisionHelper {
             entity, thisSideMove, collidingPortal,
             handleCollisionFunc, originalBoundingBox
         );
-
-//        return otherSideMove;
+        
         return new Vector3d(
             correctXZCoordinate(attemptedMove.x, otherSideMove.x),
             correctYCoordinate(attemptedMove.y, otherSideMove.y),
             correctXZCoordinate(attemptedMove.z, otherSideMove.z)
         );
-
-//        //handle stepping onto slab or stair through portal
-//        if (attemptedMove.y < 0) {
-//            if (otherSideMove.y > 0) {
-//                //stepping on the other side
-//                return new Vec3d(
-//                    absMin(thisSideMove.x, otherSideMove.x),
-//                    otherSideMove.y,
-//                    absMin(thisSideMove.z, otherSideMove.z)
-//                );
-//            }
-//            else if (thisSideMove.y > 0) {
-//                //stepping on this side
-//                //re-calc collision with intact collision box
-//                //the stepping is shorter using the clipped collision box
-//                Vec3d newThisSideMove = handleCollisionFunc.apply(attemptedMove);
-//
-//                //apply the stepping move for the other side
-//                Vec3d newOtherSideMove = getOtherSideMove(
-//                    entity, newThisSideMove, collidingPortal,
-//                    handleCollisionFunc, originalBoundingBox
-//                );
-//
-//                return newOtherSideMove;
-//            }
-//        }
-//
-//        return new Vec3d(
-//            absMin(thisSideMove.x, otherSideMove.x),
-//            absMin(thisSideMove.y, otherSideMove.y),
-//            absMin(thisSideMove.z, otherSideMove.z)
-//        );
     }
     
     private static double absMin(double a, double b) {
@@ -148,6 +114,10 @@ public class CollisionHelper {
         Function<Vector3d, Vector3d> handleCollisionFunc,
         AxisAlignedBB originalBoundingBox
     ) {
+        if (!collidingPortal.hasCrossPortalCollision()) {
+            return attemptedMove;
+        }
+        
         Vector3d transformedAttemptedMove = collidingPortal.transformLocalVec(attemptedMove);
         
         AxisAlignedBB boxOtherSide = getCollisionBoxOtherSide(
@@ -182,12 +152,6 @@ public class CollisionHelper {
         entity.setBoundingBox(originalBoundingBox);
         
         return result;
-
-//        double finalX = correctCoordinate(attemptedMove.x, result.x);
-//        double finalY = correctCoordinate(attemptedMove.y, result.y);
-//        double finalZ = correctCoordinate(attemptedMove.z, result.z);
-//
-//        return new Vec3d(finalX, finalY, finalZ);
     }
     
     // floating point deviation may cause collision issues
@@ -262,7 +226,7 @@ public class CollisionHelper {
     ) {
         //cut the collision box a little bit more for horizontal portals
         //because the box will be stretched by attemptedMove when calculating collision
-        Vector3d cullingPos = portal.getPositionVec().subtract(attemptedMove);
+        Vector3d cullingPos = portal.getOriginPos().subtract(attemptedMove);
         return clipBox(
             originalBox,
             cullingPos,
@@ -278,7 +242,7 @@ public class CollisionHelper {
         AxisAlignedBB otherSideBox = transformBox(portal, originalBox);
         return clipBox(
             otherSideBox,
-            portal.destination.subtract(attemptedMove),
+            portal.getDestPos().subtract(attemptedMove),
             portal.getContentDirection()
         );
 
@@ -297,7 +261,7 @@ public class CollisionHelper {
     
     private static AxisAlignedBB transformBox(Portal portal, AxisAlignedBB originalBox) {
         if (portal.rotation == null && portal.scaling == 1) {
-            return originalBox.offset(portal.destination.subtract(portal.getPositionVec()));
+            return originalBox.offset(portal.getDestPos().subtract(portal.getOriginPos()));
         }
         else {
             return Helper.transformBox(originalBox, portal::transformPoint);
@@ -340,16 +304,18 @@ public class CollisionHelper {
     private static void updateGlobalPortalCollidingPortalForWorld(World world) {
         world.getProfiler().startSection("global_portal_colliding_portal");
         
-        List<GlobalTrackedPortal> globalPortals = McHelper.getGlobalPortals(world);
+        List<Portal> globalPortals = McHelper.getGlobalPortals(world);
         Iterable<Entity> worldEntityList = McHelper.getWorldEntityList(world);
         
-        for (Entity entity : worldEntityList) {
-            AxisAlignedBB entityBoundingBoxStretched = getStretchedBoundingBox(entity);
-            for (GlobalTrackedPortal globalPortal : globalPortals) {
-                AxisAlignedBB globalPortalBoundingBox = globalPortal.getBoundingBox();
-                if (entityBoundingBoxStretched.intersects(globalPortalBoundingBox)) {
-                    if (canCollideWithPortal(entity, globalPortal, 1)) {
-                        ((IEEntity) entity).notifyCollidingWithPortal(globalPortal);
+        if (!globalPortals.isEmpty()) {
+            for (Entity entity : worldEntityList) {
+                AxisAlignedBB entityBoundingBoxStretched = getStretchedBoundingBox(entity);
+                for (Portal globalPortal : globalPortals) {
+                    AxisAlignedBB globalPortalBoundingBox = globalPortal.getBoundingBox();
+                    if (entityBoundingBoxStretched.intersects(globalPortalBoundingBox)) {
+                        if (canCollideWithPortal(entity, globalPortal, 1)) {
+                            ((IEEntity) entity).notifyCollidingWithPortal(globalPortal);
+                        }
                     }
                 }
             }
@@ -373,7 +339,7 @@ public class CollisionHelper {
     
     @OnlyIn(Dist.CLIENT)
     public static void updateClientGlobalPortalCollidingPortal() {
-        for (ClientWorld world : CGlobal.clientWorldLoader.clientWorldMap.values()) {
+        for (ClientWorld world : ClientWorldLoader.getClientWorlds()) {
             updateGlobalPortalCollidingPortalForWorld(world);
         }
     }
@@ -384,38 +350,26 @@ public class CollisionHelper {
         }
         
         AxisAlignedBB portalBoundingBox = portal.getBoundingBox();
-        final double compensation = 3;
-        int xMin = (int) Math.floor(portalBoundingBox.minX - compensation);
-        int yMin = (int) Math.floor(portalBoundingBox.minY - compensation);
-        int zMin = (int) Math.floor(portalBoundingBox.minZ - compensation);
-        int xMax = (int) Math.ceil(portalBoundingBox.maxX + compensation);
-        int yMax = (int) Math.ceil(portalBoundingBox.maxY + compensation);
-        int zMax = (int) Math.ceil(portalBoundingBox.maxZ + compensation);
         
-        List<Entity> collidingEntities = McHelper.findEntities(
-            Entity.class,
-            McHelper.getChunkAccessor(portal.world),
-            xMin >> 4,
-            xMax >> 4,
-            Math.max(0, yMin >> 4),
-            Math.min(15, yMax >> 4),
-            zMin >> 4,
-            zMax >> 4,
+        McHelper.foreachEntitiesByBoxApproximateRegions(
+            Entity.class, portal.world,
+            portalBoundingBox, 3,
             entity -> {
                 if (entity instanceof Portal) {
-                    return false;
+                    return;
                 }
                 AxisAlignedBB entityBoxStretched = getStretchedBoundingBox(entity);
                 if (!entityBoxStretched.intersects(portalBoundingBox)) {
-                    return false;
+                    return;
                 }
-                return canCollideWithPortal(entity, portal, 1);
+                final boolean canCollideWithPortal = canCollideWithPortal(entity, portal, 1);
+                if (!canCollideWithPortal) {
+                    return;
+                }
+                
+                ((IEEntity) entity).notifyCollidingWithPortal(portal);
             }
         );
-        
-        for (Entity entity : collidingEntities) {
-            ((IEEntity) entity).notifyCollidingWithPortal(portal);
-        }
     }
     
     private static AxisAlignedBB getStretchedBoundingBox(Entity entity) {

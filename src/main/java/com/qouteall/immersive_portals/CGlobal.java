@@ -19,7 +19,6 @@ public class CGlobal {
     public static RendererDummy rendererDummy = new RendererDummy();
     public static RendererDebug rendererDebug = new RendererDebug();
     
-    public static ClientWorldLoader clientWorldLoader;
     public static ClientTeleportationManager clientTeleportationManager;
     public static ShaderManager shaderManager;
     
@@ -30,7 +29,7 @@ public class CGlobal {
     public static boolean doUseAdvancedFrustumCulling = true;
     public static boolean useHackedChunkRenderDispatcher = true;
     public static boolean isClientRemoteTickingEnabled = true;
-    public static boolean useFrontCulling = true;
+    public static boolean useFrontClipping = true;
     public static boolean doDisableAlphaTestWhenRenderingFrameBuffer = true;
     public static boolean smoothChunkUnload = true;
     public static boolean earlyClientLightUpdate = false;

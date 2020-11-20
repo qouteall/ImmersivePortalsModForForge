@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
@@ -14,7 +15,7 @@ import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.TransformationManager;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
-import com.qouteall.immersive_portals.render.context_management.RenderInfo;
+import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -135,7 +136,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         // draw the entity vertices before rendering portal
         // because there is only one additional buffer builder for portal rendering
         /**{@link MyGameRenderer#secondaryBufferBuilderStorage}*/
-        if (RenderInfo.isRendering()) {
+        if (RenderingHierarchy.isRendering()) {
             mc.getRenderTypeBuffers().getBufferSource().finish();
         }
         
@@ -203,12 +204,12 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         CallbackInfo ci
     ) {
         if (PortalRendering.isRendering()) {
-            FrontClipping.updateClippingPlaneInner(
+            FrontClipping.setupInnerClipping(
                 matrices,
                 PortalRendering.getRenderingPortal(),
                 true
             );
-            FrontClipping.enableClipping();
+            
             if (PortalRendering.isRenderingOddNumberOfMirrors()) {
                 MyRenderHelper.applyMirrorFaceCulling();
             }
@@ -371,12 +372,9 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         CallbackInfo ci
     ) {
         if (PortalRendering.isRendering()) {
-            FrontClipping.updateClippingPlaneInner(
-                matrices,
-                PortalRendering.getRenderingPortal(),
-                true
+            FrontClipping.setupInnerClipping(
+                matrices, PortalRendering.getRenderingPortal(), true
             );
-            FrontClipping.enableClipping();
         }
     }
     
@@ -424,7 +422,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     // sometimes we change renderDistance but we don't want to reload it
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;loadRenderers()V", at = @At("HEAD"), cancellable = true)
     private void onReloadStarted(CallbackInfo ci) {
-        if (RenderInfo.isRendering()) {
+        if (RenderingHierarchy.isRendering()) {
             ci.cancel();
         }
     }
@@ -432,7 +430,6 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     //reload other world renderers when the main world renderer is reloaded
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;loadRenderers()V", at = @At("TAIL"))
     private void onReloadFinished(CallbackInfo ci) {
-        ClientWorldLoader clientWorldLoader = CGlobal.clientWorldLoader;
         WorldRenderer this_ = (WorldRenderer) (Object) this;
         
         if (world != null) {
@@ -445,7 +442,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         if (PortalRendering.isRendering()) {
             return;
         }
-        if (clientWorldLoader.getIsCreatingClientWorld()) {
+        if (ClientWorldLoader.getIsCreatingClientWorld()) {
             return;
         }
         if (this_ != Minecraft.getInstance().worldRenderer) {
@@ -454,7 +451,7 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         
         isReloadingOtherWorldRenderers = true;
         
-        for (WorldRenderer worldRenderer : clientWorldLoader.worldRendererMap.values()) {
+        for (WorldRenderer worldRenderer : ClientWorldLoader.worldRendererMap.values()) {
             if (worldRenderer != this_) {
                 worldRenderer.loadRenderers();
             }
@@ -661,16 +658,23 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
     public void portal_setRenderDistance(int arg) {
         renderDistanceChunks = arg;
         
+        ModMain.preRenderTaskList.addTask(() -> {
+            portal_increaseRenderDistance(arg);
+            return true;
+        });
+    }
+    
+    private void portal_increaseRenderDistance(int targetRadius) {
         if (viewFrustum instanceof MyBuiltChunkStorage) {
             int radius = ((MyBuiltChunkStorage) viewFrustum).getRadius();
             
-            if (radius < arg) {
-                Helper.log("Resizing built chunk storage to " + arg);
+            if (radius < targetRadius) {
+                Helper.log("Resizing built chunk storage to " + targetRadius);
                 
                 viewFrustum.deleteGlResources();
                 
                 viewFrustum = new MyBuiltChunkStorage(
-                    renderDispatcher, world, arg, ((WorldRenderer) (Object) this)
+                    renderDispatcher, world, targetRadius, ((WorldRenderer) (Object) this)
                 );
             }
         }

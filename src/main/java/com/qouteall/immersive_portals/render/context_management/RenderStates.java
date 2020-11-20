@@ -1,12 +1,12 @@
 package com.qouteall.immersive_portals.render.context_management;
 
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
-import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.FPSMonitor;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.QueryManager;
@@ -39,8 +39,8 @@ public class RenderStates {
     public static float tickDelta = 0;
     
     public static Set<RegistryKey<World>> renderedDimensions = new HashSet<>();
-    public static List<List<WeakReference<Portal>>> lastPortalRenderInfos = new ArrayList<>();
-    public static List<List<WeakReference<Portal>>> portalRenderInfos = new ArrayList<>();
+    public static List<List<WeakReference<PortalLike>>> lastPortalRenderInfos = new ArrayList<>();
+    public static List<List<WeakReference<PortalLike>>> portalRenderInfos = new ArrayList<>();
     
     public static Vector3d lastCameraPos = Vector3d.ZERO;
     public static Vector3d cameraPosDelta = Vector3d.ZERO;
@@ -171,7 +171,7 @@ public class RenderStates {
     public static void onTotalRenderEnd() {
         Minecraft client = Minecraft.getInstance();
         IEGameRenderer gameRenderer = (IEGameRenderer) Minecraft.getInstance().gameRenderer;
-        gameRenderer.setLightmapTextureManager(CGlobal.clientWorldLoader
+        gameRenderer.setLightmapTextureManager(ClientWorldLoader
             .getDimensionRenderHelper(client.world.func_234923_W_()).lightmapTexture);
         
         if (getRenderedPortalNum() != 0) {

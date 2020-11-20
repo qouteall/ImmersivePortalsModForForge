@@ -1,7 +1,7 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
 import com.qouteall.hiding_in_the_bushes.O_O;
-import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
@@ -65,7 +65,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
             Chunk chunk = chunkMap.get(chunkPos.asLong());
             if (positionEquals(chunk, x, z)) {
                 chunkMap.remove(chunkPos.asLong());
-                O_O.postChunkUnloadEventForge(chunk);
+                O_O.postClientChunkUnloadEvent(chunk);
                 world.onChunkUnloaded(chunk);
             }
         }
@@ -136,7 +136,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
         
         this.world.onChunkLoaded(x, z);
         
-        O_O.postChunkLoadEventForge(worldChunk);
+        O_O.postClientChunkLoadEvent(worldChunk);
         
         return worldChunk;
     }
@@ -183,7 +183,7 @@ public class MyClientChunkManager extends ClientChunkProvider {
     
     @Override
     public void markLightChanged(LightType lightType, SectionPos chunkSectionPos) {
-        CGlobal.clientWorldLoader.getWorldRenderer(
+        ClientWorldLoader.getWorldRenderer(
             world.func_234923_W_()
         ).markForRerender(
             chunkSectionPos.getSectionX(),

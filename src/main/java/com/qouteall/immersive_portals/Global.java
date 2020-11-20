@@ -73,6 +73,8 @@ public class Global {
     
     public static int chunkUnloadDelayTicks = 15 * 20;
     
+    public static boolean mergePortalRendering = false;
+    
     public static enum RenderMode {
         normal,
         compatibility,

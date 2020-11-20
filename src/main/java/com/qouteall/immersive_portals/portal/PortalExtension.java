@@ -1,7 +1,6 @@
-package com.qouteall.immersive_portals.portal.extension;
+package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
-import com.qouteall.immersive_portals.portal.Portal;
 import java.util.WeakHashMap;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
@@ -10,6 +9,34 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 // the additional features of a portal
 public class PortalExtension {
+    
+    public static PortalExtension get(Portal portal) {
+        if (portal.extension == null) {
+            portal.extension = new PortalExtension();
+        }
+        return portal.extension;
+    }
+    
+    public static void init() {
+        Portal.clientPortalTickSignal.connect(portal -> {
+            get(portal).tick(portal);
+            
+        });
+        
+        Portal.serverPortalTickSignal.connect(portal -> {
+            get(portal).tick(portal);
+            
+        });
+        
+        Portal.readPortalDataSignal.connect((portal, tag) -> {
+            get(portal).readFromNbt(tag);
+        });
+        
+        Portal.writePortalDataSignal.connect((portal, tag) -> {
+            get(portal).writeToNbt(tag);
+        });
+    }
+    
     public double motionAffinity = 0;
     
     public boolean adjustPositionAfterTeleport = false;
@@ -45,23 +72,29 @@ public class PortalExtension {
     
     }
     
-    public void readFromNbt(CompoundNBT compoundTag) {
+    private void readFromNbt(CompoundNBT compoundTag) {
         if (compoundTag.contains("motionAffinity")) {
             motionAffinity = compoundTag.getDouble("motionAffinity");
+        }
+        else {
+            motionAffinity = 0;
         }
         if (compoundTag.contains("adjustPositionAfterTeleport")) {
             adjustPositionAfterTeleport = compoundTag.getBoolean("adjustPositionAfterTeleport");
         }
+        else {
+            adjustPositionAfterTeleport = false;
+        }
     }
     
-    public void writeToNbt(CompoundNBT compoundTag) {
+    private void writeToNbt(CompoundNBT compoundTag) {
         if (motionAffinity != 0) {
             compoundTag.putDouble("motionAffinity", motionAffinity);
         }
         compoundTag.putBoolean("adjustPositionAfterTeleport", adjustPositionAfterTeleport);
     }
     
-    public void tick(Portal portal) {
+    private void tick(Portal portal) {
         if (portal.world.isRemote()) {
             tickClient(portal);
         }

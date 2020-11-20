@@ -3,7 +3,7 @@ package com.qouteall.immersive_portals.render.context_management;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.portal.Mirror;
-import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalLike;
 import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Stack;
@@ -16,11 +16,11 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 // TODO remove this and use RenderInfo
 @OnlyIn(Dist.CLIENT)
 public class PortalRendering {
-    private static final Stack<Portal> portalLayers = new Stack<>();
+    private static final Stack<PortalLike> portalLayers = new Stack<>();
     private static boolean isRenderingCache = false;
     private static boolean isRenderingOddNumberOfMirrorsCache = false;
     
-    public static void pushPortalLayer(Portal portal) {
+    public static void pushPortalLayer(PortalLike portal) {
         portalLayers.push(portal);
         updateCache();
     }
@@ -34,7 +34,7 @@ public class PortalRendering {
         isRenderingCache = getPortalLayer() != 0;
         
         int number = 0;
-        for (Portal portal : portalLayers) {
+        for (PortalLike portal : portalLayers) {
             if (portal instanceof Mirror) {
                 number++;
             }
@@ -64,17 +64,17 @@ public class PortalRendering {
         return Global.maxPortalLayer;
     }
     
-    public static Portal getRenderingPortal() {
+    public static PortalLike getRenderingPortal() {
         return portalLayers.peek();
     }
     
     public static void onBeginPortalWorldRendering() {
-        List<WeakReference<Portal>> currRenderInfo = portalLayers.stream().map(
-            (Function<Portal, WeakReference<Portal>>) WeakReference::new
+        List<WeakReference<PortalLike>> currRenderInfo = portalLayers.stream().map(
+            (Function<PortalLike, WeakReference<PortalLike>>) WeakReference::new
         ).collect(Collectors.toList());
         RenderStates.portalRenderInfos.add(currRenderInfo);
         
-        if (portalLayers.stream().anyMatch(Portal::hasScaling)) {
+        if (portalLayers.stream().anyMatch(PortalLike::hasScaling)) {
             RenderStates.renderedScalingPortal = true;
         }
         
@@ -83,13 +83,13 @@ public class PortalRendering {
     
     public static void onEndPortalWorldRendering() {
         RenderStates.renderedDimensions.add(
-            portalLayers.peek().dimensionTo
+            portalLayers.peek().getDestDim()
         );
     }
     
     public static Vector3d getRenderingCameraPos() {
         Vector3d pos = RenderStates.originalCamera.getProjectedView();
-        for (Portal portal : portalLayers) {
+        for (PortalLike portal : portalLayers) {
             pos = portal.transformPoint(pos);
         }
         return pos;
@@ -97,8 +97,8 @@ public class PortalRendering {
     
     public static double getAllScaling() {
         double scale = 1.0;
-        for (Portal portal : portalLayers) {
-            scale *= portal.scaling;
+        for (PortalLike portal : portalLayers) {
+            scale *= portal.getScale();
         }
         return scale;
     }

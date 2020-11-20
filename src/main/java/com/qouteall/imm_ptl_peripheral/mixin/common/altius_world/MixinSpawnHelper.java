@@ -29,7 +29,7 @@ public class MixinSpawnHelper {
     ) {
         int height = chunk.getTopBlockY(type, x, z);
         int dimHeight = chunk.getWorld().func_234938_ad_();
-        if (AltiusGameRule.getIsDimensionStackCache()) {
+        if (AltiusGameRule.getIsDimensionStack()) {
             if (chunk.getWorld().func_234923_W_() == World.field_234919_h_) {
                 return Math.min(height, dimHeight - 3);
             }

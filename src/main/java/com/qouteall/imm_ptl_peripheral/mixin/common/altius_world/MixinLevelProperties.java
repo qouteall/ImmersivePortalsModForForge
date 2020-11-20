@@ -64,7 +64,7 @@ public class MixinLevelProperties implements IELevelProperties {
     }
     
     @Inject(
-        method = "Lnet/minecraft/world/storage/ServerWorldInfo;func_237369_a_(Lcom/mojang/serialization/Dynamic;Lcom/mojang/datafixers/DataFixer;ILnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/storage/VersionData;Lnet/minecraft/world/gen/settings/DimensionGeneratorSettings;Lcom/mojang/serialization/Lifecycle;)Lnet/minecraft/world/storage/ServerWorldInfo;",
+        method = "readProperties",
         at = @At("RETURN"),
         cancellable = true
     )

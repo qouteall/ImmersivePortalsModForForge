@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.ListCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.my_util.IntBox;
+import com.qouteall.immersive_portals.portal.PortalExtension;
 import com.qouteall.immersive_portals.portal.PortalManipulation;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
 import com.qouteall.immersive_portals.portal.custom_portal_gen.CustomPortalGeneration;
@@ -181,7 +182,7 @@ public class FlippingFloorSquareForm extends PortalGenForm {
         GeneralBreakablePortal pa = GeneralBreakablePortal.entityType.create(fromWorld);
         fromShape.initPortalPosAxisShape(pa, true);
         
-        pa.destination = toShape.innerAreaBox.getCenterVec();
+        pa.setDestination(toShape.innerAreaBox.getCenterVec());
         pa.dimensionTo = toWorld.func_234923_W_();
         pa.rotation = new Quaternion(
             new Vector3f(1, 0, 0),
@@ -196,9 +197,9 @@ public class FlippingFloorSquareForm extends PortalGenForm {
         pb.blockPortalShape = toShape;
         pa.reversePortalId = pb.getUniqueID();
         pb.reversePortalId = pa.getUniqueID();
-        
-        pa.extension.motionAffinity = 0.1;
-        pb.extension.motionAffinity = 0.1;
+    
+        PortalExtension.get(pa).motionAffinity = 0.1;
+        PortalExtension.get(pb).motionAffinity = 0.1;
         
         McHelper.spawnServerEntity(pa);
         McHelper.spawnServerEntity(pb);

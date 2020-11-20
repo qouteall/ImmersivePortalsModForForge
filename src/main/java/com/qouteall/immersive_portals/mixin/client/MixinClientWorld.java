@@ -1,9 +1,9 @@
 package com.qouteall.immersive_portals.mixin.client;
 
 import com.qouteall.hiding_in_the_bushes.O_O;
-import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
+import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.renderer.WorldRenderer;
@@ -43,7 +43,7 @@ public abstract class MixinClientWorld implements IEClientWorld {
     @Shadow
     public abstract Entity getEntityByID(int id);
     
-    private List<GlobalTrackedPortal> globalTrackedPortals;
+    private List<Portal> globalTrackedPortals;
     
     @Override
     public ClientPlayNetHandler getNetHandler() {
@@ -56,12 +56,12 @@ public abstract class MixinClientWorld implements IEClientWorld {
     }
     
     @Override
-    public List<GlobalTrackedPortal> getGlobalPortals() {
+    public List<Portal> getGlobalPortals() {
         return globalTrackedPortals;
     }
     
     @Override
-    public void setGlobalPortals(List<GlobalTrackedPortal> arg) {
+    public void setGlobalPortals(List<Portal> arg) {
         globalTrackedPortals = arg;
     }
 
@@ -99,9 +99,11 @@ public abstract class MixinClientWorld implements IEClientWorld {
         at = @At("TAIL")
     )
     private void onOnEntityAdded(int entityId, Entity entityIn, CallbackInfo ci) {
-        for (ClientWorld world : CGlobal.clientWorldLoader.clientWorldMap.values()) {
-            if (world != (Object) this) {
-                world.removeEntityFromWorld(entityId);
+        if (ClientWorldLoader.getIsInitialized()) {
+            for (ClientWorld world : ClientWorldLoader.getClientWorlds()) {
+                if (world != (Object) this) {
+                    world.removeEntityFromWorld(entityId);
+                }
             }
         }
     }

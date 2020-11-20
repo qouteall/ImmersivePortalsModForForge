@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.teleportation;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.hiding_in_the_bushes.O_O;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
@@ -61,6 +62,8 @@ public class ServerTeleportationManager {
                 entity.getEyePosition(1).add(entity.getMotion())
             );
     }
+    
+  
     
     public void tryToTeleportRegularEntity(Portal portal, Entity entity) {
         if (entity instanceof ServerPlayerEntity) {
@@ -251,7 +254,7 @@ public class ServerTeleportationManager {
     }
     
     /**
-     * {@link ServerPlayerEntity#changeDimension(ServerWorld)}
+     * {@link ServerPlayerEntity#moveToWorld(ServerWorld)}
      */
     private void changePlayerDimension(
         ServerPlayerEntity player,
@@ -532,6 +535,34 @@ public class ServerTeleportationManager {
             Helper.log(String.format("ignored dubious move packet %s %s %s %s %s %s %s",
                 player.world.func_234923_W_().func_240901_a_(), x, y, z, player.getPosX(), player.getPosY(), player.getPosZ()
             ));
+        }
+    }
+    
+    public static void teleportEntityGeneral(Entity entity, Vector3d targetPos, ServerWorld targetWorld) {
+        if (entity instanceof ServerPlayerEntity) {
+            Global.serverTeleportationManager.invokeTpmeCommand(
+                (ServerPlayerEntity) entity, targetWorld.func_234923_W_(), targetPos
+            );
+        }
+        else {
+            if (targetWorld == entity.world) {
+                entity.setLocationAndAngles(
+                    targetPos.x,
+                    targetPos.y,
+                    targetPos.z,
+                    entity.rotationYaw,
+                    entity.rotationPitch
+                );
+                entity.setRotationYawHead(entity.rotationYaw);
+            }
+            else {
+                Global.serverTeleportationManager.changeEntityDimension(
+                    entity,
+                    targetWorld.func_234923_W_(),
+                    targetPos.add(0, entity.getEyeHeight(), 0),
+                    true
+                );
+            }
         }
     }
 }

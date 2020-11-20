@@ -2,16 +2,12 @@ package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
-import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.portal.GeometryPortalShape;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.portal.global_portals.GlobalTrackedPortal;
-import com.qouteall.immersive_portals.render.context_management.DimensionRenderHelper;
+import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
@@ -30,32 +26,24 @@ import static org.lwjgl.opengl.GL11.glEnable;
 
 public class ViewAreaRenderer {
     private static void buildPortalViewAreaTrianglesBuffer(
-        Vector3d fogColor, Portal portal, BufferBuilder bufferbuilder,
+        Vector3d fogColor, PortalLike portal, BufferBuilder bufferbuilder,
         Vector3d cameraPos, float tickDelta, float layerWidth
     ) {
         bufferbuilder.begin(GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
         
-        Vector3d posInPlayerCoordinate = portal.getPositionVec().subtract(cameraPos);
-        
-        if (portal instanceof Mirror) {
-            //rendering portal behind translucent objects with shader is broken
-            double mirrorOffset =
-                (OFInterface.isShaders.getAsBoolean() || Global.pureMirror) ? 0.01 : -0.01;
-            posInPlayerCoordinate = posInPlayerCoordinate.add(
-                portal.getNormal().scale(mirrorOffset));
-        }
+        Vector3d posInPlayerCoordinate = portal.getOriginPos().subtract(cameraPos);
         
         Consumer<Vector3d> vertexOutput = p -> putIntoVertex(
             bufferbuilder, p, fogColor
         );
         
-        generateViewAreaTriangles(portal, posInPlayerCoordinate, vertexOutput);
+        portal.renderViewAreaMesh(posInPlayerCoordinate, vertexOutput);
         
     }
     
-    private static void generateViewAreaTriangles(Portal portal, Vector3d posInPlayerCoordinate, Consumer<Vector3d> vertexOutput) {
+    public static void generateViewAreaTriangles(Portal portal, Vector3d posInPlayerCoordinate, Consumer<Vector3d> vertexOutput) {
         if (portal.specialShape == null) {
-            if (portal instanceof GlobalTrackedPortal) {
+            if (portal.getIsGlobal()) {
                 generateTriangleForGlobalPortal(
                     vertexOutput,
                     portal,
@@ -79,7 +67,7 @@ public class ViewAreaRenderer {
         }
     }
     
-    private static void generateTriangleForSpecialShape(
+    public static void generateTriangleForSpecialShape(
         Consumer<Vector3d> vertexOutput,
         Portal portal,
         Vector3d posInPlayerCoordinate
@@ -89,7 +77,7 @@ public class ViewAreaRenderer {
         );
     }
     
-    private static void generateTriangleSpecial(
+    public static void generateTriangleSpecial(
         Consumer<Vector3d> vertexOutput,
         Portal portal,
         Vector3d posInPlayerCoordinate
@@ -137,21 +125,24 @@ public class ViewAreaRenderer {
         Portal portal,
         Vector3d posInPlayerCoordinate
     ) {
+        //avoid floating point error for converted global portal
+        final double w = Math.min(portal.width, 23333);
+        final double h = Math.min(portal.height, 23333);
         Vector3d v0 = portal.getPointInPlaneLocal(
-            portal.width / 2 - (double) 0,
-            -portal.height / 2 + (double) 0
+            w / 2 - (double) 0,
+            -h / 2 + (double) 0
         );
         Vector3d v1 = portal.getPointInPlaneLocal(
-            -portal.width / 2 + (double) 0,
-            -portal.height / 2 + (double) 0
+            -w / 2 + (double) 0,
+            -h / 2 + (double) 0
         );
         Vector3d v2 = portal.getPointInPlaneLocal(
-            portal.width / 2 - (double) 0,
-            portal.height / 2 - (double) 0
+            w / 2 - (double) 0,
+            h / 2 - (double) 0
         );
         Vector3d v3 = portal.getPointInPlaneLocal(
-            -portal.width / 2 + (double) 0,
-            portal.height / 2 - (double) 0
+            -w / 2 + (double) 0,
+            h / 2 - (double) 0
         );
         
         putIntoQuad(
@@ -236,7 +227,7 @@ public class ViewAreaRenderer {
     }
     
     public static void drawPortalViewTriangle(
-        Portal portal,
+        PortalLike portal,
         MatrixStack matrixStack,
         boolean doFrontCulling,
         boolean doFaceCulling
@@ -244,9 +235,6 @@ public class ViewAreaRenderer {
         
         Minecraft.getInstance().getProfiler().startSection("render_view_triangle");
         
-        DimensionRenderHelper helper =
-            CGlobal.clientWorldLoader.getDimensionRenderHelper(portal.dimensionTo);
-    
         Vector3d fogColor = FogRendererContext.getCurrentFogColor.get();
         
         if (doFaceCulling) {
@@ -276,11 +264,9 @@ public class ViewAreaRenderer {
         }
         if (doFrontCulling) {
             if (PortalRendering.isRendering()) {
-                FrontClipping.updateClippingPlaneInner(
+                FrontClipping.setupInnerClipping(
                     matrixStack, PortalRendering.getRenderingPortal(), false
                 );
-                FrontClipping.loadClippingPlaneClassical(matrixStack);
-                FrontClipping.startClassicalCulling();
             }
         }
         

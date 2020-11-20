@@ -4,13 +4,14 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.MyGameRenderer;
 import com.qouteall.immersive_portals.render.PortalRenderer;
 import com.qouteall.immersive_portals.render.SecondaryFrameBuffer;
 import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
-import com.qouteall.immersive_portals.render.context_management.RenderInfo;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
+import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import org.lwjgl.opengl.GL13;
@@ -59,7 +60,7 @@ public class RendererDebugWithShader extends PortalRenderer {
     }
     
     @Override
-    protected void doRenderPortal(Portal portal, MatrixStack matrixStack) {
+    protected void doRenderPortal(PortalLike portal, MatrixStack matrixStack) {
         if (RenderStates.getRenderedPortalNum() >= 1) {
             return;
         }
@@ -84,10 +85,10 @@ public class RendererDebugWithShader extends PortalRenderer {
     
     @Override
     public void invokeWorldRendering(
-        RenderInfo renderInfo
+        RenderingHierarchy renderingHierarchy
     ) {
         MyGameRenderer.renderWorldNew(
-            renderInfo,
+            renderingHierarchy,
             runnable -> {
                 OFGlobal.shaderContextManager.switchContextAndRun(()->{
                     OFGlobal.bindToShaderFrameBuffer.run();

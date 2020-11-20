@@ -4,7 +4,9 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
+import com.qouteall.immersive_portals.my_util.Plane;
 import com.qouteall.immersive_portals.portal.Portal;
+import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.vector.Vector3d;
@@ -20,27 +22,30 @@ public class FrontClipping {
         isClippingEnabled = false;
     }
     
-    public static void enableClipping() {
-        //shaders do not compatible with glClipPlane
-        //I have to modify shader code
-        if (CGlobal.useFrontCulling && !isShaderClipping()) {
-            GL11.glEnable(GL11.GL_CLIP_PLANE0);
-        }
-        isClippingEnabled = true;
-    }
-    
-    public static void startClassicalCulling() {
+    private static void startClassicalClipping() {
         GL11.glEnable(GL11.GL_CLIP_PLANE0);
         isClippingEnabled = true;
     }
     
     //NOTE the actual culling plane is related to current model view matrix
-    public static void updateClippingPlaneInner(
-        MatrixStack matrixStack, Portal portal, boolean doCompensate
+    public static void setupInnerClipping(
+        MatrixStack matrixStack, PortalLike portalLike, boolean doCompensate
     ) {
-        activeClipPlaneEquation = getClipEquationInner(portal, doCompensate);
-        if (!isShaderClipping()) {
+        if (!CGlobal.useFrontClipping) {
+            return;
+        }
+        
+        final Plane clipping = portalLike.getInnerClipping();
+        
+        if (clipping != null) {
+            activeClipPlaneEquation = getClipEquationInner(doCompensate, clipping.pos, clipping.normal);
+            
             loadClippingPlaneClassical(matrixStack);
+            startClassicalClipping();
+        }
+        else {
+            activeClipPlaneEquation = null;
+            disableClipping();
         }
     }
     
@@ -51,7 +56,7 @@ public class FrontClipping {
             );
     }
     
-    public static void loadClippingPlaneClassical(MatrixStack matrixStack) {
+    private static void loadClippingPlaneClassical(MatrixStack matrixStack) {
         McHelper.runWithTransformation(
             matrixStack,
             () -> {
@@ -60,29 +65,24 @@ public class FrontClipping {
         );
     }
     
-    public static void updateClippingPlaneOuter(MatrixStack matrixStack, Portal portal) {
-        activeClipPlaneEquation = getClipEquationOuter(portal);
-        if (!isShaderClipping()) {
-            loadClippingPlaneClassical(matrixStack);
-        }
-    }
-    
-    private static double[] getClipEquationInner(Portal portal, boolean doCompensate) {
+    private static double[] getClipEquationInner(boolean doCompensate, Vector3d clippingPoint, Vector3d clippingDirection) {
         
-        Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
+        Vector3d cameraPos = McHelper.getCurrentCameraPos();
         
-        Vector3d planeNormal = portal.getContentDirection();
+        
+        Vector3d planeNormal = clippingDirection;
         
         double correction;
+        
         if (doCompensate) {
-            correction = portal.destination.subtract(cameraPos)
-                .dotProduct(portal.getContentDirection()) / 150.0;
+            correction = clippingPoint.subtract(cameraPos)
+                .dotProduct(clippingDirection) / 150.0;
         }
         else {
             correction = 0;
         }
         
-        Vector3d portalPos = portal.destination
+        Vector3d portalPos = clippingPoint
             .subtract(planeNormal.scale(correction))//avoid z fighting
             .subtract(cameraPos);
         
@@ -95,10 +95,27 @@ public class FrontClipping {
         };
     }
     
+    public static void setupOuterClipping(MatrixStack matrixStack, PortalLike portalLike) {
+        if (!CGlobal.useFrontClipping) {
+            return;
+        }
+        
+        if (portalLike instanceof Portal) {
+            activeClipPlaneEquation = getClipEquationOuter(((Portal) portalLike));
+            if (!isShaderClipping()) {
+                loadClippingPlaneClassical(matrixStack);
+            }
+            startClassicalClipping();
+        }
+        else {
+            disableClipping();
+        }
+    }
+    
     private static double[] getClipEquationOuter(Portal portal) {
         Vector3d planeNormal = portal.getNormal();
         
-        Vector3d portalPos = portal.getPositionVec()
+        Vector3d portalPos = portal.getOriginPos()
             //.subtract(planeNormal.multiply(0.01))//avoid z fighting
             .subtract(client.gameRenderer.getActiveRenderInfo().getProjectedView());
         

@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.render.context_management;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ModMain;
 import net.minecraft.client.renderer.vertex.VertexBuffer;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.vector.Vector3d;
@@ -25,11 +26,15 @@ public class CloudContext {
     
     public static final ArrayList<CloudContext> contexts = new ArrayList<>();
     
+    public static void init() {
+        ModMain.clientCleanupSignal.connect(CloudContext::cleanup);
+    }
+    
     public CloudContext() {
     
     }
     
-    public static void cleanup() {
+    private static void cleanup() {
         for (CloudContext context : contexts) {
             context.dispose();
         }
