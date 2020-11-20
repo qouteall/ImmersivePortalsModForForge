@@ -102,13 +102,13 @@ public class O_O {
         }
     }
     
-    public static void postChunkUnloadEventForge(Chunk chunk) {
+    public static void postClientChunkUnloadEvent(Chunk chunk) {
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
             new net.minecraftforge.event.world.ChunkEvent.Unload(chunk)
         );
     }
     
-    public static void postChunkLoadEventForge(Chunk chunk) {
+    public static void postClientChunkLoadEvent(Chunk chunk) {
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
             new net.minecraftforge.event.world.ChunkEvent.Load(chunk)
         );

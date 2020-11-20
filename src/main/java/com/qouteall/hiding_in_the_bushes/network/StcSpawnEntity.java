@@ -3,6 +3,7 @@ package com.qouteall.hiding_in_the_bushes.network;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.dimension_sync.DimId;
+import com.qouteall.immersive_portals.network.CommonNetwork;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
@@ -47,7 +48,7 @@ public class StcSpawnEntity {
     public void encode(PacketBuffer buf) {
         buf.writeString(entityType);
         buf.writeInt(entityId);
-        DimId.writeWorldId(buf,dimension,false);
+        DimId.writeWorldId(buf, dimension, false);
         buf.writeCompoundTag(tag);
     }
     
@@ -58,36 +59,8 @@ public class StcSpawnEntity {
     
     @OnlyIn(Dist.CLIENT)
     private void clientHandle() {
-        String entityTypeString = entityType;
-        int entityId = this.entityId;
-        
-        Optional<EntityType<?>> entityType = EntityType.byKey(entityTypeString);
-        if (!entityType.isPresent()) {
-            Helper.err("unknown entity type " + entityTypeString);
-            return;
-        }
-        
-        ClientWorld world = CGlobal.clientWorldLoader.getWorld(dimension);
-        
-//        if (world.getEntityByID(entityId) != null) {
-//            Helper.err(String.format(
-//                "duplicate entity %s %s %s",
-//                ((Integer) entityId).toString(),
-//                entityType.get().getTranslationKey(),
-//                tag
-//            ));
-//            return;
-//        }
-    
-        Entity entity = entityType.get().create(world);
-        entity.read(tag);
-        entity.setEntityId(entityId);
-        entity.setPacketCoordinates(entity.getPosX(), entity.getPosY(), entity.getPosZ());
-        world.addEntity(entityId, entity);
-    
-        if (entity instanceof Portal) {
-            //do not create client world while rendering or gl states will be disturbed
-            CGlobal.clientWorldLoader.getWorld(((Portal) entity).dimensionTo);
-        }
+        CommonNetwork.processEntitySpawn(
+            entityType, this.entityId, dimension, tag
+        );
     }
 }

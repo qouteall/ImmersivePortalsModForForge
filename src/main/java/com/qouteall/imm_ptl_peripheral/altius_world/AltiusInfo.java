@@ -128,8 +128,8 @@ public class AltiusInfo {
         
         if (loop) {
             VerticalConnectingPortal.connectMutually(
-                Helper.lastOf(worldsFromTopToDown).getRegistryKey(),
-                Helper.firstOf(worldsFromTopToDown).getRegistryKey(),
+                Helper.lastOf(worldsFromTopToDown).func_234923_W_(),
+                Helper.firstOf(worldsFromTopToDown).func_234923_W_(),
                 respectSpaceRatio
             );
         }

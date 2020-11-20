@@ -163,7 +163,7 @@ public class ErrorTerrainGenerator extends ChunkGenerator {
     }
     
     @Override
-    public int getWorldHeight() {
+    public int func_230355_e_() {
         return 128;
     }
     
