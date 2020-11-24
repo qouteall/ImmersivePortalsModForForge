@@ -58,15 +58,18 @@ public class GlobalPortalStorage extends WorldSavedData {
     
     @OnlyIn(Dist.CLIENT)
     private static void initClient() {
-        ModMain.clientCleanupSignal.connect(() -> {
-            if (ClientWorldLoader.getIsInitialized()) {
-                for (ClientWorld clientWorld : ClientWorldLoader.getClientWorlds()) {
-                    for (Portal globalPortal : McHelper.getGlobalPortals(clientWorld)) {
-                        globalPortal.remove();
-                    }
+        ModMain.clientCleanupSignal.connect(GlobalPortalStorage::onClientCleanup);
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    private static void onClientCleanup() {
+        if (ClientWorldLoader.getIsInitialized()) {
+            for (ClientWorld clientWorld : ClientWorldLoader.getClientWorlds()) {
+                for (Portal globalPortal : McHelper.getGlobalPortals(clientWorld)) {
+                    globalPortal.remove();
                 }
             }
-        });
+        }
     }
     
     public GlobalPortalStorage(String string_1, ServerWorld world_) {
