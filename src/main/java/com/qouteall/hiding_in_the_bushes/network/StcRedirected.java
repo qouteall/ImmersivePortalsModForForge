@@ -1,28 +1,18 @@
 package com.qouteall.hiding_in_the_bushes.network;
 
-import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.Helper;
-import com.qouteall.immersive_portals.chunk_loading.MyClientChunkManager;
 import com.qouteall.immersive_portals.dimension_sync.DimId;
-import com.qouteall.immersive_portals.ducks.IEClientPlayNetworkHandler;
-import com.qouteall.immersive_portals.ducks.IEClientWorld;
-import com.qouteall.immersive_portals.network.CommonNetwork;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.network.play.ClientPlayNetHandler;
-import net.minecraft.client.world.ClientWorld;
+import com.qouteall.immersive_portals.network.CommonNetworkClient;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.PacketDirection;
 import net.minecraft.network.ProtocolType;
 import net.minecraft.util.RegistryKey;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.commons.lang3.Validate;
 
 import java.io.IOException;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class StcRedirected {
     public RegistryKey<World> dimension;
@@ -62,7 +52,7 @@ public class StcRedirected {
         RegistryKey<World> dimension,
         IPacket packet
     ) {
-        CommonNetwork.processRedirectedPacket(dimension, packet);
+        CommonNetworkClient.processRedirectedPacket(dimension, packet);
     }
     
     public void encode(PacketBuffer buf) {

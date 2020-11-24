@@ -1,14 +1,7 @@
 package com.qouteall.hiding_in_the_bushes.network;
 
-import com.qouteall.immersive_portals.CGlobal;
-import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.dimension_sync.DimId;
-import com.qouteall.immersive_portals.network.CommonNetwork;
-import com.qouteall.immersive_portals.portal.Portal;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
+import com.qouteall.immersive_portals.network.CommonNetworkClient;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.RegistryKey;
@@ -17,7 +10,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
 
-import java.util.Optional;
 import java.util.function.Supplier;
 
 public class StcSpawnEntity {
@@ -59,7 +51,7 @@ public class StcSpawnEntity {
     
     @OnlyIn(Dist.CLIENT)
     private void clientHandle() {
-        CommonNetwork.processEntitySpawn(
+        CommonNetworkClient.processEntitySpawn(
             entityType, this.entityId, dimension, tag
         );
     }
