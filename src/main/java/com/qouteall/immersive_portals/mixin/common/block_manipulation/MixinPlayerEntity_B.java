@@ -1,5 +1,6 @@
 package com.qouteall.immersive_portals.mixin.common.block_manipulation;
 
+import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.block_manipulation.HandReachTweak;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.player.PlayerEntity;
@@ -14,11 +15,13 @@ public class MixinPlayerEntity_B {
     private static void onCreatePlayerAttributes(
         CallbackInfoReturnable<AttributeModifierMap.MutableAttribute> cir
     ) {
-        cir.setReturnValue(
-            cir.getReturnValue().func_233815_a_(
-                HandReachTweak.handReachMultiplierAttribute,
-                1.0
-            )
-        );
+        if (!O_O.isForge()) {
+            cir.setReturnValue(
+                cir.getReturnValue().func_233815_a_(
+                    HandReachTweak.handReachMultiplierAttribute,
+                    1.0
+                )
+            );
+        }
     }
 }
