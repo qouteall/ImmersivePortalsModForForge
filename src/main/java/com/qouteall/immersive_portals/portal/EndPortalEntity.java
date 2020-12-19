@@ -56,6 +56,10 @@ public class EndPortalEntity extends Portal {
         else {
             Helper.err("End portal mode abnormal");
         }
+        
+        // for toObsidianPlatform mode, if the platform does not get generated before
+        // going through portal, the player may fall into void
+        generateObsidianPlatform();
     }
     
     private static void generateClassicalEndPortal(ServerWorld world, Vector3d destination, Vector3d portalCenter) {
@@ -236,7 +240,7 @@ public class EndPortalEntity extends Portal {
         }
     }
     
-    private void generateObsidianPlatform() {
+    private static void generateObsidianPlatform() {
         ServerWorld endWorld = McHelper.getServer().getWorld(World.field_234920_i_);
         
         ServerWorld.func_241121_a_(endWorld);

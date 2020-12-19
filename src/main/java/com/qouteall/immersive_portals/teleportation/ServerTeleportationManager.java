@@ -209,6 +209,8 @@ public class ServerTeleportationManager {
         RegistryKey<World> dimensionTo,
         Vector3d newEyePos
     ) {
+        McHelper.getServer().getProfiler().startSection("portal_teleport");
+        
         ServerWorld fromWorld = (ServerWorld) player.world;
         ServerWorld toWorld = McHelper.getServer().getWorld(dimensionTo);
         
@@ -223,6 +225,8 @@ public class ServerTeleportationManager {
         
         McHelper.adjustVehicle(player);
         player.connection.captureCurrentPosition();
+        
+        McHelper.getServer().getProfiler().endSection();
     }
     
     public void invokeTpmeCommand(

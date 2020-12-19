@@ -6,6 +6,7 @@ import com.google.common.cache.LoadingCache;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.my_util.LimitedLogger;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -171,7 +172,7 @@ public class ErrorTerrainGenerator extends ChunkGenerator {
     //don't know why
     @Override
     public int func_230356_f_() {
-        return 0;
+        return 63;
     }
     
     //may be incorrect
@@ -190,47 +191,54 @@ public class ErrorTerrainGenerator extends ChunkGenerator {
         return new ErrorTerrainGenerator(seed, getBiomeProvider().func_230320_a_(seed));
     }
     
+    private static final LimitedLogger limitedLogger = new LimitedLogger(5);
+    
     @Override
     public void generateSurface(WorldGenRegion region, IChunk chunk) {
-        ChunkPos chunkPos = chunk.getPos();
-        int i = chunkPos.x;
-        int j = chunkPos.z;
-        SharedSeedRandom chunkRandom = new SharedSeedRandom();
-        chunkRandom.setBaseChunkSeed(i, j);
-        ChunkPos chunkPos2 = chunk.getPos();
-        int k = chunkPos2.getXStart();
-        int l = chunkPos2.getZStart();
-        double d = 0.0625D;
-        BlockPos.Mutable mutable = new BlockPos.Mutable();
-        
-        for (int m = 0; m < 16; ++m) {
-            for (int n = 0; n < 16; ++n) {
-                int o = k + m;
-                int p = l + n;
-                int q = chunk.getTopBlockY(Heightmap.Type.WORLD_SURFACE_WG, m, n) + 1;
-                double e = this.surfaceDepthNoise.noiseAt(
-                    (double) o * 0.0625D,
-                    (double) p * 0.0625D,
-                    0.0625D,
-                    (double) m * 0.0625D
-                ) * 15.0D;
-                region.getBiome(mutable.setPos(k + m, q, l + n)).buildSurface(
-                    chunkRandom,
-                    chunk,
-                    o,
-                    p,
-                    q,
-                    e,
-                    this.defaultBlock,
-                    this.defaultFluid,
-                    this.func_230356_f_(),
-                    region.getSeed()
-                );
+        try {
+            ChunkPos chunkPos = chunk.getPos();
+            int i = chunkPos.x;
+            int j = chunkPos.z;
+            SharedSeedRandom chunkRandom = new SharedSeedRandom();
+            chunkRandom.setBaseChunkSeed(i, j);
+            ChunkPos chunkPos2 = chunk.getPos();
+            int k = chunkPos2.getXStart();
+            int l = chunkPos2.getZStart();
+            double d = 0.0625D;
+            BlockPos.Mutable mutable = new BlockPos.Mutable();
+            
+            for (int m = 0; m < 16; ++m) {
+                for (int n = 0; n < 16; ++n) {
+                    int o = k + m;
+                    int p = l + n;
+                    int q = chunk.getTopBlockY(Heightmap.Type.WORLD_SURFACE_WG, m, n) + 1;
+                    double e = this.surfaceDepthNoise.noiseAt(
+                        (double) o * 0.0625D,
+                        (double) p * 0.0625D,
+                        0.0625D,
+                        (double) m * 0.0625D
+                    ) * 15.0D;
+                    region.getBiome(mutable.setPos(k + m, q, l + n)).buildSurface(
+                        chunkRandom,
+                        chunk,
+                        o,
+                        p,
+                        q,
+                        e,
+                        this.defaultBlock,
+                        this.defaultFluid,
+                        this.func_230356_f_(),
+                        region.getSeed()
+                    );
+                }
             }
+            
+            
+            avoidSandLag(region);
         }
-        
-        
-        avoidSandLag(region);
+        catch (Throwable e) {
+            limitedLogger.invoke(e::printStackTrace);
+        }
     }
     
     //TODO carve more

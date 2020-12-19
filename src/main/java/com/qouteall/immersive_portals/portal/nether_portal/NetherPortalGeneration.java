@@ -57,7 +57,7 @@ public class NetherPortalGeneration {
         if (foundAirCube == null) {
             Helper.log("Cannot find normal portal placement");
             foundAirCube = NetherPortalMatcher.findCubeAirAreaAtAnywhere(
-                neededAreaSize, toWorld, mappedPosInOtherDimension, 16
+                neededAreaSize, toWorld, mappedPosInOtherDimension, 32
             );
             
             if (foundAirCube != null) {
@@ -68,7 +68,7 @@ public class NetherPortalGeneration {
         }
         
         if (foundAirCube == null) {
-            Helper.err("Cannot find air cube within 16 blocks? " +
+            Helper.err("Cannot find air cube within 32 blocks? " +
                 "Force placed portal. It will occupy normal blocks.");
             
             foundAirCube = IntBox.getBoxByBasePointAndSize(

@@ -26,7 +26,15 @@ public class TransformationManager {
     
     public static final Minecraft client = Minecraft.getInstance();
     
+    private static boolean shouldOverrideVanillaCameraTransformation() {
+        return RenderingHierarchy.isRendering() || isAnimationRunning();
+    }
+    
     public static void processTransformation(ActiveRenderInfo camera, MatrixStack matrixStack) {
+        if (!shouldOverrideVanillaCameraTransformation()) {
+            return;
+        }
+        
         // override vanilla camera transformation
         matrixStack.getLast().getMatrix().setIdentity();
         matrixStack.getLast().getNormal().setIdentity();
@@ -42,6 +50,10 @@ public class TransformationManager {
     }
     
     public static boolean isAnimationRunning() {
+        if (interpolationStartTime == 0) {
+            return false;
+        }
+        
         double progress = (RenderStates.renderStartNanoTime - interpolationStartTime) /
             ((double) interpolationEndTime - interpolationStartTime);
         

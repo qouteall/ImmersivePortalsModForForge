@@ -5,5 +5,5 @@ import net.minecraft.util.ClassInheritanceMultiMap;
 
 
 public interface IEWorldChunk {
-    ClassInheritanceMultiMap<Entity>[] getEntitySections();
+    ClassInheritanceMultiMap<Entity>[] portal_getEntitySections();
 }

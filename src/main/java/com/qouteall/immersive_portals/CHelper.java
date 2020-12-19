@@ -3,12 +3,14 @@ package com.qouteall.immersive_portals;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.ConfirmOpenLinkScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
@@ -16,6 +18,8 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.opengl.GL11;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -77,6 +81,27 @@ public class CHelper {
         Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(
             new StringTextComponent(str)
         );
+    }
+    
+    public static void openLinkConfirmScreen(
+        Screen parent,
+        String link
+    ) {
+        Minecraft client = Minecraft.getInstance();
+        client.displayGuiScreen(new ConfirmOpenLinkScreen(
+            (result) -> {
+                if (result) {
+                    try {
+                        Util.getOSType().openURI(new URI(link));
+                    }
+                    catch (URISyntaxException e) {
+                        e.printStackTrace();
+                    }
+                }
+                client.displayGuiScreen(parent);
+            },
+            link, true
+        ));
     }
     
     public static class Rect {

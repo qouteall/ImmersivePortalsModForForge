@@ -89,7 +89,7 @@ public class PortalRenderingGroup implements PortalLike {
     
     @Override
     public double getDistanceToNearestPointInPortal(Vector3d point) {
-        return Helper.getDistanceToBox(exactBoundingBox, point);
+        return Helper.getDistanceToBox(getExactAreaBox(), point);
     }
     
     @Override

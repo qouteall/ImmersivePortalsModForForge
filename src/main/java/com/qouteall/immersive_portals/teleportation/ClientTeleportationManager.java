@@ -15,6 +15,7 @@ import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
+import com.qouteall.immersive_portals.ducks.IEParticleManager;
 import com.qouteall.immersive_portals.portal.Mirror;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalExtension;
@@ -63,7 +64,7 @@ public class ClientTeleportationManager {
             this, ClientTeleportationManager::tick
         );
         
-        ModMain.clientCleanupSignal.connectWithWeakRef(this,(this_)->{
+        ModMain.clientCleanupSignal.connectWithWeakRef(this, (this_) -> {
             this_.disableTeleportFor(40);
         });
     }
@@ -160,7 +161,9 @@ public class ClientTeleportationManager {
             Portal portal = pair.getA();
             Vector3d collidingPos = pair.getB();
             
+            client.getProfiler().startSection("portal_teleport");
             teleportPlayer(portal);
+            client.getProfiler().endSection();
             
             moveStartPoint = portal.transformPoint(collidingPos)
                 .add(portal.getContentDirection().scale(0.001));
@@ -175,22 +178,6 @@ public class ClientTeleportationManager {
     
     private Vector3d getPlayerHeadPos(float tickDelta) {
         return client.player.getEyePosition(tickDelta);
-//        Camera camera = client.gameRenderer.getCamera();
-//        float cameraY = MathHelper.lerp(
-//            tickDelta,
-//            ((IECamera) camera).getLastCameraY(),
-//            ((IECamera) camera).getCameraY()
-//        );
-//        return new Vec3d(
-//            MathHelper.lerp((double) tickDelta, client.player.prevX, client.player.getX()),
-//            MathHelper.lerp(
-//                (double) tickDelta,
-//                client.player.prevY,
-//                client.player.getY()
-//            ) + cameraY,
-//            MathHelper.lerp((double) tickDelta, client.player.prevZ, client.player.getZ())
-//        );
-        
     }
     
     private void teleportPlayer(Portal portal) {
@@ -251,7 +238,7 @@ public class ClientTeleportationManager {
         
         isTeleportingTick = true;
         isTeleportingFrame = true;
-    
+        
         if (PortalExtension.get(portal).adjustPositionAfterTeleport) {
             adjustPlayerPosition(player);
         }
@@ -321,8 +308,11 @@ public class ClientTeleportationManager {
         
         toWorld.setScoreboard(fromWorld.getScoreboard());
         
-        if (client.particles != null)
-            client.particles.clearEffects(toWorld);
+        if (client.particles != null) {
+//            client.particleManager.setWorld(toWorld);
+            // avoid clearing all particles
+            ((IEParticleManager) client.particles).mySetWorld(toWorld);
+        }
         
         TileEntityRendererDispatcher.instance.setWorld(toWorld);
         

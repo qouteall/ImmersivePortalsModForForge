@@ -625,7 +625,7 @@ public class Helper {
                 ClassInheritanceMultiMap<Entity>[] entitySections = ((IEWorldChunk) world.getChunk(
                     aX,
                     aZ
-                )).getEntitySections();
+                )).portal_getEntitySections();
                 for (ClassInheritanceMultiMap<Entity> entitySection : entitySections) {
                     entities.addAll(entitySection.getByClass(entityClass));
                 }

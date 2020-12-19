@@ -250,22 +250,10 @@ public class PortalCommand {
         );
         
         builder.then(Commands.literal("convert_normal_portal_to_global_portal")
-            .executes(context -> {
-                final ServerPlayerEntity player = context.getSource().asPlayer();
-                final Portal portal = getPlayerPointingPortal(player, false);
-                
-                if (portal == null) {
-                    context.getSource().sendFeedback(
-                        new StringTextComponent("You are not pointing to any portal"),
-                        false
-                    );
-                    return 0;
-                }
-                
-                GlobalPortalStorage.convertNormalPortalIntoGlobalPortal(portal);
-                
-                return 0;
-            })
+            .executes(context -> processPortalTargetedCommand(
+                context,
+                GlobalPortalStorage::convertNormalPortalIntoGlobalPortal
+            ))
         );
         
         builder.then(Commands.literal("convert_global_portal_to_normal_portal")
@@ -987,6 +975,7 @@ public class PortalCommand {
         );
         
         builder.then(Commands.literal("tp")
+            .requires(commandSource -> commandSource.hasPermissionLevel(2))
             .then(Commands.argument("from", EntityArgument.entities())
                 .then(Commands.argument("to", EntityArgument.entity())
                     .executes(context -> {

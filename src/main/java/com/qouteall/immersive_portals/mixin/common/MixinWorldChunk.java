@@ -15,7 +15,7 @@ public abstract class MixinWorldChunk implements IEWorldChunk {
     private ClassInheritanceMultiMap<Entity>[] entityLists;
 
     @Override
-    public ClassInheritanceMultiMap<Entity>[] getEntitySections() {
+    public ClassInheritanceMultiMap<Entity>[] portal_getEntitySections() {
         return entityLists;
     }
 }

@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.mixin.common;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
@@ -50,6 +51,11 @@ public class MixinPlayerManager {
         if (!Global.serverTeleportationManager.isFiringMyChangeDimensionEvent) {
             GlobalPortalStorage.onPlayerLoggedIn(player);
         }
+    }
+    
+    @Inject(method = "Lnet/minecraft/server/management/PlayerList;initializeConnectionToPlayer(Lnet/minecraft/network/NetworkManager;Lnet/minecraft/entity/player/ServerPlayerEntity;)V", at = @At("TAIL"))
+    private void onOnPlayerConnect(NetworkManager connection, ServerPlayerEntity player, CallbackInfo ci) {
+        NewChunkTrackingGraph.updateForPlayer(player);
     }
     
     //with redirection

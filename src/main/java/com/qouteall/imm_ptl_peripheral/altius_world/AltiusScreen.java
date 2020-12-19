@@ -11,6 +11,7 @@ import net.minecraft.client.gui.screen.CreateWorldScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
@@ -30,6 +31,8 @@ public class AltiusScreen extends Screen {
     
     private final Button respectSpaceRatioButton;
     private final Button loopButton;
+    
+    private final Button helpButton;
     
     private int titleY;
     
@@ -130,6 +133,16 @@ public class AltiusScreen extends Screen {
                 this.parent, rawGeneratorOptions
             );
         });
+        
+        helpButton = new Button(
+            0, 0, 72, 20,
+            new StringTextComponent("?"),
+            button -> {
+                CHelper.openLinkConfirmScreen(
+                    this, "https://qouteall.fun/immptl/wiki/Dimension-Stack"
+                );
+            }
+        );
     }
     
     //nullable
@@ -154,9 +167,11 @@ public class AltiusScreen extends Screen {
         func_230480_a_(backButton);
         func_230480_a_(addDimensionButton);
         func_230480_a_(removeDimensionButton);
-    
+        
         func_230480_a_(loopButton);
         func_230480_a_(respectSpaceRatioButton);
+        
+        func_230480_a_(helpButton);
         
         setEnabled(isEnabled);
         
@@ -168,7 +183,9 @@ public class AltiusScreen extends Screen {
             0, field_230709_l_,
             CHelper.LayoutElement.blankSpace(15),
             new CHelper.LayoutElement(true, 20, (from, to) -> {
-                titleY = (from + to) / 2;
+                helpButton.field_230690_l_ = field_230708_k_ - 50;
+                helpButton.field_230691_m_ = 10;
+                helpButton.func_230991_b_(30);
             }),
             CHelper.LayoutElement.blankSpace(10),
             new CHelper.LayoutElement(true, 20, (a, b) -> {
@@ -254,7 +271,7 @@ public class AltiusScreen extends Screen {
         }
         addDimensionButton.field_230694_p_ = isEnabled;
         removeDimensionButton.field_230694_p_ = isEnabled;
-    
+        
         loopButton.field_230694_p_ = isEnabled;
         respectSpaceRatioButton.field_230694_p_ = isEnabled;
     }

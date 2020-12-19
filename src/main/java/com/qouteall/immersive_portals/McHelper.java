@@ -478,7 +478,7 @@ public class McHelper {
         Predicate<T> predicate
     ) {
         ArrayList<T> result = new ArrayList<>();
-    
+        
         foreachEntities(
             entityClass, chunkAccessor,
             chunkXStart, chunkXEnd, chunkYStart, chunkYEnd, chunkZStart, chunkZEnd,
@@ -511,7 +511,7 @@ public class McHelper {
                 Chunk chunk = chunkAccessor.getChunk(x, z);
                 if (chunk != null && !(chunk instanceof EmptyChunk)) {
                     ClassInheritanceMultiMap<Entity>[] entitySections =
-                        ((IEWorldChunk) chunk).getEntitySections();
+                        ((IEWorldChunk) chunk).portal_getEntitySections();
                     for (int i = chunkYStart; i <= chunkYEnd; i++) {
                         ClassInheritanceMultiMap<Entity> entitySection = entitySections[i];
                         for (T entity : entitySection.getByClass(entityClass)) {
