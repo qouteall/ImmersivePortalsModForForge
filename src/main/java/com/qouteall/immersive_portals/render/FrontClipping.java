@@ -2,6 +2,7 @@ package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.CGlobal;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.my_util.Plane;
@@ -67,7 +68,7 @@ public class FrontClipping {
     
     private static double[] getClipEquationInner(boolean doCompensate, Vector3d clippingPoint, Vector3d clippingDirection) {
         
-        Vector3d cameraPos = McHelper.getCurrentCameraPos();
+        Vector3d cameraPos = CHelper.getCurrentCameraPos();
         
         
         Vector3d planeNormal = clippingDirection;

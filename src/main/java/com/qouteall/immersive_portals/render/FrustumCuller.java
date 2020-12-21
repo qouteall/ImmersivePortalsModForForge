@@ -2,28 +2,22 @@ package com.qouteall.immersive_portals.render;
 
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.CHelper;
+import com.qouteall.immersive_portals.my_util.BoxPredicate;
 import com.qouteall.immersive_portals.portal.Portal;
-import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
-import java.util.Comparator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
+import java.util.Comparator;
+
 @OnlyIn(Dist.CLIENT)
 public class FrustumCuller {
     
     
-    public static interface BoxPredicate {
-        boolean test(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
-    }
-    
     private BoxPredicate canDetermineInvisibleFunc;
-    
-    private static final BoxPredicate nonePredicate =
-        (double minX, double minY, double minZ, double maxX, double maxY, double maxZ) -> false;
     
     public FrustumCuller() {
     }
@@ -46,39 +40,15 @@ public class FrustumCuller {
         double cameraZ
     ) {
         if (!CGlobal.doUseAdvancedFrustumCulling) {
-            return nonePredicate;
+            return BoxPredicate.nonePredicate;
         }
         
         if (PortalRendering.isRendering()) {
-            PortalLike portal = PortalRendering.getRenderingPortal();
-            
-            Vector3d portalOriginInLocalCoordinate = portal.getDestPos().add(
-                -cameraX, -cameraY, -cameraZ
-            );
-            Vector3d[] innerFrustumCullingVertices = portal.getInnerFrustumCullingVertices();
-            if (innerFrustumCullingVertices == null) {
-                return nonePredicate;
-            }
-            Vector3d[] downLeftUpRightPlaneNormals = getDownLeftUpRightPlaneNormals(
-                portalOriginInLocalCoordinate,
-                innerFrustumCullingVertices
-            );
-            
-            Vector3d downPlane = downLeftUpRightPlaneNormals[0];
-            Vector3d leftPlane = downLeftUpRightPlaneNormals[1];
-            Vector3d upPlane = downLeftUpRightPlaneNormals[2];
-            Vector3d rightPlane = downLeftUpRightPlaneNormals[3];
-            
-            return
-                (double minX, double minY, double minZ, double maxX, double maxY, double maxZ) ->
-                    isFullyOutsideFrustum(
-                        minX, minY, minZ, maxX, maxY, maxZ,
-                        leftPlane, rightPlane, upPlane, downPlane
-                    );
+            return PortalRendering.getRenderingPortal().getInnerFrustumCullingFunc(cameraX, cameraY, cameraZ);
         }
         else {
             if (!CGlobal.useSuperAdvancedFrustumCulling) {
-                return nonePredicate;
+                return BoxPredicate.nonePredicate;
             }
             
             Portal portal = getCurrentNearestVisibleCullablePortal();
@@ -90,7 +60,7 @@ public class FrustumCuller {
                 );
                 final Vector3d[] outerFrustumCullingVertices = portal.getOuterFrustumCullingVertices();
                 if (outerFrustumCullingVertices == null) {
-                    return nonePredicate;
+                    return BoxPredicate.nonePredicate;
                 }
                 Vector3d[] downLeftUpRightPlaneNormals = getDownLeftUpRightPlaneNormals(
                     portalOriginInLocalCoordinate,
@@ -127,12 +97,12 @@ public class FrustumCuller {
                     };
             }
             else {
-                return nonePredicate;
+                return BoxPredicate.nonePredicate;
             }
         }
     }
     
-    public Vector3d[] getDownLeftUpRightPlaneNormals(
+    public static Vector3d[] getDownLeftUpRightPlaneNormals(
         Vector3d portalOriginInLocalCoordinate,
         Vector3d[] fourVertices
     ) {
@@ -243,7 +213,7 @@ public class FrustumCuller {
         return x * planeNormalX + y * planeNormalY + z * planeNormalZ >= 0;
     }
     
-    private static boolean isFullyOutsideFrustum(
+    public static boolean isFullyOutsideFrustum(
         double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
         Vector3d leftPlane,
         Vector3d rightPlane,

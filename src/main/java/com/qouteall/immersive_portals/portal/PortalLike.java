@@ -1,7 +1,10 @@
 package com.qouteall.immersive_portals.portal;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.my_util.BoxPredicate;
 import com.qouteall.immersive_portals.my_util.Plane;
+import com.qouteall.immersive_portals.render.MyGameRenderer;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.vector.Matrix4f;
@@ -15,6 +18,11 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 public interface PortalLike {
+    @OnlyIn(Dist.CLIENT)
+    BoxPredicate getInnerFrustumCullingFunc(
+        double cameraX, double cameraY, double cameraZ
+    );
+    
     boolean isConventionalPortal();
     
     // bounding box
@@ -54,10 +62,6 @@ public interface PortalLike {
     
     boolean getIsGlobal();
     
-    // used for advanced frustum culling
-    @Nullable
-    Vector3d[] getInnerFrustumCullingVertices();
-    
     // used for super advanced frustum culling
     @Nullable
     Vector3d[] getOuterFrustumCullingVertices();
@@ -73,6 +77,8 @@ public interface PortalLike {
     UUID getDiscriminator();
     
     boolean isParallelWith(Portal portal);
+    
+    boolean isFuseView();
     
     default boolean hasScaling() {
         return getScale() != 1.0;
@@ -97,6 +103,12 @@ public interface PortalLike {
         final Vector3d boxSize = Helper.getBoxSize(getExactAreaBox());
         final double maxDimension = Math.max(Math.max(boxSize.x, boxSize.y), boxSize.z);
         return maxDimension;
+    }
+    
+    // the container contains WorldRenderer.ChunkInfo
+    @OnlyIn(Dist.CLIENT)
+    default void doAdditionalRenderingCull(ObjectList<?> visibleChunks) {
+        MyGameRenderer.cullRenderingSections(visibleChunks, this);
     }
     
 }

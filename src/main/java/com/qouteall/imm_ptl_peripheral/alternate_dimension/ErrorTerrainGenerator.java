@@ -34,6 +34,7 @@ import net.minecraft.world.gen.feature.structure.StructureManager;
 import net.minecraft.world.gen.feature.structure.WoodlandMansionStructure;
 import net.minecraft.world.gen.settings.DimensionStructuresSettings;
 import net.minecraft.world.spawner.WorldEntitySpawner;
+
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -195,6 +196,7 @@ public class ErrorTerrainGenerator extends ChunkGenerator {
     
     @Override
     public void generateSurface(WorldGenRegion region, IChunk chunk) {
+        // copied from NoiseChunkGenerator
         try {
             ChunkPos chunkPos = chunk.getPos();
             int i = chunkPos.x;
@@ -213,18 +215,11 @@ public class ErrorTerrainGenerator extends ChunkGenerator {
                     int p = l + n;
                     int q = chunk.getTopBlockY(Heightmap.Type.WORLD_SURFACE_WG, m, n) + 1;
                     double e = this.surfaceDepthNoise.noiseAt(
-                        (double) o * 0.0625D,
-                        (double) p * 0.0625D,
-                        0.0625D,
-                        (double) m * 0.0625D
+                        (double) o * 0.0625D, (double) p * 0.0625D,
+                        0.0625D, (double) m * 0.0625D
                     ) * 15.0D;
                     region.getBiome(mutable.setPos(k + m, q, l + n)).buildSurface(
-                        chunkRandom,
-                        chunk,
-                        o,
-                        p,
-                        q,
-                        e,
+                        chunkRandom, chunk, o, p, q, e,
                         this.defaultBlock,
                         this.defaultFluid,
                         this.func_230356_f_(),
@@ -232,7 +227,6 @@ public class ErrorTerrainGenerator extends ChunkGenerator {
                     );
                 }
             }
-            
             
             avoidSandLag(region);
         }

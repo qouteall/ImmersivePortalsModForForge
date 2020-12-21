@@ -16,6 +16,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+
 import java.util.List;
 import java.util.function.Function;
 
@@ -114,7 +115,7 @@ public class CollisionHelper {
         Function<Vector3d, Vector3d> handleCollisionFunc,
         AxisAlignedBB originalBoundingBox
     ) {
-        if (!collidingPortal.hasCrossPortalCollision()) {
+        if (!collidingPortal.hasCrossPortalCollision) {
             return attemptedMove;
         }
         
@@ -245,18 +246,6 @@ public class CollisionHelper {
             portal.getDestPos().subtract(attemptedMove),
             portal.getContentDirection()
         );
-
-//        final Box box = clipBox(
-//            otherSideBox,
-//            portal.destination,
-//            portal.getContentDirection()
-//        );
-//
-//        if (box == null) {
-//
-//        }
-//
-//        return box;
     }
     
     private static AxisAlignedBB transformBox(Portal portal, AxisAlignedBB originalBox) {

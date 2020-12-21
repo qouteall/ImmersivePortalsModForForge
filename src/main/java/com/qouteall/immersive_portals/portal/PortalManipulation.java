@@ -93,7 +93,7 @@ public class PortalManipulation {
     
     public static Portal completeBiWayPortal(Portal portal, EntityType<? extends Portal> entityType) {
         Portal newPortal = createReversePortal(portal, entityType);
-    
+        
         McHelper.spawnServerEntity(newPortal);
         
         return newPortal;
@@ -134,7 +134,7 @@ public class PortalManipulation {
         }
         
         newPortal.scaling = 1.0 / portal.scaling;
-    
+        
         copyAdditionalProperties(newPortal, portal);
         
         return newPortal;
@@ -147,7 +147,7 @@ public class PortalManipulation {
     
     public static Portal completeBiFacedPortal(Portal portal, EntityType<Portal> entityType) {
         Portal newPortal = createFlippedPortal(portal, entityType);
-    
+        
         McHelper.spawnServerEntity(newPortal);
         
         return newPortal;
@@ -181,7 +181,7 @@ public class PortalManipulation {
         newPortal.rotation = portal.rotation;
         
         newPortal.scaling = portal.scaling;
-    
+        
         copyAdditionalProperties(newPortal, portal);
         
         return newPortal;
@@ -213,7 +213,7 @@ public class PortalManipulation {
         newPortal.rotation = portal.rotation;
         
         newPortal.scaling = portal.scaling;
-    
+        
         copyAdditionalProperties(newPortal, portal);
         
         return newPortal;
@@ -330,6 +330,7 @@ public class PortalManipulation {
         PortalExtension.get(to).motionAffinity = PortalExtension.get(from).motionAffinity;
         PortalExtension.get(to).adjustPositionAfterTeleport = PortalExtension.get(from).adjustPositionAfterTeleport;
         to.portalTag = from.portalTag;
+        to.hasCrossPortalCollision = from.hasCrossPortalCollision;
     }
     
     public static void createScaledBoxView(
@@ -337,7 +338,11 @@ public class PortalManipulation {
         ServerWorld boxWorld, Vector3d boxBottomCenter,
         double scale,
         boolean biWay,
-        boolean teleportChangesScale
+        boolean teleportChangesScale,
+        boolean outerFuseView,
+        boolean outerRenderingMergable,
+        boolean innerRenderingMergable,
+        boolean hasCrossPortalCollision
     ) {
         Vector3d viewBoxSize = Helper.getBoxSize(area).scale(1.0 / scale);
         AxisAlignedBB viewBox = Helper.getBoxByBottomPosAndSize(boxBottomCenter, viewBoxSize);
@@ -350,12 +355,20 @@ public class PortalManipulation {
             );
             portal.scaling = scale;
             portal.teleportChangesScale = teleportChangesScale;
+            portal.fuseView = outerFuseView;
+            portal.renderingMergable = outerRenderingMergable;
+            portal.hasCrossPortalCollision = hasCrossPortalCollision;
             PortalExtension.get(portal).adjustPositionAfterTeleport = true;
             
             McHelper.spawnServerEntity(portal);
             
             if (biWay) {
-                completeBiWayPortal(portal, Portal.entityType);
+                Portal reversePortal = createReversePortal(portal, Portal.entityType);
+                
+                reversePortal.renderingMergable = innerRenderingMergable;
+                
+                McHelper.spawnServerEntity(reversePortal);
+                
             }
         }
     }

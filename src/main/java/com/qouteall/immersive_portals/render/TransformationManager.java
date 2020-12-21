@@ -25,25 +25,27 @@ public class TransformationManager {
     private static long interpolationEndTime = 1;
     
     public static final Minecraft client = Minecraft.getInstance();
-    
-    private static boolean shouldOverrideVanillaCameraTransformation() {
-        return RenderingHierarchy.isRendering() || isAnimationRunning();
-    }
+
+//    private static boolean shouldOverrideVanillaCameraTransformation() {
+//        return RenderingHierarchy.isRendering() || isAnimationRunning();
+//    }
     
     public static void processTransformation(ActiveRenderInfo camera, MatrixStack matrixStack) {
-        if (!shouldOverrideVanillaCameraTransformation()) {
-            return;
+//        if (!shouldOverrideVanillaCameraTransformation()) {
+//            return;
+//        }
+        
+        if (isAnimationRunning()) {
+            // override vanilla camera transformation
+            matrixStack.getLast().getMatrix().setIdentity();
+            matrixStack.getLast().getNormal().setIdentity();
+            
+            DQuaternion cameraRotation = DQuaternion.getCameraRotation(camera.getPitch(), camera.getYaw());
+            
+            DQuaternion finalRotation = getFinalRotation(cameraRotation);
+            
+            matrixStack.rotate(finalRotation.toMcQuaternion());
         }
-        
-        // override vanilla camera transformation
-        matrixStack.getLast().getMatrix().setIdentity();
-        matrixStack.getLast().getNormal().setIdentity();
-        
-        DQuaternion cameraRotation = DQuaternion.getCameraRotation(camera.getPitch(), camera.getYaw());
-        
-        DQuaternion finalRotation = getFinalRotation(cameraRotation);
-        
-        matrixStack.rotate(finalRotation.toMcQuaternion());
         
         RenderingHierarchy.applyAdditionalTransformations(matrixStack);
         

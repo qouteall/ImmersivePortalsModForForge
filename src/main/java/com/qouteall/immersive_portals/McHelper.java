@@ -15,7 +15,6 @@ import com.qouteall.immersive_portals.ducks.IEWorldChunk;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
@@ -607,10 +606,6 @@ public class McHelper {
         }
         
         return either.right().map(DataResult.PartialResult::toString).orElse("");
-    }
-    
-    public static Vector3d getCurrentCameraPos() {
-        return Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
     }
     
     public static class MyDecodeException extends RuntimeException {

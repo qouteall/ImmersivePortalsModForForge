@@ -459,12 +459,16 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         isReloadingOtherWorldRenderers = false;
     }
     
-    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("HEAD"))
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderSky(Lcom/mojang/blaze3d/matrix/MatrixStack;F)V", at = @At("HEAD"), cancellable = true)
     private void onRenderSkyBegin(MatrixStack matrixStack_1, float float_1, CallbackInfo ci) {
         if (PortalRendering.isRendering()) {
             //reset gl states
             RenderType.getBlockRenderTypes().get(0).setupRenderState();
             RenderType.getBlockRenderTypes().get(0).clearRenderState();
+    
+            if (PortalRendering.getRenderingPortal().isFuseView()) {
+                ci.cancel();
+            }
             
             //fix sky abnormal with optifine and fog disabled
             if (OFInterface.isFogDisabled.getAsBoolean()) {

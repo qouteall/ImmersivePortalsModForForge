@@ -10,6 +10,7 @@ import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.context_management.FogRendererContext;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.math.vector.Vector3d;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
@@ -26,13 +27,18 @@ import static org.lwjgl.opengl.GL11.GL_STENCIL_TEST;
 //because GlStateManager will cache its state. Do not make its cache not synchronized
 public class RendererUsingStencil extends PortalRenderer {
     
+    
     @Override
     public boolean replaceFrameBufferClearing() {
         boolean skipClearing = PortalRendering.isRendering();
         if (skipClearing) {
-            RenderSystem.depthMask(false);
-            MyRenderHelper.renderScreenTriangle(FogRendererContext.getCurrentFogColor.get());
-            RenderSystem.depthMask(true);
+            boolean isSkyTransparent = PortalRendering.getRenderingPortal().isFuseView();
+            
+            if (!isSkyTransparent) {
+                RenderSystem.depthMask(false);
+                MyRenderHelper.renderScreenTriangle(FogRendererContext.getCurrentFogColor.get());
+                RenderSystem.depthMask(true);
+            }
         }
         return skipClearing;
     }
@@ -100,6 +106,10 @@ public class RendererUsingStencil extends PortalRenderer {
         PortalLike portal,
         MatrixStack matrixStack
     ) {
+        if (shouldSkipRenderingInsideFuseViewPortal(portal)) {
+            return;
+        }
+        
         int outerPortalStencilValue = PortalRendering.getPortalLayer();
         
         client.getProfiler().startSection("render_view_area");
@@ -119,15 +129,19 @@ public class RendererUsingStencil extends PortalRenderer {
         
         int thisPortalStencilValue = outerPortalStencilValue + 1;
         
-        client.getProfiler().startSection("clear_depth_of_view_area");
-        clearDepthOfThePortalViewArea(portal);
-        client.getProfiler().endSection();
+        if (!portal.isFuseView()) {
+            client.getProfiler().startSection("clear_depth_of_view_area");
+            clearDepthOfThePortalViewArea(portal);
+            client.getProfiler().endSection();
+        }
         
         setStencilStateForWorldRendering();
         
         renderPortalContent(portal);
         
-        restoreDepthOfPortalViewArea(portal, matrixStack);
+        if (!portal.isFuseView()) {
+            restoreDepthOfPortalViewArea(portal, matrixStack);
+        }
         
         clampStencilValue(outerPortalStencilValue);
         
@@ -159,12 +173,24 @@ public class RendererUsingStencil extends PortalRenderer {
         
         GL20.glUseProgram(0);
         
-        RenderSystem.enableDepthTest();
-        GlStateManager.depthMask(true);
+        
+        if (portal.isFuseView()) {
+            GlStateManager.colorMask(false, false, false, false);
+            
+            RenderSystem.disableDepthTest();
+        }
+        else {
+            RenderSystem.enableDepthTest();
+            GlStateManager.depthMask(true);
+        }
         
         GlStateManager.disableTexture();
         
         ViewAreaRenderer.drawPortalViewTriangle(portal, matrixStack, true, true);
+        
+        if (portal.isFuseView()) {
+            GlStateManager.colorMask(true, true, true, true);
+        }
         
         GlStateManager.enableTexture();
         
@@ -267,5 +293,24 @@ public class RendererUsingStencil extends PortalRenderer {
         
         //do not manipulate stencil packetBuffer now
         GL11.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    }
+    
+    private static boolean shouldSkipRenderingInsideFuseViewPortal(PortalLike portal) {
+        if (!PortalRendering.isRendering()) {
+            return false;
+        }
+        
+        PortalLike renderingPortal = PortalRendering.getRenderingPortal();
+        
+        if (!renderingPortal.isFuseView()) {
+            return false;
+        }
+        
+        Vector3d cameraPos = CHelper.getCurrentCameraPos();
+        
+        Vector3d transformedCameraPos = portal.transformPoint(renderingPortal.transformPoint(cameraPos));
+        
+        // roughly test whether they are reverse portals
+        return cameraPos.squareDistanceTo(transformedCameraPos) < 0.1;
     }
 }

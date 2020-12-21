@@ -6,7 +6,6 @@ import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -25,6 +24,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+
 import java.util.Objects;
 
 public class EndPortalEntity extends Portal {
@@ -38,6 +38,9 @@ public class EndPortalEntity extends Portal {
         World world_1
     ) {
         super(entityType_1, world_1);
+    
+        renderingMergable = true;
+        hasCrossPortalCollision = false;
     }
     
     public static void onEndPortalComplete(ServerWorld world, Vector3d portalCenter) {
@@ -143,33 +146,34 @@ public class EndPortalEntity extends Portal {
                     }
                 }
             }
-            if (player.world == this.world && player.getPositionVec().squareDistanceTo(getOriginPos()) < 10 * 10) {
-                if (clientFakedReversePortal == null) {
-                    // client only faked portal
-                    clientFakedReversePortal =
-                        PortalManipulation.createReversePortal(this, EndPortalEntity.entityType);
-                    
-                    int newEntityId = -getEntityId();
-                    clientFakedReversePortal.setEntityId(newEntityId);
-                    
-                    clientFakedReversePortal.teleportable = false;
-                    
-                    clientFakedReversePortal.portalTag = "view_box_faked_reverse";
-                    
-                    clientFakedReversePortal.clientFakedReversePortal = this;
-                    
-                    ((ClientWorld) getDestinationWorld()).addEntity(
-                        clientFakedReversePortal.getEntityId(),
-                        clientFakedReversePortal
-                    );
-                }
-            }
-            else {
-                if (clientFakedReversePortal != null) {
-                    clientFakedReversePortal.remove();
-                    clientFakedReversePortal = null;
-                }
-            }
+            fuseView = true;
+//            if (player.world == this.world && player.getPos().squaredDistanceTo(getOriginPos()) < 10 * 10) {
+//                if (clientFakedReversePortal == null) {
+//                    // client only faked portal
+//                    clientFakedReversePortal =
+//                        PortalManipulation.createReversePortal(this, EndPortalEntity.entityType);
+//
+//                    int newEntityId = -getEntityId();
+//                    clientFakedReversePortal.setEntityId(newEntityId);
+//
+//                    clientFakedReversePortal.teleportable = false;
+//
+//                    clientFakedReversePortal.portalTag = "view_box_faked_reverse";
+//
+//                    clientFakedReversePortal.clientFakedReversePortal = this;
+//
+//                    ((ClientWorld) getDestinationWorld()).addEntity(
+//                        clientFakedReversePortal.getEntityId(),
+//                        clientFakedReversePortal
+//                    );
+//                }
+//            }
+//            else {
+//                if (clientFakedReversePortal != null) {
+//                    clientFakedReversePortal.remove();
+//                    clientFakedReversePortal = null;
+//                }
+//            }
         }
         else if (Objects.equals(portalTag, "view_box_faked_reverse")) {
             if (clientFakedReversePortal.removed) {
@@ -216,12 +220,6 @@ public class EndPortalEntity extends Portal {
         return super.canTeleportEntity(entity);
     }
     
-    // avoid cannot enter the scaled view end portal
-    @Override
-    public boolean hasCrossPortalCollision() {
-        return false;
-    }
-    
     private boolean shouldAddSlowFalling(Entity entity) {
         if (entity instanceof LivingEntity) {
             if (entity instanceof ServerPlayerEntity) {
@@ -238,6 +236,13 @@ public class EndPortalEntity extends Portal {
         else {
             return false;
         }
+    }
+    
+    // if the bounding box is too small
+    // grouping will fail
+    @Override
+    public boolean shouldLimitBoundingBox() {
+        return false;
     }
     
     private static void generateObsidianPlatform() {

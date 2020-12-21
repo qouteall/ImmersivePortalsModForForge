@@ -94,7 +94,7 @@ public class PortalRenderInfo {
             if (portal.world.isRemote()) {
                 PortalRenderInfo presentation = getOptional(portal);
                 if (presentation != null) {
-                    presentation.onPortalCacheUpdate();
+                    presentation.onPortalCacheUpdate(portal);
                 }
             }
         });
@@ -260,9 +260,9 @@ public class PortalRenderInfo {
     
     // Grouping -----
     
-    private void onPortalCacheUpdate() {
+    private void onPortalCacheUpdate(Portal portal) {
         needsGroupingUpdate = true;
-        renderingGroup = null;
+        setGroup(portal, null);
     }
     
     private void setGroup(Portal portal, @Nullable PortalRenderingGroup group) {
@@ -279,7 +279,7 @@ public class PortalRenderInfo {
     private void updateGrouping(Portal portal) {
         Validate.isTrue(!portal.isGlobalPortal);
         
-        if (!Global.mergePortalRendering) {
+        if (!Global.enablePortalRenderingMerge) {
             return;
         }
         
@@ -288,7 +288,7 @@ public class PortalRenderInfo {
             portal.getOriginWorld(),
             portal.getBoundingBox().grow(0.5),
             portal.getSizeEstimation() * 2 + 5,
-            p -> p != portal && !Portal.isFlippedPortal(p, portal)
+            p -> p != portal && !Portal.isFlippedPortal(p, portal) && canMerge(p)
         );
         
         Portal.TransformationDesc thisDesc = portal.getTransformationDesc();
@@ -336,6 +336,13 @@ public class PortalRenderInfo {
         setGroup(portal, null);
     }
     
+    private static boolean canMerge(Portal p) {
+        if (Global.forceMergePortalRendering) {
+            return true;
+        }
+        return p.isRenderingMergable();
+    }
+    
     @Nullable
     public static PortalRenderingGroup getGroupOf(Portal portal) {
         Validate.isTrue(!portal.getIsGlobal());
@@ -344,7 +351,12 @@ public class PortalRenderInfo {
     }
     
     private static void mergeGroup(PortalRenderingGroup g1, PortalRenderingGroup g2) {
-        for (Portal portal : new ArrayList<>(g2.portals)) {
+        if (g1 == g2) {
+            return;
+        }
+        
+        ArrayList<Portal> g2Portals = new ArrayList<>(g2.portals);
+        for (Portal portal : g2Portals) {
             get(portal).setGroup(portal, g1);
         }
     }

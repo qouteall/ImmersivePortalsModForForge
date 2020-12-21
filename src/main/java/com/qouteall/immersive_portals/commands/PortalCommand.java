@@ -1131,13 +1131,27 @@ public class PortalCommand {
                         .then(Commands.argument("placeTargetEntity", EntityArgument.entity())
                             .then(Commands.argument("biWay", BoolArgumentType.bool())
                                 .executes(context -> {
-                                    invokeCreateScaledViewCommand(context, false);
+                                    invokeCreateScaledViewCommand(
+                                        context,
+                                        false,
+                                        false,
+                                        false,
+                                        true,
+                                        BoolArgumentType.getBool(context, "biWay")
+                                    );
                                     return 0;
                                 })
                                 .then(Commands.argument("teleportChangesScale", BoolArgumentType.bool())
                                     .executes(context -> {
                                         boolean teleportChangesScale = BoolArgumentType.getBool(context, "teleportChangesScale");
-                                        invokeCreateScaledViewCommand(context, teleportChangesScale);
+                                        invokeCreateScaledViewCommand(
+                                            context,
+                                            teleportChangesScale,
+                                            false,
+                                            false,
+                                            true,
+                                            BoolArgumentType.getBool(context, "biWay")
+                                        );
                                         return 0;
                                     })
                                 )
@@ -1147,11 +1161,39 @@ public class PortalCommand {
                 )
             )
         );
+        
+        builder.then(Commands.literal("create_scaled_box_view_optimized")
+            .then(Commands.argument("p1", BlockPosArgument.blockPos())
+                .then(Commands.argument("p2", BlockPosArgument.blockPos())
+                    .then(Commands.argument("scale", DoubleArgumentType.doubleArg())
+                        .then(Commands.argument("placeTargetEntity", EntityArgument.entity())
+                            .executes(context -> {
+                                invokeCreateScaledViewCommand(
+                                    context,
+                                    false,
+                                    true,
+                                    true,
+                                    true,
+                                    true
+                                );
+                                return 0;
+                            })
+                        )
+                    )
+                )
+            )
+        );
     }
     
     private static void invokeCreateScaledViewCommand(
-        CommandContext<CommandSource> context, boolean teleportChangesScale
+        CommandContext<CommandSource> context,
+        boolean teleportChangesScale,
+        boolean outerFuseView,
+        boolean outerRenderingMergable,
+        boolean innerRenderingMergable,
+        boolean isBiWay
     ) throws CommandSyntaxException {
+        
         BlockPos bp1 = BlockPosArgument.getBlockPos(context, "p1");
         BlockPos bp2 = BlockPosArgument.getBlockPos(context, "p2");
         IntBox intBox = new IntBox(bp1, bp2);
@@ -1166,12 +1208,12 @@ public class PortalCommand {
         
         double scale = DoubleArgumentType.getDouble(context, "scale");
         
-        boolean biWay = BoolArgumentType.getBool(context, "biWay");
-        
         
         PortalManipulation.createScaledBoxView(
             areaWorld, area, boxWorld, boxBottomCenter, scale,
-            biWay, teleportChangesScale
+            isBiWay, teleportChangesScale,
+            outerFuseView, outerRenderingMergable, innerRenderingMergable,
+            false
         );
     }
     

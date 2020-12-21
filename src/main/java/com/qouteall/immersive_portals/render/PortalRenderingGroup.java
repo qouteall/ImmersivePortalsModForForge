@@ -1,9 +1,14 @@
 package com.qouteall.immersive_portals.render;
 
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ducks.IEWorldRendererChunkInfo;
+import com.qouteall.immersive_portals.my_util.BoxPredicate;
+import com.qouteall.immersive_portals.my_util.LimitedLogger;
 import com.qouteall.immersive_portals.my_util.Plane;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalLike;
+import it.unimi.dsi.fastutil.objects.ObjectList;
+import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.MathHelper;
@@ -20,9 +25,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @OnlyIn(Dist.CLIENT)
 public class PortalRenderingGroup implements PortalLike {
+    
+    private static final LimitedLogger limitedLogger = new LimitedLogger(20);
     
     public final Portal.TransformationDesc transformationDesc;
     public final List<Portal> portals = new ArrayList<>();
@@ -30,6 +38,12 @@ public class PortalRenderingGroup implements PortalLike {
     private AxisAlignedBB exactBoundingBox;
     private Vector3d origin;
     private Vector3d dest;
+    
+    @Nullable
+    private AxisAlignedBB destAreaBoxCache = null;
+    
+    @Nullable
+    private Boolean isEnclosedCache = null;
     
     private final UUID uuid = MathHelper.getRandomUUID();
     
@@ -42,7 +56,7 @@ public class PortalRenderingGroup implements PortalLike {
         Validate.isTrue(!portal.getIsGlobal());
         
         if (portals.contains(portal)) {
-            Helper.err("Adding duplicate portal into group " + portal);
+            limitedLogger.err("Adding duplicate portal into group " + portal);
             return;
         }
         
@@ -60,6 +74,20 @@ public class PortalRenderingGroup implements PortalLike {
         exactBoundingBox = null;
         origin = null;
         dest = null;
+        destAreaBoxCache = null;
+        isEnclosedCache = null;
+    }
+    
+    public AxisAlignedBB getDestAreaBox() {
+        if (destAreaBoxCache == null) {
+            destAreaBoxCache = (
+                Helper.transformBox(getExactAreaBox(), pos -> {
+                    return portals.get(0).transformPoint(pos);
+                })
+            );
+        }
+        
+        return destAreaBoxCache;
     }
     
     @Override
@@ -143,6 +171,11 @@ public class PortalRenderingGroup implements PortalLike {
         return null;
     }
     
+    @Override
+    public boolean isInside(Vector3d entityPos, double valve) {
+        return getDestAreaBox().contains(entityPos);
+    }
+    
     @Nullable
     @Override
     public Quaternion getRotation() {
@@ -157,12 +190,6 @@ public class PortalRenderingGroup implements PortalLike {
     @Override
     public boolean getIsGlobal() {
         return false;
-    }
-    
-    @Nullable
-    @Override
-    public Vector3d[] getInnerFrustumCullingVertices() {
-        return null;
     }
     
     @Nullable
@@ -205,9 +232,66 @@ public class PortalRenderingGroup implements PortalLike {
         return portals.stream().anyMatch(p -> p.isParallelWith(portal));
     }
     
+    @OnlyIn(Dist.CLIENT)
+    @Override
+    public BoxPredicate getInnerFrustumCullingFunc(
+        double cameraX, double cameraY, double cameraZ
+    ) {
+        Vector3d cameraPos = new Vector3d(cameraX, cameraY, cameraZ);
+        
+        List<BoxPredicate> funcs = portals.stream().filter(
+            portal -> portal.isInFrontOfPortal(cameraPos)
+        ).map(
+            portal -> portal.getInnerFrustumCullingFunc(cameraX, cameraY, cameraZ)
+        ).collect(Collectors.toList());
+        
+        return (minX, minY, minZ, maxX, maxY, maxZ) -> {
+            // return true if all funcs return true
+            for (BoxPredicate func : funcs) {
+                if (!func.test(minX, minY, minZ, maxX, maxY, maxZ)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    @Override
+    public void doAdditionalRenderingCull(ObjectList<?> visibleChunks) {
+        if (!isEnclosed()) {
+            return;
+        }
+        
+        //contract because the exact bounding box is a little bigger
+        AxisAlignedBB enclosedDestAreaBox = getDestAreaBox().shrink(0.5);
+        if (enclosedDestAreaBox != null) {
+            Helper.removeIf(visibleChunks, (obj) -> {
+                ChunkRenderDispatcher.ChunkRender builtChunk =
+                    ((IEWorldRendererChunkInfo) obj).getBuiltChunk();
+
+                return !builtChunk.boundingBox.intersects(enclosedDestAreaBox);
+            });
+        }
+    }
+    
+    @Override
+    public boolean isFuseView() {
+        return portals.get(0).isFuseView();
+    }
+    
     @Override
     public String toString() {
         return String.format("PortalRenderingGroup(%s)%s", portals.size(), portals.get(0).portalTag);
     }
     
+    public boolean isEnclosed(){
+        if (isEnclosedCache == null) {
+            isEnclosedCache = portals.stream().allMatch(
+                p -> p.getOriginPos().subtract(getOriginPos()).dotProduct(p.getNormal()) > 0.3
+            );
+        }
+    
+        return isEnclosedCache;
+    }
 }

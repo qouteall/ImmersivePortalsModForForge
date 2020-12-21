@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.render;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.McHelper;
@@ -24,6 +25,7 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+
 import java.util.WeakHashMap;
 
 @OnlyIn(Dist.CLIENT)
@@ -280,7 +282,7 @@ public class CrossPortalEntityRenderer {
             return;
         }
         
-        Vector3d cameraPos = McHelper.getCurrentCameraPos();
+        Vector3d cameraPos = CHelper.getCurrentCameraPos();
         
         Vector3d anchor = entity.getEyePosition(RenderStates.tickDelta).subtract(cameraPos);
         
