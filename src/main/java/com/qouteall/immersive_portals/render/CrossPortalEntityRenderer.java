@@ -25,7 +25,6 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-
 import java.util.WeakHashMap;
 
 @OnlyIn(Dist.CLIENT)

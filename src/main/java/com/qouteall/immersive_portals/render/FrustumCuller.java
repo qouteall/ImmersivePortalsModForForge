@@ -5,13 +5,12 @@ import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.my_util.BoxPredicate;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
+import java.util.Comparator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-
-import java.util.Comparator;
 
 @OnlyIn(Dist.CLIENT)
 public class FrustumCuller {

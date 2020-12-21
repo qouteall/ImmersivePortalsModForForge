@@ -34,7 +34,6 @@ import net.minecraft.world.gen.feature.structure.StructureManager;
 import net.minecraft.world.gen.feature.structure.WoodlandMansionStructure;
 import net.minecraft.world.gen.settings.DimensionStructuresSettings;
 import net.minecraft.world.spawner.WorldEntitySpawner;
-
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
