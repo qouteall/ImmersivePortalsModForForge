@@ -69,14 +69,14 @@ public class IntrinsicPortalGeneration {
                 Global.netherPortalMode == Global.NetherPortalMode.normal ?
                     IntrinsicPortalGeneration.intrinsicToNether :
                     diligentToNether;
-            return gen.perform(fromWorld, firePos);
+            return gen.perform(fromWorld, firePos, null);
         }
         else if (fromDimension == World.field_234919_h_) {
             CustomPortalGeneration gen =
                 Global.netherPortalMode == Global.NetherPortalMode.normal ?
                     IntrinsicPortalGeneration.intrinsicFromNether :
                     diligentFromNether;
-            return gen.perform(fromWorld, firePos);
+            return gen.perform(fromWorld, firePos, null);
         }
         
         return false;
@@ -95,6 +95,6 @@ public class IntrinsicPortalGeneration {
         ServerWorld fromWorld,
         BlockPos firePos
     ) {
-        return portalHelper.perform(fromWorld, firePos);
+        return portalHelper.perform(fromWorld, firePos, null);
     }
 }

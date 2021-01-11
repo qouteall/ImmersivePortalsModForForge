@@ -7,8 +7,12 @@ import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
+@OnlyIn(Dist.CLIENT)
 public class PortalEntityRenderer extends EntityRenderer<Portal> {
+    
     public PortalEntityRenderer(EntityRendererManager entityRenderDispatcher_1) {
         super(entityRenderDispatcher_1);
     }
@@ -16,18 +20,33 @@ public class PortalEntityRenderer extends EntityRenderer<Portal> {
     @Override
     public void render(
         Portal portal,
-        float float_1,
-        float float_2,
-        MatrixStack matrixStack_1,
-        IRenderTypeBuffer vertexConsumerProvider_1,
-        int int_1
+        float yaw,
+        float tickDelta,
+        MatrixStack matrixStack,
+        IRenderTypeBuffer vertexConsumerProvider,
+        int light
     ) {
-        super.render(portal, float_1, float_2, matrixStack_1, vertexConsumerProvider_1, int_1);
+        
         CGlobal.renderer.renderPortalInEntityRenderer(portal);
+        
+//        if (portal instanceof BreakablePortalEntity) {
+//            BreakablePortalEntity breakablePortalEntity = (BreakablePortalEntity) portal;
+//            OverlayRendering.renderBreakablePortalOverlay(
+//                breakablePortalEntity, tickDelta, matrixStack, vertexConsumerProvider, light
+//            );
+//        }
+//
+        super.render(portal, yaw, tickDelta, matrixStack, vertexConsumerProvider, light);
     }
     
     @Override
-    public ResourceLocation getEntityTexture(Portal var1) {
+    public ResourceLocation getEntityTexture(Portal portal) {
+//        if (portal instanceof BreakablePortalEntity) {
+//            if (((BreakablePortalEntity) portal).overlayBlockState != null) {
+//                return SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE;
+//            }
+//        }
         return null;
     }
+    
 }

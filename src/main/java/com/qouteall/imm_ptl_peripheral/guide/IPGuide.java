@@ -20,6 +20,7 @@ import java.io.IOException;
 public class IPGuide {
     public static class GuideInfo {
         public boolean wikiInformed = false;
+        public boolean portalHelperInformed = false;
         
         public GuideInfo() {}
     }
@@ -70,29 +71,35 @@ public class IPGuide {
         CommonNetworkClient.clientPortalSpawnSignal.connect(p -> {
             ClientPlayerEntity player = Minecraft.getInstance().player;
             
-            if (!getIsWikiInformed()) {
+            if (!guideInfo.wikiInformed) {
                 if (player != null && player.isCreative()) {
-                    setIsWikiInformed(true);
-                    informCustomizePortal();
+                    guideInfo.wikiInformed = true;
+                    writeToFile(guideInfo);
+                    informWithURL(
+                        "https://qouteall.fun/immptl/wiki/Portal-Customization",
+                        new TranslationTextComponent("imm_ptl.inform_wiki")
+                    );
                 }
             }
         });
     }
     
-    public static boolean getIsWikiInformed() {
-        return guideInfo.wikiInformed;
+    public static void onClientPlacePortalHelper() {
+        if (!guideInfo.portalHelperInformed) {
+            guideInfo.portalHelperInformed = true;
+            writeToFile(guideInfo);
+            
+            informWithURL(
+                "https://qouteall.fun/immptl/wiki/Portal-Customization#portal-helper-block",
+                new TranslationTextComponent("imm_ptl.inform_portal_helper")
+            );
+        }
     }
     
-    public static void setIsWikiInformed(boolean cond) {
-        guideInfo.wikiInformed = cond;
-        writeToFile(guideInfo);
-    }
-    
-    public static void informCustomizePortal() {
-        String link = "https://qouteall.fun/immptl/wiki/Portal-Customization";
+    private static void informWithURL(String link, TranslationTextComponent text) {
         Minecraft.getInstance().ingameGUI.func_238450_a_(
             ChatType.SYSTEM,
-            new TranslationTextComponent("imm_ptl.inform_wiki").func_230529_a_(
+            text.func_230529_a_(
                 new StringTextComponent(link).func_240700_a_(
                     style -> style.func_240715_a_(new ClickEvent(
                         ClickEvent.Action.OPEN_URL, link

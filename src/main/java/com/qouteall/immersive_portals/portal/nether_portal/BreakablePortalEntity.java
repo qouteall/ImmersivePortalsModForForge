@@ -6,10 +6,12 @@ import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.my_util.LimitedLogger;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalPlaceholderBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -19,6 +21,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.commons.lang3.Validate;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,6 +32,10 @@ public abstract class BreakablePortalEntity extends Portal {
     private boolean isNotified = true;
     private boolean shouldBreakPortal = false;
     
+    @Nullable
+    public BlockState overlayBlockState;
+    public double overlayOpacity = 0.5;
+    
     public BreakablePortalEntity(
         EntityType<?> entityType_1,
         World world_1
@@ -36,7 +43,6 @@ public abstract class BreakablePortalEntity extends Portal {
         super(entityType_1, world_1);
     }
     
-   
     
     @Override
     public boolean isPortalValid() {
@@ -54,6 +60,17 @@ public abstract class BreakablePortalEntity extends Portal {
         }
         reversePortalId = Helper.getUuid(compoundTag, "reversePortalId");
         unbreakable = compoundTag.getBoolean("unbreakable");
+        
+        if (compoundTag.contains("overlayBlockState")) {
+            overlayBlockState = NBTUtil.readBlockState(compoundTag.getCompound("overlayBlockState"));
+            if (overlayBlockState.isAir()) {
+                overlayBlockState = null;
+            }
+            overlayOpacity = compoundTag.getDouble("overlayOpacity");
+            if (overlayOpacity == 0) {
+                overlayOpacity = 0.5;
+            }
+        }
     }
     
     @Override
@@ -64,6 +81,11 @@ public abstract class BreakablePortalEntity extends Portal {
         }
         Helper.putUuid(compoundTag, "reversePortalId", reversePortalId);
         compoundTag.putBoolean("unbreakable", unbreakable);
+        
+        if (overlayBlockState != null) {
+            compoundTag.put("overlayBlockState", NBTUtil.writeBlockState(overlayBlockState));
+            compoundTag.putDouble("overlayOpacity", overlayOpacity);
+        }
     }
     
     private void breakPortalOnThisSide() {
@@ -149,7 +171,7 @@ public abstract class BreakablePortalEntity extends Portal {
         if (!isOtherSideChunkLoaded()) {
             return true;
         }
-    
+        
         List<BreakablePortalEntity> revs = findReversePortals(this);
         if (revs.size() == 1) {
             BreakablePortalEntity reversePortal = revs.get(0);

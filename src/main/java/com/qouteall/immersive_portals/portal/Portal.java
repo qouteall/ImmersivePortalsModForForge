@@ -19,11 +19,17 @@ import com.qouteall.immersive_portals.render.PortalRenderer;
 import com.qouteall.immersive_portals.render.PortalRenderingGroup;
 import com.qouteall.immersive_portals.render.ViewAreaRenderer;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.Commands;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MoverType;
+import net.minecraft.entity.Pose;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.StringNBT;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
@@ -42,8 +48,10 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.commons.lang3.Validate;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Portal entity. Global portals are also entities but not added into world.
@@ -70,18 +78,25 @@ public class Portal extends Entity implements PortalLike {
      * The destination dimension
      */
     public RegistryKey<World> dimensionTo;
+    
+    
+    /**
+     * The destination position
+     */
     public Vector3d destination;
     
     /**
      * If false, cannot teleport entities
      */
     public boolean teleportable = true;
+    
     /**
      * If not null, this portal can only be accessed by one player
      * If it's {@link Portal#nullUUID} the portal can only be accessed by entities
      */
     @Nullable
     public UUID specificPlayerId;
+    
     /**
      * If not null, defines the special shape of the portal
      * The shape should not exceed the area defined by width and height
@@ -89,7 +104,14 @@ public class Portal extends Entity implements PortalLike {
     @Nullable
     public GeometryPortalShape specialShape;
     
+    /**
+     * The bounding box. Expanded very little.
+     */
     private AxisAlignedBB exactBoundingBoxCache;
+    
+    /**
+     * The bounding box. Expanded a little.
+     */
     private AxisAlignedBB boundingBoxCache;
     private Vector3d normal;
     private Vector3d contentDirection;
@@ -118,7 +140,6 @@ public class Portal extends Entity implements PortalLike {
      */
     public boolean teleportChangesScale = true;
     
-    
     /**
      * Whether the player can place and break blocks across the portal
      */
@@ -129,13 +150,34 @@ public class Portal extends Entity implements PortalLike {
     @Nullable
     public String portalTag;
     
+    /**
+     * Non-global portals are normal entities,
+     * global portals are in GlobalPortalStorage and always loaded
+     */
     public boolean isGlobalPortal = false;
     
+    /**
+     * If true, the portal rendering will not render the sky and maintain the outer world depth.
+     * So that the things inside portal will look fused with the things outside portal
+     */
     public boolean fuseView = false;
     
+    /**
+     * If true, if the portal touches another portal that have the same spacial transformation,
+     * these two portals' rendering will be merged.
+     * It can improve rendering performance.
+     * However, the merged rendering's front clipping won't work as if they are separately rendered.
+     * So this is by default disabled.
+     */
     public boolean renderingMergable = false;
     
+    /**
+     *
+     */
     public boolean hasCrossPortalCollision = true;
+    
+    @Nullable
+    public List<String> commandsOnTeleported;
     
     public static final SignalArged<Portal> clientPortalTickSignal = new SignalArged<>();
     public static final SignalArged<Portal> serverPortalTickSignal = new SignalArged<>();
@@ -245,6 +287,15 @@ public class Portal extends Entity implements PortalLike {
             hasCrossPortalCollision = compoundTag.getBoolean("hasCrossPortalCollision");
         }
         
+        if (compoundTag.contains("commandsOnTeleported")) {
+            ListNBT list = compoundTag.getList("commandsOnTeleported", 8);
+            commandsOnTeleported = list.stream()
+                .map(t -> ((StringNBT) t).getString()).collect(Collectors.toList());
+        }
+        else {
+            commandsOnTeleported = null;
+        }
+        
         readPortalDataSignal.emit(this, compoundTag);
         
         updateCache();
@@ -298,6 +349,17 @@ public class Portal extends Entity implements PortalLike {
         
         compoundTag.putBoolean("hasCrossPortalCollision", hasCrossPortalCollision);
         
+        if (commandsOnTeleported != null) {
+            ListNBT list = new ListNBT();
+            for (String command : commandsOnTeleported) {
+                list.add(StringNBT.valueOf(command));
+            }
+            compoundTag.put(
+                "commandsOnTeleported",
+                list
+            );
+        }
+        
         writePortalDataSignal.emit(this, compoundTag);
         
     }
@@ -313,6 +375,7 @@ public class Portal extends Entity implements PortalLike {
     }
     
     // use canTeleportEntity
+    // TODO remove
     @Deprecated
     public boolean isTeleportable() {
         return teleportable;
@@ -348,6 +411,7 @@ public class Portal extends Entity implements PortalLike {
         }
     }
     
+    // TODO rename
     public void updateCache() {
         boundingBoxCache = null;
         exactBoundingBoxCache = null;
@@ -356,7 +420,7 @@ public class Portal extends Entity implements PortalLike {
         portalCacheUpdateSignal.emit(this);
     }
     
-    public void initDefaultCullableRange() {
+    private void initDefaultCullableRange() {
         cullableXStart = -(width / 2);
         cullableXEnd = (width / 2);
         cullableYStart = -(height / 2);
@@ -437,10 +501,11 @@ public class Portal extends Entity implements PortalLike {
         return boundingBoxCache;
     }
     
-    public boolean shouldLimitBoundingBox() {
+    protected boolean shouldLimitBoundingBox() {
         return !getIsGlobal();
     }
     
+    // TODO rename
     public AxisAlignedBB getExactBoundingBox() {
         if (exactBoundingBoxCache == null) {
             exactBoundingBoxCache = new AxisAlignedBB(
@@ -469,6 +534,9 @@ public class Portal extends Entity implements PortalLike {
         //portal cannot be moved
     }
     
+    /**
+     * Invalid portals will be automatically removed
+     */
     public boolean isPortalValid() {
         boolean valid = dimensionTo != null &&
             width != 0 &&
@@ -490,6 +558,9 @@ public class Portal extends Entity implements PortalLike {
         return valid;
     }
     
+    /**
+     * @return A UUID for discriminating portal rendering units.
+     */
     @Nullable
     @Override
     public UUID getDiscriminator() {
@@ -497,10 +568,22 @@ public class Portal extends Entity implements PortalLike {
     }
     
     public void onEntityTeleportedOnServer(Entity entity) {
-        //nothing
+        if (commandsOnTeleported != null) {
+            CommandSource commandSource =
+                entity.getCommandSource().withPermissionLevel(4).withFeedbackDisabled();
+            
+            Commands commandManager = McHelper.getServer().getCommandManager();
+            for (String command : commandsOnTeleported) {
+                commandManager.handleCommand(commandSource, command);
+            }
+        }
     }
     
+    /**
+     * Update the portal's cache and send the entity spawn packet to client again
+     */
     public void reloadAndSyncToClient() {
+        Validate.isTrue(!isGlobalPortal);
         Validate.isTrue(!world.isRemote());
         updateCache();
         McHelper.getIEStorage(this.world.func_234923_W_()).resendSpawnPacketToTrackers(this);
@@ -543,6 +626,10 @@ public class Portal extends Entity implements PortalLike {
         }
     }
     
+    /**
+     * @param entity
+     * @return Can the portal teleport this entity.
+     */
     public boolean canTeleportEntity(Entity entity) {
         if (!teleportable) {
             return false;
@@ -566,6 +653,9 @@ public class Portal extends Entity implements PortalLike {
         return entity.isNonBoss();
     }
     
+    /**
+     * @return The normal vector of the portal plane
+     */
     public Vector3d getNormal() {
         if (normal == null) {
             normal = axisW.crossProduct(axisH).normalize();
@@ -573,6 +663,9 @@ public class Portal extends Entity implements PortalLike {
         return normal;
     }
     
+    /**
+     * @return The direction of "portal content", the "direction" of the "inner world view"
+     */
     public Vector3d getContentDirection() {
         if (contentDirection == null) {
             contentDirection = transformLocalVecNonScale(getNormal().scale(-1));
@@ -580,22 +673,36 @@ public class Portal extends Entity implements PortalLike {
         return contentDirection;
     }
     
-    public double getDistanceToPlane(
-        Vector3d pos
-    ) {
+    /**
+     * @param pos
+     * @return the distance to the portal plane without regarding the shape
+     */
+    public double getDistanceToPlane(Vector3d pos) {
         return pos.subtract(getOriginPos()).dotProduct(getNormal());
     }
     
-    public boolean isInFrontOfPortal(
-        Vector3d playerPos
-    ) {
-        return getDistanceToPlane(playerPos) > 0;
+    /**
+     * @param pos
+     * @return is the point in front of the portal plane without regarding the shape
+     */
+    public boolean isInFrontOfPortal(Vector3d pos) {
+        return getDistanceToPlane(pos) > 0;
     }
     
+    /**
+     * @param xInPlane
+     * @param yInPlane
+     * @return Convert the 2D coordinate in portal plane into the world coordinate
+     */
     public Vector3d getPointInPlane(double xInPlane, double yInPlane) {
         return getOriginPos().add(getPointInPlaneLocal(xInPlane, yInPlane));
     }
     
+    /**
+     * @param xInPlane
+     * @param yInPlane
+     * @return Convert the 2D coordinate in portal plane into the portal-centered coordinate
+     */
     public Vector3d getPointInPlaneLocal(double xInPlane, double yInPlane) {
         return axisW.scale(xInPlane).add(axisH.scale(yInPlane));
     }
@@ -666,12 +773,18 @@ public class Portal extends Entity implements PortalLike {
         return vertices;
     }
     
-    //Server side does not have Matrix3f
+    /**
+     * Transform a point regardless of rotation transformation and scale transformation
+     */
     public final Vector3d transformPointRough(Vector3d pos) {
         Vector3d offset = getDestPos().subtract(getOriginPos());
         return pos.add(offset);
     }
     
+    /**
+     * @param pos
+     * @return use the portal's transformation to transform a point
+     */
     @Override
     public Vector3d transformPoint(Vector3d pos) {
         Vector3d localPos = pos.subtract(getOriginPos());
@@ -691,6 +804,9 @@ public class Portal extends Entity implements PortalLike {
         return new Vector3d(temp);
     }
     
+    /**
+     * Transform a vector in portal-centered coordinate (without translation transformation)
+     */
     @Override
     public Vector3d transformLocalVec(Vector3d localVec) {
         return transformLocalVecNonScale(localVec).scale(scaling);
@@ -716,14 +832,6 @@ public class Portal extends Entity implements PortalLike {
         return getOriginPos().add(inverseTransformLocalVec(point.subtract(getDestPos())));
     }
     
-    public Vector3d scaleLocalVec(Vector3d localVec) {
-        if (scaling == 1.0) {
-            return localVec;
-        }
-        
-        return localVec.scale(scaling);
-    }
-    
     public AxisAlignedBB getThinAreaBox() {
         return new AxisAlignedBB(
             getPointInPlane(width / 2, height / 2),
@@ -731,6 +839,9 @@ public class Portal extends Entity implements PortalLike {
         );
     }
     
+    /**
+     * Project the point into the portal plane, is it in the portal area
+     */
     public boolean isPointInPortalProjection(Vector3d pos) {
         Vector3d offset = pos.subtract(getOriginPos());
         
@@ -757,6 +868,7 @@ public class Portal extends Entity implements PortalLike {
         return rayTrace(lastTickPos, pos) != null;
     }
     
+    @Nullable
     public Vector3d rayTrace(
         Vector3d from,
         Vector3d to
@@ -791,31 +903,12 @@ public class Portal extends Entity implements PortalLike {
         Vector3d localPos = posInPlane.subtract(getOriginPos());
         double localX = localPos.dotProduct(axisW);
         double localY = localPos.dotProduct(axisH);
-        double distanceToRect = getDistanceToRectangle(
+        double distanceToRect = Helper.getDistanceToRectangle(
             localX, localY,
             -(width / 2), -(height / 2),
             (width / 2), (height / 2)
         );
         return Math.sqrt(distanceToPlane * distanceToPlane + distanceToRect * distanceToRect);
-    }
-    
-    public static double getDistanceToRectangle(
-        double pointX, double pointY,
-        double rectAX, double rectAY,
-        double rectBX, double rectBY
-    ) {
-        assert rectAX <= rectBX;
-        assert rectAY <= rectBY;
-        
-        double wx1 = rectAX - pointX;
-        double wx2 = rectBX - pointX;
-        double dx = (wx1 * wx2 < 0 ? 0 : Math.min(Math.abs(wx1), Math.abs(wx2)));
-        
-        double wy1 = rectAY - pointY;
-        double wy2 = rectBY - pointY;
-        double dy = (wy1 * wy2 < 0 ? 0 : Math.min(Math.abs(wy1), Math.abs(wy2)));
-        
-        return Math.sqrt(dx * dx + dy * dy);
     }
     
     public Vector3d getPointInPortalProjection(Vector3d pos) {
@@ -910,21 +1003,36 @@ public class Portal extends Entity implements PortalLike {
         return matrix3f;
     }
     
+    /**
+     * @return The portal center
+     */
     @Override
     public Vector3d getOriginPos() {
         return getPositionVec();
     }
-    
+
     /**
-     * The destination position
+     * @return The destination position
      */
     @Override
     public Vector3d getDestPos() {
         return destination;
     }
     
+    /**
+     * Set the portal's center position
+     */
+    public void setOriginPos(Vector3d pos) {
+        setPosition(pos.x, pos.y, pos.z);
+        updateCache();
+    }
+    
+    /**
+     * Set the portal's destination
+     */
     public void setDestination(Vector3d destination) {
         this.destination = destination;
+        updateCache();
     }
     
     @Override
@@ -1131,5 +1239,16 @@ public class Portal extends Entity implements PortalLike {
     public boolean isRenderingMergable() {
         return renderingMergable;
     }
+    
+    @Override
+    public void recalculateSize() {
+        boundingBoxCache = null;
+    }
+    
+    @Override
+    protected float getEyeHeight(Pose pose, EntitySize dimensions) {
+        return 0;
+    }
+    
     
 }

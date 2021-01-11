@@ -1,8 +1,7 @@
 package com.qouteall.imm_ptl_peripheral.mixin.common.portal_generation;
 
+import com.qouteall.imm_ptl_peripheral.PeripheralModMain;
 import com.qouteall.imm_ptl_peripheral.portal_generation.IntrinsicPortalGeneration;
-import com.qouteall.immersive_portals.Global;
-import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.portal.BreakableMirror;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -49,10 +48,6 @@ public class MixinFlintAndSteelItem {
         ItemUseContext context,
         CallbackInfoReturnable<ActionResultType> cir
     ) {
-        if (Global.netherPortalMode == Global.NetherPortalMode.vanilla) {
-            return;
-        }
-        
         IWorld world = context.getWorld();
         if (!world.isRemote()) {
             BlockPos targetPos = context.getPos();
@@ -66,7 +61,7 @@ public class MixinFlintAndSteelItem {
                 );
                 cir.setReturnValue(ActionResultType.SUCCESS);
             }
-            else if (targetBlock == ModMain.portalHelperBlock) {
+            else if (targetBlock == PeripheralModMain.portalHelperBlock) {
                 boolean result = IntrinsicPortalGeneration.activatePortalHelper(
                     ((ServerWorld) world),
                     firePos

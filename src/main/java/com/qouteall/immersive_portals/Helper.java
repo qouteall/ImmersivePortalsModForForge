@@ -254,12 +254,24 @@ public class Helper {
         for (Direction direction : getAnotherFourDirections(axis)) {
             
             wallArea = expandArea(
-                wallArea,
-                blockPosPredicate,
-                direction
+                wallArea, blockPosPredicate, direction
             );
         }
         return wallArea;
+    }
+    
+    public static IntBox expandBoxArea(
+        BlockPos startingPos,
+        Predicate<BlockPos> blockPosPredicate
+    ) {
+        IntBox box = new IntBox(startingPos, startingPos);
+        
+        for (Direction direction : Direction.values()) {
+            box = expandArea(
+                box, blockPosPredicate, direction
+            );
+        }
+        return box;
     }
     
     public static int getChebyshevDistance(
@@ -285,6 +297,25 @@ public class Helper {
             box.minY,
             (box.maxZ + box.minZ) / 2
         );
+    }
+    
+    public static double getDistanceToRectangle(
+        double pointX, double pointY,
+        double rectAX, double rectAY,
+        double rectBX, double rectBY
+    ) {
+        assert rectAX <= rectBX;
+        assert rectAY <= rectBY;
+        
+        double wx1 = rectAX - pointX;
+        double wx2 = rectBX - pointX;
+        double dx = (wx1 * wx2 < 0 ? 0 : Math.min(Math.abs(wx1), Math.abs(wx2)));
+        
+        double wy1 = rectAY - pointY;
+        double wy2 = rectBY - pointY;
+        double dy = (wy1 * wy2 < 0 ? 0 : Math.min(Math.abs(wy1), Math.abs(wy2)));
+        
+        return Math.sqrt(dx * dx + dy * dy);
     }
     
     public static class SimpleBox<T> {
@@ -958,4 +989,14 @@ public class Helper {
         return list.get(list.size() - 1);
     }
     
+    @Nullable
+    public static <T> T combineNullable(@Nullable T a, @Nullable T b, BiFunction<T, T, T> combiner) {
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+        return combiner.apply(a, b);
+    }
 }

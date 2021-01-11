@@ -12,6 +12,7 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.custom_portal_gen.form.PortalGenForm;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Util;
@@ -169,7 +170,11 @@ public class CustomPortalGeneration {
         );
     }
     
-    public boolean perform(ServerWorld world, BlockPos startPos) {
+    public boolean perform(
+        ServerWorld world,
+        BlockPos startPos,
+        @Nullable Entity triggeringEntity
+    ) {
         if (!fromDimensions.contains(world.func_234923_W_())) {
             if (fromDimensions.get(0) != anyDimension) {
                 return false;
@@ -195,7 +200,7 @@ public class CustomPortalGeneration {
         }
         
         world.getProfiler().startSection("custom_portal_gen_perform");
-        boolean result = form.perform(this, world, startPos, toWorld);
+        boolean result = form.perform(this, world, startPos, toWorld, triggeringEntity);
         world.getProfiler().endSection();
         return result;
     }

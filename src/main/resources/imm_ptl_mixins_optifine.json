@@ -4,6 +4,9 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "imm_ptl.refmap.json",
   "mixins": [
+    "IEOFBuiltChunk",
+    "IEOFConfig",
+    "IEOFVboRegion",
     "MixinConfig",
     "MixinDynamicLights",
     "MixinLightmapTextureManager",

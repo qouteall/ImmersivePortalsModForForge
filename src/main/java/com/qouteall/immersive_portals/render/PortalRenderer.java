@@ -87,8 +87,14 @@ public abstract class PortalRenderer {
                     
                     PortalLike renderingDelegate = portal.getRenderingDelegate();
                     
-                    // this is O(n^2) but not hot spot
-                    if (!portalsToRender.contains(renderingDelegate)) {
+                    if (renderingDelegate != portal) {
+                        // a portal rendering group
+                        if (!portalsToRender.contains(renderingDelegate)) {
+                            portalsToRender.add(renderingDelegate);
+                        }
+                    }
+                    else {
+                        // a normal portal
                         portalsToRender.add(renderingDelegate);
                     }
                 }
@@ -255,14 +261,18 @@ public abstract class PortalRenderer {
     
     @Nullable
     public static Matrix4f combineNullable(@Nullable Matrix4f a, @Nullable Matrix4f b) {
-        if (a == null) {
-            return b;
-        }
-        if (b == null) {
-            return a;
-        }
-        a.mul(b);
-        return a;
+        return Helper.combineNullable(a, b, (m1, m2) -> {
+            m1.mul(m2);
+            return m1;
+        });
+//        if (a == null) {
+//            return b;
+//        }
+//        if (b == null) {
+//            return a;
+//        }
+//        a.multiply(b);
+//        return a;
     }
     
     @Nullable

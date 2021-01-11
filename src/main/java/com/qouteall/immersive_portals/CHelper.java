@@ -78,9 +78,11 @@ public class CHelper {
     }
     
     public static void printChat(String str) {
-        Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(
-            new StringTextComponent(str)
-        );
+        printChat(new StringTextComponent(str));
+    }
+    
+    public static void printChat(StringTextComponent text) {
+        Minecraft.getInstance().ingameGUI.getChatGUI().printChatMessage(text);
     }
     
     public static void openLinkConfirmScreen(

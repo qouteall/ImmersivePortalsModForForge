@@ -43,6 +43,7 @@ public class Global {
     
     public static boolean looseVisibleChunkIteration = true;
     
+    //TODO remove
     public static boolean portalPlaceholderPassthrough = true;
     
     public static boolean mirrorInteractableThroughPortal = false;
@@ -77,6 +78,8 @@ public class Global {
     
     public static boolean forceMergePortalRendering = false;
     
+    public static boolean netherPortalOverlay = false;
+    
     public static enum RenderMode {
         normal,
         compatibility,
@@ -88,7 +91,8 @@ public class Global {
     public static enum NetherPortalMode {
         normal,
         vanilla,
-        adaptive
+        adaptive,
+        disabled
     }
     
     public static enum EndPortalMode {

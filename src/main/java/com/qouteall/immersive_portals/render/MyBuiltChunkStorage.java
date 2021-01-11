@@ -5,7 +5,7 @@ import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEBuiltChunk;
 import com.qouteall.immersive_portals.my_util.ObjectBuffer;
-import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkNeighborFix;
+import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkStorageFix;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ViewFrustum;
@@ -40,11 +40,11 @@ public class MyBuiltChunkStorage extends ViewFrustum {
         }
     }
     
-    private ChunkRenderDispatcher factory;
-    private Map<BlockPos, ChunkRenderDispatcher.ChunkRender> builtChunkMap = new HashMap<>();
-    private Map<ChunkPos, Preset> presets = new HashMap<>();
+    private final ChunkRenderDispatcher factory;
+    private final Map<BlockPos, ChunkRenderDispatcher.ChunkRender> builtChunkMap = new HashMap<>();
+    private final Map<ChunkPos, Preset> presets = new HashMap<>();
     private boolean shouldUpdateMainPresetNeighbor = true;
-    private ObjectBuffer<ChunkRenderDispatcher.ChunkRender> builtChunkBuffer;
+    private final ObjectBuffer<ChunkRenderDispatcher.ChunkRender> builtChunkBuffer;
     
     public MyBuiltChunkStorage(
         ChunkRenderDispatcher chunkBuilder,
@@ -121,13 +121,13 @@ public class MyBuiltChunkStorage extends ViewFrustum {
         if (!isRenderingPortal) {
             if (shouldUpdateMainPresetNeighbor) {
                 shouldUpdateMainPresetNeighbor = false;
-                OFBuiltChunkNeighborFix.updateNeighbor(this, preset.data);
+                OFBuiltChunkStorageFix.updateNeighbor(this, preset.data);
                 preset.isNeighborUpdated = true;
             }
         }
         
         if (!preset.isNeighborUpdated) {
-            OFBuiltChunkNeighborFix.updateNeighbor(this, preset.data);
+            OFBuiltChunkStorageFix.updateNeighbor(this, preset.data);
             preset.isNeighborUpdated = true;
             if (isRenderingPortal) {
                 shouldUpdateMainPresetNeighbor = true;
@@ -212,6 +212,10 @@ public class MyBuiltChunkStorage extends ViewFrustum {
                     basePos.getX(), basePos.getY(), basePos.getZ()
                 );
                 
+                OFBuiltChunkStorageFix.onBuiltChunkCreated(
+                    this, builtChunk
+                );
+                
                 return builtChunk;
             }
         );
@@ -252,6 +256,8 @@ public class MyBuiltChunkStorage extends ViewFrustum {
                 return false;
             }
         });
+        
+        OFBuiltChunkStorageFix.purgeRenderRegions(this);
         
         Minecraft.getInstance().getProfiler().endSection();
     }
@@ -317,5 +323,17 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     
     public int getRadius() {
         return (countChunksX - 1) / 2;
+    }
+    
+    public boolean isRegionActive(int cxStart, int czStart, int cxEnd, int czEnd) {
+        for (int cx = cxStart; cx < cxEnd; cx++) {
+            for (int cz = czStart; cz < czEnd; cz++) {
+                if (builtChunkMap.containsKey(new BlockPos(cx * 16, 0, cz * 16))) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
 }

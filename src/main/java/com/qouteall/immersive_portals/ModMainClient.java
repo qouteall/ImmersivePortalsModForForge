@@ -2,7 +2,7 @@ package com.qouteall.immersive_portals;
 
 import com.qouteall.hiding_in_the_bushes.MyNetworkClient;
 import com.qouteall.hiding_in_the_bushes.O_O;
-import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkNeighborFix;
+import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkStorageFix;
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
 import com.qouteall.immersive_portals.optifine_compatibility.OFInterfaceInitializer;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
@@ -96,13 +96,13 @@ public class ModMainClient {
         CollisionHelper.initClient();
         
         PortalRenderInfo.init();
-    
+        
         CloudContext.init();
         
         OFInterface.isOptifinePresent = O_O.detectOptiFine();
         if (OFInterface.isOptifinePresent) {
             OFInterfaceInitializer.init();
-            OFBuiltChunkNeighborFix.init();
+            OFBuiltChunkStorageFix.init();
         }
         
         Helper.log(OFInterface.isOptifinePresent ? "Optifine is present" : "Optifine is not present");

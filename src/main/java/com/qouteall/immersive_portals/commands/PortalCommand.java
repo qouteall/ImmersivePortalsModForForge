@@ -20,6 +20,7 @@ import com.qouteall.immersive_portals.portal.global_portals.BorderBarrierFiller;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.portal.global_portals.VerticalConnectingPortal;
 import com.qouteall.immersive_portals.portal.global_portals.WorldWrappingPortal;
+import com.qouteall.immersive_portals.portal.nether_portal.BreakablePortalEntity;
 import com.qouteall.immersive_portals.teleportation.ServerTeleportationManager;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
@@ -617,6 +618,16 @@ public class PortalCommand {
                     portal.setDestination(entity.getPositionVec());
                     portal.reloadAndSyncToClient();
                 }))
+            )
+        );
+        
+        builder.then(Commands.literal("set_portal_position")
+            .then(Commands.argument("dim", DimensionArgument.getDimension())
+                .then(Commands.argument("pos", Vec3Argument.vec3(false))
+                    .executes(context -> processPortalTargetedCommand(context, portal -> {
+                        invokeSetPortalLocation(context, portal);
+                    }))
+                )
             )
         );
     }
@@ -1300,6 +1311,32 @@ public class PortalCommand {
         portal.reloadAndSyncToClient();
         
         sendMessage(context, portal.toString());
+        
+        if (portal instanceof BreakablePortalEntity) {
+            if (!((BreakablePortalEntity) portal).unbreakable) {
+                sendMessage(context, "You are editing a breakable portal." +
+                    " If the breakable portal entity is wrongly linked, it will automatically break." +
+                    " To avoid that, use command /portal set_portal_nbt {unbreakable:true} for 4 portal entities."
+                );
+            }
+        }
+    }
+    
+    private static void invokeSetPortalLocation(
+        CommandContext<CommandSource> context,
+        Portal portal
+    ) throws CommandSyntaxException {
+        ServerWorld targetWorld =
+            DimensionArgument.getDimensionArgument(context, "dim");
+        
+        Vector3d pos = Vec3Argument.getVec3(context, "pos");
+        
+        ServerTeleportationManager.teleportEntityGeneral(
+            portal, pos, targetWorld
+        );
+        
+        sendMessage(context, portal.toString());
+        
     }
     
     private static void invokeCompleteBiWayBiFacedPortal(

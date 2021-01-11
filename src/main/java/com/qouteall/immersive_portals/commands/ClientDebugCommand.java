@@ -283,7 +283,7 @@ public class ClientDebugCommand {
             })
         );
         builder.then(Commands
-            .literal("check_light")
+            .literal("check_client_light")
             .executes(context -> {
                 Minecraft client = Minecraft.getInstance();
                 client.execute(() -> {
@@ -291,6 +291,22 @@ public class ClientDebugCommand {
                         SectionPos.from(new BlockPos(client.player.getPositionVec())),
                         false
                     );
+                });
+                return 0;
+            })
+        );
+        builder.then(Commands
+            .literal("check_server_light")
+            .executes(context -> {
+                McHelper.getServer().execute(() -> {
+                    ServerPlayerEntity player = McHelper.getRawPlayerList().get(0);
+                    
+                    BlockPos.getAllInBox(
+                        player.func_233580_cy_().add(-2, -2, -2),
+                        player.func_233580_cy_().add(2, 2, 2)
+                    ).forEach(blockPos -> {
+                        player.world.getLightManager().checkBlock(blockPos);
+                    });
                 });
                 return 0;
             })

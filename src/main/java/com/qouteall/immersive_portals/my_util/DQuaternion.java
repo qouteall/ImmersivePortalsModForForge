@@ -8,7 +8,7 @@ import net.minecraft.util.math.vector.Vector3d;
 
 /**
  * Quaternion but in double and immutable
- * Minecraft's quaternion {@link Quaternion} uses float and has precision issues
+ * Minecraft's quaternion {@link Quaternion} uses float and is mutable
  */
 public class DQuaternion {
     public final double x;
@@ -23,22 +23,37 @@ public class DQuaternion {
         this.w = w;
     }
     
+    /**
+     * Converts from Minecraft's mutable quaternion to immutable DQuaternion
+     */
     public static DQuaternion fromMcQuaternion(Quaternion quaternion) {
         return new DQuaternion(
             quaternion.getX(), quaternion.getY(), quaternion.getZ(), quaternion.getW()
         );
     }
     
+    /**
+     * @return the axis that the rotation is being performed along
+     */
     public Vector3d getRotatingAxis() {
         return new Vector3d(x, y, z);
     }
     
+    /**
+     * @return Converts to Minecraft's quaternion
+     */
     public Quaternion toMcQuaternion() {
         return new Quaternion(
             (float) x, (float) y, (float) z, (float) w
         );
     }
     
+    /**
+     * Create a new quaternion.
+     * @param rotatingAxis the axis that it rotates along
+     * @param degrees the rotating angle in degrees
+     * @return the result
+     */
     public static DQuaternion rotationByDegrees(
         Vector3d rotatingAxis,
         double degrees
@@ -48,6 +63,12 @@ public class DQuaternion {
         );
     }
     
+    /**
+     * Create a new quaternion.
+     * @param axis the axis that it rotates along
+     * @param rotationAngle the rotating angle in radians
+     * @return the result
+     */
     public static DQuaternion rotationByRadians(
         Vector3d axis,
         double rotationAngle
@@ -61,6 +82,9 @@ public class DQuaternion {
         );
     }
     
+    /**
+     * Perform the rotation onto an immutable vector
+     */
     public Vector3d rotate(Vector3d vec) {
         DQuaternion result = this.hamiltonProduct(new DQuaternion(vec.x, vec.y, vec.z, 0))
             .hamiltonProduct(getConjugated());
@@ -84,6 +108,11 @@ public class DQuaternion {
         return w;
     }
     
+    /**
+     * @param other
+     * @return the hamilton product of "this" and "other".
+     * Equivalent to firstly do "this" rotation and then do "other" rotation
+     */
     public DQuaternion hamiltonProduct(DQuaternion other) {
         double x1 = this.getX();
         double y1 = this.getY();
@@ -101,24 +130,36 @@ public class DQuaternion {
         );
     }
     
+    /**
+     * @return the inverse rotation transformation
+     */
     public DQuaternion getConjugated() {
         return new DQuaternion(
             -x, -y, -z, w
         );
     }
     
+    /**
+     * vector multiplication
+     */
     public DQuaternion multiply(double val) {
         return new DQuaternion(
             x * val, y * val, z * val, w * val
         );
     }
     
+    /**
+     * vector add
+     */
     public DQuaternion add(DQuaternion q) {
         return new DQuaternion(
             x + q.x, y + q.y, z + q.z, w + q.w
         );
     }
     
+    /**
+     * vector dot product
+     */
     public double dotProduct(DQuaternion q) {
         return getX() * q.getX() +
             getY() * q.getY() +
@@ -126,6 +167,9 @@ public class DQuaternion {
             getW() * q.getW();
     }
     
+    /**
+     * quaternions are normalized 4D vectors
+     */
     public DQuaternion getNormalized() {
         double lenSq = dotProduct(this);
         if (lenSq != 0) {
@@ -157,6 +201,9 @@ public class DQuaternion {
         );
     }
     
+    /**
+     * Is two quaternions roughly the same
+     */
     public static boolean isClose(DQuaternion a, DQuaternion b, double valve) {
         if (a.getW() * b.getW() < 0) {
             a = a.multiply(-1);
@@ -189,7 +236,9 @@ public class DQuaternion {
         return String.format("DQuaternion{x=%s, y=%s, z=%s, w=%s}", x, y, z, w);
     }
     
-    //a quaternion is a 4d vector on 4d sphere
+    /**
+     * Interpolate the quaternion. It's the same as interpolating along a line in the 4D sphere surface
+     */
     public static DQuaternion interpolate(
         DQuaternion a,
         DQuaternion b,
@@ -223,8 +272,8 @@ public class DQuaternion {
     }
     
     /**
-     * {@link DQuaternion#getCameraRotation1(double, double)}
-     * also works for non camera rotations. don't know why
+     * The inverse of {@link DQuaternion#getCameraRotation1(double, double)}
+     * Also roughly works for non-camera transformation
      */
     public static Tuple<Double, Double> getPitchYawFromRotation(DQuaternion quaternion) {
         double x = quaternion.getX();

@@ -142,6 +142,8 @@ public class ModMainForge {
         Minecraft.getInstance().execute(() -> {
             ModMainClient.init();
             
+            PeripheralModMain.initClient();
+            
             ConfigClient instance = ConfigClient.instance;
             if (instance.compatibilityRenderMode.get()) {
                 Global.renderMode = Global.RenderMode.compatibility;
@@ -165,8 +167,10 @@ public class ModMainForge {
                 )
             );
             
-            Validate.notNull(ModMain.portalHelperBlock);
-            RenderTypeLookup.setRenderLayer(ModMain.portalHelperBlock, RenderType.getCutout());
+            Validate.notNull(PeripheralModMain.portalHelperBlock);
+            RenderTypeLookup.setRenderLayer(
+                PeripheralModMain.portalHelperBlock, RenderType.getCutout()
+            );
         });
         
         initPortalRenderers();
@@ -249,28 +253,28 @@ public class ModMainForge {
                 PortalPlaceholderBlock.instance
             );
             
-            ModMain.portalHelperBlock = new Block(Block.Properties.create(Material.IRON));
-            ModMain.portalHelperBlock.setRegistryName(
+            PeripheralModMain.portalHelperBlock = new Block(Block.Properties.create(Material.IRON));
+            PeripheralModMain.portalHelperBlock.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_helper")
             );
             registry.register(
-                ModMain.portalHelperBlock
+                PeripheralModMain.portalHelperBlock
             );
         }
         
         @SubscribeEvent
         public static void onItemRegistry(final RegistryEvent.Register<Item> event) {
             IForgeRegistry<Item> registry = event.getRegistry();
-            
-            ModMain.portalHelperBlockItem = new BlockItem(
-                ModMain.portalHelperBlock,
+    
+            PeripheralModMain.portalHelperBlockItem = new BlockItem(
+                PeripheralModMain.portalHelperBlock,
                 new Item.Properties().group(ItemGroup.MISC)
             );
-            ModMain.portalHelperBlockItem.setRegistryName(
+            PeripheralModMain.portalHelperBlockItem.setRegistryName(
                 new ResourceLocation("immersive_portals", "portal_helper")
             );
             registry.register(
-                ModMain.portalHelperBlockItem
+                PeripheralModMain.portalHelperBlockItem
             );
         }
         
