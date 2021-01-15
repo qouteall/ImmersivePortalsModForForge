@@ -25,7 +25,7 @@ import com.qouteall.immersive_portals.render.context_management.FogRendererConte
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderDimensionRedirect;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
-import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
+import com.qouteall.immersive_portals.render.context_management.WorldRenderInfo;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.Minecraft;
@@ -39,7 +39,6 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -53,7 +52,6 @@ import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import org.apache.commons.lang3.Validate;
 import org.lwjgl.opengl.GL11;
 
 import java.util.function.Consumer;
@@ -69,20 +67,20 @@ public class MyGameRenderer {
     private static RenderTypeBuffers secondaryBufferBuilderStorage = new RenderTypeBuffers();
     
     public static void renderWorldNew(
-        RenderingHierarchy renderingHierarchy,
+        WorldRenderInfo worldRenderInfo,
         Consumer<Runnable> invokeWrapper
     ) {
-        RenderingHierarchy.pushRenderInfo(renderingHierarchy);
+        WorldRenderInfo.pushRenderInfo(worldRenderInfo);
         
         switchAndRenderTheWorld(
-            renderingHierarchy.world,
-            renderingHierarchy.cameraPos,
-            renderingHierarchy.cameraPos,
+            worldRenderInfo.world,
+            worldRenderInfo.cameraPos,
+            worldRenderInfo.cameraPos,
             invokeWrapper,
-            renderingHierarchy.renderDistance
+            worldRenderInfo.renderDistance
         );
         
-        RenderingHierarchy.popRenderInfo();
+        WorldRenderInfo.popRenderInfo();
     }
     
     private static void switchAndRenderTheWorld(
@@ -341,7 +339,7 @@ public class MyGameRenderer {
                 // this thing has no optimization effect -_-
                 
                 PortalLike renderingPortal = PortalRendering.getRenderingPortal();
-    
+                
                 renderingPortal.doAdditionalRenderingCull(visibleChunks);
             }
         }
@@ -359,13 +357,13 @@ public class MyGameRenderer {
                     ChunkRenderDispatcher.ChunkRender builtChunk =
                         ((IEWorldRendererChunkInfo) obj).getBuiltChunk();
                     AxisAlignedBB boundingBox = builtChunk.boundingBox;
-    
+                    
                     return FrustumCuller.isTouchingInsideContentArea(
                         ((Portal) renderingPortal), boundingBox
                     );
                 }
             );
-
+            
             if (firstInsideOne != -1) {
                 visibleChunks.removeElements(0, firstInsideOne);
             }
@@ -373,29 +371,6 @@ public class MyGameRenderer {
                 visibleChunks.clear();
             }
         }
-    }
-    
-    public static void renderWorldInfoFramebuffer(
-        RenderingHierarchy renderingHierarchy,
-        Framebuffer framebuffer
-    ) {
-        CHelper.checkGlError();
-        
-        Framebuffer mcFb = client.getFramebuffer();
-        
-        Validate.isTrue(mcFb != framebuffer);
-        
-        ((IEMinecraftClient) client).setFrameBuffer(framebuffer);
-        
-        framebuffer.bindFramebuffer(true);
-        
-        CGlobal.renderer.invokeWorldRendering(renderingHierarchy);
-        
-        ((IEMinecraftClient) client).setFrameBuffer(mcFb);
-        
-        mcFb.bindFramebuffer(true);
-        
-        CHelper.checkGlError();
     }
     
 }

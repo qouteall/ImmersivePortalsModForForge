@@ -1,6 +1,5 @@
 package com.qouteall.hiding_in_the_bushes;
 
-import com.qouteall.hiding_in_the_bushes.fix_model_data.ModelDataHacker;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
@@ -40,7 +39,7 @@ public class O_O {
     public static void onPlayerChangeDimensionClient(
         RegistryKey<World> from, RegistryKey<World> to
     ) {
-        ModelDataHacker.updateForgeModelData();
+    
     }
     
     @OnlyIn(Dist.CLIENT)

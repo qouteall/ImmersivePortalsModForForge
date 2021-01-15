@@ -198,12 +198,13 @@ public class PortalRenderingGroup implements PortalLike {
         return null;
     }
     
+    @OnlyIn(Dist.CLIENT)
     @Override
-    public void renderViewAreaMesh(Vector3d posInPlayerCoordinate, Consumer<Vector3d> vertexOutput) {
+    public void renderViewAreaMesh(Vector3d portalPosRelativeToCamera, Consumer<Vector3d> vertexOutput) {
         for (Portal portal : portals) {
             Vector3d relativeToGroup = portal.getOriginPos().subtract(getOriginPos());
             portal.renderViewAreaMesh(
-                posInPlayerCoordinate.add(relativeToGroup),
+                portalPosRelativeToCamera.add(relativeToGroup),
                 vertexOutput
             );
         }

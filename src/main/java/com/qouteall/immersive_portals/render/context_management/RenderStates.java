@@ -192,6 +192,8 @@ public class RenderStates {
             cameraPosDelta = Vector3d.ZERO;
         }
         lastCameraPos = currCameraPos;
+    
+        
     }
     
     public static int getRenderedPortalNum() {

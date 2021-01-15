@@ -15,13 +15,17 @@ import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
+import com.qouteall.immersive_portals.network.RemoteProcedureCall;
 import com.qouteall.immersive_portals.optifine_compatibility.UniformReport;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.MyBuiltChunkStorage;
 import com.qouteall.immersive_portals.render.PortalRenderInfo;
 import com.qouteall.immersive_portals.render.PortalRenderingGroup;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.NetherPortalBlock;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
@@ -29,19 +33,32 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.IntNBT;
 import net.minecraft.profiler.Profiler;
+import net.minecraft.util.Direction;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.SectionPos;
+import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
+import net.minecraft.world.server.ServerWorldLightManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import java.lang.ref.Reference;
@@ -52,6 +69,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -272,7 +290,7 @@ public class ClientDebugCommand {
             .literal("report_chunk_loaders")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
-                ChunkVisibilityManager.getChunkLoaders(
+                ChunkVisibilityManager.getBaseChunkLoaders(
                     player
                 ).forEach(
                     loader -> McHelper.serverLog(
@@ -310,6 +328,25 @@ public class ClientDebugCommand {
                 });
                 return 0;
             })
+        );
+        builder.then(Commands
+                .literal("update_server_light")
+                .executes(context -> {
+                    McHelper.getServer().execute(() -> {
+                        ServerPlayerEntity player = McHelper.getRawPlayerList().get(0);
+                        
+                        ServerWorldLightManager lightingProvider = (ServerWorldLightManager) player.world.getLightManager();
+                        lightingProvider.lightChunk(
+                            player.world.getChunk(player.chunkCoordX, player.chunkCoordZ),
+                            false
+                        );
+//                    lightingProvider.light(
+//                        player.world.getChunk(player.chunkX, player.chunkZ),
+//                        true
+//                    );
+                    });
+                    return 0;
+                })
         );
         builder = builder.then(Commands
             .literal("uniform_report_textured")
@@ -509,6 +546,30 @@ public class ClientDebugCommand {
                         );
                     });
                 }
+                return 0;
+            })
+        );
+        builder.then(Commands
+            .literal("gui_portal_test")
+            .executes(context -> {
+                Minecraft.getInstance().execute(() -> {
+                    try {
+                        Class.forName("com.qouteall.imm_ptl_peripheral.test.ExampleGuiPortalRendering")
+                            .getDeclaredMethod("open")
+                            .invoke(null);
+                    }
+                    catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                });
+                
+                return 0;
+            })
+        );
+        builder.then(Commands
+            .literal("remote_procedure_call_test")
+            .executes(context -> {
+                testRemoteProcedureCall(context.getSource().asPlayer());
                 return 0;
             })
         );
@@ -796,4 +857,55 @@ public class ClientDebugCommand {
         return 0;
     }
     
+    public static class TestRemoteCallable {
+        public static void serverToClient(
+            String str, int integer, double doubleNum, ResourceLocation identifier,
+            RegistryKey<World> dimension, RegistryKey<Biome> biomeKey,
+            BlockPos blockPos, Vector3d vec3d
+        ) {
+            Helper.log(str + integer + doubleNum + identifier + dimension + biomeKey + blockPos + vec3d);
+        }
+        
+        public static void clientToServer(
+            ServerPlayerEntity player,
+            UUID uuid,
+            Block block, BlockState blockState,
+            Item item, ItemStack itemStack,
+            CompoundNBT compoundTag, ITextComponent text, int[] intArray
+        ) {
+            Helper.log(
+                player.getName().getUnformattedComponentText() + uuid + block + blockState + item + itemStack
+                    + compoundTag + text + Arrays.toString(intArray)
+            );
+        }
+    }
+    
+    private static void testRemoteProcedureCall(ServerPlayerEntity player) {
+        Minecraft.getInstance().execute(() -> {
+            CompoundNBT compoundTag = new CompoundNBT();
+            compoundTag.put("test", IntNBT.valueOf(7));
+            RemoteProcedureCall.tellServerToInvoke(
+                "com.qouteall.immersive_portals.commands.ClientDebugCommand.TestRemoteCallable.clientToServer",
+                new UUID(3, 3),
+                Blocks.ACACIA_PLANKS,
+                Blocks.NETHER_PORTAL.getDefaultState().with(NetherPortalBlock.AXIS, Direction.Axis.Z),
+                Items.COMPASS,
+                new ItemStack(Items.ACACIA_LOG, 2),
+                compoundTag,
+                new StringTextComponent("test"),
+                new int[]{777, 765}
+            );
+        });
+        
+        McHelper.getServer().execute(() -> {
+            RemoteProcedureCall.tellClientToInvoke(
+                player,
+                "com.qouteall.immersive_portals.commands.ClientDebugCommand.TestRemoteCallable.serverToClient",
+                "string", 2, 3.5, new ResourceLocation("imm_ptl:oops"),
+                World.field_234919_h_, Biomes.JUNGLE,
+                new BlockPos(3, 5, 4),
+                new Vector3d(7, 4, 1)
+            );
+        });
+    }
 }

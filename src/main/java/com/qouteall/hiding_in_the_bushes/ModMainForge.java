@@ -82,7 +82,7 @@ public class ModMainForge {
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
     
-    public static boolean enableModelDataFix = false;
+    public static boolean enableModelDataFix = true;
     
     public ModMainForge() {
         // Register the setup method for modloading
@@ -265,7 +265,7 @@ public class ModMainForge {
         @SubscribeEvent
         public static void onItemRegistry(final RegistryEvent.Register<Item> event) {
             IForgeRegistry<Item> registry = event.getRegistry();
-    
+            
             PeripheralModMain.portalHelperBlockItem = new BlockItem(
                 PeripheralModMain.portalHelperBlock,
                 new Item.Properties().group(ItemGroup.MISC)

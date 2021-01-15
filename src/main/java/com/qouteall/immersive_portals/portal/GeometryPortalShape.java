@@ -50,6 +50,13 @@ public class GeometryPortalShape {
                 isOnLeftSideOfTheLine(x, y, x2, y2, x3, y3) &&
                 isOnLeftSideOfTheLine(x, y, x3, y3, x1, y1);
         }
+        
+        public double getArea() {
+            return crossProduct2D(
+                x2 - x1, y2 - y1,
+                x3 - x1, y3 - y1
+            ) / -2.0;
+        }
     }
     
     private static boolean isOnLeftSideOfTheLine(
@@ -126,5 +133,15 @@ public class GeometryPortalShape {
             x1, y2,
             x1, y1
         ));
+    }
+    
+    public boolean isValid() {
+        if (triangles.isEmpty()) {
+            return false;
+        }
+        
+        return triangles.stream().allMatch(
+            triangleInPlane -> triangleInPlane.getArea() > 0.001
+        );
     }
 }

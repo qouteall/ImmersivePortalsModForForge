@@ -11,7 +11,7 @@ import com.qouteall.immersive_portals.render.SecondaryFrameBuffer;
 import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
-import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
+import com.qouteall.immersive_portals.render.context_management.WorldRenderInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import org.lwjgl.opengl.GL13;
@@ -85,10 +85,10 @@ public class RendererDebugWithShader extends PortalRenderer {
     
     @Override
     public void invokeWorldRendering(
-        RenderingHierarchy renderingHierarchy
+        WorldRenderInfo worldRenderInfo
     ) {
         MyGameRenderer.renderWorldNew(
-            renderingHierarchy,
+            worldRenderInfo,
             runnable -> {
                 OFGlobal.shaderContextManager.switchContextAndRun(()->{
                     OFGlobal.bindToShaderFrameBuffer.run();

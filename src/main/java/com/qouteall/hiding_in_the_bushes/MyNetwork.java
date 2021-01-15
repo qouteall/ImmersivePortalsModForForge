@@ -17,6 +17,7 @@ import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkDirection;
@@ -28,6 +29,13 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 
 public class MyNetwork {
+    //placeholder to make it compile
+    //will be removed later
+    public static final ResourceLocation id_stcRemote =
+        new ResourceLocation("imm_ptl", "remote_stc");
+    public static final ResourceLocation id_ctsRemote =
+        new ResourceLocation("imm_ptl", "remote_cts");
+    
     public static void init() {
         NetworkMain.init();
     }

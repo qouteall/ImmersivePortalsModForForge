@@ -56,8 +56,8 @@ public class ConfigClient {
             .comment("Render Fewer Portals When Laggy")
             .define("lag_attack_proof", true);
         modelDataFix = builder
-            .comment("(Fix Compatibility with Other Mod's Block Model. May Decrease FPS")
-            .define("model_data_fix", false);
+            .comment("New model data fix. May Decrease FPS")
+            .define("model_data_fix_new", true);
         renderDimensionRedirect = builder.comment(
             "..."
         ).define(

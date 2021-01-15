@@ -139,15 +139,45 @@ public class MyRenderHelper {
     /**
      * {@link Framebuffer#draw(int, int)}
      */
-    public static void myDrawFrameBuffer(
+    public static void drawScreenFrameBuffer(
         Framebuffer textureProvider,
         boolean doEnableAlphaTest,
         boolean doEnableModifyAlpha
     ) {
-        CHelper.checkGlError();
+        float right = (float) textureProvider.framebufferWidth;
+        float up = (float) textureProvider.framebufferHeight;
+        float left = 0;
+        float bottom = 0;
         
-        int int_1 = textureProvider.framebufferWidth;
-        int int_2 = textureProvider.framebufferHeight;
+        int viewportWidth = textureProvider.framebufferWidth;
+        int viewportHeight = textureProvider.framebufferHeight;
+        
+        drawFramebufferWithViewport(
+            textureProvider, doEnableAlphaTest, doEnableModifyAlpha,
+            left, (double) right, bottom, (double) up,
+            viewportWidth, viewportHeight
+        );
+    }
+    
+    public static void drawFramebuffer(
+        Framebuffer textureProvider, boolean doEnableAlphaTest, boolean doEnableModifyAlpha,
+        float left, double right, float bottom, double up
+    ) {
+        drawFramebufferWithViewport(
+            textureProvider,
+            doEnableAlphaTest, doEnableModifyAlpha,
+            left, right, bottom, up,
+            client.getMainWindow().getFramebufferWidth(),
+            client.getMainWindow().getFramebufferHeight()
+        );
+    }
+    
+    public static void drawFramebufferWithViewport(
+        Framebuffer textureProvider, boolean doEnableAlphaTest, boolean doEnableModifyAlpha,
+        float left, double right, float bottom, double up,
+        int viewportWidth, int viewportHeight
+    ) {
+        CHelper.checkGlError();
         
         RenderSystem.assertThread(RenderSystem::isOnRenderThread);
         if (doEnableModifyAlpha) {
@@ -161,12 +191,12 @@ public class MyRenderHelper {
         GlStateManager.matrixMode(GL_PROJECTION);
         GlStateManager.pushMatrix();
         GlStateManager.loadIdentity();
-        GlStateManager.ortho(0.0D, (double) int_1, (double) int_2, 0.0D, 1000.0D, 3000.0D);
+        GlStateManager.ortho(0.0D, (double) viewportWidth, (double) viewportHeight, 0.0D, 1000.0D, 3000.0D);
         GlStateManager.matrixMode(GL_MODELVIEW);
         GlStateManager.pushMatrix();
         GlStateManager.loadIdentity();
         GlStateManager.translatef(0.0F, 0.0F, -2000.0F);
-        GlStateManager.viewport(0, 0, int_1, int_2);
+        GlStateManager.viewport(0, 0, viewportWidth, viewportHeight);
         GlStateManager.enableTexture();
         GlStateManager.disableLighting();
         GlStateManager.disableFog();
@@ -182,36 +212,30 @@ public class MyRenderHelper {
         
         GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
         textureProvider.bindFramebufferTexture();
-        float float_1 = (float) int_1;
-        float float_2 = (float) int_2;
-        float float_3 = (float) textureProvider.framebufferWidth / (float) textureProvider.framebufferTextureWidth;
-        float float_4 = (float) textureProvider.framebufferHeight / (float) textureProvider.framebufferTextureHeight;
-        Tessellator tessellator_1 = RenderSystem.renderThreadTesselator();
-        BufferBuilder bufferBuilder_1 = tessellator_1.getBuffer();
-        bufferBuilder_1.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
-        bufferBuilder_1.pos(0.0D, (double) float_2, 0.0D).tex(0.0F, 0.0F).color(
-            255,
-            255,
-            255,
-            255
-        ).endVertex();
-        bufferBuilder_1.pos((double) float_1, (double) float_2, 0.0D).tex(
-            float_3,
-            0.0F
-        ).color(255, 255, 255, 255).endVertex();
-        bufferBuilder_1.pos((double) float_1, 0.0D, 0.0D).tex(float_3, float_4).color(
-            255,
-            255,
-            255,
-            255
-        ).endVertex();
-        bufferBuilder_1.pos(0.0D, 0.0D, 0.0D).tex(0.0F, float_4).color(
-            255,
-            255,
-            255,
-            255
-        ).endVertex();
-        tessellator_1.draw();
+        
+        float textureXScale = (float) textureProvider.framebufferWidth / (float) textureProvider.framebufferTextureWidth;
+        float textureYScale = (float) textureProvider.framebufferHeight / (float) textureProvider.framebufferTextureHeight;
+        Tessellator tessellator = RenderSystem.renderThreadTesselator();
+        BufferBuilder bufferBuilder = tessellator.getBuffer();
+        bufferBuilder.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+        
+        bufferBuilder.pos(left, up, 0.0D)
+            .tex(0.0F, 0.0F)
+            .color(255, 255, 255, 255).endVertex();
+        
+        bufferBuilder.pos(right, up, 0.0D)
+            .tex(textureXScale, 0.0F)
+            .color(255, 255, 255, 255).endVertex();
+        
+        bufferBuilder.pos(right, bottom, 0.0D)
+            .tex(textureXScale, textureYScale)
+            .color(255, 255, 255, 255).endVertex();
+        
+        bufferBuilder.pos(left, bottom, 0.0D)
+            .tex(0.0F, textureYScale)
+            .color(255, 255, 255, 255).endVertex();
+        
+        tessellator.draw();
         textureProvider.unbindFramebufferTexture();
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
@@ -220,6 +244,8 @@ public class MyRenderHelper {
         GlStateManager.popMatrix();
         GlStateManager.matrixMode(GL_MODELVIEW);
         GlStateManager.popMatrix();
+        
+        MyRenderHelper.restoreViewPort();
         
         CHelper.checkGlError();
     }

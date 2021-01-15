@@ -7,7 +7,7 @@ import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
-import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
+import com.qouteall.immersive_portals.render.context_management.WorldRenderInfo;
 import org.apache.commons.lang3.Validate;
 
 import javax.annotation.Nonnull;
@@ -218,7 +218,7 @@ public class PortalRenderInfo {
         if (Global.offsetOcclusionQuery && portal instanceof Portal) {
             PortalRenderInfo presentation = get(((Portal) portal));
             
-            List<UUID> renderingDescription = RenderingHierarchy.getRenderingDescription();
+            List<UUID> renderingDescription = WorldRenderInfo.getRenderingDescription();
             
             Visibility visibility = presentation.getVisibility(renderingDescription);
             

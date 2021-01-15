@@ -292,4 +292,16 @@ public class DQuaternion {
             Math.toDegrees(Math.atan2(sinYaw, cosYaw))
         );
     }
+    
+    public static DQuaternion getRotationBetween(
+        Vector3d from,Vector3d to
+    ) {
+        Vector3d crossProduct = from.crossProduct(to);
+        Vector3d rotatingAxis = crossProduct.normalize();
+    
+        double cos = from.dotProduct(to);
+        double angle = Math.acos(cos);
+    
+        return rotationByRadians(rotatingAxis, angle);
+    }
 }

@@ -72,7 +72,7 @@ public interface PortalLike {
     Vector3d[] getOuterFrustumCullingVertices();
     
     @OnlyIn(Dist.CLIENT)
-    void renderViewAreaMesh(Vector3d posInPlayerCoordinate, Consumer<Vector3d> vertexOutput);
+    void renderViewAreaMesh(Vector3d portalPosRelativeToCamera, Consumer<Vector3d> vertexOutput);
     
     // Scaling does not interfere camera transformation
     @Nullable

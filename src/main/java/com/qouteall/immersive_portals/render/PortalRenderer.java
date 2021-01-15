@@ -13,7 +13,7 @@ import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalLike;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
-import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
+import com.qouteall.immersive_portals.render.context_management.WorldRenderInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.culling.ClippingHelper;
@@ -185,12 +185,13 @@ public abstract class PortalRenderer {
         
         int renderDistance = getPortalRenderDistance(portal);
         
-        invokeWorldRendering(new RenderingHierarchy(
+        invokeWorldRendering(new WorldRenderInfo(
             newWorld,
             PortalRendering.getRenderingCameraPos(),
             portal.getAdditionalCameraTransformation(),
             portal.getDiscriminator(),
-            renderDistance
+            renderDistance,
+            false
         ));
         
         PortalRendering.onEndPortalWorldRendering();
@@ -218,10 +219,10 @@ public abstract class PortalRenderer {
     }
     
     public void invokeWorldRendering(
-        RenderingHierarchy renderingHierarchy
+        WorldRenderInfo worldRenderInfo
     ) {
         MyGameRenderer.renderWorldNew(
-            renderingHierarchy,
+            worldRenderInfo,
             Runnable::run
         );
     }

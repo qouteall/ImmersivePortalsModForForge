@@ -266,7 +266,7 @@ public class ServerTeleportationManager {
         ServerWorld toWorld,
         Vector3d newEyePos
     ) {
-        NewChunkTrackingGraph.addAdditionalDirectTickets(player);
+        NewChunkTrackingGraph.addAdditionalDirectLoadingTickets(player);
         
         teleportingEntities.add(player);
         

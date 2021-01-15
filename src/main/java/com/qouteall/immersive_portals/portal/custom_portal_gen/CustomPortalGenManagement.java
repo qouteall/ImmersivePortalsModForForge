@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.portal.custom_portal_gen;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.DataResult;
@@ -14,6 +15,7 @@ import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemUseContext;
+import net.minecraft.resources.IResourceManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.math.BlockPos;
@@ -47,12 +49,14 @@ public class CustomPortalGenManagement {
         DynamicRegistries.Impl registryTracker =
             ((DynamicRegistries.Impl) server.func_244267_aX());
         
-        WorldSettingsImport<JsonElement> registryOps =
-            WorldSettingsImport.func_244335_a(
-                JsonOps.INSTANCE,
-                server.resourceManager.func_240970_h_(),
-                registryTracker
-            );
+        IResourceManager resourceManager = server.resourceManager.func_240970_h_();
+        
+        WorldSettingsImport<JsonElement> registryOps = new WorldSettingsImport<>(
+            JsonOps.INSTANCE,
+            WorldSettingsImport.IResourceAccess.func_244345_a(resourceManager),
+            registryTracker,
+            Maps.newIdentityHashMap()
+        );
         
         SimpleRegistry<CustomPortalGeneration> emptyRegistry = new SimpleRegistry<>(
             CustomPortalGeneration.registryRegistryKey,
@@ -203,8 +207,6 @@ public class CustomPortalGenManagement {
             
             for (CustomPortalGeneration gen : convGen) {
                 boolean succeeded = gen.perform(startWorld, startPos, player);
-//                IntBox box = new IntBox(startPos.add(-1, -1, -1), startPos.add(1, 1, 1));
-//                boolean succeeded = box.stream().anyMatch(pos -> gen.perform(startWorld, pos, player));
                 
                 if (succeeded) {
                     playerPosBeforeTravel.remove(uuid);

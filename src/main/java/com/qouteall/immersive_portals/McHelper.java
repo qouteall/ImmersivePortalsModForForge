@@ -421,6 +421,10 @@ public class McHelper {
         player.setPosition(player.getPosX(), player.getPosY(), player.getPosZ());
     }
     
+    public static void updatePosition(Entity entity, Vector3d pos) {
+        entity.setPosition(pos.x, pos.y, pos.z);
+    }
+    
     public static <T extends Entity> List<T> getEntitiesRegardingLargeEntities(
         World world,
         AxisAlignedBB box,
@@ -450,6 +454,11 @@ public class McHelper {
         
         newPortal.read(portal.writeWithoutTypeId(new CompoundNBT()));
         return newPortal;
+    }
+    
+    public static boolean getIsServerChunkGenerated(RegistryKey<World> toDimension, BlockPos toPos) {
+        return getIEStorage(toDimension)
+            .portal_isChunkGenerated(new ChunkPos(toPos));
     }
     
     public static interface ChunkAccessor {
@@ -692,14 +701,18 @@ public class McHelper {
     
     /**
      * It will spawn even if the chunk is not loaded
-     * ServerWorld#addEntity(Entity)
+     * @link ServerWorld#addEntity(Entity)
      */
     public static void spawnServerEntity(Entity entity) {
         Validate.isTrue(!entity.world.isRemote());
         
         entity.forceSpawn = true;
         
-        entity.world.addEntity(entity);
+        boolean spawned = entity.world.addEntity(entity);
+        
+        if (!spawned) {
+            Helper.err("Failed to spawn " + entity + entity.world);
+        }
         
         entity.forceSpawn = false;
     }

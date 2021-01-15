@@ -16,7 +16,7 @@ import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.render.ViewAreaRenderer;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
-import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
+import com.qouteall.immersive_portals.render.context_management.WorldRenderInfo;
 import net.minecraft.client.shader.Framebuffer;
 import net.optifine.shaders.Shaders;
 import org.lwjgl.opengl.GL11;
@@ -70,7 +70,7 @@ public class RendererMixed extends PortalRenderer {
             MyRenderHelper.clearAlphaTo1(mcFrameBuffer);
             
             deferredFbs[portalLayer].fb.bindFramebuffer(true);
-            MyRenderHelper.myDrawFrameBuffer(mcFrameBuffer, false, true);
+            MyRenderHelper.drawScreenFrameBuffer(mcFrameBuffer, false, true);
             
             glDisable(GL_STENCIL_TEST);
         }
@@ -207,7 +207,7 @@ public class RendererMixed extends PortalRenderer {
         
         deferredFbs[outerLayer].fb.bindFramebuffer(true);
         
-        MyRenderHelper.myDrawFrameBuffer(
+        MyRenderHelper.drawScreenFrameBuffer(
             deferredFbs[innerLayer].fb,
             true,
             true
@@ -246,10 +246,10 @@ public class RendererMixed extends PortalRenderer {
     
     @Override
     public void invokeWorldRendering(
-        RenderingHierarchy renderingHierarchy
+        WorldRenderInfo worldRenderInfo
     ) {
         MyGameRenderer.renderWorldNew(
-            renderingHierarchy,
+            worldRenderInfo,
             runnable -> {
                 OFGlobal.shaderContextManager.switchContextAndRun(() -> {
                     OFGlobal.bindToShaderFrameBuffer.run();

@@ -8,6 +8,7 @@ import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.dimension_sync.DimensionIdManagement;
 import com.qouteall.immersive_portals.ducks.IEMinecraftServer;
+import net.minecraft.profiler.IProfiler;
 import net.minecraft.resources.DataPackRegistries;
 import net.minecraft.resources.ResourcePackList;
 import net.minecraft.server.MinecraftServer;
@@ -29,10 +30,12 @@ import java.net.Proxy;
 import java.util.function.BooleanSupplier;
 
 @Mixin(MinecraftServer.class)
-public class MixinMinecraftServer implements IEMinecraftServer {
+public abstract class MixinMinecraftServer implements IEMinecraftServer {
     @Shadow
     @Final
     private FrameTimer frameTimer;
+    
+    @Shadow public abstract IProfiler getProfiler();
     
     private boolean portal_areAllWorldsLoaded;
     
@@ -58,7 +61,9 @@ public class MixinMinecraftServer implements IEMinecraftServer {
         at = @At("TAIL")
     )
     private void onServerTick(BooleanSupplier booleanSupplier_1, CallbackInfo ci) {
+        getProfiler().startSection("imm_ptl_tick");
         ModMain.postServerTickSignal.emit();
+        getProfiler().endSection();
     }
     
     @Inject(

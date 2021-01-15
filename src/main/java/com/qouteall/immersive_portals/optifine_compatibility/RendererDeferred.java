@@ -17,7 +17,7 @@ import com.qouteall.immersive_portals.render.ShaderManager;
 import com.qouteall.immersive_portals.render.ViewAreaRenderer;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.context_management.RenderStates;
-import com.qouteall.immersive_portals.render.context_management.RenderingHierarchy;
+import com.qouteall.immersive_portals.render.context_management.WorldRenderInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.shader.Framebuffer;
 import org.lwjgl.opengl.GL11;
@@ -113,10 +113,10 @@ public class RendererDeferred extends PortalRenderer {
     
     @Override
     public void invokeWorldRendering(
-        RenderingHierarchy renderingHierarchy
+        WorldRenderInfo worldRenderInfo
     ) {
         MyGameRenderer.renderWorldNew(
-            renderingHierarchy,
+            worldRenderInfo,
             runnable -> {
                 OFGlobal.shaderContextManager.switchContextAndRun(() -> {
                     OFGlobal.bindToShaderFrameBuffer.run();
@@ -181,7 +181,7 @@ public class RendererDeferred extends PortalRenderer {
         Framebuffer mainFrameBuffer = client.getFramebuffer();
         mainFrameBuffer.bindFramebuffer(true);
 
-        MyRenderHelper.myDrawFrameBuffer(
+        MyRenderHelper.drawScreenFrameBuffer(
             deferredBuffer.fb,
             false,
             false

@@ -5,6 +5,7 @@ import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.my_util.SignalBiArged;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -20,7 +21,10 @@ import net.minecraft.world.server.ServerWorld;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -114,6 +118,17 @@ public class NewChunkTrackingGraph {
     private static final ArrayList<WeakReference<ChunkVisibilityManager.ChunkLoader>>
         additionalChunkLoaders = new ArrayList<>();
     
+    public static class PlayerInfo {
+        public final Set<RegistryKey<World>> visibleDimensions = new HashSet<>();
+        public final ArrayList<WeakReference<ChunkVisibilityManager.ChunkLoader>> additionalChunkLoaders
+            = new ArrayList<>();
+        
+        public PlayerInfo() {
+        }
+    }
+    
+    private static final WeakHashMap<ServerPlayerEntity, PlayerInfo> playerInfoMap = new WeakHashMap<>();
+    
     public static final SignalBiArged<ServerPlayerEntity, DimensionalChunkPos> beginWatchChunkSignal = new SignalBiArged<>();
     public static final SignalBiArged<ServerPlayerEntity, DimensionalChunkPos> endWatchChunkSignal = new SignalBiArged<>();
     
@@ -121,31 +136,56 @@ public class NewChunkTrackingGraph {
         return data.computeIfAbsent(dimension, k -> new Long2ObjectLinkedOpenHashMap<>());
     }
     
+    private static PlayerInfo getPlayerInfo(ServerPlayerEntity player) {
+        return playerInfoMap.computeIfAbsent(player, k -> new PlayerInfo());
+    }
+    
     public static void updateForPlayer(ServerPlayerEntity player) {
+        ((IEEntity) player).portal_requestUpdateChunkPos();
+        ((ServerWorld) player.world).chunkCheck(player);
+        
+        PlayerInfo playerInfo = getPlayerInfo(player);
+        playerInfo.visibleDimensions.clear();
+        
         long gameTime = McHelper.getOverWorldOnServer().getGameTime();
-        ChunkVisibilityManager.getChunkLoaders(player)
-            .forEach(chunkLoader -> chunkLoader.foreachChunkPos(
-                (dimension, x, z, distanceToSource) -> {
-                    ArrayList<PlayerWatchRecord> records = getChunkRecordMap(dimension).computeIfAbsent(
-                        ChunkPos.asLong(x, z),
-                        k -> new ArrayList<>()
-                    );
-                    updateWatchingStatus(
-                        records,
+        ChunkVisibilityManager.getBaseChunkLoaders(player)
+            .forEach(chunkLoader -> updatePlayerForChunkLoader(player, gameTime, chunkLoader));
+        
+        playerInfo.additionalChunkLoaders.removeIf(w -> w.get() == null);
+        playerInfo.additionalChunkLoaders.forEach(l -> {
+            ChunkVisibilityManager.ChunkLoader chunkLoader = l.get();
+            assert chunkLoader != null;
+            updatePlayerForChunkLoader(player, gameTime, chunkLoader);
+        });
+    }
+    
+    private static void updatePlayerForChunkLoader(
+        ServerPlayerEntity player, long gameTime, ChunkVisibilityManager.ChunkLoader chunkLoader
+    ) {
+        getPlayerInfo(player).visibleDimensions.add(chunkLoader.center.dimension);
+        
+        chunkLoader.foreachChunkPos(
+            (dimension, x, z, distanceToSource) -> {
+                ArrayList<PlayerWatchRecord> records = getChunkRecordMap(dimension).computeIfAbsent(
+                    ChunkPos.asLong(x, z),
+                    k -> new ArrayList<>()
+                );
+                updateWatchingStatus(
+                    records,
+                    player,
+                    gameTime,
+                    distanceToSource,
+                    chunkLoader.isDirectLoader,
+                    () -> beginWatchChunkSignal.emit(
                         player,
-                        gameTime,
-                        distanceToSource,
-                        chunkLoader.isDirectLoader,
-                        () -> beginWatchChunkSignal.emit(
-                            player,
-                            new DimensionalChunkPos(
-                                dimension,
-                                x, z
-                            )
+                        new DimensionalChunkPos(
+                            dimension,
+                            x, z
                         )
-                    );
-                }
-            ));
+                    )
+                );
+            }
+        );
     }
     
     private static void updateAndPurge() {
@@ -219,6 +259,8 @@ public class NewChunkTrackingGraph {
                 MyLoadingTicket.removeTicket(world, new ChunkPos(longChunkPos));
             });
         });
+        
+        playerInfoMap.entrySet().removeIf(e -> e.getKey().removed);
     }
     
     private static boolean shouldUnload(long currTime, PlayerWatchRecord record) {
@@ -360,14 +402,14 @@ public class NewChunkTrackingGraph {
         return !map.isEmpty();
     }
     
-    public static void addAdditionalChunkLoader(ChunkVisibilityManager.ChunkLoader chunkLoader) {
+    public static void addGlobalAdditionalChunkLoader(ChunkVisibilityManager.ChunkLoader chunkLoader) {
         additionalChunkLoaders.add(new WeakReference<>(chunkLoader));
         updateAndPurge();
     }
     
     // if this method is accidentally not called
-    // the chunk loader will still be removed if it's not referenced (maybe after a long time)
-    public static void removeAdditionalChunkLoader(ChunkVisibilityManager.ChunkLoader chunkLoader) {
+    // the chunk loader will still be removed if it's not GCed (maybe after a long time)
+    public static void removeGlobalAdditionalChunkLoader(ChunkVisibilityManager.ChunkLoader chunkLoader) {
         // WeakReference does not have equals()
         additionalChunkLoaders.removeIf(weakRef -> weakRef.get() == chunkLoader);
     }
@@ -376,7 +418,7 @@ public class NewChunkTrackingGraph {
     // loading tickets of this player. Without this, the chunks nearby player
     // may have no ticket for a short period of time (because the chunk tracking refreshes
     // every 2 seconds) and the chunk may be unloaded and reloaded.
-    public static void addAdditionalDirectTickets(ServerPlayerEntity player) {
+    public static void addAdditionalDirectLoadingTickets(ServerPlayerEntity player) {
         ChunkVisibilityManager.playerDirectLoader(player).foreachChunkPos((dim, x, z, dis) -> {
             if (isPlayerWatchingChunk(player, dim, x, z)) {
                 
@@ -387,5 +429,23 @@ public class NewChunkTrackingGraph {
     
     public static int getLoadedChunkNum(RegistryKey<World> dimension) {
         return getChunkRecordMap(dimension).size();
+    }
+    
+    public static void addPerPlayerAdditionalChunkLoader(
+        ServerPlayerEntity player,
+        ChunkVisibilityManager.ChunkLoader chunkLoader
+    ) {
+        getPlayerInfo(player).additionalChunkLoaders.add(new WeakReference<>(chunkLoader));
+    }
+    
+    public static void removePerPlayerAdditionalChunkLoader(
+        ServerPlayerEntity player,
+        ChunkVisibilityManager.ChunkLoader chunkLoader
+    ) {
+        getPlayerInfo(player).additionalChunkLoaders.removeIf(w -> w.get() == chunkLoader);
+    }
+    
+    public static Set<RegistryKey<World>> getVisibleDimensions(ServerPlayerEntity player) {
+        return getPlayerInfo(player).visibleDimensions;
     }
 }

@@ -10,6 +10,7 @@ import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.server.ServerWorld;
 import org.apache.commons.lang3.Validate;
 
@@ -38,6 +39,21 @@ public class ChunkVisibilityManager {
             this.center = center;
             this.radius = radius;
             this.isDirectLoader = isDirectLoader;
+        }
+        
+        public int getLoadedChunkNum() {
+            int[] numBox = {0};
+            foreachChunkPos((dim, x, z, dist) -> {
+                Chunk chunk = McHelper.getServerChunkIfPresent(dim, x, z);
+                if (chunk != null) {
+                    numBox[0] += 1;
+                }
+            });
+            return numBox[0];
+        }
+        
+        public int getChunkNum() {
+            return (this.radius * 2 + 1) * (this.radius * 2 + 1);
         }
         
         public void foreachChunkPos(ChunkPosConsumer func) {
@@ -221,10 +237,10 @@ public class ChunkVisibilityManager {
     //3.portal secondary loader
     //4.global portal direct loader
     //5.global portal secondary loader
-    public static Stream<ChunkLoader> getChunkLoaders(
+    public static Stream<ChunkLoader> getBaseChunkLoaders(
         ServerPlayerEntity player
     ) {
-        ((ServerWorld) player.world).chunkCheck(player);
+        
         return Streams.concat(
             Stream.of(playerDirectLoader(player)),
             
