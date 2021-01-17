@@ -1,6 +1,7 @@
 package com.qouteall.immersive_portals.chunk_loading;
 
 import com.qouteall.hiding_in_the_bushes.MyNetwork;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEThreadedAnvilChunkStorage;
@@ -10,21 +11,12 @@ import net.minecraft.network.play.server.SChunkDataPacket;
 import net.minecraft.network.play.server.SUnloadChunkPacket;
 import net.minecraft.network.play.server.SUpdateLightPacket;
 import net.minecraft.util.RegistryKey;
-import net.minecraft.util.math.SectionPos;
-import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.NibbleArray;
-import net.minecraft.world.lighting.BlockLightEngine;
-import net.minecraft.world.lighting.IWorldLightListener;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerChunkProvider;
-import net.minecraft.world.server.ServerWorldLightManager;
 import java.util.function.Supplier;
 
-//the chunks near player are managed by vanilla
-//we only manage the chunks that's seen by portal and not near player
-//it is not multi-threaded like vanilla
 public class ChunkDataSyncManager {
     
     private static final int unloadWaitingTickTime = 20 * 10;
@@ -64,8 +56,6 @@ public class ChunkDataSyncManager {
             if (chunk != null) {
                 McHelper.getServer().getProfiler().startSection("ptl_create_chunk_packet");
                 
-                debugCheckLight(chunk);
-                
                 player.connection.sendPacket(
                     MyNetwork.createRedirectedMessage(
                         chunkPos.dimension,
@@ -73,16 +63,25 @@ public class ChunkDataSyncManager {
                     )
                 );
                 
+                SUpdateLightPacket lightPacket = new SUpdateLightPacket(
+                    chunkPos.getChunkPos(),
+                    ieStorage.getLightingProvider(),
+                    true
+                );
                 player.connection.sendPacket(
                     MyNetwork.createRedirectedMessage(
                         chunkPos.dimension,
-                        new SUpdateLightPacket(
-                            chunkPos.getChunkPos(),
-                            ieStorage.getLightingProvider(),
-                            true
-                        )
+                        lightPacket
                     )
                 );
+                if (Global.lightLogging) {
+                    Helper.log(String.format(
+                        "light sent immediately %s %d %d %d %d",
+                        chunk.getWorld().func_234923_W_().func_240901_a_(),
+                        chunk.getPos().x, chunk.getPos().z,
+                        lightPacket.getBlockLightUpdateMask(), lightPacket.getBlockLightResetMask())
+                    );
+                }
                 
                 ieStorage.updateEntityTrackersAfterSendingChunkPacket(chunk, player);
                 
@@ -92,32 +91,6 @@ public class ChunkDataSyncManager {
             }
         }
         //if the chunk is not present then the packet will be sent when chunk is ready
-        
-        //test
-//        Helper.log("chunk not ready" + chunkPos);
-    }
-    
-    private void debugCheckLight(Chunk chunk) {
-        if (!debugLightStatus) {
-            return;
-        }
-        
-        if (!chunk.hasLight()) {
-            Helper.err("Sending light update when the light is not on " + chunk.getPos());
-            new Throwable().printStackTrace();
-        }
-        
-        IWorldLightListener chunkLightingView =
-            ((ServerWorldLightManager) chunk.getWorld().getLightManager()).getLightEngine(LightType.BLOCK);
-        
-        NibbleArray lightSection = ((BlockLightEngine) chunkLightingView).getData(
-            SectionPos.from(chunk.getPos(), 0)
-        );
-        
-        if (lightSection == null) {
-            Helper.err("Missing light " + chunk.getPos());
-            new Throwable().printStackTrace();
-        }
     }
     
     /**
@@ -126,11 +99,6 @@ public class ChunkDataSyncManager {
     public void onChunkProvidedDeferred(Chunk chunk) {
         RegistryKey<World> dimension = chunk.getWorld().func_234923_W_();
         IEThreadedAnvilChunkStorage ieStorage = McHelper.getIEStorage(dimension);
-        
-        debugCheckLight(chunk);
-        
-        //test
-//        Helper.log("deferred chunk " + chunk.getPos() + chunk.getWorld());
         
         McHelper.getServer().getProfiler().startSection("ptl_create_chunk_packet");
         
@@ -142,10 +110,21 @@ public class ChunkDataSyncManager {
         );
         
         Supplier<IPacket> lightPacketRedirected = Helper.cached(
-            () -> MyNetwork.createRedirectedMessage(
-                dimension,
-                new SUpdateLightPacket(chunk.getPos(), ieStorage.getLightingProvider(), true)
-            )
+            () -> {
+                SUpdateLightPacket lightPacket = new SUpdateLightPacket(chunk.getPos(), ieStorage.getLightingProvider(), true);
+                if (Global.lightLogging) {
+                    Helper.log(String.format(
+                        "light sent deferred %s %d %d %d %d",
+                        chunk.getWorld().func_234923_W_().func_240901_a_(),
+                        chunk.getPos().x, chunk.getPos().z,
+                        lightPacket.getBlockLightUpdateMask(), lightPacket.getBlockLightResetMask())
+                    );
+                }
+                return MyNetwork.createRedirectedMessage(
+                    dimension,
+                    lightPacket
+                );
+            }
         );
         
         NewChunkTrackingGraph.getPlayersViewingChunk(

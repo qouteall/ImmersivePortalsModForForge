@@ -186,6 +186,10 @@ public class ModMainForge {
     
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
+    
+    }
+    
+    public static void applyServerConfigs() {
         ConfigServer instance = ConfigServer.instance;
         Global.netherPortalFindingRadius = instance.portalSearchingRange.get();
         Global.indirectLoadingRadiusCap = instance.indirectLoadingRadiusCap.get();

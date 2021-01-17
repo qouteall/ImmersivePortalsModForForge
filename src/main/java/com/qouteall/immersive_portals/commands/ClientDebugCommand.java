@@ -50,12 +50,14 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.DimensionType;
+import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.IChunk;
+import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraft.world.server.ServerWorldLightManager;
@@ -567,6 +569,44 @@ public class ClientDebugCommand {
             })
         );
         builder.then(Commands
+            .literal("report_client_light_status")
+            .executes(context -> {
+                Minecraft.getInstance().execute(() -> {
+                    ClientPlayerEntity player = Minecraft.getInstance().player;
+                    NibbleArray lightSection = player.world.getLightManager().getLightEngine(LightType.BLOCK).getData(
+                        SectionPos.of(player.chunkCoordX, player.chunkCoordY, player.chunkCoordZ)
+                    );
+                    if (lightSection != null) {
+                        boolean uninitialized = lightSection.isEmpty();
+    
+                        byte[] byteArray = lightSection.getData();
+                        boolean allZero = true;
+                        for (byte b : byteArray) {
+                            if (b != 0) {
+                                allZero = false;
+                                break;
+                            }
+                        }
+                        
+                        context.getSource().sendFeedback(
+                            new StringTextComponent(
+                                "has light section " +
+                                    (allZero ? "all zero" : "not all zero") +
+                                    (uninitialized ? " uninitialized" : " fine")
+                            ),
+                            false
+                        );
+                    }
+                    else {
+                        context.getSource().sendFeedback(
+                            new StringTextComponent("does not have light section"), false
+                        );
+                    }
+                });
+                return 0;
+            })
+        );
+        builder.then(Commands
             .literal("remote_procedure_call_test")
             .executes(context -> {
                 testRemoteProcedureCall(context.getSource().asPlayer());
@@ -664,6 +704,16 @@ public class ClientDebugCommand {
             builder,
             "cross_portal_collision",
             cond -> Global.crossPortalCollision = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "light_logging",
+            cond -> Global.lightLogging = cond
+        );
+        registerSwitchCommand(
+            builder,
+            "flush_light_tasks_before_sending_packet",
+            cond -> Global.flushLightTasksBeforeSendingPacket = cond
         );
         
         builder.then(Commands
@@ -834,24 +884,26 @@ public class ClientDebugCommand {
         McHelper.serverLog(
             playerMP,
             String.format(
-                "On Server %s %s removed:%s added:%s age:%s",
-                playerMP.world.func_234923_W_(),
+                "On Server %s %s removed:%s added:%s age:%s chunk:%s %s",
+                playerMP.world.func_234923_W_().func_240901_a_(),
                 playerMP.getPositionVec(),
                 playerMP.removed,
                 playerMP.world.getEntityByID(playerMP.getEntityId()) != null,
-                playerMP.ticksExisted
+                playerMP.ticksExisted,
+                playerMP.chunkCoordX, playerMP.chunkCoordZ
             )
         );
         
         McHelper.serverLog(
             playerMP,
             String.format(
-                "On Client %s %s removed:%s added:%s age:%s",
-                playerSP.world.func_234923_W_(),
+                "On Client %s %s removed:%s added:%s age:%s chunk:%s %s",
+                playerSP.world.func_234923_W_().func_240901_a_(),
                 playerSP.getPositionVec(),
-                playerMP.removed,
-                playerMP.world.getEntityByID(playerMP.getEntityId()) != null,
-                playerMP.ticksExisted
+                playerSP.removed,
+                playerSP.world.getEntityByID(playerSP.getEntityId()) != null,
+                playerSP.ticksExisted,
+                playerSP.chunkCoordX, playerSP.chunkCoordZ
             )
         );
         return 0;

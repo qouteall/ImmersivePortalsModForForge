@@ -83,6 +83,10 @@ public class O_O {
         //nothing
     }
     
+    public static void onServerConstructed() {
+        ModMainForge.applyServerConfigs();
+    }
+    
     public static boolean isObsidian(BlockState blockState) {
         return blockState.isPortalFrame(DummyWorldReader.instance, BlockPos.ZERO);
     }
