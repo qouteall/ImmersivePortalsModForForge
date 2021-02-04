@@ -36,7 +36,7 @@ public class ConfigServer {
             .comment("Multi Threaded Nether Portal Searching")
             .define("multi_threaded_nether_portal_searching", true);
         looseMovementCheck = builder
-            .comment("Loose Serve Side Anti Hack Movement Check")
+            .comment("Loose Server Side Anti Hack Movement Check")
             .define("loose_movement_check", false);
         enableAlternateDimensions = builder
             .comment("Enable Alternate Dimensions")
