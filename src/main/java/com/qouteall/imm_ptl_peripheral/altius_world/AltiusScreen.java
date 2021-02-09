@@ -21,8 +21,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import org.jetbrains.annotations.NotNull;
-
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -130,7 +128,6 @@ public class AltiusScreen extends Screen {
         );
     }
     
-    @NotNull
     private DimEntryWidget createDimEntryWidget(RegistryKey<World> dimension) {
         return new DimEntryWidget(dimension, dimListWidget, getElementSelectCallback(), DimEntryWidget.Type.withAdvancedOptions);
     }

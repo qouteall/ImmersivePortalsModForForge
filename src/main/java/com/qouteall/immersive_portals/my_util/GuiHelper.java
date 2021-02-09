@@ -1,6 +1,5 @@
 package com.qouteall.immersive_portals.my_util;
 
-import org.jetbrains.annotations.NotNull;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import java.util.Arrays;
 import net.minecraft.client.Minecraft;
@@ -11,7 +10,6 @@ import net.minecraft.util.text.ITextComponent;
 
 public class GuiHelper {
     // mc does not expose the height
-    @NotNull
     public static LayoutFunc layoutButtonHorizontally(Widget widget) {
         return (a, b) -> {
             widget.field_230690_l_ = a;
@@ -19,7 +17,6 @@ public class GuiHelper {
         };
     }
     
-    @NotNull
     public static LayoutFunc layoutRectHorizontally(Rect widget) {
         return (a, b) -> {
             widget.xMin = a;
