@@ -4,6 +4,7 @@ import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.ducks.IEClientWorld;
 import com.qouteall.immersive_portals.portal.Portal;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.renderer.WorldRenderer;
@@ -28,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
 import java.util.function.Supplier;
 
-@Mixin(value = ClientWorld.class)
+@Mixin(ClientWorld.class)
 public abstract class MixinClientWorld implements IEClientWorld {
     @Shadow
     @Final
@@ -43,6 +44,9 @@ public abstract class MixinClientWorld implements IEClientWorld {
     @Shadow
     public abstract Entity getEntityByID(int id);
     
+    @Shadow
+    @Final
+    private Minecraft mc;
     private List<Portal> globalTrackedPortals;
     
     @Override
@@ -64,17 +68,6 @@ public abstract class MixinClientWorld implements IEClientWorld {
     public void setGlobalPortals(List<Portal> arg) {
         globalTrackedPortals = arg;
     }
-
-//    @Redirect(
-//        method = "<init>",
-//        at = @At(
-//            value = "NEW",
-//            target = "net/minecraft/client/world/ClientChunkManager"
-//        )
-//    )
-//    private ClientChunkManager replaceChunkManager(ClientWorld world, int loadDistance) {
-//        return O_O.createMyClientChunkManager(world, loadDistance);
-//    }
     
     //use my client chunk manager
     @Inject(

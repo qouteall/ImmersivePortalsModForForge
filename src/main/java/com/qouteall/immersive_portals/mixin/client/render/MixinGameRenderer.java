@@ -59,12 +59,13 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         boolean renderWorldIn,
         CallbackInfo ci
     ) {
+        ModMain.preTotalRenderTaskList.processTasks();
         if (mc.world == null) {
             return;
         }
         RenderStates.updatePreRenderInfo(tickDelta);
         CGlobal.clientTeleportationManager.manageTeleportation(RenderStates.tickDelta);
-        ModMain.preRenderSignal.emit();
+        ModMain.preGameRenderSignal.emit();
         if (CGlobal.earlyClientLightUpdate) {
             MyRenderHelper.earlyUpdateLight();
         }
@@ -109,7 +110,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         CGlobal.renderer.finishRendering();
         
         RenderStates.onTotalRenderEnd();
-    
+        
         GuiPortalRendering.onGameRenderEnd();
     }
     
@@ -155,7 +156,19 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         }
     }
     
-    //View bobbing will make the camera pos offset to actuall camera pos
+    private static boolean portal_isRenderingHand = false;
+    
+    @Inject(method = "Lnet/minecraft/client/renderer/GameRenderer;renderHand(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/ActiveRenderInfo;F)V", at = @At("HEAD"))
+    private void onRenderHandBegins(MatrixStack matrices, ActiveRenderInfo camera, float tickDelta, CallbackInfo ci) {
+        portal_isRenderingHand = true;
+    }
+    
+    @Inject(method = "Lnet/minecraft/client/renderer/GameRenderer;renderHand(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/ActiveRenderInfo;F)V", at = @At("RETURN"))
+    private void onRenderHandEnds(MatrixStack matrices, ActiveRenderInfo camera, float tickDelta, CallbackInfo ci) {
+        portal_isRenderingHand = false;
+    }
+    
+    //View bobbing will make the camera pos offset to actual camera pos
     //Teleportation is based on camera pos. If the teleportation is incorrect
     //then rendering will have problem
     //So smoothly disable view bobbing when player is near a portal
@@ -167,7 +180,7 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
         )
     )
     private void redirectBobViewTranslate(MatrixStack matrixStack, double x, double y, double z) {
-        double viewBobFactor = RenderStates.viewBobFactor;
+        double viewBobFactor = portal_isRenderingHand ? 1 : RenderStates.viewBobFactor;
         matrixStack.translate(x * viewBobFactor, y * viewBobFactor, z * viewBobFactor);
     }
     

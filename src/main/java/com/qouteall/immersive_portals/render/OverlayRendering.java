@@ -90,14 +90,20 @@ public class OverlayRendering {
         }
     }
     
-    public static List<BakedQuad> getQuads(IBakedModel model, BlockState blockState) {
+    public static List<BakedQuad> getQuads(IBakedModel model, BlockState blockState, Vector3d portalNormal) {
+        Direction facing = Direction.getFacingFromVector(portalNormal.x, portalNormal.y, portalNormal.z);
+        
         List<BakedQuad> result = new ArrayList<>();
         
-        for (Direction direction : Direction.values()) {
-            result.addAll(model.getQuads(blockState, direction, random));
-        }
+        result.addAll(model.getQuads(blockState, facing, random));
         
         result.addAll(model.getQuads(blockState, null, random));
+        
+        if (result.isEmpty()) {
+            for (Direction direction : Direction.values()) {
+                result.addAll(model.getQuads(blockState, direction, random));
+            }
+        }
         
         return result;
     }
@@ -128,15 +134,21 @@ public class OverlayRendering {
         
         matrixStack.push();
         
+        Vector3d offset = portal.getNormal().scale(portal.overlayOffset);
+        
         Vector3d pos = portal.getPositionVec();
         
-        matrixStack.translate(pos.x - cameraPos.x, pos.y - cameraPos.y, pos.z - cameraPos.z);
+        matrixStack.translate(
+            pos.x - cameraPos.x + offset.x,
+            pos.y - cameraPos.y + offset.y,
+            pos.z - cameraPos.z + offset.z
+        );
         
         IBakedModel model = blockRenderManager.getModelForState(blockState);
         PortalOverlayRenderLayer renderLayer = OverlayRendering.portalOverlayRenderLayer;
         IVertexBuilder buffer = vertexConsumerProvider.getBuffer(renderLayer);
         
-        List<BakedQuad> quads = getQuads(model, blockState);
+        List<BakedQuad> quads = getQuads(model, blockState, portal.getNormal());
         
         random.setSeed(0);
         
@@ -159,19 +171,6 @@ public class OverlayRendering {
                     ((float) portal.overlayOpacity)
                 );
             }
-
-//            blockRenderManager.getModelRenderer().render(
-//                portal.world,
-//                model,
-//                blockState,
-//                blockPos,
-//                matrixStack,
-//                buffer,
-//                false,
-//                random,
-//                blockState.getRenderingSeed(blockPos),
-//                OverlayTexture.DEFAULT_UV
-//            );
             
             matrixStack.pop();
         }

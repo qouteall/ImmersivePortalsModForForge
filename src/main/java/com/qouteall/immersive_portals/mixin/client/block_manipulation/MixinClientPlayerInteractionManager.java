@@ -1,12 +1,9 @@
 package com.qouteall.immersive_portals.mixin.client.block_manipulation;
 
 import com.qouteall.hiding_in_the_bushes.MyNetworkClient;
-import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.block_manipulation.BlockManipulationClient;
-import com.qouteall.immersive_portals.block_manipulation.HandReachTweak;
 import com.qouteall.immersive_portals.ducks.IEClientPlayerInteractionManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.multiplayer.PlayerController;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.network.IPacket;
@@ -21,7 +18,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerController.class)
 public abstract class MixinClientPlayerInteractionManager implements IEClientPlayerInteractionManager {
@@ -77,32 +73,6 @@ public abstract class MixinClientPlayerInteractionManager implements IEClientPla
         else {
             clientPlayNetworkHandler.sendPacket(packet);
         }
-    }
-    
-    @Inject(
-        method = "Lnet/minecraft/client/multiplayer/PlayerController;extendedReach()Z",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private void onHasExtendedReach(CallbackInfoReturnable<Boolean> cir) {
-        if (Global.longerReachInCreative) {
-            cir.setReturnValue(false);
-            cir.cancel();
-        }
-    }
-    
-    @Inject(
-        method = "Lnet/minecraft/client/multiplayer/PlayerController;getBlockReachDistance()F",
-        at = @At("RETURN"),
-        cancellable = true,
-        require = 0
-    )
-    private void onGetReachDistance(CallbackInfoReturnable<Float> cir) {
-        ClientPlayerEntity player = Minecraft.getInstance().player;
-        double result = cir.getReturnValue() *
-            HandReachTweak.getActualHandReachMultiplier(player);
-        cir.setReturnValue((float) result);
-        cir.cancel();
     }
     
 }

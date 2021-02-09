@@ -4,7 +4,7 @@ import com.qouteall.hiding_in_the_bushes.O_O;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
-import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
+import com.qouteall.immersive_portals.chunk_loading.ChunkLoader;
 import com.qouteall.immersive_portals.chunk_loading.DimensionalChunkPos;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.my_util.IntBox;
@@ -157,7 +157,7 @@ public class NetherPortalGeneration {
          *  after the chunk has been fully generated.
          */
         int loaderRadius = otherSideChunkAlreadyGenerated ? frameSearchingRadius : 1;
-        ChunkVisibilityManager.ChunkLoader chunkLoader = new ChunkVisibilityManager.ChunkLoader(
+        ChunkLoader chunkLoader = new ChunkLoader(
             new DimensionalChunkPos(toDimension, new ChunkPos(toPos)), loaderRadius
         );
         
@@ -194,7 +194,7 @@ public class NetherPortalGeneration {
                 return true;
             }
             
-            WorldGenRegion chunkRegion = new ChunkVisibilityManager.ChunkLoader(
+            WorldGenRegion chunkRegion = new ChunkLoader(
                 chunkLoader.center, frameSearchingRadius
             ).createChunkRegion();
             

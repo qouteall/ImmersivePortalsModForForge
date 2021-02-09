@@ -34,17 +34,17 @@ public class BlockManipulationClient {
     public static boolean isPointingToPortal() {
         return remotePointedDim != null;
     }
-
+    
     private static BlockRayTraceResult createMissedHitResult(Vector3d from, Vector3d to) {
         Vector3d dir = to.subtract(from).normalize();
-
+        
         return BlockRayTraceResult.createMiss(to, Direction.getFacingFromVector(dir.x, dir.y, dir.z), new BlockPos(to));
     }
-
+    
     private static boolean hitResultIsMissedOrNull(RayTraceResult bhr) {
         return bhr == null || bhr.getType() == RayTraceResult.Type.MISS;
     }
-
+    
     public static void updatePointedBlock(float tickDelta) {
         if (client.playerController == null || client.world == null) {
             return;
@@ -56,35 +56,35 @@ public class BlockManipulationClient {
         Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
         
         float reachDistance = client.playerController.getBlockReachDistance();
-
+        
         PortalCommand.getPlayerPointingPortalRaw(
             client.player, tickDelta, reachDistance, true
         ).ifPresent(pair -> {
-            if(pair.getFirst().isInteractable()) {
+            if (pair.getFirst().isInteractable()) {
                 double distanceToPortalPointing = pair.getSecond().distanceTo(cameraPos);
-                if(distanceToPortalPointing < getCurrentTargetDistance() + 0.2) {
+                if (distanceToPortalPointing < getCurrentTargetDistance() + 0.2) {
                     client.objectMouseOver = createMissedHitResult(cameraPos, pair.getSecond());
-
+                    
                     updateTargetedBlockThroughPortal(
-                            cameraPos,
-                            client.player.getLook(tickDelta),
-                            client.player.world.func_234923_W_(),
-                            distanceToPortalPointing,
-                            reachDistance,
-                            pair.getFirst()
+                        cameraPos,
+                        client.player.getLook(tickDelta),
+                        client.player.world.func_234923_W_(),
+                        distanceToPortalPointing,
+                        reachDistance,
+                        pair.getFirst()
                     );
                 }
             }
         });
     }
-
+    
     private static double getCurrentTargetDistance() {
         Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
-
+        
         if (hitResultIsMissedOrNull(client.objectMouseOver)) {
             return 23333;
         }
-    
+        
         if (client.objectMouseOver instanceof BlockRayTraceResult) {
             BlockPos hitPos = ((BlockRayTraceResult) client.objectMouseOver).getPos();
             if (client.world.getBlockState(hitPos).getBlock() == PortalPlaceholderBlock.instance) {
@@ -110,7 +110,7 @@ public class BlockManipulationClient {
         Vector3d to = portal.transformPoint(
             cameraPos.add(viewVector.scale(endDistance))
         );
-    
+        
         //do not touch barrier block through world wrapping portal
 //        from = from.add(to.subtract(from).normalize().multiply(0.00151));
         
@@ -121,14 +121,14 @@ public class BlockManipulationClient {
             RayTraceContext.FluidMode.NONE,
             client.player
         );
-    
+        
         ClientWorld world = ClientWorldLoader.getWorld(portal.dimensionTo);
         
         remoteHitResult = IBlockReader.func_217300_a(
             context,
             (rayTraceContext, blockPos) -> {
                 BlockState blockState = world.getBlockState(blockPos);
-    
+                
                 if (blockState.getBlock() == PortalPlaceholderBlock.instance) {
                     return null;
                 }
@@ -182,7 +182,7 @@ public class BlockManipulationClient {
         }
         
     }
-
+    
     public static void myHandleBlockBreaking(boolean isKeyPressed) {
 //        if (remoteHitResult == null) {
 //            return;
@@ -237,8 +237,8 @@ public class BlockManipulationClient {
 //        if (remoteHitResult == null) {
 //            return;
 //        }
-    
-    
+        
+        
         ClientWorld targetWorld =
             ClientWorldLoader.getWorld(remotePointedDim);
         BlockPos blockPos = ((BlockRayTraceResult) remoteHitResult).getPos();
@@ -271,7 +271,7 @@ public class BlockManipulationClient {
 //        if (remoteHitResult == null) {
 //            return;
 //        }
-    
+        
         ClientWorld targetWorld =
             ClientWorldLoader.getWorld(remotePointedDim);
         

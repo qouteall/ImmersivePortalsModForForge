@@ -6,12 +6,17 @@ import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEEntity;
+import com.qouteall.immersive_portals.my_util.LimitedLogger;
 import com.qouteall.immersive_portals.portal.Portal;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
@@ -20,6 +25,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public class CollisionHelper {
+    
+    private static final LimitedLogger limitedLogger = new LimitedLogger(20);
     
     //cut a box with a plane
     //the facing that normal points to will be remained
@@ -129,12 +136,21 @@ public class CollisionHelper {
             return attemptedMove;
         }
         
+        World destinationWorld = collidingPortal.getDestinationWorld();
+        
+        if (!destinationWorld.isBlockLoaded(new BlockPos(boxOtherSide.getCenter()))) {
+            if (entity instanceof PlayerEntity && entity.world.isRemote()) {
+                informClientStagnant();
+            }
+            return Vector3d.ZERO;
+        }
+        
         //switch world and check collision
         World oldWorld = entity.world;
         Vector3d oldPos = entity.getPositionVec();
         Vector3d oldLastTickPos = McHelper.lastTickPosOf(entity);
         
-        entity.world = collidingPortal.getDestinationWorld();
+        entity.world = destinationWorld;
         entity.setBoundingBox(boxOtherSide);
         
         Vector3d collided = handleCollisionFunc.apply(transformedAttemptedMove);
@@ -364,5 +380,13 @@ public class CollisionHelper {
     
     private static AxisAlignedBB getStretchedBoundingBox(Entity entity) {
         return entity.getBoundingBox().expand(entity.getMotion());
+    }
+    
+    @OnlyIn(Dist.CLIENT)
+    private static void informClientStagnant() {
+        Minecraft.getInstance().ingameGUI.setOverlayMessage(
+            new TranslationTextComponent("imm_ptl.stagnate_movement"),
+            true
+        );
     }
 }

@@ -21,7 +21,7 @@ public class CrossPortalThirdPersonView {
     
     // if rendered, return true
     public static boolean renderCrossPortalThirdPersonView() {
-        if (!isThirdPerson()) {
+        if (!(isThirdPerson() || TransformationManager.isIsometricView)) {
             return false;
         }
         
@@ -36,7 +36,9 @@ public class CrossPortalThirdPersonView {
             isFrontView(),
             RenderStates.tickDelta
         );
-        Vector3d normalCameraPos = resuableCamera.getProjectedView();
+        Vector3d originalCameraPos = resuableCamera.getProjectedView();
+        Vector3d isometricAdjustedOriginalCameraPos =
+            TransformationManager.getIsometricAdjustedCameraPos(resuableCamera);
         
         resuableCamera.update(
             client.world, cameraEntity,
@@ -45,7 +47,7 @@ public class CrossPortalThirdPersonView {
         Vector3d playerHeadPos = resuableCamera.getProjectedView();
         
         Pair<Portal, Vector3d> portalHit = PortalCommand.raytracePortals(
-            client.world, playerHeadPos, normalCameraPos, true
+            client.world, playerHeadPos, isometricAdjustedOriginalCameraPos, true
         ).orElse(null);
         
         if (portalHit == null) {
@@ -54,10 +56,10 @@ public class CrossPortalThirdPersonView {
         
         Portal portal = portalHit.getFirst();
         Vector3d hitPos = portalHit.getSecond();
-    
+        
         double distance = getThirdPersonMaxDistance();
         
-        Vector3d thirdPersonPos = normalCameraPos.subtract(playerHeadPos).normalize()
+        Vector3d thirdPersonPos = originalCameraPos.subtract(playerHeadPos).normalize()
             .scale(distance).add(playerHeadPos);
         
         if (!portal.isInteractable()) {
@@ -66,13 +68,12 @@ public class CrossPortalThirdPersonView {
         
         Vector3d renderingCameraPos = getThirdPersonCameraPos(thirdPersonPos, portal, hitPos);
         ((IECamera) RenderStates.originalCamera).portal_setPos(renderingCameraPos);
-    
-    
+        
+        
         WorldRenderInfo worldRenderInfo = new WorldRenderInfo(
-            ClientWorldLoader.getWorld(portal.dimensionTo), renderingCameraPos, portal.getAdditionalCameraTransformation(), null,
-                    Minecraft.getInstance().gameSettings.renderDistanceChunks,
-                    false
-                );
+            ClientWorldLoader.getWorld(portal.dimensionTo), renderingCameraPos, portal.getAdditionalCameraTransformation(), false, null,
+            Minecraft.getInstance().gameSettings.renderDistanceChunks
+        );
         
         CGlobal.renderer.invokeWorldRendering(worldRenderInfo);
         

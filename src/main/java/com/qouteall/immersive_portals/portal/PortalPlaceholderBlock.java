@@ -60,12 +60,9 @@ public class PortalPlaceholderBlock extends Block {
     
     @Override
     public VoxelShape getShape(
-        BlockState blockState_1,
-        IBlockReader blockView_1,
-        BlockPos blockPos_1,
-        ISelectionContext entityContext_1
+        BlockState state, IBlockReader world, BlockPos blockPos, ISelectionContext shapeContext
     ) {
-        switch ((Direction.Axis) blockState_1.get(AXIS)) {
+        switch ((Direction.Axis) state.get(AXIS)) {
             case Z:
                 return Z_AABB;
             case Y:
@@ -90,7 +87,7 @@ public class PortalPlaceholderBlock extends Block {
         BlockPos blockPos,
         BlockPos neighborPos
     ) {
-        if(!world.isRemote()){
+        if (!world.isRemote()) {
             Direction.Axis axis = thisState.get(AXIS);
             if (direction.getAxis() != axis) {
                 McHelper.findEntitiesRough(
@@ -98,7 +95,7 @@ public class PortalPlaceholderBlock extends Block {
                     ((World) world),
                     Vector3d.func_237491_b_(blockPos),
                     2,
-                    e->true
+                    e -> true
                 ).forEach(
                     portal -> {
                         ((BreakablePortalEntity) portal).notifyPlaceholderUpdate();
@@ -128,7 +125,7 @@ public class PortalPlaceholderBlock extends Block {
         //nothing
     }
     
-   
+    
     //---------These are copied from BlockBarrier
     @Override
     public boolean propagatesSkylightDown(

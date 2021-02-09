@@ -1,14 +1,13 @@
 package com.qouteall.imm_ptl_peripheral.guide;
 
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.network.CommonNetworkClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.ChatType;
-import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.util.text.event.ClickEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import java.io.File;
@@ -100,13 +99,10 @@ public class IPGuide {
         Minecraft.getInstance().ingameGUI.func_238450_a_(
             ChatType.SYSTEM,
             text.func_230529_a_(
-                new StringTextComponent(link).func_240700_a_(
-                    style -> style.func_240715_a_(new ClickEvent(
-                        ClickEvent.Action.OPEN_URL, link
-                    )).func_244282_c(true)
-                )
+                McHelper.getLinkText(link)
             ),
             Util.field_240973_b_
         );
     }
+    
 }

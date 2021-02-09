@@ -28,8 +28,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.SimpleRegistry;
+import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.EmptyChunk;
@@ -309,17 +311,21 @@ public class McHelper {
         return result != null ? result : Collections.emptyList();
     }
     
+    // includes global portals
     public static Stream<Portal> getNearbyPortals(Entity center, double range) {
-        List<Portal> globalPortals = getGlobalPortals(center.world);
+        return getNearbyPortals(center.world, center.getPositionVec(), range);
+    }
+    
+    // includes global portals
+    public static Stream<Portal> getNearbyPortals(World world, Vector3d pos, double range) {
+        List<Portal> globalPortals = getGlobalPortals(world);
+        
         Stream<Portal> nearbyPortals = McHelper.getServerEntitiesNearbyWithoutLoadingChunk(
-            center.world,
-            center.getPositionVec(),
-            Portal.class,
-            range
+            world, pos, Portal.class, range
         );
         return Streams.concat(
             globalPortals.stream().filter(
-                p -> p.getDistanceToNearestPointInPortal(center.getPositionVec()) < range * 2
+                p -> p.getDistanceToNearestPointInPortal(pos) < range * 2
             ),
             nearbyPortals
         );
@@ -459,6 +465,14 @@ public class McHelper {
     public static boolean getIsServerChunkGenerated(RegistryKey<World> toDimension, BlockPos toPos) {
         return getIEStorage(toDimension)
             .portal_isChunkGenerated(new ChunkPos(toPos));
+    }
+    
+    public static IFormattableTextComponent getLinkText(String link) {
+        return new StringTextComponent(link).func_240700_a_(
+            style -> style.func_240715_a_(new ClickEvent(
+                ClickEvent.Action.OPEN_URL, link
+            )).func_244282_c(true)
+        );
     }
     
     public static interface ChunkAccessor {

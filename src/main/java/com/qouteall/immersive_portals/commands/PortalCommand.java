@@ -4,7 +4,9 @@ import com.google.common.collect.Streams;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -12,7 +14,10 @@ import com.mojang.datafixers.util.Pair;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.api.example.ExampleGuiPortalRendering;
 import com.qouteall.immersive_portals.my_util.IntBox;
+import com.qouteall.immersive_portals.my_util.SignalBiArged;
+import com.qouteall.immersive_portals.network.McRemoteProcedureCall;
 import com.qouteall.immersive_portals.portal.GeometryPortalShape;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalManipulation;
@@ -35,6 +40,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.profiler.Profiler;
 import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -48,6 +54,7 @@ import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -60,6 +67,149 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class PortalCommand {
+    // it needs to invoke the outer mod but the core does not have outer mod dependency
+    public static final SignalBiArged<ServerPlayerEntity, String>
+        createCommandStickCommandSignal = new SignalBiArged<>();
+    
+    public static void register(
+        CommandDispatcher<CommandSource> dispatcher
+    ) {
+        
+        LiteralArgumentBuilder<CommandSource> builder = Commands
+            .literal("portal")
+            .requires(PortalCommand::level2OrCreativeMode);
+        
+        registerPortalTargetedCommands(builder);
+        
+        registerCBPortalCommands(builder);
+        
+        registerUtilityCommands(builder);
+        
+        LiteralArgumentBuilder<CommandSource> global =
+            Commands.literal("global")
+                .requires(commandSource -> commandSource.hasPermissionLevel(2));
+        registerGlobalPortalCommands(global);
+        builder.then(global);
+        
+        LiteralArgumentBuilder<CommandSource> debugBuilder = Commands.literal("debug")
+            .requires(PortalCommand::level2OrCreativeMode);
+        registerDebugCommands(debugBuilder);
+        builder.then(debugBuilder);
+        
+        dispatcher.register(builder);
+    }
+    
+    public static boolean level2OrCreativeMode(CommandSource commandSource) {
+        Entity entity = commandSource.getEntity();
+        if (entity instanceof ServerPlayerEntity) {
+            if (((ServerPlayerEntity) entity).isCreative()) {
+                return true;
+            }
+        }
+        
+        return commandSource.hasPermissionLevel(2);
+    }
+    
+    private static void registerDebugCommands(
+        LiteralArgumentBuilder<CommandSource> builder
+    ) {
+        
+        builder.then(Commands
+            .literal("gui_portal")
+            .then(Commands.argument("dim", DimensionArgument.getDimension())
+                .then(Commands.argument("pos", Vec3Argument.vec3(false))
+                    .executes(context -> {
+                        ExampleGuiPortalRendering.onCommandExecuted(
+                            context.getSource().asPlayer(),
+                            DimensionArgument.getDimensionArgument(context, "dim"),
+                            Vec3Argument.getVec3(context, "pos")
+                        );
+                        return 0;
+                    })
+                )
+            ));
+        
+        builder.then(Commands
+            .literal("isometric_enable")
+            .then(Commands.argument("viewLength", FloatArgumentType.floatArg())
+                .executes(context -> {
+                    ServerPlayerEntity player = context.getSource().asPlayer();
+                    
+                    float viewLength = FloatArgumentType.getFloat(context, "viewLength");
+                    
+                    McRemoteProcedureCall.tellClientToInvoke(
+                        player,
+                        "com.qouteall.immersive_portals.render.TransformationManager.RemoteCallables.enableIsometricView",
+                        viewLength
+                    );
+                    
+                    return 0;
+                })
+            )
+        );
+        
+        builder.then(Commands
+            .literal("isometric_disable")
+            .executes(context -> {
+                ServerPlayerEntity player = context.getSource().asPlayer();
+                McRemoteProcedureCall.tellClientToInvoke(
+                    player,
+                    "com.qouteall.immersive_portals.render.TransformationManager.RemoteCallables.disableIsometricView"
+                );
+                return 0;
+            })
+        );
+        
+        builder.then(Commands
+            .literal("align")
+            .executes(context -> {
+                ServerPlayerEntity player = context.getSource().asPlayer();
+                
+                Vector3d pos = player.getPositionVec();
+                
+                Vector3d newPos = new Vector3d(
+                    Math.round(pos.x * 2) / 2.0,
+                    Math.round(pos.y * 2) / 2.0,
+                    Math.round(pos.z * 2) / 2.0
+                );
+                
+                player.connection.setPlayerLocation(
+                    newPos.x, newPos.y, newPos.z,
+                    45, 30
+                );
+                
+                return 0;
+            })
+        );
+        
+        builder.then(Commands
+            .literal("set_profiler_logging_threshold")
+            .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
+            .then(Commands.argument("ms", IntegerArgumentType.integer())
+                .executes(context -> {
+                    int ms = IntegerArgumentType.getInteger(context, "ms");
+                    Profiler.WARN_TIME_THRESHOLD = Duration.ofMillis(ms).toNanos();
+                    
+                    return 0;
+                })
+            )
+        );
+        
+        builder.then(Commands
+            .literal("create_command_stick")
+            .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(2))
+            .then(Commands.argument("command", StringArgumentType.string())
+                .executes(context -> {
+                    createCommandStickCommandSignal.emit(
+                        context.getSource().asPlayer(),
+                        StringArgumentType.getString(context, "command")
+                    );
+                    return 0;
+                })
+            )
+        );
+    }
+    
     public static void registerClientDebugCommand(
         CommandDispatcher<CommandSource> dispatcher
     ) {
@@ -364,6 +514,15 @@ public class PortalCommand {
                         CompoundNBT newNbt = NBTCompoundTagArgument.getNbt(
                             context, "nbt"
                         );
+                        
+                        if (newNbt.contains("commandsOnTeleported")) {
+                            if (!context.getSource().hasPermissionLevel(2)) {
+                                context.getSource().sendErrorMessage(new StringTextComponent(
+                                    "You do not have the permission to set commandsOnTeleported"
+                                ));
+                                return;
+                            }
+                        }
                         
                         setPortalNbt(portal, newNbt);
                         
@@ -1194,6 +1353,21 @@ public class PortalCommand {
                 )
             )
         );
+        
+        builder.then(Commands
+            .literal("wiki")
+            .executes(context -> {
+                context.getSource().sendFeedback(
+                    McHelper.getLinkText("https://qouteall.fun/immptl/wiki/Commands-Reference"),
+                    false
+                );
+                context.getSource().sendFeedback(
+                    new TranslationTextComponent("imm_ptl.press_t"),
+                    false
+                );
+                return 0;
+            })
+        );
     }
     
     private static void invokeCreateScaledViewCommand(
@@ -1237,42 +1411,6 @@ public class PortalCommand {
             );
             McHelper.spawnServerEntity(portal);
         }
-    }
-    
-    public static void register(
-        CommandDispatcher<CommandSource> dispatcher
-    ) {
-
-//        LiteralArgumentBuilder<ServerCommandSource> builderOPPerm = CommandManager
-//            .literal("portal")
-//            .requires(commandSource -> commandSource.hasPermissionLevel(2));
-        
-        LiteralArgumentBuilder<CommandSource> builder = Commands
-            .literal("portal")
-            .requires(commandSource -> {
-                Entity entity = commandSource.getEntity();
-                if (entity instanceof ServerPlayerEntity) {
-                    if (((ServerPlayerEntity) entity).isCreative()) {
-                        return true;
-                    }
-                }
-                
-                return commandSource.hasPermissionLevel(2);
-            });
-        
-        registerPortalTargetedCommands(builder);
-        
-        registerCBPortalCommands(builder);
-        
-        registerUtilityCommands(builder);
-        
-        LiteralArgumentBuilder<CommandSource> global =
-            Commands.literal("global")
-                .requires(commandSource -> commandSource.hasPermissionLevel(2));
-        registerGlobalPortalCommands(global);
-        builder.then(global);
-        
-        dispatcher.register(builder);
     }
     
     private static int processPortalArgumentedCBCommand(

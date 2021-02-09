@@ -41,7 +41,6 @@ public class MixinParticleManager implements IEParticleManager {
         }
     }
     
-    // if the particle does not belong to the current dimension, do not render
     @Redirect(
         method = "Lnet/minecraft/client/particle/ParticleManager;renderParticles(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer$Impl;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/ActiveRenderInfo;F)V",
         at = @At(
@@ -52,7 +51,9 @@ public class MixinParticleManager implements IEParticleManager {
     )
     private void redirectBuildGeometry(Particle particle, IVertexBuilder vertexConsumer, ActiveRenderInfo camera, float tickDelta) {
         if (((IEParticle) particle).portal_getWorld() == Minecraft.getInstance().world) {
-            particle.renderParticle(vertexConsumer, camera, tickDelta);
+            if (RenderStates.shouldRenderParticle(particle)) {
+                particle.renderParticle(vertexConsumer, camera, tickDelta);
+            }
         }
     }
     
@@ -69,4 +70,5 @@ public class MixinParticleManager implements IEParticleManager {
     public void mySetWorld(ClientWorld world_) {
         world = world_;
     }
+    
 }

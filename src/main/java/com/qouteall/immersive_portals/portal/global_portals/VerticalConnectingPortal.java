@@ -81,7 +81,7 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
         connect(down, ConnectorType.ceil, up, respectSpaceRatio);
     }
     
-    private static VerticalConnectingPortal createConnectingPortal(
+    public static VerticalConnectingPortal createConnectingPortal(
         ServerWorld fromWorld,
         ConnectorType connectorType,
         ServerWorld toWorld,
@@ -144,12 +144,6 @@ public class VerticalConnectingPortal extends GlobalTrackedPortal {
             verticalConnectingPortal.scaling = scaling;
             verticalConnectingPortal.teleportChangesScale = false;
             PortalExtension.get(verticalConnectingPortal).adjustPositionAfterTeleport = false;
-        }
-        
-        if (fromWorld.func_230315_m_().hasSkyLight()) {
-            if (connectorType == ConnectorType.ceil) {
-                verticalConnectingPortal.fuseView = true;
-            }
         }
         
         return verticalConnectingPortal;

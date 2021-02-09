@@ -12,24 +12,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LivingEntity.class)
 public class MixinLivingEntity {
     
-    @Shadow
-    private LivingEntity revengeTarget;
-    
-    @Shadow
-    private LivingEntity lastAttackedEntity;
-    
     //maybe avoid memory leak???
     @Inject(method = "Lnet/minecraft/entity/LivingEntity;tick()V", at = @At("RETURN"))
     private void onTickEnded(CallbackInfo ci) {
-        Entity this_ = (Entity) (Object) this;
-        if (revengeTarget != null) {
-            if (revengeTarget.world != this_.world) {
-                revengeTarget = null;
+        LivingEntity this_ = (LivingEntity) (Object) this;
+        if (this_.getRevengeTarget() != null) {
+            if (this_.getRevengeTarget().world != this_.world) {
+            	this_.setRevengeTarget(null);
             }
         }
-        if (lastAttackedEntity != null) {
-            if (lastAttackedEntity.world != this_.world) {
-                lastAttackedEntity = null;
+        if (this_.getLastAttackedEntity() != null) {
+            if (this_.getLastAttackedEntity().world != this_.world) {
+            	this_.func_230246_e_(null);
             }
         }
     }
@@ -42,6 +36,21 @@ public class MixinLivingEntity {
     private void onCanSee(Entity entity, CallbackInfoReturnable<Boolean> cir) {
         if (entity.world != ((Entity) (Object) this).world) {
             cir.setReturnValue(false);
+            return;
         }
     }
+    
+//    @Inject(
+//        method = "canSee",
+//        at = @At("RETURN"),
+//        cancellable = true
+//    )
+//    private void onCanSeeReturns(Entity entity, CallbackInfoReturnable<Boolean> cir) {
+//        LivingEntity this_ = (LivingEntity) (Object) this;
+//        if (cir.getReturnValue()) {
+//            if (Portal.doesPortalBlockEntityView(this_, entity)) {
+//                cir.setReturnValue(false);
+//            }
+//        }
+//    }
 }

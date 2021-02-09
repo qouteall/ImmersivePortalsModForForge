@@ -5,8 +5,6 @@ import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.Lifecycle;
 import com.qouteall.imm_ptl_peripheral.alternate_dimension.AlternateDimensions;
 import com.qouteall.imm_ptl_peripheral.altius_world.AltiusGameRule;
-import com.qouteall.imm_ptl_peripheral.altius_world.AltiusInfo;
-import com.qouteall.imm_ptl_peripheral.ducks.IELevelProperties;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.ducks.IEGeneratorOptions;
 import net.minecraft.command.TimerCallbackManager;
@@ -31,15 +29,15 @@ import java.util.LinkedHashSet;
 import java.util.UUID;
 
 @Mixin(ServerWorldInfo.class)
-public class MixinLevelProperties implements IELevelProperties {
+public class MixinLevelProperties {
     
     @Shadow
     @Final
     private Lifecycle field_237344_d_;
+    
     @Shadow
     @Final
     private DimensionGeneratorSettings field_237343_c_;
-    AltiusInfo altiusInfo;
     
     @Inject(
         method = "<init>(Lcom/mojang/datafixers/DataFixer;ILnet/minecraft/nbt/CompoundNBT;ZIIIFJJIIIZIZZZLnet/minecraft/world/border/WorldBorder$Serializer;IILjava/util/UUID;Ljava/util/LinkedHashSet;Lnet/minecraft/command/TimerCallbackManager;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/nbt/CompoundNBT;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/gen/settings/DimensionGeneratorSettings;Lcom/mojang/serialization/Lifecycle;)V",
@@ -55,8 +53,6 @@ public class MixinLevelProperties implements IELevelProperties {
         TimerCallbackManager<MinecraftServer> scheduledEvents, CompoundNBT customBossEvents, CompoundNBT dragonFight,
         WorldSettings levelInfo, DimensionGeneratorSettings generatorOptions, Lifecycle lifecycle, CallbackInfo ci
     ) {
-        altiusInfo = ((IELevelProperties) (Object) levelInfo).getAltiusInfo();
-        
         // TODO use more appropriate way to get rid of the warning screen
         if (Global.enableAlternateDimensions && generatorOptions.func_236224_e_().keySet().size() == 8) {
             lifecycle = Lifecycle.stable();
@@ -83,16 +79,9 @@ public class MixinLevelProperties implements IELevelProperties {
         
         MixinLevelProperties this_ = (MixinLevelProperties) (Object) levelProperties;
         
-        AltiusInfo levelInfoAltiusInfo = ((IELevelProperties) (Object) levelInfo).getAltiusInfo();
-        if (levelInfoAltiusInfo != null) {
-            this_.altiusInfo = levelInfoAltiusInfo;
-            AltiusGameRule.upgradeOldDimensionStack();
-            return;
-        }
         
         INBT altiusTag = dynamic.getElement("altius", null);
         if (altiusTag != null) {
-            this_.altiusInfo = AltiusInfo.fromTag(((CompoundNBT) altiusTag));
             AltiusGameRule.upgradeOldDimensionStack();
         }
     }
@@ -110,18 +99,5 @@ public class MixinLevelProperties implements IELevelProperties {
                 field_237343_c_.func_236224_e_()
             )
         );
-        if (altiusInfo != null) {
-            compoundTag.put("altius", altiusInfo.toTag());
-        }
-    }
-    
-    @Override
-    public AltiusInfo getAltiusInfo() {
-        return altiusInfo;
-    }
-    
-    @Override
-    public void setAltiusInfo(AltiusInfo cond) {
-        altiusInfo = cond;
     }
 }

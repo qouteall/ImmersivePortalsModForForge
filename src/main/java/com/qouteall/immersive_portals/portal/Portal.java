@@ -24,6 +24,7 @@ import net.minecraft.command.Commands;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MoverType;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -424,7 +425,7 @@ public class Portal extends Entity implements PortalLike {
         return rotation;
     }
     
-    public void setSquareShape(
+    public void setOrientationAndSize(
         Vector3d newAxisW, Vector3d newAxisH,
         double newWidth, double newHeight
     ) {
@@ -1011,8 +1012,7 @@ public class Portal extends Entity implements PortalLike {
         Vector3d point
     ) {
         double distanceToPlane = getDistanceToPlane(point);
-        Vector3d posInPlane = point.add(getNormal().scale(-distanceToPlane));
-        Vector3d localPos = posInPlane.subtract(getOriginPos());
+        Vector3d localPos = point.subtract(getOriginPos());
         double localX = localPos.dotProduct(axisW);
         double localY = localPos.dotProduct(axisH);
         double distanceToRect = Helper.getDistanceToRectangle(
@@ -1023,14 +1023,31 @@ public class Portal extends Entity implements PortalLike {
         return Math.sqrt(distanceToPlane * distanceToPlane + distanceToRect * distanceToRect);
     }
     
-    public Vector3d getPointInPortalProjection(Vector3d pos) {
-        Vector3d myPos = getOriginPos();
-        Vector3d offset = pos.subtract(myPos);
+    public Vector3d getPointProjectedToPlane(Vector3d pos) {
+        Vector3d originPos = getOriginPos();
+        Vector3d offset = pos.subtract(originPos);
         
         double yInPlane = offset.dotProduct(axisH);
         double xInPlane = offset.dotProduct(axisW);
         
-        return myPos.add(
+        return originPos.add(
+            axisW.scale(xInPlane)
+        ).add(
+            axisH.scale(yInPlane)
+        );
+    }
+    
+    public Vector3d getNearestPointInPortal(Vector3d pos) {
+        Vector3d originPos = getOriginPos();
+        Vector3d offset = pos.subtract(originPos);
+        
+        double yInPlane = offset.dotProduct(axisH);
+        double xInPlane = offset.dotProduct(axisW);
+        
+        xInPlane = MathHelper.clamp(xInPlane, -width / 2, width / 2);
+        yInPlane = MathHelper.clamp(yInPlane, -height / 2, height / 2);
+        
+        return originPos.add(
             axisW.scale(xInPlane)
         ).add(
             axisH.scale(yInPlane)
@@ -1311,4 +1328,21 @@ public class Portal extends Entity implements PortalLike {
         return teleportable;
     }
     
+    public static boolean doesPortalBlockEntityView(
+        LivingEntity observer, Entity target
+    ) {
+        observer.world.getProfiler().startSection("portal_block_view");
+        
+        List<Portal> viewBlockingPortals = McHelper.findEntitiesByBox(
+            Portal.class,
+            observer.world,
+            observer.getBoundingBox().union(target.getBoundingBox()),
+            8,
+            p -> p.rayTrace(observer.getEyePosition(1), target.getEyePosition(1)) != null
+        );
+        
+        observer.world.getProfiler().endSection();
+        
+        return !viewBlockingPortals.isEmpty();
+    }
 }

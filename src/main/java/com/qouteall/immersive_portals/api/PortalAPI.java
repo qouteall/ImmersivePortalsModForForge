@@ -2,12 +2,15 @@ package com.qouteall.immersive_portals.api;
 
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
+import com.qouteall.immersive_portals.chunk_loading.ChunkLoader;
+import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.my_util.DQuaternion;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.PortalManipulation;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.Tuple;
@@ -19,14 +22,14 @@ import javax.annotation.Nullable;
 
 public class PortalAPI {
     
-    public static void setPortalPositionShape(
+    public static void setPortalPositionOrientationAndSize(
         Portal portal,
         Vector3d position,
         DQuaternion orientation,
         double width, double height
     ) {
         portal.setOriginPos(position);
-        portal.setSquareShape(
+        portal.setOrientationAndSize(
             orientation.rotate(new Vector3d(1, 0, 0)),
             orientation.rotate(new Vector3d(0, 1, 0)),
             width, height
@@ -91,5 +94,13 @@ public class PortalAPI {
         ServerWorld world, Portal portal
     ) {
         GlobalPortalStorage.get(world).removePortal(portal);
+    }
+    
+    public static void addChunkLoaderForPlayer(ServerPlayerEntity player, ChunkLoader chunkLoader) {
+        NewChunkTrackingGraph.addPerPlayerAdditionalChunkLoader(player, chunkLoader);
+    }
+    
+    public static void removeChunkLoaderForPlayer(ServerPlayerEntity player, ChunkLoader chunkLoader) {
+        NewChunkTrackingGraph.removePerPlayerAdditionalChunkLoader(player, chunkLoader);
     }
 }

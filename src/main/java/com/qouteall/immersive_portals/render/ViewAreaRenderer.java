@@ -166,6 +166,9 @@ public class ViewAreaRenderer {
         double cameraLocalY = cameraPosLocal.dotProduct(portal.axisH);
         
         double r = Minecraft.getInstance().gameSettings.renderDistanceChunks * 16 - 16;
+        if (TransformationManager.isIsometricView) {
+            r *= 2;
+        }
         
         double distance = Math.abs(cameraPosLocal.dotProduct(portal.getNormal()));
         if (distance > 200) {

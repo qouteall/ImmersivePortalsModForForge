@@ -23,8 +23,6 @@ public class Global {
     
     public static boolean doCheckGlError = false;
     
-    public static boolean longerReachInCreative = true;
-    
     public static boolean renderYourselfInPortal = true;
     
     public static boolean activeLoading = true;
@@ -42,11 +40,6 @@ public class Global {
     public static boolean disableTeleportation = false;
     
     public static boolean looseVisibleChunkIteration = true;
-    
-    //TODO remove
-    public static boolean portalPlaceholderPassthrough = true;
-    
-    public static boolean mirrorInteractableThroughPortal = false;
     
     public static boolean looseMovementCheck = false;
     
@@ -80,9 +73,11 @@ public class Global {
     
     public static boolean netherPortalOverlay = false;
     
-    public static boolean flushLightTasksBeforeSendingPacket = false;
-    
     public static boolean lightLogging = false;
+    
+    public static boolean debugDisableFog = false;
+    
+    public static int scaleLimit = 30;
     
     public static enum RenderMode {
         normal,

@@ -11,11 +11,13 @@ import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
-import com.qouteall.immersive_portals.chunk_loading.ChunkVisibilityManager;
+import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.chunk_loading.ChunkVisibility;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEEntity;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
-import com.qouteall.immersive_portals.network.RemoteProcedureCall;
+import com.qouteall.immersive_portals.my_util.MyTaskList;
+import com.qouteall.immersive_portals.network.McRemoteProcedureCall;
 import com.qouteall.immersive_portals.optifine_compatibility.UniformReport;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.render.MyBuiltChunkStorage;
@@ -38,7 +40,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.IntNBT;
-import net.minecraft.profiler.Profiler;
 import net.minecraft.util.Direction;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
@@ -66,8 +67,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import java.lang.ref.Reference;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
-import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -292,7 +294,7 @@ public class ClientDebugCommand {
             .literal("report_chunk_loaders")
             .executes(context -> {
                 ServerPlayerEntity player = context.getSource().asPlayer();
-                ChunkVisibilityManager.getBaseChunkLoaders(
+                ChunkVisibility.getBaseChunkLoaders(
                     player
                 ).forEach(
                     loader -> McHelper.serverLog(
@@ -394,57 +396,39 @@ public class ClientDebugCommand {
         );
         builder.then(Commands
             .literal("erase_chunk")
-            .executes(context -> {
-                ServerPlayerEntity player = context.getSource().asPlayer();
-                
-                eraseChunk(new ChunkPos(new BlockPos(player.getPositionVec())), player.world, 0, 256);
-                
-                return 0;
-            })
-        );
-        builder.then(Commands
-            .literal("erase_chunk_large")
-            .executes(context -> {
-                ServerPlayerEntity player = context.getSource().asPlayer();
-                
-                ChunkPos center = new ChunkPos(new BlockPos(player.getPositionVec()));
-                
-                for (int dx = -4; dx <= 4; dx++) {
-                    for (int dz = -4; dz <= 4; dz++) {
-                        eraseChunk(
-                            new ChunkPos(
-                                player.chunkCoordX + dx,
-                                player.chunkCoordZ + dz
-                            ),
-                            player.world, 0, 256
-                        );
-                    }
-                }
-                
-                return 0;
-            })
-        );
-        builder.then(Commands
-            .literal("erase_chunk_large_middle")
-            .executes(context -> {
-                ServerPlayerEntity player = context.getSource().asPlayer();
-                
-                ChunkPos center = new ChunkPos(new BlockPos(player.getPositionVec()));
-                
-                for (int dx = -4; dx <= 4; dx++) {
-                    for (int dz = -4; dz <= 4; dz++) {
-                        eraseChunk(
-                            new ChunkPos(
-                                player.chunkCoordX + dx,
-                                player.chunkCoordZ + dz
-                            ),
-                            player.world, 64, 128
-                        );
-                    }
-                }
-                
-                return 0;
-            })
+            .then(Commands.argument("rChunks", IntegerArgumentType.integer())
+                .executes(context -> {
+                    ServerPlayerEntity player = context.getSource().asPlayer();
+                    
+                    ChunkPos center = new ChunkPos(new BlockPos(player.getPositionVec()));
+                    
+                    invokeEraseChunk(
+                        player.world, center,
+                        IntegerArgumentType.getInteger(context, "rChunks"),
+                        0, 256
+                    );
+                    
+                    return 0;
+                })
+                .then(Commands.argument("downY", IntegerArgumentType.integer())
+                    .then(Commands.argument("upY", IntegerArgumentType.integer())
+                        .executes(context -> {
+                            
+                            ServerPlayerEntity player = context.getSource().asPlayer();
+                            
+                            ChunkPos center = new ChunkPos(new BlockPos(player.getPositionVec()));
+                            
+                            invokeEraseChunk(
+                                player.world, center,
+                                IntegerArgumentType.getInteger(context, "rChunks"),
+                                IntegerArgumentType.getInteger(context, "downY"),
+                                IntegerArgumentType.getInteger(context, "upY")
+                            );
+                            return 0;
+                        })
+                    )
+                )
+            )
         );
         builder.then(Commands
             .literal("report_rebuild_status")
@@ -516,17 +500,6 @@ public class ClientDebugCommand {
             })
         );
         builder.then(Commands
-            .literal("set_profiler_logging_threshold")
-            .then(Commands.argument("ms", IntegerArgumentType.integer())
-                .executes(context -> {
-                    int ms = IntegerArgumentType.getInteger(context, "ms");
-                    Profiler.WARN_TIME_THRESHOLD = Duration.ofMillis(ms).toNanos();
-                    
-                    return 0;
-                })
-            )
-        );
-        builder.then(Commands
             .literal("report_portal_groups")
             .executes(context -> {
                 for (ClientWorld clientWorld : ClientWorldLoader.getClientWorlds()) {
@@ -552,23 +525,6 @@ public class ClientDebugCommand {
             })
         );
         builder.then(Commands
-            .literal("gui_portal_test")
-            .executes(context -> {
-                Minecraft.getInstance().execute(() -> {
-                    try {
-                        Class.forName("com.qouteall.imm_ptl_peripheral.test.ExampleGuiPortalRendering")
-                            .getDeclaredMethod("open")
-                            .invoke(null);
-                    }
-                    catch (Throwable e) {
-                        e.printStackTrace();
-                    }
-                });
-                
-                return 0;
-            })
-        );
-        builder.then(Commands
             .literal("report_client_light_status")
             .executes(context -> {
                 Minecraft.getInstance().execute(() -> {
@@ -578,7 +534,7 @@ public class ClientDebugCommand {
                     );
                     if (lightSection != null) {
                         boolean uninitialized = lightSection.isEmpty();
-    
+                        
                         byte[] byteArray = lightSection.getData();
                         boolean allZero = true;
                         for (byte b : byteArray) {
@@ -657,11 +613,6 @@ public class ClientDebugCommand {
         );
         registerSwitchCommand(
             builder,
-            "portal_placeholder_passthrough",
-            cond -> Global.portalPlaceholderPassthrough = cond
-        );
-        registerSwitchCommand(
-            builder,
             "early_cull_portal",
             cond -> CGlobal.earlyFrustumCullingPortal = cond
         );
@@ -712,8 +663,8 @@ public class ClientDebugCommand {
         );
         registerSwitchCommand(
             builder,
-            "flush_light_tasks_before_sending_packet",
-            cond -> Global.flushLightTasksBeforeSendingPacket = cond
+            "disable_fog",
+            cond -> Global.debugDisableFog = cond
         );
         
         builder.then(Commands
@@ -727,6 +678,27 @@ public class ClientDebugCommand {
         dispatcher.register(builder);
         
         Helper.log("Successfully initialized command /immersive_portals_debug");
+    }
+    
+    public static void invokeEraseChunk(World world, ChunkPos center, int r, int downY, int upY) {
+        ArrayList<ChunkPos> poses = new ArrayList<>();
+        for (int x = -r; x <= r; x++) {
+            for (int z = -r; z <= r; z++) {
+                poses.add(new ChunkPos(x + center.x, z + center.z));
+            }
+        }
+        poses.sort(Comparator.comparingDouble(c ->
+            Vector3d.func_237491_b_(center.asBlockPos()).distanceTo(Vector3d.func_237491_b_(c.asBlockPos()))
+        ));
+        
+        ModMain.serverTaskList.addTask(MyTaskList.chainTasks(
+            poses.stream().map(chunkPos -> (MyTaskList.MyTask) () -> {
+                eraseChunk(
+                    chunkPos, world, downY, upY
+                );
+                return true;
+            }).iterator()
+        ));
     }
     
     public static void eraseChunk(ChunkPos chunkPos, World world, int yStart, int yEnd) {
@@ -936,7 +908,7 @@ public class ClientDebugCommand {
         Minecraft.getInstance().execute(() -> {
             CompoundNBT compoundTag = new CompoundNBT();
             compoundTag.put("test", IntNBT.valueOf(7));
-            RemoteProcedureCall.tellServerToInvoke(
+            McRemoteProcedureCall.tellServerToInvoke(
                 "com.qouteall.immersive_portals.commands.ClientDebugCommand.TestRemoteCallable.clientToServer",
                 new UUID(3, 3),
                 Blocks.ACACIA_PLANKS,
@@ -950,7 +922,7 @@ public class ClientDebugCommand {
         });
         
         McHelper.getServer().execute(() -> {
-            RemoteProcedureCall.tellClientToInvoke(
+            McRemoteProcedureCall.tellClientToInvoke(
                 player,
                 "com.qouteall.immersive_portals.commands.ClientDebugCommand.TestRemoteCallable.serverToClient",
                 "string", 2, 3.5, new ResourceLocation("imm_ptl:oops"),

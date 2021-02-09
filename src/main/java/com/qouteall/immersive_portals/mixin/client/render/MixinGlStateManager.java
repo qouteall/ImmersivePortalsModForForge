@@ -42,4 +42,11 @@ public abstract class MixinGlStateManager {
         }
     }
     
+    @Inject(method = "Lcom/mojang/blaze3d/platform/GlStateManager;enableFog()V", at = @At("HEAD"), cancellable = true)
+    private static void onEnableFog(CallbackInfo ci) {
+        if (Global.debugDisableFog) {
+            ci.cancel();
+        }
+    }
+    
 }

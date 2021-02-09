@@ -5,9 +5,13 @@ import com.qouteall.imm_ptl_peripheral.alternate_dimension.AlternateDimensions;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
+import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.my_util.GuiHelper;
+import com.qouteall.immersive_portals.my_util.MyTaskList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.CreateWorldScreen;
+import net.minecraft.client.gui.screen.DirtMessageScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.RegistryKey;
@@ -17,6 +21,9 @@ import net.minecraft.world.World;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.Nullable;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -28,20 +35,17 @@ public class AltiusScreen extends Screen {
     private final Button toggleButton;
     private final Button addDimensionButton;
     private final Button removeDimensionButton;
-    
-    private final Button respectSpaceRatioButton;
-    private final Button loopButton;
+    private final Button editButton;
     
     private final Button helpButton;
     
     private int titleY;
     
     public boolean isEnabled = false;
-    private final DimListWidget dimListWidget;
+    public final DimListWidget dimListWidget;
     private final Supplier<DimensionGeneratorSettings> generatorOptionsSupplier1;
     
-    private boolean respectSpaceRatio = false;
-    private boolean loop = false;
+    public boolean loopEnabled = false;
     
     public AltiusScreen(CreateWorldScreen parent) {
         super(new TranslationTextComponent("imm_ptl.altius_screen"));
@@ -57,47 +61,31 @@ public class AltiusScreen extends Screen {
         
         backButton = new Button(
             0, 0, 72, 20,
-            new TranslationTextComponent("imm_ptl.back_to_create_world"),
+            new TranslationTextComponent("imm_ptl.back"),
             (buttonWidget) -> {
                 Minecraft.getInstance().displayGuiScreen(parent);
             }
         );
         addDimensionButton = new Button(
             0, 0, 72, 20,
-            new TranslationTextComponent("imm_ptl.add_dimension"),
+            new TranslationTextComponent("imm_ptl.dim_stack_add"),
             (buttonWidget) -> {
-                onAddDimension();
+                onAddEntry();
             }
         );
         removeDimensionButton = new Button(
             0, 0, 72, 20,
-            new TranslationTextComponent("imm_ptl.remove_dimension"),
+            new TranslationTextComponent("imm_ptl.dim_stack_remove"),
             (buttonWidget) -> {
-                onRemoveDimension();
+                onRemoveEntry();
             }
         );
         
-        respectSpaceRatioButton = new Button(
+        editButton = new Button(
             0, 0, 72, 20,
-            new TranslationTextComponent("imm_ptl.respect_space_ratio_disabled"),
+            new TranslationTextComponent("imm_ptl.dim_stack_edit"),
             (buttonWidget) -> {
-                respectSpaceRatio = !respectSpaceRatio;
-                buttonWidget.func_238482_a_(new TranslationTextComponent(
-                    respectSpaceRatio ?
-                        "imm_ptl.respect_space_ratio_enabled" : "imm_ptl.respect_space_ratio_disabled"
-                ));
-            }
-        );
-        
-        loopButton = new Button(
-            0, 0, 72, 20,
-            new TranslationTextComponent("imm_ptl.loop_disabled"),
-            (buttonWidget) -> {
-                loop = !loop;
-                buttonWidget.func_238482_a_(new TranslationTextComponent(
-                    loop ?
-                        "imm_ptl.loop_enabled" : "imm_ptl.loop_disabled"
-                ));
+                onEditEntry();
             }
         );
         
@@ -106,25 +94,18 @@ public class AltiusScreen extends Screen {
             field_230709_l_,
             100,
             200,
-            15,
-            this
+            DimEntryWidget.widgetHeight,
+            this,
+            DimListWidget.Type.mainDimensionList
         );
         
-        Consumer<DimTermWidget> callback = getElementSelectCallback();
+        Consumer<DimEntryWidget> callback = getElementSelectCallback();
         if (Global.enableAlternateDimensions) {
-            dimListWidget.terms.add(
-                new DimTermWidget(AlternateDimensions.alternate5, dimListWidget, callback)
-            );
-            dimListWidget.terms.add(
-                new DimTermWidget(AlternateDimensions.alternate2, dimListWidget, callback)
-            );
+            dimListWidget.entryWidgets.add(createDimEntryWidget(AlternateDimensions.alternate5));
+            dimListWidget.entryWidgets.add(createDimEntryWidget(AlternateDimensions.alternate1));
         }
-        dimListWidget.terms.add(
-            new DimTermWidget(World.field_234918_g_, dimListWidget, callback)
-        );
-        dimListWidget.terms.add(
-            new DimTermWidget(World.field_234919_h_, dimListWidget, callback)
-        );
+        dimListWidget.entryWidgets.add(createDimEntryWidget(World.field_234918_g_));
+        dimListWidget.entryWidgets.add(createDimEntryWidget(World.field_234919_h_));
         
         generatorOptionsSupplier1 = Helper.cached(() -> {
             DimensionGeneratorSettings rawGeneratorOptions =
@@ -134,25 +115,33 @@ public class AltiusScreen extends Screen {
             );
         });
         
-        helpButton = new Button(
-            0, 0, 72, 20,
+        helpButton = createHelpButton(this);
+    }
+    
+    public static Button createHelpButton(Screen parent) {
+        return new Button(
+            0, 0, 30, 20,
             new StringTextComponent("?"),
             button -> {
                 CHelper.openLinkConfirmScreen(
-                    this, "https://qouteall.fun/immptl/wiki/Dimension-Stack"
+                    parent, "https://qouteall.fun/immptl/wiki/Dimension-Stack"
                 );
             }
         );
     }
     
-    //nullable
+    @NotNull
+    private DimEntryWidget createDimEntryWidget(RegistryKey<World> dimension) {
+        return new DimEntryWidget(dimension, dimListWidget, getElementSelectCallback(), DimEntryWidget.Type.withAdvancedOptions);
+    }
+    
+    @Nullable
     public AltiusInfo getAltiusInfo() {
         if (isEnabled) {
             return new AltiusInfo(
-                dimListWidget.terms.stream().map(
-                    w -> w.dimension
-                ).collect(Collectors.toList()),
-                loop, respectSpaceRatio
+                dimListWidget.entryWidgets.stream().map(
+                    dimEntryWidget -> dimEntryWidget.entry
+                ).collect(Collectors.toList()), loopEnabled
             );
         }
         else {
@@ -168,8 +157,7 @@ public class AltiusScreen extends Screen {
         func_230480_a_(addDimensionButton);
         func_230480_a_(removeDimensionButton);
         
-        func_230480_a_(loopButton);
-        func_230480_a_(respectSpaceRatioButton);
+        func_230480_a_(editButton);
         
         func_230480_a_(helpButton);
         
@@ -179,56 +167,57 @@ public class AltiusScreen extends Screen {
         
         dimListWidget.update();
         
-        CHelper.layout(
+        GuiHelper.layout(
             0, field_230709_l_,
-            CHelper.LayoutElement.blankSpace(15),
-            new CHelper.LayoutElement(true, 20, (from, to) -> {
+            GuiHelper.blankSpace(5),
+            new GuiHelper.LayoutElement(true, 20, (from, to) -> {
                 helpButton.field_230690_l_ = field_230708_k_ - 50;
-                helpButton.field_230691_m_ = 10;
+                helpButton.field_230691_m_ = from;
                 helpButton.func_230991_b_(30);
             }),
-            CHelper.LayoutElement.blankSpace(10),
-            new CHelper.LayoutElement(true, 20, (a, b) -> {
-                toggleButton.field_230690_l_ = 20;
+            new GuiHelper.LayoutElement(true, 20, (a, b) -> {
+                toggleButton.field_230690_l_ = 10;
                 toggleButton.field_230691_m_ = a;
             }),
-            CHelper.LayoutElement.blankSpace(10),
-            new CHelper.LayoutElement(false, 1, (from, to) -> {
+            GuiHelper.blankSpace(5),
+            new GuiHelper.LayoutElement(false, 1, (from, to) -> {
                 dimListWidget.func_230940_a_(
                     field_230708_k_, field_230709_l_,
                     from, to
                 );
             }),
-            CHelper.LayoutElement.blankSpace(15),
-            new CHelper.LayoutElement(true, 20, (from, to) -> {
-                respectSpaceRatioButton.field_230691_m_ = from;
-                loopButton.field_230691_m_ = from;
-                CHelper.layout(
-                    0, field_230708_k_,
-                    CHelper.LayoutElement.blankSpace(20),
-                    CHelper.LayoutElement.layoutX(respectSpaceRatioButton, 1),
-                    CHelper.LayoutElement.blankSpace(10),
-                    CHelper.LayoutElement.layoutX(loopButton, 1),
-                    CHelper.LayoutElement.blankSpace(20)
-                );
-            }),
-            CHelper.LayoutElement.blankSpace(10),
-            new CHelper.LayoutElement(true, 20, (from, to) -> {
+            GuiHelper.blankSpace(5),
+            new GuiHelper.LayoutElement(true, 20, (from, to) -> {
                 backButton.field_230691_m_ = from;
                 addDimensionButton.field_230691_m_ = from;
                 removeDimensionButton.field_230691_m_ = from;
-                CHelper.layout(
+                editButton.field_230691_m_ = from;
+                GuiHelper.layout(
                     0, field_230708_k_,
-                    CHelper.LayoutElement.blankSpace(20),
-                    CHelper.LayoutElement.layoutX(backButton, 1),
-                    CHelper.LayoutElement.blankSpace(10),
-                    CHelper.LayoutElement.layoutX(addDimensionButton, 1),
-                    CHelper.LayoutElement.blankSpace(10),
-                    CHelper.LayoutElement.layoutX(removeDimensionButton, 1),
-                    CHelper.LayoutElement.blankSpace(20)
+                    GuiHelper.blankSpace(10),
+                    new GuiHelper.LayoutElement(
+                        false, 1,
+                        GuiHelper.layoutButtonHorizontally(backButton)
+                    ),
+                    GuiHelper.blankSpace(5),
+                    new GuiHelper.LayoutElement(
+                        false, 1,
+                        GuiHelper.layoutButtonHorizontally(addDimensionButton)
+                    ),
+                    GuiHelper.blankSpace(5),
+                    new GuiHelper.LayoutElement(
+                        false, 1,
+                        GuiHelper.layoutButtonHorizontally(removeDimensionButton)
+                    ),
+                    GuiHelper.blankSpace(5),
+                    new GuiHelper.LayoutElement(
+                        false, 1,
+                        GuiHelper.layoutButtonHorizontally(editButton)
+                    ),
+                    GuiHelper.blankSpace(10)
                 );
             }),
-            CHelper.LayoutElement.blankSpace(15)
+            GuiHelper.blankSpace(5)
         );
     }
     
@@ -238,7 +227,7 @@ public class AltiusScreen extends Screen {
         this.field_230706_i_.displayGuiScreen(this.parent);
     }
     
-    private Consumer<DimTermWidget> getElementSelectCallback() {
+    private Consumer<DimEntryWidget> getElementSelectCallback() {
         return w -> dimListWidget.func_241215_a_(w);
     }
     
@@ -256,7 +245,7 @@ public class AltiusScreen extends Screen {
         FontRenderer textRenderer = Minecraft.getInstance().fontRenderer;
         textRenderer.func_243246_a(
             matrixStack, this.field_230704_d_,
-            20, 20, -1
+            20, 10, -1
         );
         
     }
@@ -272,69 +261,81 @@ public class AltiusScreen extends Screen {
         addDimensionButton.field_230694_p_ = isEnabled;
         removeDimensionButton.field_230694_p_ = isEnabled;
         
-        loopButton.field_230694_p_ = isEnabled;
-        respectSpaceRatioButton.field_230694_p_ = isEnabled;
+        editButton.field_230694_p_ = isEnabled;
     }
     
-    private void onAddDimension() {
-        DimTermWidget selected = dimListWidget.func_230958_g_();
+    private void onAddEntry() {
+        DimEntryWidget selected = dimListWidget.func_230958_g_();
         
         int position;
         if (selected == null) {
             position = 0;
         }
         else {
-            position = dimListWidget.terms.indexOf(selected);
+            position = dimListWidget.entryWidgets.indexOf(selected);
         }
         
-        if (position < 0 || position > dimListWidget.terms.size()) {
+        if (position < 0 || position > dimListWidget.entryWidgets.size()) {
             position = -1;
         }
         
         int insertingPosition = position + 1;
         
-        
         Minecraft.getInstance().displayGuiScreen(
-            new SelectDimensionScreen(
-                this,
-                dimensionType -> {
-                    dimListWidget.terms.add(
-                        insertingPosition,
-                        new DimTermWidget(
-                            dimensionType,
-                            dimListWidget,
-                            getElementSelectCallback()
-                        )
-                    );
-                    removeDuplicate(insertingPosition);
-                    dimListWidget.update();
-                }, generatorOptionsSupplier1
-            )
+            new DirtMessageScreen(new TranslationTextComponent("imm_ptl.loading_datapack_dimensions"))
         );
+        
+        ModMain.preTotalRenderTaskList.addTask(MyTaskList.withDelay(1, () -> {
+            Minecraft.getInstance().displayGuiScreen(
+                new SelectDimensionScreen(
+                    this,
+                    dimensionType -> {
+                        dimListWidget.entryWidgets.add(
+                            insertingPosition,
+                            createDimEntryWidget(dimensionType)
+                        );
+                        removeDuplicate(insertingPosition);
+                        dimListWidget.update();
+                    }, generatorOptionsSupplier1
+                )
+            );
+            return true;
+        }));
     }
     
-    private void onRemoveDimension() {
-        DimTermWidget selected = dimListWidget.func_230958_g_();
+    private void onRemoveEntry() {
+        DimEntryWidget selected = dimListWidget.func_230958_g_();
         if (selected == null) {
             return;
         }
         
-        int position = dimListWidget.terms.indexOf(selected);
+        int position = dimListWidget.entryWidgets.indexOf(selected);
         
         if (position == -1) {
             return;
         }
         
-        dimListWidget.terms.remove(position);
+        dimListWidget.entryWidgets.remove(position);
         dimListWidget.update();
     }
     
+    private void onEditEntry() {
+        DimEntryWidget selected = dimListWidget.func_230958_g_();
+        if (selected == null) {
+            return;
+        }
+        
+        Minecraft.getInstance().displayGuiScreen(new AltiusEditScreen(
+            this, selected
+        ));
+    }
+    
     private void removeDuplicate(int insertedIndex) {
-        RegistryKey<World> inserted = dimListWidget.terms.get(insertedIndex).dimension;
-        for (int i = dimListWidget.terms.size() - 1; i >= 0; i--) {
-            if (dimListWidget.terms.get(i).dimension == inserted) {
+        RegistryKey<World> inserted = dimListWidget.entryWidgets.get(insertedIndex).dimension;
+        for (int i = dimListWidget.entryWidgets.size() - 1; i >= 0; i--) {
+            if (dimListWidget.entryWidgets.get(i).dimension == inserted) {
                 if (i != insertedIndex) {
-                    dimListWidget.terms.remove(i);
+                    dimListWidget.entryWidgets.remove(i);
                 }
             }
         }

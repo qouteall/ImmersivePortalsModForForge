@@ -65,8 +65,7 @@ public class BlockManipulationServer {
     ) {
         Vector3d pos = Vector3d.func_237489_a_(requestPos);
         Vector3d playerPos = player.getPositionVec();
-        double multiplier = HandReachTweak.getActualHandReachMultiplier(player);
-        double distanceSquare = 6 * 6 * multiplier * multiplier;
+        double distanceSquare = 6 * 6 * 4 * 4;//TODO get pehkui reach scale
         if (player.world.func_234923_W_() == dimension) {
             if (playerPos.squareDistanceTo(pos) < distanceSquare) {
                 return true;
@@ -125,7 +124,7 @@ public class BlockManipulationServer {
         List<Portal> globalPortals = McHelper.getGlobalPortals(world);
         
         Portal portal = globalPortals.stream().filter(p ->
-            p.getContentDirection().dotProduct(sideVec) > 0.9
+            p.getNormal().dotProduct(sideVec) < -0.9
                 && p.isPointInPortalProjection(hitCenter)
                 && p.getDistanceToPlane(hitCenter) < 0.6
         ).findFirst().orElse(null);

@@ -4,9 +4,11 @@ import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ducks.IEEntity;
+import com.qouteall.immersive_portals.my_util.LimitedLogger;
 import com.qouteall.immersive_portals.portal.EndPortalEntity;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
+import com.qouteall.immersive_portals.teleportation.ServerTeleportationManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -62,11 +64,16 @@ public abstract class MixinEntity implements IEEntity {
     @Shadow
     private boolean field_233555_aA_;
     
+    @Shadow
+    public int ticksExisted;
+    
     //maintain collidingPortal field
     @Inject(method = "Lnet/minecraft/entity/Entity;tick()V", at = @At("HEAD"))
     private void onTicking(CallbackInfo ci) {
         tickCollidingPortal(1);
     }
+    
+    private static final LimitedLogger limitedLogger = new LimitedLogger(20);
     
     @Redirect(
         method = "Lnet/minecraft/entity/Entity;move(Lnet/minecraft/entity/MoverType;Lnet/minecraft/util/math/vector/Vector3d;)V",
@@ -76,10 +83,20 @@ public abstract class MixinEntity implements IEEntity {
         )
     )
     private Vector3d redirectHandleCollisions(Entity entity, Vector3d attemptedMove) {
-        if (attemptedMove.lengthSquared() > 1600) {
-            Helper.err("Entity moves too fast " + entity + attemptedMove);
-            new Throwable().printStackTrace();
-            return attemptedMove;
+        if (attemptedMove.lengthSquared() > 60 * 60) {
+            Helper.err("Entity moves too fast " + entity + attemptedMove + entity.world.getGameTime());
+            limitedLogger.invoke(() -> {
+                new Throwable().printStackTrace();
+            });
+            
+            if (entity instanceof ServerPlayerEntity) {
+                ServerTeleportationManager.sendPositionConfirmMessage(((ServerPlayerEntity) entity));
+                Helper.log("position confirm message sent " + entity);
+                return Vector3d.ZERO;
+            }
+            else {
+                return attemptedMove;
+            }
         }
         
         if (collidingPortal == null ||
@@ -193,7 +210,7 @@ public abstract class MixinEntity implements IEEntity {
                 }
             }
             
-            if (Math.abs(world.getGameTime() - collidingPortalActiveTickTime) >= 3) {
+            if (Math.abs(ticksExisted - collidingPortalActiveTickTime) >= 3) {
                 collidingPortal = null;
             }
         }
@@ -206,12 +223,12 @@ public abstract class MixinEntity implements IEEntity {
     @Override
     public void notifyCollidingWithPortal(Entity portal) {
         collidingPortal = portal;
-        collidingPortalActiveTickTime = world.getGameTime();
+        collidingPortalActiveTickTime = ticksExisted;//world time may jump due to time synchroization
     }
     
     @Override
     public boolean isRecentlyCollidingWithPortal() {
-        return (world.getGameTime() - collidingPortalActiveTickTime) < 20;
+        return (ticksExisted - collidingPortalActiveTickTime) < 20;
     }
     
     @Override

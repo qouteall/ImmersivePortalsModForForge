@@ -10,20 +10,27 @@ import com.qouteall.immersive_portals.PehkuiInterface;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.ducks.IEServerPlayNetworkHandler;
 import com.qouteall.immersive_portals.ducks.IEServerPlayerEntity;
+import com.qouteall.immersive_portals.my_util.LimitedLogger;
+import com.qouteall.immersive_portals.my_util.MyTaskList;
 import com.qouteall.immersive_portals.portal.Portal;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.play.client.CPlayerPacket;
+import net.minecraft.pathfinding.Path;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.Tuple;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import org.apache.commons.lang3.Validate;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -47,10 +54,11 @@ public class ServerTeleportationManager {
     public ServerTeleportationManager() {
         ModMain.postServerTickSignal.connectWithWeakRef(this, ServerTeleportationManager::tick);
         Portal.serverPortalTickSignal.connectWithWeakRef(
-            this, (this_, portal) ->
+            this, (this_, portal) -> {
                 getEntitiesToTeleport(portal).forEach(entity -> {
-                    tryToTeleportRegularEntity(portal, entity);
-                })
+                    this_.tryToTeleportRegularEntity(portal, entity);
+                });
+            }
         );
     }
     
@@ -63,7 +71,6 @@ public class ServerTeleportationManager {
             );
     }
     
-  
     
     public void tryToTeleportRegularEntity(Portal portal, Entity entity) {
         if (entity instanceof ServerPlayerEntity) {
@@ -81,7 +88,7 @@ public class ServerTeleportationManager {
         if (!entity.isNonBoss()) {
             return;
         }
-        if (isJustTeleported(entity, 10)) {
+        if (isJustTeleported(entity, 1)) {
             return;
         }
         //a new born entity may have last tick pos 0 0 0
@@ -127,6 +134,8 @@ public class ServerTeleportationManager {
             if (isTeleporting(player)) {
                 Helper.log(player.toString() + "is teleporting frequently");
             }
+            
+            notifyChasersForPlayer(player, portal);
             
             RegistryKey<World> dimensionTo = portal.dimensionTo;
             Vector3d newEyePos = portal.transformPoint(oldEyePos);
@@ -329,7 +338,7 @@ public class ServerTeleportationManager {
         
     }
     
-    private void sendPositionConfirmMessage(ServerPlayerEntity player) {
+    public static void sendPositionConfirmMessage(ServerPlayerEntity player) {
         IPacket packet = MyNetwork.createStcDimensionConfirm(
             player.world.func_234923_W_(),
             player.getPositionVec()
@@ -402,7 +411,7 @@ public class ServerTeleportationManager {
         
         long currGameTime = McHelper.getServerGameTime();
         Long lastTeleportGameTime = this.lastTeleportGameTime.getOrDefault(entity, 0L);
-        if (currGameTime - lastTeleportGameTime < 3) {
+        if (currGameTime - lastTeleportGameTime <= 1) {
             return;
         }
         this.lastTeleportGameTime.put(entity, currGameTime);
@@ -415,7 +424,7 @@ public class ServerTeleportationManager {
         
         List<Entity> passengerList = entity.getPassengers();
         
-        Vector3d newEyePos = portal.transformPoint(McHelper.getEyePos(entity));
+        Vector3d newEyePos = getRegularEntityTeleportedEyePos(entity, portal);
         
         if (portal.dimensionTo != entity.world.func_234923_W_()) {
             entity = changeEntityDimension(entity, portal.dimensionTo, newEyePos, true);
@@ -444,14 +453,29 @@ public class ServerTeleportationManager {
         this.lastTeleportGameTime.put(entity, currGameTime);
     }
     
+    private static Vector3d getRegularEntityTeleportedEyePos(Entity entity, Portal portal) {
+        Vector3d eyePos = McHelper.getEyePos(entity);
+        if (entity instanceof ProjectileEntity) {
+            Vector3d collidingPoint = portal.rayTrace(
+                eyePos.subtract(entity.getMotion().normalize().scale(5)),
+                eyePos
+            );
+            
+            if (collidingPoint == null) {
+                collidingPoint = eyePos;
+            }
+            
+            return portal.transformPoint(collidingPoint);
+        }
+        else {
+            return portal.transformPoint(eyePos);
+        }
+    }
+    
     /**
      * {@link Entity#moveToWorld(ServerWorld)}
      * Sometimes resuing the same entity object is problematic
      * because entity's AI related things may have world reference inside
-     * These fields should also get changed but it's not easy
-     * <p>
-     * Recreating the entity is the vanilla way.
-     * But it requires changing the corresponding entity reference on other places
      */
     public Entity changeEntityDimension(
         Entity entity,
@@ -516,6 +540,8 @@ public class ServerTeleportationManager {
         return currGameTime - lastTeleportGameTime < valveTickTime;
     }
     
+    private static final LimitedLogger limitedLogger = new LimitedLogger(20);
+    
     public void acceptDubiousMovePacket(
         ServerPlayerEntity player,
         CPlayerPacket packet,
@@ -531,12 +557,12 @@ public class ServerTeleportationManager {
         if (canPlayerReachPos(player, dimension, newPos)) {
             recordLastPosition(player);
             teleportPlayer(player, dimension, newPos);
-            Helper.log(String.format("accepted dubious move packet %s %s %s %s %s %s %s",
+            limitedLogger.log(String.format("accepted dubious move packet %s %s %s %s %s %s %s",
                 player.world.func_234923_W_(), x, y, z, player.getPosX(), player.getPosY(), player.getPosZ()
             ));
         }
         else {
-            Helper.log(String.format("ignored dubious move packet %s %s %s %s %s %s %s",
+            limitedLogger.log(String.format("ignored dubious move packet %s %s %s %s %s %s %s",
                 player.world.func_234923_W_().func_240901_a_(), x, y, z, player.getPosX(), player.getPosY(), player.getPosZ()
             ));
         }
@@ -568,5 +594,68 @@ public class ServerTeleportationManager {
                 );
             }
         }
+    }
+    
+    // make the mobs chase the player through portal
+    // (only works in simple cases)
+    private static void notifyChasersForPlayer(
+        ServerPlayerEntity player,
+        Portal portal
+    ) {
+        List<MobEntity> chasers = McHelper.findEntitiesRough(
+            MobEntity.class,
+            player.world,
+            player.getPositionVec(),
+            1,
+            e -> e.getAttackTarget() == player
+        );
+        
+        for (MobEntity chaser : chasers) {
+            chaser.setAttackTarget(null);
+            notifyChaser(player, portal, chaser);
+        }
+    }
+    
+    private static void notifyChaser(
+        ServerPlayerEntity player,
+        Portal portal,
+        MobEntity chaser
+    ) {
+        Vector3d targetPos = player.getPositionVec().add(portal.getNormal().scale(-0.1));
+        
+        UUID chaserId = chaser.getUniqueID();
+        ServerWorld destWorld = ((ServerWorld) portal.getDestinationWorld());
+        
+        ModMain.serverTaskList.addTask(MyTaskList.withRetryNumberLimit(
+            140,
+            () -> {
+                if (chaser.removed) {
+                    // the chaser teleported
+                    Entity newChaser = destWorld.getEntityByUuid(chaserId);
+                    if (newChaser instanceof MobEntity) {
+                        ((MobEntity) newChaser).setAttackTarget(player);
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                
+                if (chaser.getPositionVec().distanceTo(targetPos) < 2) {
+                    chaser.getMoveHelper().setMoveTo(
+                        targetPos.x, targetPos.y, targetPos.z, 1
+                    );
+                }
+                else {
+                    @Nullable
+                    Path path = chaser.getNavigator().getPathToPos(
+                        new BlockPos(targetPos), 0
+                    );
+                    chaser.getNavigator().setPath(path, 1);
+                }
+                return false;
+            },
+            () -> {}
+        ));
     }
 }

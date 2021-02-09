@@ -4,16 +4,22 @@ import com.qouteall.hiding_in_the_bushes.MyNetwork;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerList;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -77,5 +83,30 @@ public class MixinPlayerManager {
         }
         
         ci.cancel();
+    }
+    
+    /**
+     * @author qoutall
+     * mostly for sound events
+     */
+    @Overwrite
+    public void sendToAllNearExcept(
+        @Nullable PlayerEntity excludingPlayer,
+        double x, double y, double z, double distance,
+        RegistryKey<World> dimension, IPacket<?> packet
+    ) {
+        ChunkPos chunkPos = new ChunkPos(new BlockPos(new Vector3d(x, y, z)));
+        
+        NewChunkTrackingGraph.getPlayersViewingChunk(
+            dimension, chunkPos.x, chunkPos.z
+        ).filter(playerEntity -> NewChunkTrackingGraph.isPlayerWatchingChunkWithinRaidus(
+            playerEntity, dimension, chunkPos.x, chunkPos.z, (int) distance + 16
+        )).forEach(playerEntity -> {
+            if (playerEntity != excludingPlayer) {
+                playerEntity.connection.sendPacket(MyNetwork.createRedirectedMessage(
+                    dimension, packet
+                ));
+            }
+        });
     }
 }

@@ -4,6 +4,7 @@ import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEBuiltChunk;
+import com.qouteall.immersive_portals.miscellaneous.GcMonitor;
 import com.qouteall.immersive_portals.my_util.ObjectBuffer;
 import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkStorageFix;
 import com.qouteall.immersive_portals.render.context_management.PortalRendering;
@@ -70,7 +71,7 @@ public class MyBuiltChunkStorage extends ViewFrustum {
             ChunkRenderDispatcher.ChunkRender::deleteGlResources
         );
         
-        ModMain.preRenderSignal.connectWithWeakRef(this, (this_) -> {
+        ModMain.preGameRenderSignal.connectWithWeakRef(this, (this_) -> {
             Minecraft.getInstance().getProfiler().startSection("reserve");
             this_.builtChunkBuffer.reserveObjects(countChunksX * countChunksY * countChunksZ / 100);
             Minecraft.getInstance().getProfiler().endSection();
@@ -224,8 +225,15 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     private void tick() {
         ClientWorld worldClient = Minecraft.getInstance().world;
         if (worldClient != null) {
-            if (worldClient.getGameTime() % 213 == 66) {
-                purge();
+            if (GcMonitor.isMemoryNotEnough()) {
+                if (worldClient.getGameTime() % 3 == 0) {
+                    purge();
+                }
+            }
+            else {
+                if (worldClient.getGameTime() % 213 == 66) {
+                    purge();
+                }
             }
         }
     }
@@ -233,13 +241,15 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     private void purge() {
         Minecraft.getInstance().getProfiler().startSection("my_built_chunk_storage_purge");
         
+        long dropTime = Helper.secondToNano(GcMonitor.isMemoryNotEnough() ? 3 : 20);
+        
         long currentTime = System.nanoTime();
         presets.entrySet().removeIf(entry -> {
             Preset preset = entry.getValue();
             if (preset.data == this.renderChunks) {
                 return false;
             }
-            return currentTime - preset.lastActiveTime > Helper.secondToNano(20);
+            return currentTime - preset.lastActiveTime > dropTime;
         });
         
         foreachActiveBuiltChunks(builtChunk -> {

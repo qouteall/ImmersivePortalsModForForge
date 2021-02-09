@@ -3,9 +3,9 @@ package com.qouteall.immersive_portals.mixin.client;
 import com.qouteall.immersive_portals.CGlobal;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.ducks.IEMinecraftClient;
+import com.qouteall.immersive_portals.miscellaneous.FPSMonitor;
 import com.qouteall.immersive_portals.network.CommonNetwork;
 import com.qouteall.immersive_portals.network.CommonNetworkClient;
-import com.qouteall.immersive_portals.render.FPSMonitor;
 import com.qouteall.immersive_portals.render.context_management.WorldRenderInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
@@ -64,7 +64,9 @@ public abstract class MixinMinecraftClient implements IEMinecraftClient {
         )
     )
     private void onAfterClientTick(CallbackInfo ci) {
+        getProfiler().startSection("imm_ptl_tick_signal");
         ModMain.postClientTickSignal.emit();
+        getProfiler().endSection();
         
         CGlobal.clientTeleportationManager.manageTeleportation(0);
     }

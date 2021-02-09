@@ -120,7 +120,7 @@ public abstract class PortalRenderer {
             return true;
         }
         
-        Vector3d cameraPos = CHelper.getCurrentCameraPos();
+        Vector3d cameraPos = TransformationManager.getIsometricAdjustedCameraPos();
         
         if (!portal.isRoughlyVisibleTo(cameraPos)) {
             return true;
@@ -189,9 +189,8 @@ public abstract class PortalRenderer {
             newWorld,
             PortalRendering.getRenderingCameraPos(),
             portal.getAdditionalCameraTransformation(),
-            portal.getDiscriminator(),
-            renderDistance,
-            false
+            false, portal.getDiscriminator(),
+            renderDistance
         ));
         
         PortalRendering.onEndPortalWorldRendering();
@@ -266,14 +265,6 @@ public abstract class PortalRenderer {
             m1.mul(m2);
             return m1;
         });
-//        if (a == null) {
-//            return b;
-//        }
-//        if (b == null) {
-//            return a;
-//        }
-//        a.multiply(b);
-//        return a;
     }
     
     @Nullable
@@ -282,7 +273,7 @@ public abstract class PortalRenderer {
         // whether to apply scale transformation to camera does not change triangle position
         // to avoid abrupt fog change, do not apply for non-fuse-view portal
         // for fuse-view portal, the depth value should be correct so the scale should be applied
-        if (portal.hasScaling() && portal.isFuseView()) {
+        if (portal.hasScaling() && (portal.isFuseView() || TransformationManager.isIsometricView)) {
             float v = (float) (1.0 / portal.getScale());
             return Matrix4f.makeScale(v, v, v);
         }

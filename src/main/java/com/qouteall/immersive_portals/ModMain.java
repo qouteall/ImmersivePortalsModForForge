@@ -5,6 +5,7 @@ import com.qouteall.immersive_portals.chunk_loading.ChunkDataSyncManager;
 import com.qouteall.immersive_portals.chunk_loading.EntitySync;
 import com.qouteall.immersive_portals.chunk_loading.NewChunkTrackingGraph;
 import com.qouteall.immersive_portals.chunk_loading.WorldInfoSender;
+import com.qouteall.immersive_portals.miscellaneous.GcMonitor;
 import com.qouteall.immersive_portals.my_util.MyTaskList;
 import com.qouteall.immersive_portals.my_util.Signal;
 import com.qouteall.immersive_portals.portal.PortalExtension;
@@ -15,10 +16,12 @@ import com.qouteall.immersive_portals.teleportation.ServerTeleportationManager;
 public class ModMain {
     public static final Signal postClientTickSignal = new Signal();
     public static final Signal postServerTickSignal = new Signal();
-    public static final Signal preRenderSignal = new Signal();
+    public static final Signal preGameRenderSignal = new Signal();
     public static final MyTaskList clientTaskList = new MyTaskList();
     public static final MyTaskList serverTaskList = new MyTaskList();
-    public static final MyTaskList preRenderTaskList = new MyTaskList();
+    public static final MyTaskList preGameRenderTaskList = new MyTaskList();
+    
+    public static final MyTaskList preTotalRenderTaskList = new MyTaskList();
     
     public static final Signal clientCleanupSignal = new Signal();
     public static final Signal serverCleanupSignal = new Signal();
@@ -30,9 +33,13 @@ public class ModMain {
         
         postClientTickSignal.connect(clientTaskList::processTasks);
         postServerTickSignal.connect(serverTaskList::processTasks);
-        preRenderSignal.connect(preRenderTaskList::processTasks);
+        preGameRenderSignal.connect(preGameRenderTaskList::processTasks);
         
-        clientCleanupSignal.connect(clientTaskList::forceClearTasks);
+        clientCleanupSignal.connect(() -> {
+            if (ClientWorldLoader.getIsInitialized()) {
+                clientTaskList.forceClearTasks();
+            }
+        });
         serverCleanupSignal.connect(serverTaskList::forceClearTasks);
         
         Global.serverTeleportationManager = new ServerTeleportationManager();
@@ -47,8 +54,10 @@ public class ModMain {
         EntitySync.init();
         
         CollisionHelper.init();
-    
+        
         PortalExtension.init();
+        
+        GcMonitor.initCommon();
         
     }
     

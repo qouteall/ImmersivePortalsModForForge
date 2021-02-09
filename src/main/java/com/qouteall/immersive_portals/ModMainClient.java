@@ -2,6 +2,8 @@ package com.qouteall.immersive_portals;
 
 import com.qouteall.hiding_in_the_bushes.MyNetworkClient;
 import com.qouteall.hiding_in_the_bushes.O_O;
+import com.qouteall.immersive_portals.miscellaneous.GcMonitor;
+import com.qouteall.immersive_portals.my_util.MyTaskList;
 import com.qouteall.immersive_portals.optifine_compatibility.OFBuiltChunkStorageFix;
 import com.qouteall.immersive_portals.optifine_compatibility.OFGlobal;
 import com.qouteall.immersive_portals.optifine_compatibility.OFInterfaceInitializer;
@@ -16,7 +18,10 @@ import com.qouteall.immersive_portals.render.context_management.PortalRendering;
 import com.qouteall.immersive_portals.render.lag_spike_fix.GlBufferCache;
 import com.qouteall.immersive_portals.teleportation.ClientTeleportationManager;
 import com.qouteall.immersive_portals.teleportation.CollisionHelper;
+import java.util.UUID;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.text.ChatType;
+import net.minecraft.util.text.TranslationTextComponent;
 
 public class ModMainClient {
     
@@ -66,9 +71,20 @@ public class ModMainClient {
         }
     }
     
+    private static void showOptiFineWarning() {
+        ModMain.clientTaskList.addTask(MyTaskList.withDelayCondition(
+            () -> Minecraft.getInstance().world == null,
+            MyTaskList.oneShotTask(() -> {
+                Minecraft.getInstance().ingameGUI.func_238450_a_(
+                    ChatType.CHAT,
+                    new TranslationTextComponent("imm_ptl.optifine_warning"),
+                    UUID.randomUUID()
+                );
+            })
+        ));
+    }
+    
     public static void init() {
-        Helper.log("initializing client");
-        
         MyNetworkClient.init();
         
         ClientWorldLoader.init();
@@ -103,7 +119,10 @@ public class ModMainClient {
         if (OFInterface.isOptifinePresent) {
             OFInterfaceInitializer.init();
             OFBuiltChunkStorageFix.init();
+            showOptiFineWarning();
         }
+        
+        GcMonitor.initClient();
         
         Helper.log(OFInterface.isOptifinePresent ? "Optifine is present" : "Optifine is not present");
     }

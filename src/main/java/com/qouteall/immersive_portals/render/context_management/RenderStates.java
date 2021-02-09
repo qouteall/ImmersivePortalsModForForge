@@ -7,12 +7,13 @@ import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.OFInterface;
 import com.qouteall.immersive_portals.ducks.IEGameRenderer;
 import com.qouteall.immersive_portals.ducks.IEWorldRenderer;
+import com.qouteall.immersive_portals.miscellaneous.FPSMonitor;
 import com.qouteall.immersive_portals.portal.PortalLike;
-import com.qouteall.immersive_portals.render.FPSMonitor;
 import com.qouteall.immersive_portals.render.MyRenderHelper;
 import com.qouteall.immersive_portals.render.QueryManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.play.NetworkPlayerInfo;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.RegistryKey;
@@ -70,6 +71,7 @@ public class RenderStates {
     public static void updatePreRenderInfo(
         float tickDelta_
     ) {
+        ClientWorldLoader.initializeIfNeeded();
         
         Entity cameraEntity = MyRenderHelper.client.renderViewEntity;
         
@@ -207,4 +209,12 @@ public class RenderStates {
         return renderedDimensions.contains(dimensionType);
     }
     
+    public static boolean shouldRenderParticle(Particle particle) {
+        if (PortalRendering.isRendering()) {
+            PortalLike renderingPortal = PortalRendering.getRenderingPortal();
+            Vector3d particlePos = particle.getBoundingBox().getCenter();
+            return renderingPortal.isInside(particlePos, 0.5);
+        }
+        return true;
+    }
 }
