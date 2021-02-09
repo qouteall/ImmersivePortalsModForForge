@@ -15,6 +15,7 @@
     "client.MixinClientWorld_MA",
     "client.MixinForgeBlockModelRenderer",
     "client.MixinForgeModelDataManager",
+    "client.MixinParticleManager_Forge",
     "client.MixinRebuildTask"
   ],
   "injectors": {
