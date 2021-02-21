@@ -12,11 +12,13 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.util.ITeleporter;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+@Pseudo
 @Mixin(ServerPlayerEntity.class)
 public class MixinServerPlayerEntity_MA {
     
@@ -37,7 +39,8 @@ public class MixinServerPlayerEntity_MA {
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/world/server/ServerWorld;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;Z)V"
-        )
+        ),
+        remap = false
     )
     private void onForgeTeleport(
         ServerWorld serverWorld,

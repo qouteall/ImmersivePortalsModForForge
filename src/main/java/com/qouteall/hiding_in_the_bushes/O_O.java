@@ -8,6 +8,7 @@ import com.qouteall.immersive_portals.portal.custom_portal_gen.PortalGenInfo;
 import com.qouteall.immersive_portals.portal.nether_portal.BlockPortalShape;
 import com.qouteall.immersive_portals.portal.nether_portal.NetherPortalGeneration;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -88,7 +89,8 @@ public class O_O {
     }
     
     public static boolean isObsidian(BlockState blockState) {
-        return blockState.isPortalFrame(DummyWorldReader.instance, BlockPos.ZERO);
+        return blockState.getBlock() == Blocks.OBSIDIAN;
+//        return blockState.isPortalFrame(DummyWorldReader.instance, BlockPos.ZERO);
     }
     
     public static final boolean isReachEntityAttributesPresent = false;
@@ -124,7 +126,7 @@ public class O_O {
     public static void postPortalSpawnEventForge(PortalGenInfo info) {
         ServerWorld world = McHelper.getServer().getWorld(info.from);
         BlockPortalShape shape = info.fromShape;
-    
+        
         MinecraftForge.EVENT_BUS.post(
             new BlockEvent.PortalSpawnEvent(
                 world,

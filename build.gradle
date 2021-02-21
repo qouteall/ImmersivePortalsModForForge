@@ -195,6 +195,12 @@ apply plugin: 'org.spongepowered.mixin'
 mixin {
     add sourceSets.main, "imm_ptl.refmap.json"
     //add sourceSets.another, "another.refmap.json"
+
+    disableTargetValidator
+
+    disableOverwriteChecker
+
+    disableAnnotationProcessorCheck
 }
 
 task printClasspath {
