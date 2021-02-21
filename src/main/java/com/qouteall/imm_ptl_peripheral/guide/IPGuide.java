@@ -7,6 +7,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.ChatType;
+import net.minecraft.util.text.IFormattableTextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -95,7 +97,7 @@ public class IPGuide {
         }
     }
     
-    private static void informWithURL(String link, TranslationTextComponent text) {
+    private static void informWithURL(String link, IFormattableTextComponent text) {
         Minecraft.getInstance().ingameGUI.func_238450_a_(
             ChatType.SYSTEM,
             text.func_230529_a_(
@@ -105,4 +107,13 @@ public class IPGuide {
         );
     }
     
+    @OnlyIn(Dist.CLIENT)
+    public static class RemoteCallables {
+        public static void showWiki() {
+            informWithURL(
+                "https://qouteall.fun/immptl/wiki/Commands-Reference",
+                new StringTextComponent("")
+            );
+        }
+    }
 }

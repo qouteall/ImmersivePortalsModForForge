@@ -1,5 +1,7 @@
 package com.qouteall.immersive_portals;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -17,7 +19,12 @@ import com.qouteall.immersive_portals.portal.global_portals.GlobalPortalStorage;
 import com.qouteall.immersive_portals.render.CrossPortalEntityRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.nbt.ByteNBT;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.DoubleNBT;
+import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.IntNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ClassInheritanceMultiMap;
 import net.minecraft.util.RegistryKey;
@@ -26,11 +33,13 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.SimpleRegistry;
 import net.minecraft.util.text.IFormattableTextComponent;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -38,12 +47,15 @@ import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.opengl.GL11;
 
 import javax.annotation.Nonnull;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -467,6 +479,8 @@ public class McHelper {
             .portal_isChunkGenerated(new ChunkPos(toPos));
     }
     
+    // because withUnderline is client only
+    @OnlyIn(Dist.CLIENT)
     public static IFormattableTextComponent getLinkText(String link) {
         return new StringTextComponent(link).func_240700_a_(
             style -> style.func_240715_a_(new ClickEvent(
@@ -610,7 +624,8 @@ public class McHelper {
         foreachEntities(
             entityClass, getChunkAccessor(world),
             xMin >> 4, xMax >> 4,
-            Math.max(0, yMin >> 4), Math.min(15, yMax >> 4),
+            MathHelper.clamp(yMin >> 4, 0, 15),
+            MathHelper.clamp(yMax >> 4, 0, 15),
             zMin >> 4, zMax >> 4,
             consumer
         );
@@ -715,6 +730,7 @@ public class McHelper {
     
     /**
      * It will spawn even if the chunk is not loaded
+     *
      * @link ServerWorld#addEntity(Entity)
      */
     public static void spawnServerEntity(Entity entity) {
@@ -769,6 +785,78 @@ public class McHelper {
             throw new RuntimeException("Missing dimension " + dim.func_240901_a_());
         }
         return world;
+    }
+    
+    private static ITextComponent prettyPrintTagKey(String key) {
+        return (new StringTextComponent(key)).func_240699_a_(TextFormatting.AQUA);
+    }
+    
+    public static ITextComponent tagToTextSorted(INBT tag, String indent, int depth) {
+        if (tag instanceof CompoundNBT) {
+            return compoundTagToTextSorted(((CompoundNBT) tag), indent, depth);
+        }
+        if (tag instanceof ListNBT) {
+            if (!((ListNBT) tag).isEmpty()) {
+                INBT firstElement = ((ListNBT) tag).get(0);
+                if (firstElement instanceof IntNBT || firstElement instanceof DoubleNBT) {
+                    return tag.toFormattedComponent("", depth);
+                }
+            }
+        }
+        if (tag instanceof ByteNBT) {
+            byte value = ((ByteNBT) tag).getByte();
+            if (value == 1) {
+                return new StringTextComponent("true").func_240699_a_(TextFormatting.GOLD);
+            }
+            else if (value == 0) {
+                return new StringTextComponent("false").func_240699_a_(TextFormatting.GOLD);
+            }
+        }
+        return tag.toFormattedComponent(indent, depth);
+    }
+    
+    /**
+     * {@link CompoundTag#toText(String, int)}
+     */
+    public static ITextComponent compoundTagToTextSorted(CompoundNBT tag, String indent, int depth) {
+        if (tag.isEmpty()) {
+            return new StringTextComponent("{}");
+        }
+        else {
+            IFormattableTextComponent mutableText = new StringTextComponent("{");
+            Collection<String> collection = tag.keySet();
+            
+            List<String> list = Lists.newArrayList(collection);
+            Collections.sort(list);
+            collection = list;
+            
+            
+            if (!indent.isEmpty()) {
+                mutableText.func_240702_b_("\n");
+            }
+            
+            IFormattableTextComponent mutableText2;
+            for (Iterator iterator = ((Collection) collection).iterator(); iterator.hasNext(); mutableText.func_230529_a_((ITextComponent) mutableText2)) {
+                String keyName = (String) iterator.next();
+                mutableText2 = (new StringTextComponent(Strings.repeat(indent, depth + 1)))
+                    .func_230529_a_(prettyPrintTagKey(keyName))
+                    .func_240702_b_(String.valueOf(':'))
+                    .func_240702_b_(" ")
+                    .func_230529_a_(
+                        tagToTextSorted(tag.get(keyName), indent, depth)
+                    );
+                if (iterator.hasNext()) {
+                    mutableText2.func_240702_b_(String.valueOf(',')).func_240702_b_(indent.isEmpty() ? " " : "\n");
+                }
+            }
+            
+            if (!indent.isEmpty()) {
+                mutableText.func_240702_b_("\n").func_240702_b_(Strings.repeat(indent, depth));
+            }
+            
+            mutableText.func_240702_b_("}");
+            return mutableText;
+        }
     }
     
 }

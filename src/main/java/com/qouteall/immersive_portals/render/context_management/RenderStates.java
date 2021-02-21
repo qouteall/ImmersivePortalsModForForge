@@ -17,6 +17,7 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.Vector3d;
@@ -39,6 +40,7 @@ public class RenderStates {
     public static Vector3d originalPlayerLastTickPos;
     public static GameType originalGameMode;
     public static float tickDelta = 0;
+    public static AxisAlignedBB originalPlayerBoundingBox;
     
     public static Set<RegistryKey<World>> renderedDimensions = new HashSet<>();
     public static List<List<WeakReference<PortalLike>>> lastPortalRenderInfos = new ArrayList<>();
@@ -107,6 +109,11 @@ public class RenderStates {
         debugText = "";
         
         QueryManager.queryStallCounter = 0;
+        
+        Vector3d velocity = cameraEntity.getMotion();
+        originalPlayerBoundingBox = cameraEntity.getBoundingBox().expand(
+            -velocity.x, -velocity.y, -velocity.z
+        );
     }
     
     //protect the player from mirror room lag attack
@@ -194,7 +201,7 @@ public class RenderStates {
             cameraPosDelta = Vector3d.ZERO;
         }
         lastCameraPos = currCameraPos;
-    
+        
         
     }
     

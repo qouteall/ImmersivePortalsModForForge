@@ -77,7 +77,7 @@ public class PortalCommand {
         
         LiteralArgumentBuilder<CommandSource> builder = Commands
             .literal("portal")
-            .requires(PortalCommand::level2OrCreativeMode);
+            .requires(PortalCommand::canUsePortalCommand);
         
         registerPortalTargetedCommands(builder);
         
@@ -92,18 +92,20 @@ public class PortalCommand {
         builder.then(global);
         
         LiteralArgumentBuilder<CommandSource> debugBuilder = Commands.literal("debug")
-            .requires(PortalCommand::level2OrCreativeMode);
+            .requires(PortalCommand::canUsePortalCommand);
         registerDebugCommands(debugBuilder);
         builder.then(debugBuilder);
         
         dispatcher.register(builder);
     }
     
-    public static boolean level2OrCreativeMode(CommandSource commandSource) {
+    public static boolean canUsePortalCommand(CommandSource commandSource) {
         Entity entity = commandSource.getEntity();
         if (entity instanceof ServerPlayerEntity) {
-            if (((ServerPlayerEntity) entity).isCreative()) {
-                return true;
+            if (Global.easeCreativePermission) {
+                if (((ServerPlayerEntity) entity).isCreative()) {
+                    return true;
+                }
             }
         }
         
@@ -1306,7 +1308,7 @@ public class PortalCommand {
                                         false,
                                         false,
                                         false,
-                                        true,
+                                        false,
                                         BoolArgumentType.getBool(context, "biWay")
                                     );
                                     return 0;
@@ -1319,7 +1321,7 @@ public class PortalCommand {
                                             teleportChangesScale,
                                             false,
                                             false,
-                                            true,
+                                            false,
                                             BoolArgumentType.getBool(context, "biWay")
                                         );
                                         return 0;
@@ -1357,18 +1359,15 @@ public class PortalCommand {
         builder.then(Commands
             .literal("wiki")
             .executes(context -> {
-                context.getSource().sendFeedback(
-                    McHelper.getLinkText("https://qouteall.fun/immptl/wiki/Commands-Reference"),
-                    false
-                );
-                context.getSource().sendFeedback(
-                    new TranslationTextComponent("imm_ptl.press_t"),
-                    false
+                McRemoteProcedureCall.tellClientToInvoke(
+                    context.getSource().asPlayer(),
+                    "com.qouteall.imm_ptl_peripheral.guide.IPGuide.RemoteCallables.showWiki"
                 );
                 return 0;
             })
         );
     }
+    
     
     private static void invokeCreateScaledViewCommand(
         CommandContext<CommandSource> context,
@@ -1630,13 +1629,17 @@ public class PortalCommand {
     
     public static void sendPortalInfo(CommandContext<CommandSource> context, Portal portal) {
         context.getSource().sendFeedback(
-            portal.writeWithoutTypeId(new CompoundNBT()).toFormattedComponent(),
+            McHelper.compoundTagToTextSorted(
+                portal.writeWithoutTypeId(new CompoundNBT()),
+                " ",
+                0
+            ),
             false
         );
         
         sendMessage(
             context,
-            "\n\n" + portal.toString()
+            portal.toString() + "\n"
         );
     }
     

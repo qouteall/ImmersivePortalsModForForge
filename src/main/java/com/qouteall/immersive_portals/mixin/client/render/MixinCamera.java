@@ -36,6 +36,9 @@ public abstract class MixinCamera implements IECamera {
     @Shadow
     protected abstract void setPostion(Vector3d vec3d_1);
     
+    @Shadow
+    public abstract Entity getRenderViewEntity();
+    
     @Inject(
         method = "Lnet/minecraft/client/renderer/ActiveRenderInfo;update(Lnet/minecraft/world/IBlockReader;Lnet/minecraft/entity/Entity;ZZF)V",
         at = @At("RETURN")
@@ -76,7 +79,7 @@ public abstract class MixinCamera implements IECamera {
     //to let the player be rendered when rendering portal
     @Inject(method = "Lnet/minecraft/client/renderer/ActiveRenderInfo;isThirdPerson()Z", at = @At("HEAD"), cancellable = true)
     private void onIsThirdPerson(CallbackInfoReturnable<Boolean> cir) {
-        if (CrossPortalEntityRenderer.shouldRenderPlayerItself()) {
+        if (CrossPortalEntityRenderer.shouldRenderPlayerDefault()) {
             cir.setReturnValue(true);
         }
     }

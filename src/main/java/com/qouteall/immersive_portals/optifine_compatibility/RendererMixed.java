@@ -67,6 +67,7 @@ public class RendererMixed extends PortalRenderer {
             initStencilForLayer(portalLayer);
             
             deferredFbs[portalLayer].fb.bindFramebuffer(true);
+            deferredFbs[portalLayer].fb.checkFramebufferComplete();
             
             glEnable(GL_STENCIL_TEST);
             glStencilFunc(GL_EQUAL, portalLayer, 0xFF);
@@ -77,9 +78,12 @@ public class RendererMixed extends PortalRenderer {
             MyRenderHelper.clearAlphaTo1(mcFrameBuffer);
             
             deferredFbs[portalLayer].fb.bindFramebuffer(true);
+            deferredFbs[portalLayer].fb.checkFramebufferComplete();
             MyRenderHelper.drawScreenFrameBuffer(mcFrameBuffer, false, true);
             
             glDisable(GL_STENCIL_TEST);
+            
+            deferredFbs[portalLayer].fb.unbindFramebuffer();
         }
         
         MatrixStack effectiveTransformation = this.modelView;
@@ -91,10 +95,17 @@ public class RendererMixed extends PortalRenderer {
     private void initStencilForLayer(int portalLayer) {
         if (portalLayer == 0) {
             deferredFbs[portalLayer].fb.bindFramebuffer(true);
+            deferredFbs[portalLayer].fb.checkFramebufferComplete();
             GlStateManager.clearStencil(0);
             GL11.glClear(GL11.GL_STENCIL_BUFFER_BIT);
         }
         else {
+            deferredFbs[portalLayer - 1].fb.bindFramebuffer(false);
+            deferredFbs[portalLayer - 1].fb.checkFramebufferComplete();
+            deferredFbs[portalLayer].fb.bindFramebuffer(false);
+            deferredFbs[portalLayer].fb.checkFramebufferComplete();
+            
+            
             GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, deferredFbs[portalLayer - 1].fb.framebufferObject);
             GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, deferredFbs[portalLayer].fb.framebufferObject);
             
@@ -114,6 +125,9 @@ public class RendererMixed extends PortalRenderer {
     @Override
     public void onAfterTranslucentRendering(MatrixStack matrixStack) {
         if (portalRenderingNeeded) {
+            deferredFbs[PortalRendering.getPortalLayer()].fb.bindFramebuffer(false);
+            deferredFbs[PortalRendering.getPortalLayer()].fb.checkFramebufferComplete();
+            
             OFHelper.copyFromShaderFbTo(
                 deferredFbs[PortalRendering.getPortalLayer()].fb,
                 GL_DEPTH_BUFFER_BIT
@@ -142,6 +156,8 @@ public class RendererMixed extends PortalRenderer {
             }
         }
         
+        CHelper.checkGlError();
+        
         for (SecondaryFrameBuffer deferredFb : deferredFbs) {
             deferredFb.prepare();
             ((IEFrameBuffer) deferredFb.fb).setIsStencilBufferEnabledAndReload(true);
@@ -152,9 +168,10 @@ public class RendererMixed extends PortalRenderer {
             GlStateManager.clearStencil(0);
             GL11.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
             
+            CHelper.checkGlError();
+            
+            deferredFb.fb.unbindFramebuffer();
         }
-        
-        OFGlobal.bindToShaderFrameBuffer.run();
     }
     
     private void updateNeedsPortalRendering() {
@@ -177,6 +194,7 @@ public class RendererMixed extends PortalRenderer {
         
         Framebuffer mainFrameBuffer = client.getFramebuffer();
         mainFrameBuffer.bindFramebuffer(true);
+        mainFrameBuffer.checkFramebufferComplete();
         
         deferredFbs[0].fb.framebufferRender(mainFrameBuffer.framebufferWidth, mainFrameBuffer.framebufferHeight);
         
@@ -201,7 +219,7 @@ public class RendererMixed extends PortalRenderer {
         
         PortalRendering.pushPortalLayer(portal);
         
-        OFGlobal.bindToShaderFrameBuffer.run();
+//        OFGlobal.bindToShaderFrameBuffer.run();
         renderPortalContent(portal);
         
         int innerLayer = PortalRendering.getPortalLayer();
@@ -215,6 +233,7 @@ public class RendererMixed extends PortalRenderer {
         }
         
         deferredFbs[outerLayer].fb.bindFramebuffer(true);
+        deferredFbs[outerLayer].fb.checkFramebufferComplete();
         
         MyRenderHelper.drawScreenFrameBuffer(
             deferredFbs[innerLayer].fb,
@@ -231,6 +250,7 @@ public class RendererMixed extends PortalRenderer {
         initStencilForLayer(portalLayer);
         
         deferredFbs[portalLayer].fb.bindFramebuffer(true);
+        deferredFbs[portalLayer].fb.checkFramebufferComplete();
         
         GL20.glUseProgram(0);
         
@@ -261,7 +281,7 @@ public class RendererMixed extends PortalRenderer {
             worldRenderInfo,
             runnable -> {
                 OFGlobal.shaderContextManager.switchContextAndRun(() -> {
-                    OFGlobal.bindToShaderFrameBuffer.run();
+//                    OFGlobal.bindToShaderFrameBuffer.run();
                     runnable.run();
                 });
             }

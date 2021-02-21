@@ -11,6 +11,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.Quaternion;
@@ -173,7 +174,10 @@ public class PortalRenderingGroup implements PortalLike {
     
     @Override
     public boolean isInside(Vector3d entityPos, double valve) {
-        return getDestAreaBox().contains(entityPos);
+        if (isEnclosed()) {
+            return getDestAreaBox().contains(entityPos);
+        }
+        return true;
     }
     
     @Nullable
@@ -229,21 +233,28 @@ public class PortalRenderingGroup implements PortalLike {
     }
     
     @Override
-    public boolean isParallelWith(Portal portal) {
-        return portals.stream().anyMatch(p -> p.isParallelWith(portal));
+    public boolean cannotRenderInMe(Portal portal) {
+        if (isEnclosed()) {
+            if (!getDestAreaBox().intersects(portal.getExactAreaBox())) {
+                return true;
+            }
+        }
+        
+        return portals.stream().anyMatch(p -> p.cannotRenderInMe(portal));
     }
     
     @OnlyIn(Dist.CLIENT)
     @Override
     public BoxPredicate getInnerFrustumCullingFunc(
-        double cameraX, double cameraY, double cameraZ
+        double innerCameraX, double innerCameraY, double innerCameraZ
     ) {
-        Vector3d cameraPos = new Vector3d(cameraX, cameraY, cameraZ);
+        Vector3d innerCameraPos = new Vector3d(innerCameraX, innerCameraY, innerCameraZ);
+        Vector3d outerCameraPos = portals.get(0).inverseTransformPoint(innerCameraPos);
         
         List<BoxPredicate> funcs = portals.stream().filter(
-            portal -> portal.isInFrontOfPortal(cameraPos)
+            portal1 -> portal1.isInFrontOfPortal(outerCameraPos)
         ).map(
-            portal -> portal.getInnerFrustumCullingFunc(cameraX, cameraY, cameraZ)
+            portal -> portal.getInnerFrustumCullingFunc(innerCameraX, innerCameraY, innerCameraZ)
         ).collect(Collectors.toList());
         
         return (minX, minY, minZ, maxX, maxY, maxZ) -> {
@@ -264,14 +275,28 @@ public class PortalRenderingGroup implements PortalLike {
             return;
         }
         
-        //contract because the exact bounding box is a little bigger
         AxisAlignedBB enclosedDestAreaBox = getDestAreaBox().shrink(0.5);
+        
         if (enclosedDestAreaBox != null) {
+            int xMin = (int) Math.floor(enclosedDestAreaBox.minX / 16);
+            int xMax = (int) Math.ceil(enclosedDestAreaBox.maxX / 16) - 1;
+            int yMin = (int) Math.floor(enclosedDestAreaBox.minY / 16);
+            int yMax = (int) Math.ceil(enclosedDestAreaBox.maxY / 16) - 1;
+            int zMin = (int) Math.floor(enclosedDestAreaBox.minZ / 16);
+            int zMax = (int) Math.ceil(enclosedDestAreaBox.maxZ / 16) - 1;
+            
             Helper.removeIf(visibleChunks, (obj) -> {
                 ChunkRenderDispatcher.ChunkRender builtChunk =
                     ((IEWorldRendererChunkInfo) obj).getBuiltChunk();
-
-                return !builtChunk.boundingBox.intersects(enclosedDestAreaBox);
+                
+                BlockPos origin = builtChunk.getPosition();
+                int cx = origin.getX() >> 4;
+                int cy = origin.getY() >> 4;
+                int cz = origin.getZ() >> 4;
+                
+                return !(cx >= xMin && cx <= xMax &&
+                    cy >= yMin && cy <= yMax &&
+                    cz >= zMin && cz <= zMax);
             });
         }
     }
@@ -286,13 +311,13 @@ public class PortalRenderingGroup implements PortalLike {
         return String.format("PortalRenderingGroup(%s)%s", portals.size(), portals.get(0).portalTag);
     }
     
-    public boolean isEnclosed(){
+    public boolean isEnclosed() {
         if (isEnclosedCache == null) {
             isEnclosedCache = portals.stream().allMatch(
                 p -> p.getOriginPos().subtract(getOriginPos()).dotProduct(p.getNormal()) > 0.3
             );
         }
-    
+        
         return isEnclosedCache;
     }
 }

@@ -325,8 +325,8 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
         IRenderTypeBuffer vertexConsumerProvider
     ) {
         ActiveRenderInfo camera = Minecraft.getInstance().gameRenderer.getActiveRenderInfo();
-        if (entity == camera.getRenderViewEntity()) {
-            if (CrossPortalEntityRenderer.shouldRenderPlayerItself()) {
+        if (entity == camera.getRenderViewEntity()) { //player
+            if (CrossPortalEntityRenderer.shouldRenderEntityNow(entity)) {
                 MyGameRenderer.renderPlayerItself(() -> {
                     if (CrossPortalEntityRenderer.shouldRenderPlayerNormally(entity)) {
                         CrossPortalEntityRenderer.beforeRenderingEntity(entity, matrixStack);
@@ -465,9 +465,11 @@ public abstract class MixinWorldRenderer implements IEWorldRenderer {
             //reset gl states
             RenderType.getBlockRenderTypes().get(0).setupRenderState();
             RenderType.getBlockRenderTypes().get(0).clearRenderState();
-    
+            
             if (PortalRendering.getRenderingPortal().isFuseView()) {
-                ci.cancel();
+                if (!OFInterface.isShaders.getAsBoolean()) {
+                    ci.cancel();
+                }
             }
             
             //fix sky abnormal with optifine and fog disabled

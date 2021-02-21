@@ -1,6 +1,7 @@
 package com.qouteall.imm_ptl_peripheral;
 
 import com.mojang.serialization.Lifecycle;
+import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.commands.PortalCommand;
 import net.minecraft.client.util.ITooltipFlag;
@@ -112,22 +113,27 @@ public class CommandStickItem extends Item {
             return;
         }
         
-        if (player.isCreative() || player.hasPermissionLevel(2)) {
-            doInvoke(player, stack);
+        if (canUseCommand(player)) {
+            Data data = Data.deserialize(stack.getOrCreateTag());
+            
+            CommandSource commandSource = player.getCommandSource().withPermissionLevel(2);
+            
+            Commands commandManager = McHelper.getServer().getCommandManager();
+            
+            commandManager.handleCommand(commandSource, data.command);
         }
         else {
             sendMessage(player, new StringTextComponent("No Permission"));
         }
     }
     
-    private void doInvoke(PlayerEntity player, ItemStack stack) {
-        Data data = Data.deserialize(stack.getOrCreateTag());
-        
-        CommandSource commandSource = player.getCommandSource().withPermissionLevel(2);
-        
-        Commands commandManager = McHelper.getServer().getCommandManager();
-        
-        commandManager.handleCommand(commandSource, data.command);
+    private static boolean canUseCommand(PlayerEntity player) {
+        if (Global.easeCommandStickPermission) {
+            return true;// any player regardless of gamemode can use
+        }
+        else {
+            return player.hasPermissionLevel(2) || player.isCreative();
+        }
     }
     
     @Override

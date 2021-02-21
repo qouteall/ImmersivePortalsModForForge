@@ -2,11 +2,11 @@ package com.qouteall.imm_ptl_peripheral.alternate_dimension;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.mojang.serialization.Lifecycle;
 import com.qouteall.immersive_portals.Global;
 import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
+import com.qouteall.immersive_portals.api.IPDimensionAPI;
 import com.qouteall.immersive_portals.ducks.IEWorld;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.RegistryKey;
@@ -27,14 +27,85 @@ import net.minecraft.world.gen.FlatGenerationSettings;
 import net.minecraft.world.gen.FlatLayerInfo;
 import net.minecraft.world.gen.NoiseChunkGenerator;
 import net.minecraft.world.gen.feature.structure.Structure;
+import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraft.world.gen.settings.DimensionStructuresSettings;
 import net.minecraft.world.gen.settings.StructureSeparationSettings;
 import net.minecraft.world.server.ServerWorld;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public class AlternateDimensions {
+    public static void init() {
+        IPDimensionAPI.onServerWorldInit.connect(AlternateDimensions::initializeAlternateDimensions);
+        
+        ModMain.postServerTickSignal.connect(AlternateDimensions::tick);
+    }
+    
+    private static void initializeAlternateDimensions(
+        DimensionGeneratorSettings generatorOptions, DynamicRegistries registryManager
+    ) {
+        SimpleRegistry<Dimension> registry = generatorOptions.func_236224_e_();
+        long seed = generatorOptions.func_236221_b_();
+        if (!Global.enableAlternateDimensions) {
+            return;
+        }
+        
+        DimensionType surfaceTypeObject = registryManager.func_243612_b(Registry.field_239698_ad_).getOrDefault(new ResourceLocation("immersive_portals:surface_type"));
+        
+        if (surfaceTypeObject == null) {
+            Helper.err("Missing dimension type immersive_portals:surface_type");
+            return;
+        }
+        
+        //different seed
+        IPDimensionAPI.addDimension(
+            seed,
+            registry,
+            alternate1Option.func_240901_a_(),
+            () -> surfaceTypeObject,
+            createSkylandGenerator(seed + 1, registryManager)
+        );
+        IPDimensionAPI.markDimensionNonPersistent(alternate1Option.func_240901_a_());
+        
+        IPDimensionAPI.addDimension(
+            seed,
+            registry,
+            alternate2Option.func_240901_a_(),
+            () -> surfaceTypeObject,
+            createSkylandGenerator(seed, registryManager)
+        );
+        IPDimensionAPI.markDimensionNonPersistent(alternate2Option.func_240901_a_());
+        
+        //different seed
+        IPDimensionAPI.addDimension(
+            seed,
+            registry,
+            alternate3Option.func_240901_a_(),
+            () -> surfaceTypeObject,
+            createErrorTerrainGenerator(seed + 1, registryManager)
+        );
+        IPDimensionAPI.markDimensionNonPersistent(alternate3Option.func_240901_a_());
+        
+        IPDimensionAPI.addDimension(
+            seed,
+            registry,
+            alternate4Option.func_240901_a_(),
+            () -> surfaceTypeObject,
+            createErrorTerrainGenerator(seed, registryManager)
+        );
+        IPDimensionAPI.markDimensionNonPersistent(alternate4Option.func_240901_a_());
+        
+        IPDimensionAPI.addDimension(
+            seed,
+            registry,
+            alternate5Option.func_240901_a_(),
+            () -> surfaceTypeObject,
+            createVoidGenerator(registryManager)
+        );
+        IPDimensionAPI.markDimensionNonPersistent(alternate5Option.func_240901_a_());
+    }
+    
+    
     public static final RegistryKey<Dimension> alternate1Option = RegistryKey.func_240903_a_(
         Registry.field_239700_af_,
         new ResourceLocation("immersive_portals:alternate1")
@@ -79,7 +150,7 @@ public class AlternateDimensions {
         Registry.field_239699_ae_,
         new ResourceLocation("immersive_portals:alternate5")
     );
-    public static DimensionType surfaceTypeObject;
+//    public static DimensionType surfaceTypeObject;
     
     public static boolean isAlternateDimension(World world) {
         final RegistryKey<World> key = world.func_234923_W_();
@@ -88,22 +159,6 @@ public class AlternateDimensions {
             key == alternate3 ||
             key == alternate4 ||
             key == alternate5;
-    }
-    
-    public static void init() {
-        ModMain.postServerTickSignal.connect(() -> {
-            if (!Global.enableAlternateDimensions) {
-                return;
-            }
-            
-            ServerWorld overworld = McHelper.getServerWorld(World.field_234918_g_);
-            
-            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate1), overworld);
-            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate2), overworld);
-            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate3), overworld);
-            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate4), overworld);
-            syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate5), overworld);
-        });
     }
     
     private static void syncWithOverworldTimeWeather(ServerWorld world, ServerWorld overworld) {
@@ -163,126 +218,20 @@ public class AlternateDimensions {
         return new FlatChunkGenerator(flatChunkGeneratorConfig);
     }
     
-    public static void addDimension(
-        long argSeed,
-        SimpleRegistry<Dimension> registry,
-        RegistryKey<Dimension> key,
-        Supplier<DimensionType> dimensionTypeSupplier,
-        ChunkGenerator chunkGenerator
-    ) {
-        if (!registry.keySet().contains(key.func_240901_a_())) {
-            registry.register(
-                key,
-                new Dimension(
-                    dimensionTypeSupplier,
-                    chunkGenerator
-                ),
-                Lifecycle.experimental()
-            );
-        }
-    }
     
-    public static void addAlternateDimensions(
-        SimpleRegistry<Dimension> registry, DynamicRegistries rm,
-        long seed
-    ) {
+    private static void tick() {
         if (!Global.enableAlternateDimensions) {
             return;
         }
         
-        addDimension(
-            seed,
-            registry,
-            alternate1Option,
-            () -> surfaceTypeObject,
-            createSkylandGenerator(seed + 1, rm)//different seed
-        );
+        ServerWorld overworld = McHelper.getServerWorld(World.field_234918_g_);
         
-        addDimension(
-            seed,
-            registry,
-            alternate2Option,
-            () -> surfaceTypeObject,
-            createSkylandGenerator(seed, rm)
-        );
-        
-        addDimension(
-            seed,
-            registry,
-            alternate3Option,
-            () -> surfaceTypeObject,
-            createErrorTerrainGenerator(seed + 1, rm)//different seed
-        );
-        
-        addDimension(
-            seed,
-            registry,
-            alternate4Option,
-            () -> surfaceTypeObject,
-            createErrorTerrainGenerator(seed, rm)
-        );
-        
-        addDimension(
-            seed,
-            registry,
-            alternate5Option,
-            () -> surfaceTypeObject,
-            createVoidGenerator(rm)
-        );
+        syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate1), overworld);
+        syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate2), overworld);
+        syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate3), overworld);
+        syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate4), overworld);
+        syncWithOverworldTimeWeather(McHelper.getServerWorld(alternate5), overworld);
     }
     
-    // don't store dimension info into level.dat
-    // avoid weird dfu error
-    public static SimpleRegistry<Dimension> getAlternateDimensionsRemoved(
-        SimpleRegistry<Dimension> registry
-    ) {
-        return McHelper.filterAndCopyRegistry(
-            registry,
-            (key, obj) -> !(key == alternate1Option ||
-                key == alternate2Option ||
-                key == alternate3Option ||
-                key == alternate4Option ||
-                key == alternate5Option)
-        );
-    }
-    
-    // When DFU does not recognize a mod dimension (in level.dat) it will throw an error
-    // then the nether and the end will be swallowed
-    // it's not IP's issue. but I add the fix code because many people encounter the issue
-    public static void addMissingVanillaDimensions(
-        SimpleRegistry<Dimension> registry, DynamicRegistries rm,
-        long seed
-    ) {
-        if (!registry.keySet().contains(Dimension.field_236054_c_.func_240901_a_())) {
-            Helper.err("Missing the nether. This may be caused by DFU. Trying to fix");
-            
-            addDimension(
-                seed,
-                registry,
-                Dimension.field_236054_c_,
-                () -> DimensionType.field_236005_i_,
-                DimensionType.func_242720_b(
-                    rm.func_243612_b(Registry.field_239720_u_),
-                    rm.func_243612_b(Registry.field_243549_ar),
-                    seed
-                )
-            );
-        }
-        
-        if (!registry.keySet().contains(Dimension.field_236055_d_.func_240901_a_())) {
-            Helper.err("Missing the end. This may be caused by DFU. Trying to fix");
-            addDimension(
-                seed,
-                registry,
-                Dimension.field_236055_d_,
-                () -> DimensionType.field_236006_j_,
-                DimensionType.func_242717_a(
-                    rm.func_243612_b(Registry.field_239720_u_),
-                    rm.func_243612_b(Registry.field_243549_ar),
-                    seed
-                )
-            );
-        }
-    }
     
 }

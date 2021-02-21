@@ -71,6 +71,8 @@ public class DimensionTypeSync {
                         ResourceLocation id = dimensionTypes.getKey(dimensionType);
                         if (id == null) {
                             Helper.err("Missing dim type id for " + w.func_234923_W_());
+                            Helper.err("Registered dimension types " +
+                                Helper.myToString(dimensionTypes.keySet().stream()));
                             return DimensionType.field_235999_c_;
                         }
                         return idToDimType(id);

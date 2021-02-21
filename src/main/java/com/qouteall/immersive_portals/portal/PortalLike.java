@@ -81,7 +81,7 @@ public interface PortalLike {
     @Nullable
     UUID getDiscriminator();
     
-    boolean isParallelWith(Portal portal);
+    boolean cannotRenderInMe(Portal portal);
     
     boolean isFuseView();
     
@@ -115,5 +115,12 @@ public interface PortalLike {
     default void doAdditionalRenderingCull(ObjectList<?> visibleChunks) {
         MyGameRenderer.cullRenderingSections(visibleChunks, this);
     }
+    
+//    // do additional cull when sodium is present
+//    @Environment(EnvType.CLIENT)
+//    @Nullable
+//    default TriIntPredicate getAdditionalCullPredicateSodium() {
+//        return null;
+//    }
     
 }

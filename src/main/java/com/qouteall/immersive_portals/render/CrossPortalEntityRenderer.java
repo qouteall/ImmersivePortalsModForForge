@@ -4,6 +4,7 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.qouteall.immersive_portals.CHelper;
 import com.qouteall.immersive_portals.ClientWorldLoader;
 import com.qouteall.immersive_portals.Global;
+import com.qouteall.immersive_portals.Helper;
 import com.qouteall.immersive_portals.McHelper;
 import com.qouteall.immersive_portals.ModMain;
 import com.qouteall.immersive_portals.OFInterface;
@@ -22,10 +23,13 @@ import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.apache.commons.lang3.Validate;
+
 import java.util.WeakHashMap;
 
 @OnlyIn(Dist.CLIENT)
@@ -100,7 +104,7 @@ public class CrossPortalEntityRenderer {
                 
                 //draw already built triangles
                 client.getRenderTypeBuffers().getBufferSource().finish();
-    
+                
                 FrontClipping.setupOuterClipping(matrixStack, collidingPortal);
                 if (OFInterface.isShaders.getAsBoolean()) {
                     ShaderClippingManager.update();
@@ -163,7 +167,7 @@ public class CrossPortalEntityRenderer {
             //correctly rendering it needs two culling planes
             //use some rough check to work around
             
-            if(renderingPortal instanceof Portal) {
+            if (renderingPortal instanceof Portal) {
                 if (!Portal.isFlippedPortal(((Portal) renderingPortal), collidingPortal)) {
                     Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
                     
@@ -179,7 +183,7 @@ public class CrossPortalEntityRenderer {
             FrontClipping.disableClipping();
             // don't draw the existing triangles with culling enabled
             client.getRenderTypeBuffers().getBufferSource().finish();
-    
+            
             FrontClipping.setupInnerClipping(matrixStack, collidingPortal, false);
             renderEntityRegardingPlayer(entity, collidingPortal, matrixStack);
             FrontClipping.disableClipping();
@@ -207,7 +211,7 @@ public class CrossPortalEntityRenderer {
         MatrixStack matrixStack
     ) {
         Vector3d cameraPos = client.gameRenderer.getActiveRenderInfo().getProjectedView();
-    
+        
         ClientWorld newWorld = ClientWorldLoader.getWorld(transformingPortal.dimensionTo);
         
         Vector3d oldEyePos = McHelper.getEyePos(entity);
@@ -236,6 +240,12 @@ public class CrossPortalEntityRenderer {
                     valve *= transformingPortal.scaling;
                 }
                 if (dis < valve) {
+                    return;
+                }
+                
+                AxisAlignedBB transformedBoundingBox =
+                    Helper.transformBox(RenderStates.originalPlayerBoundingBox, transformingPortal::transformPoint);
+                if (transformedBoundingBox.contains(CHelper.getCurrentCameraPos())) {
                     return;
                 }
             }
@@ -298,7 +308,7 @@ public class CrossPortalEntityRenderer {
         matrixStack.translate(-anchor.x, -anchor.y, -anchor.z);
     }
     
-    public static boolean shouldRenderPlayerItself() {
+    public static boolean shouldRenderPlayerDefault() {
         if (!Global.renderYourselfInPortal) {
             return false;
         }
@@ -312,20 +322,20 @@ public class CrossPortalEntityRenderer {
     }
     
     public static boolean shouldRenderEntityNow(Entity entity) {
+        Validate.notNull(entity);
         if (OFInterface.isShadowPass.getAsBoolean()) {
             return true;
         }
         if (PortalRendering.isRendering()) {
-            if (entity instanceof ClientPlayerEntity) {
-                return shouldRenderPlayerItself();
-            }
             PortalLike renderingPortal = PortalRendering.getRenderingPortal();
             Portal collidingPortal = ((IEEntity) entity).getCollidingPortal();
-            if (collidingPortal != null) {
-                if(renderingPortal instanceof Portal) {
+            
+            // client colliding portal update is not immediate
+            if (collidingPortal != null && !(entity instanceof ClientPlayerEntity)) {
+                if (renderingPortal instanceof Portal) {
                     if (!Portal.isReversePortal(collidingPortal, ((Portal) renderingPortal))) {
                         Vector3d cameraPos = PortalRenderer.client.gameRenderer.getActiveRenderInfo().getProjectedView();
-        
+                        
                         boolean isHidden = cameraPos.subtract(collidingPortal.getOriginPos())
                             .dotProduct(collidingPortal.getNormal()) < 0;
                         if (isHidden) {
@@ -336,7 +346,7 @@ public class CrossPortalEntityRenderer {
             }
             
             return renderingPortal.isInside(
-                entity.getEyePosition(RenderStates.tickDelta), -0.01
+                getRenderingCameraPos(entity), -0.01
             );
         }
         return true;
@@ -347,10 +357,21 @@ public class CrossPortalEntityRenderer {
             return true;
         }
         
+        if (RenderStates.originalPlayerBoundingBox.contains(CHelper.getCurrentCameraPos())) {
+            return false;
+        }
+        
         double distanceToCamera =
-            entity.getEyePosition(RenderStates.tickDelta)
+            getRenderingCameraPos(entity)
                 .distanceTo(client.gameRenderer.getActiveRenderInfo().getProjectedView());
         //avoid rendering player too near and block view except mirror
         return distanceToCamera > 1 || PortalRendering.isRenderingOddNumberOfMirrors();
+    }
+    
+    public static Vector3d getRenderingCameraPos(Entity entity) {
+        if (entity instanceof ClientPlayerEntity) {
+            return RenderStates.originalPlayerPos.add(0, entity.getEyeHeight(), 0);
+        }
+        return entity.getEyePosition(RenderStates.tickDelta);
     }
 }

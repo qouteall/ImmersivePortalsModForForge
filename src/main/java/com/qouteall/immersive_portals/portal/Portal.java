@@ -240,7 +240,7 @@ public class Portal extends Entity implements PortalLike {
     public void onEntityTeleportedOnServer(Entity entity) {
         if (commandsOnTeleported != null) {
             CommandSource commandSource =
-                entity.getCommandSource().withPermissionLevel(4).withFeedbackDisabled();
+                entity.getCommandSource().withPermissionLevel(2).withFeedbackDisabled();
             
             Commands commandManager = McHelper.getServer().getCommandManager();
             for (String command : commandsOnTeleported) {
@@ -747,7 +747,8 @@ public class Portal extends Entity implements PortalLike {
             axisH != null &&
             getDestPos() != null &&
             axisW.lengthSquared() > 0.9 &&
-            axisH.lengthSquared() > 0.9;
+            axisH.lengthSquared() > 0.9 &&
+            getPosY() > -1000;
         if (valid) {
             if (world instanceof ServerWorld) {
                 ServerWorld destWorld = McHelper.getServer().getWorld(dimensionTo);
@@ -1259,7 +1260,7 @@ public class Portal extends Entity implements PortalLike {
     }
     
     @Override
-    public boolean isParallelWith(Portal portal) {
+    public boolean cannotRenderInMe(Portal portal) {
         return isParallelOrientedPortal(portal, this);
     }
     

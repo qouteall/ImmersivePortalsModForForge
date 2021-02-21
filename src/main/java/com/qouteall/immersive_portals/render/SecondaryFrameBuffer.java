@@ -22,6 +22,7 @@ public class SecondaryFrameBuffer {
                 true,//has depth attachment
                 Minecraft.IS_RUNNING_ON_MAC
             );
+            Helper.log("Deferred buffer init");
         }
         if (width != fb.framebufferWidth ||
             height != fb.framebufferHeight

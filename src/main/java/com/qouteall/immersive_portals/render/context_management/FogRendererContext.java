@@ -32,8 +32,10 @@ public class FogRendererContext {
         FogRenderer.class.hashCode();
         
         swappingManager = new StaticFieldsSwappingManager<>(
-            copyContextFromObject, copyContextToObject, false
+            copyContextFromObject, copyContextToObject, false,
+            FogRendererContext::new
         );
+        
         
     }
     

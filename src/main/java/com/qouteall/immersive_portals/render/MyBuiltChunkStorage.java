@@ -336,8 +336,8 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     }
     
     public boolean isRegionActive(int cxStart, int czStart, int cxEnd, int czEnd) {
-        for (int cx = cxStart; cx < cxEnd; cx++) {
-            for (int cz = czStart; cz < czEnd; cz++) {
+        for (int cx = cxStart; cx <= cxEnd; cx++) {
+            for (int cz = czStart; cz <= czEnd; cz++) {
                 if (builtChunkMap.containsKey(new BlockPos(cx * 16, 0, cz * 16))) {
                     return true;
                 }
