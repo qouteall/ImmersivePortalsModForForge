@@ -16,7 +16,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '0.15-mc1.16.5-forge'
+version = '0.16-mc1.16.5-forge'
 group = 'com.qouteall.immersive_portals' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'immersive-portals'
 
