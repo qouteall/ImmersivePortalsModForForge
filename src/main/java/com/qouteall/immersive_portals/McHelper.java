@@ -489,6 +489,10 @@ public class McHelper {
         );
     }
     
+    public static void validateOnServerThread() {
+        Validate.isTrue(Thread.currentThread() == getServer().getExecutionThread(), "must be on server thread");
+    }
+    
     public static interface ChunkAccessor {
         Chunk getChunk(int x, int z);
     }

@@ -42,7 +42,7 @@ public class MixinParticleManager implements IEParticleManager {
     }
     
     @Redirect(
-        method = "Lnet/minecraft/client/particle/ParticleManager;renderParticles(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer$Impl;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/renderer/ActiveRenderInfo;F)V",
+        method = "*",//for optifine
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/client/particle/Particle;renderParticle(Lcom/mojang/blaze3d/vertex/IVertexBuilder;Lnet/minecraft/client/renderer/ActiveRenderInfo;F)V"
@@ -50,10 +50,8 @@ public class MixinParticleManager implements IEParticleManager {
         require = 0
     )
     private void redirectBuildGeometry(Particle particle, IVertexBuilder vertexConsumer, ActiveRenderInfo camera, float tickDelta) {
-        if (((IEParticle) particle).portal_getWorld() == Minecraft.getInstance().world) {
-            if (RenderStates.shouldRenderParticle(particle)) {
-                particle.renderParticle(vertexConsumer, camera, tickDelta);
-            }
+        if (RenderStates.shouldRenderParticle(particle)) {
+            particle.renderParticle(vertexConsumer, camera, tickDelta);
         }
     }
     

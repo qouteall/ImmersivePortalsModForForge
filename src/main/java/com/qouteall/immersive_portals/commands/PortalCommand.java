@@ -184,14 +184,23 @@ public class PortalCommand {
             })
         );
         
-        builder.then(Commands
-            .literal("set_profiler_logging_threshold")
-            .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
-            .then(Commands.argument("ms", IntegerArgumentType.integer())
+        builder.then(Commands.literal("profile")
+            .then(Commands
+                .literal("set_lag_logging_threshold")
+                .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
+                .then(Commands.argument("ms", IntegerArgumentType.integer())
+                    .executes(context -> {
+                        int ms = IntegerArgumentType.getInteger(context, "ms");
+                        Profiler.WARN_TIME_THRESHOLD = Duration.ofMillis(ms).toNanos();
+                        
+                        return 0;
+                    })
+                )
+            ).then(Commands
+                .literal("gc")
+                .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
                 .executes(context -> {
-                    int ms = IntegerArgumentType.getInteger(context, "ms");
-                    Profiler.WARN_TIME_THRESHOLD = Duration.ofMillis(ms).toNanos();
-                    
+                    System.gc();
                     return 0;
                 })
             )

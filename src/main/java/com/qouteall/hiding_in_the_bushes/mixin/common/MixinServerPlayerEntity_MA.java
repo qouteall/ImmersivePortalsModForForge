@@ -39,8 +39,7 @@ public class MixinServerPlayerEntity_MA {
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/world/server/ServerWorld;removePlayer(Lnet/minecraft/entity/player/ServerPlayerEntity;Z)V"
-        ),
-        remap = false
+        )//no remap false
     )
     private void onForgeTeleport(
         ServerWorld serverWorld,

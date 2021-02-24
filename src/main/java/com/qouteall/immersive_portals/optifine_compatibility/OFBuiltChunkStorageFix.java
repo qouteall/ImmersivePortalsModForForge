@@ -21,6 +21,8 @@ public class OFBuiltChunkStorageFix {
     
     private static Field BuiltChunkStorage_mapVboRegions;
     
+    private static Method BuiltChunkStorage_deleteVboRegions;
+    
     public static void init() {
         BuiltChunkStorage_updateVboRegion = Helper.noError(() ->
             ViewFrustum.class
@@ -36,6 +38,13 @@ public class OFBuiltChunkStorageFix {
                 .getDeclaredField("mapVboRegions")
         );
         BuiltChunkStorage_mapVboRegions.setAccessible(true);
+        
+        BuiltChunkStorage_deleteVboRegions = Helper.noError(() ->
+            ViewFrustum.class
+                .getDeclaredMethod(
+                    "deleteVboRegions"
+                )
+        );
     }
     
     public static void onBuiltChunkCreated(
@@ -127,5 +136,16 @@ public class OFBuiltChunkStorageFix {
         }
         
         Minecraft.getInstance().getProfiler().endSection();
+    }
+    
+    public static void onBuiltChunkStorageCleanup(ViewFrustum builtChunkStorage) {
+        if (!OFInterface.isOptifinePresent) {
+            return;
+        }
+        
+        Helper.noError(() -> {
+            BuiltChunkStorage_deleteVboRegions.invoke(builtChunkStorage);
+            return null;
+        });
     }
 }

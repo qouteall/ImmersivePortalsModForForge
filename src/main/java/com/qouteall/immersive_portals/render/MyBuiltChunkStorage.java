@@ -47,6 +47,8 @@ public class MyBuiltChunkStorage extends ViewFrustum {
     private boolean shouldUpdateMainPresetNeighbor = true;
     private final ObjectBuffer<ChunkRenderDispatcher.ChunkRender> builtChunkBuffer;
     
+    private boolean isAlive = true;
+    
     public MyBuiltChunkStorage(
         ChunkRenderDispatcher chunkBuilder,
         World world,
@@ -70,12 +72,6 @@ public class MyBuiltChunkStorage extends ViewFrustum {
             () -> factory.new ChunkRender(),
             ChunkRenderDispatcher.ChunkRender::deleteGlResources
         );
-        
-        ModMain.preGameRenderSignal.connectWithWeakRef(this, (this_) -> {
-            Minecraft.getInstance().getProfiler().startSection("reserve");
-            this_.builtChunkBuffer.reserveObjects(countChunksX * countChunksY * countChunksZ / 100);
-            Minecraft.getInstance().getProfiler().endSection();
-        });
     }
     
     @Override
@@ -91,6 +87,10 @@ public class MyBuiltChunkStorage extends ViewFrustum {
         builtChunkMap.clear();
         presets.clear();
         builtChunkBuffer.destroyAll();
+        
+        OFBuiltChunkStorageFix.onBuiltChunkStorageCleanup(this);
+        
+        isAlive = false;
     }
     
     @Override
