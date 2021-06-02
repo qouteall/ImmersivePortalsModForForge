@@ -181,7 +181,7 @@ repositories {
     jcenter()
     mavenCentral()
 
-    maven { url = 'https://dist.creeper.host/Sponge/maven' }
+    maven { url = 'https://repo.spongepowered.org/maven' }
     //maven{url="https://minecraft.curseforge.com/api/maven/"}
 
     flatDir {
