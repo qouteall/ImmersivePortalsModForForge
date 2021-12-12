@@ -21,10 +21,13 @@ public class MixinLivingEntity_C {
     
     @Shadow
     protected double interpTargetZ;
-
+    
+    @Shadow
+    protected int newPosRotationIncrements;
+    
     //avoid entity position interpolate when crossing portal when not travelling dimension
     @Inject(
-        method = "setPositionAndRotationDirect(DDDFFIZ)V",
+        method = "Lnet/minecraft/entity/LivingEntity;setPositionAndRotationDirect(DDDFFIZ)V",
         at = @At("RETURN")
     )
     private void onUpdateTrackedPositionAndAngles(

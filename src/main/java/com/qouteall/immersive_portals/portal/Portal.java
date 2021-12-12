@@ -29,7 +29,6 @@ import net.minecraft.entity.MoverType;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
 import net.minecraft.network.IPacket;
@@ -334,7 +333,7 @@ public class Portal extends Entity implements PortalLike {
             double mirrorOffset =
                 (OFInterface.isShaders.getAsBoolean() || Global.pureMirror) ? 0.01 : -0.01;
             portalPosRelativeToCamera = portalPosRelativeToCamera.add(
-                this.getNormal().scale(mirrorOffset));
+                ((Mirror) this).getNormal().scale(mirrorOffset));
         }
         
         ViewAreaRenderer.generateViewAreaTriangles(this, portalPosRelativeToCamera, vertexOutput);
@@ -425,21 +424,16 @@ public class Portal extends Entity implements PortalLike {
     public Quaternion getRotation() {
         return rotation;
     }
-
+    
     public void setOrientationAndSize(
-            Vector3d newAxisW, Vector3d newAxisH,
-            double newWidth, double newHeight
+        Vector3d newAxisW, Vector3d newAxisH,
+        double newWidth, double newHeight
     ) {
-        setOrientation(newAxisW, newAxisH);
-        width = newWidth;
-        height = newHeight;
-
-        updateCache();
-    }
-
-    public void setOrientation(Vector3d newAxisW, Vector3d newAxisH) {
         axisW = newAxisW;
         axisH = newAxisH;
+        width = newWidth;
+        height = newHeight;
+        
         updateCache();
     }
     
@@ -542,7 +536,7 @@ public class Portal extends Entity implements PortalLike {
         if (compoundTag.contains("commandsOnTeleported")) {
             ListNBT list = compoundTag.getList("commandsOnTeleported", 8);
             commandsOnTeleported = list.stream()
-                .map(INBT::getString).collect(Collectors.toList());
+                .map(t -> ((StringNBT) t).getString()).collect(Collectors.toList());
         }
         else {
             commandsOnTeleported = null;
@@ -999,11 +993,12 @@ public class Portal extends Entity implements PortalLike {
         if (!(lastDistance > 0 && nowDistance < 0)) {
             return null;
         }
-
+        
+        Vector3d lineOrigin = from;
         Vector3d lineDirection = to.subtract(from).normalize();
         
-        double collidingT = Helper.getCollidingT(getOriginPos(), normal, from, lineDirection);
-        Vector3d collidingPoint = from.add(lineDirection.scale(collidingT));
+        double collidingT = Helper.getCollidingT(getOriginPos(), normal, lineOrigin, lineDirection);
+        Vector3d collidingPoint = lineOrigin.add(lineDirection.scale(collidingT));
         
         if (isPointInPortalProjection(collidingPoint)) {
             return collidingPoint;

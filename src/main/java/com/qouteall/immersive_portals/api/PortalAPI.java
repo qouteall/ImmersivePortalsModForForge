@@ -21,15 +21,7 @@ import net.minecraft.world.server.ServerWorld;
 import javax.annotation.Nullable;
 
 public class PortalAPI {
-
-    public static DQuaternion getPortalOrientationQuaternion(Portal portal) {
-        return PortalManipulation.getPortalOrientationQuaternion(portal.axisW, portal.axisH);
-    }
-
-    public static void setPortalOrientationQuaternion(Portal portal, DQuaternion quaternion) {
-        PortalManipulation.setPortalOrientationQuaternion(portal, quaternion);
-    }
-
+    
     public static void setPortalPositionOrientationAndSize(
         Portal portal,
         Vector3d position,

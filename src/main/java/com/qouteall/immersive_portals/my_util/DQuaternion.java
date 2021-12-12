@@ -2,9 +2,6 @@ package com.qouteall.immersive_portals.my_util;
 
 
 import java.util.Objects;
-
-import com.qouteall.immersive_portals.api.PortalAPI;
-import com.qouteall.immersive_portals.portal.Portal;
 import net.minecraft.util.Tuple;
 import net.minecraft.util.math.vector.Quaternion;
 import net.minecraft.util.math.vector.Vector3d;
@@ -34,20 +31,12 @@ public class DQuaternion {
             quaternion.getX(), quaternion.getY(), quaternion.getZ(), quaternion.getW()
         );
     }
-
+    
     /**
      * @return the axis that the rotation is being performed along
      */
     public Vector3d getRotatingAxis() {
-        return new Vector3d(x, y, z).normalize();
-    }
-
-    public double getRotatingAngleRadians() {
-        return Math.acos(w) * 2;
-    }
-
-    public double getRotatingAngleDegrees() {
-        return Math.toDegrees(getRotatingAngleRadians());
+        return new Vector3d(x, y, z);
     }
     
     /**
@@ -315,85 +304,4 @@ public class DQuaternion {
     
         return rotationByRadians(rotatingAxis, angle);
     }
-
-    // x, y, z are the 3 rows of the matrix
-    // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
-    // only works if the matrix is rotation only
-    public static DQuaternion matrixToQuaternion(
-            Vector3d x, Vector3d y, Vector3d z
-    ) {
-        double m00 = x.getX();
-        double m11 = y.getY();
-        double m22 = z.getZ();
-
-        double m12 = z.getY();
-        double m21 = y.getZ();
-
-        double m20 = x.getZ();
-        double m02 = z.getX();
-
-        double m01 = y.getX();
-        double m10 = x.getY();
-
-//        double m12 = y.getZ();
-//        double m21 = z.getY();
-//
-//        double m20 = z.getX();
-//        double m02 = x.getZ();
-//
-//        double m01 = x.getY();
-//        double m10 = y.getX();
-
-        double tr = m00 + m11 + m22;
-
-        double qx, qy, qz, qw;
-
-        if (tr > 0) {
-            double S = Math.sqrt(tr + 1.0) * 2; // S=4*qw
-            qw = 0.25 * S;
-            qx = (m21 - m12) / S;
-            qy = (m02 - m20) / S;
-            qz = (m10 - m01) / S;
-        }
-        else if ((m00 > m11) && (m00 > m22)) {
-            double S = Math.sqrt(1.0 + m00 - m11 - m22) * 2; // S=4*qx
-            qw = (m21 - m12) / S;
-            qx = 0.25 * S;
-            qy = (m01 + m10) / S;
-            qz = (m02 + m20) / S;
-        }
-        else if (m11 > m22) {
-            double S = Math.sqrt(1.0 + m11 - m00 - m22) * 2; // S=4*qy
-            qw = (m02 - m20) / S;
-            qx = (m01 + m10) / S;
-            qy = 0.25 * S;
-            qz = (m12 + m21) / S;
-        }
-        else {
-            double S = Math.sqrt(1.0 + m22 - m00 - m11) * 2; // S=4*qz
-            qw = (m10 - m01) / S;
-            qx = (m02 + m20) / S;
-            qy = (m12 + m21) / S;
-            qz = 0.25 * S;
-        }
-
-        return new DQuaternion(qx, qy, qz, qw);
-    }
-
-    public static void adjustRotationToConnect(Portal portalA, Portal portalB) {
-        DQuaternion a = PortalAPI.getPortalOrientationQuaternion(portalA);
-        DQuaternion b = PortalAPI.getPortalOrientationQuaternion(portalB);
-
-        DQuaternion delta = b.hamiltonProduct(a.getConjugated());
-
-        DQuaternion flip = DQuaternion.rotationByDegrees(
-                portalB.axisH, 180
-        );
-        DQuaternion aRot = flip.hamiltonProduct(delta);
-
-        portalA.setRotationTransformation(aRot.toMcQuaternion());
-        portalB.setRotationTransformation(aRot.getConjugated().toMcQuaternion());
-
-    }
-
 }

@@ -209,7 +209,7 @@ public class PortalManipulation {
         Consumer<Portal> addingInformer, EntityType<Portal> entityType
     ) {
         removeOverlappedPortals(
-            portal.world,
+            ((ServerWorld) portal.world),
             portal.getOriginPos(),
             portal.getNormal().scale(-1),
             p -> Objects.equals(p.specificPlayerId, portal.specificPlayerId),
@@ -404,38 +404,18 @@ public class PortalManipulation {
         
         return portal;
     }
-
+    
     public static DQuaternion getPortalOrientationQuaternion(
-            Vector3d axisW, Vector3d axisH
+        Vector3d axisW, Vector3d axisH
     ) {
-        Vector3d normal = axisW.crossProduct(axisH);
-
-        return DQuaternion.matrixToQuaternion(axisW, axisH, normal);
-    }
-
-    public static void setPortalOrientationQuaternion(
-            Portal portal, DQuaternion quaternion
-    ) {
-        portal.setOrientation(
-                quaternion.rotate(new Vector3d(1, 0, 0)),
-                quaternion.rotate(new Vector3d(0, 1, 0))
+        DQuaternion r1 = DQuaternion.getRotationBetween(
+            new Vector3d(1, 0, 0), axisW
         );
-    }
-
-    public static void adjustRotationToConnect(Portal portalA, Portal portalB) {
-        DQuaternion a = PortalAPI.getPortalOrientationQuaternion(portalA);
-        DQuaternion b = PortalAPI.getPortalOrientationQuaternion(portalB);
-
-        DQuaternion delta = b.hamiltonProduct(a.getConjugated());
-
-        DQuaternion flip = DQuaternion.rotationByDegrees(
-                portalB.axisH, 180
+        
+        DQuaternion r2 = DQuaternion.getRotationBetween(
+            r1.rotate(new Vector3d(0, 1, 0)), axisH
         );
-        DQuaternion aRot = flip.hamiltonProduct(delta);
-
-        portalA.setRotationTransformation(aRot.toMcQuaternion());
-        portalB.setRotationTransformation(aRot.getConjugated().toMcQuaternion());
-
+        
+        return r1.hamiltonProduct(r2);
     }
-
 }
