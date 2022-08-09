@@ -1,3 +1,7 @@
+This is the old deprecated repo for the old Immersive Portals Forge version in MC 1.14, 1.15 and 1.16. The new Forge version repo: https://github.com/iPortalTeam/ImmersivePortalsModForForge
+
+---
+
 # Immersive Portals Mod for Forge
 
 https://www.curseforge.com/minecraft/mc-mods/immersive-portals-for-forge
